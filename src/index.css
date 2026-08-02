@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@import "./theme/tokens.css";
+@import "./theme/themes/light.css";
+@import "./theme/themes/dark.css";
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap");
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+
+  --color-primary: var(--color-primary);
+  --color-accent: var(--color-accent);
+  --color-surface: var(--color-surface);
+  --color-surface-alt: var(--color-surface-alt);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-border: var(--color-border);
+  --color-danger: var(--color-danger);
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+}
