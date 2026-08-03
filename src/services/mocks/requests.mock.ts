@@ -1,0 +1,48 @@
+import type { CertificateRequest } from "@/types";
+
+export const MOCK_REQUESTS: CertificateRequest[] = [
+  {
+    id: "req-1",
+    parishId: "parish-1",
+    requesterId: "u-parishioner",
+    sacramentType: "baptism",
+    status: "processing",
+    origin: "online",
+    deliveryMethod: "digital",
+    payment: { status: "paid", amount: 150 },
+    createdAt: "2026-06-20",
+  },
+  {
+    id: "req-2",
+    parishId: "parish-1",
+    requesterId: "u-parishioner",
+    sacramentType: "marriage",
+    status: "processing",
+    origin: "online",
+    deliveryMethod: "pickup",
+    payment: { status: "paid", amount: 200 },
+    createdAt: "2026-06-20",
+  },
+  {
+    id: "req-3",
+    parishId: "parish-1",
+    requesterId: "u-parishioner",
+    sacramentType: "death",
+    status: "processing",
+    origin: "online",
+    deliveryMethod: "pickup",
+    payment: { status: "unpaid", amount: 150 },
+    createdAt: "2026-06-18",
+  },
+  {
+    id: "req-4",
+    parishId: "parish-1",
+    requesterId: "u-parishioner",
+    sacramentType: "confirmation",
+    status: "rejected",
+    origin: "online",
+    deliveryMethod: "digital",
+    payment: { status: "unpaid", amount: 150 },
+    createdAt: "2026-05-30",
+  },
+];

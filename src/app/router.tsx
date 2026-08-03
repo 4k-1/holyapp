@@ -1,0 +1,57 @@
+import { createBrowserRouter } from "react-router-dom";
+import { ParishLayout } from "@/features/parish/ParishLayout";
+import { parishLayoutLoader } from "@/features/parish/parish-loader";
+import { parishionerRoutes } from "@/features/parishioner/routes";
+import { requireRole } from "@/features/auth/guards";
+import { LoginPage } from "@/features/auth/pages/LoginPage";
+import { UnauthorizedPage } from "@/features/auth/pages/UnauthorizedPage";
+import { RegisterPage } from "@/features/auth/pages/RegisterPage";
+
+// inside createBrowserRouter([...]) array:
+
+
+export const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/unauthorized",
+    element: <UnauthorizedPage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
+  },
+  {
+    path: "/verify/:hash",
+    // stub — build VerifyPage in features/verification later
+    element: <div className="p-8">Verify page (placeholder)</div>,
+  },
+  {
+    path: "/super-admin",
+    loader: requireRole(["super_admin"]),
+    children: [
+      // super-admin routes go here later
+    ],
+  },
+  {
+    path: "/:parishSlug",
+    element: <ParishLayout />,
+    loader: parishLayoutLoader,
+    children: [
+      {
+        path: "portal",
+        loader: requireRole(["parishioner"]),
+        children: parishionerRoutes,
+      },
+      {
+        path: "admin",
+        loader: requireRole(["parish_admin", "parish_staff"]),
+        children: [
+          // parish-admin routes go here later
+        ],
+      },
+    ],
+  },
+]);

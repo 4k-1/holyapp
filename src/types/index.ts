@@ -16,6 +16,8 @@ export interface Parish {
   name: string;
   address: string;
   sealUrl?: string;
+  backgroundImageUrl?: string;
+  tagline?: string;
 }
 
 export interface CurrentUser {
@@ -24,4 +26,28 @@ export interface CurrentUser {
   role: Role;
   fullName: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  middleName?: string;
+  gender?: string;
+  birthday?: string; // ISO date string, e.g. "1998-04-12"
+  address?: string;
+}
+
+export interface Payment {
+  status: "unpaid" | "paid";
+  amount: number;
+  method?: string;
+}
+
+export interface CertificateRequest {
+  id: string;
+  parishId: string;
+  requesterId: string;
+  sacramentType: SacramentType;
+  status: RequestStatus;
+  origin: RequestType;
+  deliveryMethod: DeliveryMethod;
+  payment: Payment | null; // null only for walk-in requests with no payment step
+  createdAt: string; // ISO date
 }
