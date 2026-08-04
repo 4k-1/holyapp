@@ -6,11 +6,26 @@ import { requireRole } from "@/features/auth/guards";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { UnauthorizedPage } from "@/features/auth/pages/UnauthorizedPage";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
+import { GivePage } from "@/features/public/GivePage";
+import { PublicDonatePage } from "@/features/public/PublicDonatePage";
+import { PublicIntentionPage } from "@/features/public/PublicIntentionPage";
 
 // inside createBrowserRouter([...]) array:
 
 
 export const router = createBrowserRouter([
+  {
+    path: "/give",
+    element: <GivePage />,
+  },
+  {
+    path: "/give/:parishSlug/donate",
+    element: <PublicDonatePage />,
+  },
+  {
+    path: "/give/:parishSlug/intention",
+    element: <PublicIntentionPage />,
+  },
   {
     path: "/login",
     element: <LoginPage />,

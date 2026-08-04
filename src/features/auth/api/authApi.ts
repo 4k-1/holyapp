@@ -128,3 +128,46 @@ export function resendVerificationCode(): void {
 export function logout() {
   setCurrentUser(null);
 }
+
+export interface UpdateProfileInput {
+  firstName: string;
+  lastName: string;
+  middleName?: string;
+  birthday: string;
+  email: string;
+  address: string;
+}
+
+export async function updateProfile(input: UpdateProfileInput): Promise<CurrentUser> {
+  await new Promise((r) => setTimeout(r, 400));
+
+  const current = getCurrentUser();
+  if (!current) throw new Error("Not logged in.");
+
+  const fullName = [input.firstName, input.middleName, input.lastName].filter(Boolean).join(" ");
+
+  const updated: CurrentUser = {
+    ...current,
+    firstName: input.firstName,
+    lastName: input.lastName,
+    middleName: input.middleName,
+    birthday: input.birthday,
+    email: input.email,
+    address: input.address,
+    fullName,
+  };
+
+  setCurrentUser(updated);
+  return updated;
+}
+
+export async function sendPasswordResetEmail(): Promise<void> {
+  await new Promise((r) => setTimeout(r, 500));
+  const current = getCurrentUser();
+  console.info(`[mock] Password reset link sent to ${current?.email}`);
+}
+
+export async function deleteAccount(): Promise<void> {
+  await new Promise((r) => setTimeout(r, 500));
+  setCurrentUser(null);
+}
