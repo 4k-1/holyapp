@@ -1,0 +1,38 @@
+import type { CertificateRequest } from "@/types";
+import { deriveStatusLabel } from "@/features/parishioner/dashboard/deriveStatusLabel";
+
+export function getStatusPillClasses(request: CertificateRequest): string {
+  const label = deriveStatusLabel(request);
+
+  switch (label) {
+    case "Pending":
+      return "bg-[#f2e6c8] text-[#8a6c1f]";
+    case "Awaiting Payment":
+      return "bg-[#f0e2c2] text-[#96701e]";
+    case "Processing":
+      return "bg-[#dbe6ee] text-[#33607e]";
+    case "Ready for Pickup":
+      return "bg-[#dde7e6] text-[#2f6b63]";
+    case "Released":
+      return "bg-[#dbeadb] text-[#2f6b3d]";
+    case "Rejected":
+      return "bg-[#f3e3e0] text-[#7c3030]";
+    default:
+      return "bg-surface-alt text-ink-muted";
+  }
+}
+
+export function getSacramentIconStyle(sacrament: string): string {
+  switch (sacrament) {
+    case "baptism":
+      return "bg-[#dfe9f2] text-[#3c6f9e]";
+    case "confirmation":
+      return "bg-[#f8ecc9] text-[#a9822f]";
+    case "marriage":
+      return "bg-[#f5e0e0] text-[#a04b4b]";
+    case "death":
+      return "bg-[#e6e2da] text-[#5c5648]";
+    default:
+      return "bg-surface-alt text-ink-muted";
+  }
+}
