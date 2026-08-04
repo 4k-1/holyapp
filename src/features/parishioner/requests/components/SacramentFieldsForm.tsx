@@ -69,7 +69,7 @@ export function SacramentFieldsForm({ sacramentType, values, onChange }: Sacrame
         <div key={i} className={`grid grid-cols-1 gap-4 ${row.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
           {row.map((field) => (
             <div key={field.key}>
-              <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-accent">
+              <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">
                 {field.label}
                 {field.optional && (
                   <span className="ml-1 font-medium normal-case tracking-normal text-ink-muted">(optional)</span>

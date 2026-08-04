@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import type { Parish } from "@/types";
 
 interface NavbarProps {
@@ -35,7 +35,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
           )}
           <div className="hidden min-w-0 leading-tight sm:block">
             <div
-              className="line-clamp-2 max-w-[130px] font-serif text-[12.5px] font-semibold leading-tight lg:max-w-[200px]"
+              className="line-clamp-2 max-w-[180px] font-serif text-[12.5px] font-semibold leading-tight lg:max-w-[200px]"
               title={parish.name}
             >
               {parish.name}
@@ -71,12 +71,13 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
           >
             🛡 Verify
           </NavLink>
-          <div
+          <Link
+            to="account"
             title={userName}
-            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/70 text-xs font-bold text-primary shadow-sm transition-transform hover:scale-105 sm:h-9 sm:w-9"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/70 text-xs font-bold text-primary shadow-sm transition-transform hover:scale-105 sm:h-9 sm:w-9"
           >
             {userInitials}
-          </div>
+          </Link>
 
           {/* Hamburger — mobile only */}
           <button

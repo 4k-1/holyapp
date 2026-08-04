@@ -33,7 +33,7 @@ export function DetailsStepExtras({
     <>
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-accent">
+          <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">
             Relationship to the person on the record
           </label>
           <select
@@ -51,7 +51,7 @@ export function DetailsStepExtras({
           </select>
         </div>
         <div>
-          <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-accent">
+          <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">
             Approximate date of sacrament
           </label>
           <input
@@ -63,7 +63,7 @@ export function DetailsStepExtras({
         </div>
       </div>
 
-      <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-accent">
+      <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">
         Supporting documents <span className="font-medium normal-case tracking-normal text-ink-muted">(optional)</span>
       </label>
       <div className="rounded-2xl border-[1.5px] border-dashed border-border bg-surface-alt p-4">

@@ -48,6 +48,31 @@ export interface CertificateRequest {
   status: RequestStatus;
   origin: RequestType;
   deliveryMethod: DeliveryMethod;
-  payment: Payment | null; // null only for walk-in requests with no payment step
-  createdAt: string; // ISO date
+  payment: Payment | null;
+  purpose?: string;
+  createdAt: string;
+}
+
+export interface IssuedCertificate {
+  id: string;
+  requestId: string;
+  parishId: string;
+  ownerId: string;
+  sacramentType: SacramentType;
+  holderName: string;
+  issuedAt: string;
+  state: CertificateState;
+}
+
+export interface MassIntentionRequest {
+  id: string;
+  parishId: string;
+  requesterId: string | null; // null if ever opened to guests later; for now always the logged-in parishioner
+  intentionType: string;
+  intentionFor: string;
+  requestedBy: string;
+  scheduleDate: string;   // ISO date, e.g. "2026-07-05"
+  scheduleTime: string;   // snapshotted display string, e.g. "8:00 AM" — NOT a live reference to MassScheduleEntry
+  scheduleLabel: string;  // snapshotted day-type label, e.g. "Sunday" — also frozen at submission time
+  createdAt: string;
 }
