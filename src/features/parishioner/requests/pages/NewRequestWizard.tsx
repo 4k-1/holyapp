@@ -48,7 +48,7 @@ export function NewRequestWizard() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <h1 className="mb-1.5 font-serif text-2xl font-bold text-ink sm:text-[26px]">Request a Certificate</h1>
       <p className="mb-6 text-sm text-ink-muted">
         Fill in a few details and we'll locate your sacramental record.

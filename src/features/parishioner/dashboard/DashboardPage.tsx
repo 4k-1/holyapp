@@ -102,9 +102,12 @@ export function DashboardPage({ parishSlug, userName }: DashboardPageProps) {
           <p className="relative z-10 mt-2 max-w-xs text-[13.5px] leading-relaxed text-white/80">
             Your offering helps sustain the santuario, its outreach, and the sacramental life of our community.
           </p>
-          <button className="relative z-10 mt-4 rounded-[11px] bg-[#1e3a2b] px-6 py-3 text-sm font-bold text-white shadow-sm transition-transform active:scale-95">
+          <Link
+            to={`/${parishSlug}/portal/donate`}
+            className="relative z-10 mt-4 inline-block rounded-[11px] bg-[#1e3a2b] px-6 py-3 text-sm font-bold text-white shadow-sm transition-transform active:scale-95"
+          >
             Donate Now
-          </button>
+          </Link>
         </div>
 
         <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-primary to-primary/85 p-6 text-white shadow-sm">
@@ -121,9 +124,12 @@ export function DashboardPage({ parishSlug, userName }: DashboardPageProps) {
           <p className="relative z-10 mt-2 max-w-xs text-[13.5px] leading-relaxed text-white/80">
             Offer a Mass for thanksgiving, healing, or in loving memory of someone dear to you.
           </p>
-          <button className="relative z-10 mt-4 rounded-[11px] bg-[#1e3a2b] px-6 py-3 text-sm font-bold text-white shadow-sm transition-transform active:scale-95">
+          <Link
+            to={`/${parishSlug}/portal/intention`}
+            className="relative z-10 mt-4 inline-block rounded-[11px] bg-[#1e3a2b] px-6 py-3 text-sm font-bold text-white shadow-sm transition-transform active:scale-95"
+          >
             Request Intention
-          </button>
+          </Link>
         </div>
       </div>
     </div>
