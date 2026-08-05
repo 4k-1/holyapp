@@ -9,6 +9,8 @@ import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { GivePage } from "@/features/public/GivePage";
 import { PublicDonatePage } from "@/features/public/PublicDonatePage";
 import { PublicIntentionPage } from "@/features/public/PublicIntentionPage";
+import { ParishLoginPage } from "@/features/auth/pages/ParishLoginPage";
+import { ParishRegisterPage } from "@/features/auth/pages/ParishRegisterPage";
 
 // inside createBrowserRouter([...]) array:
 
@@ -55,6 +57,8 @@ export const router = createBrowserRouter([
     element: <ParishLayout />,
     loader: parishLayoutLoader,
     children: [
+      { path: "login", element: <ParishLoginPage /> },
+      { path: "register", element: <ParishRegisterPage /> },
       {
         path: "portal",
         loader: requireRole(["parishioner"]),
@@ -63,9 +67,7 @@ export const router = createBrowserRouter([
       {
         path: "admin",
         loader: requireRole(["parish_admin", "parish_staff"]),
-        children: [
-          // parish-admin routes go here later
-        ],
+        children: [],
       },
     ],
   },

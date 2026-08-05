@@ -133,7 +133,7 @@ export function RegisterForm({ parish, onBack, onSubmit }: RegisterFormProps) {
 
       <p className="text-center text-sm text-ink-muted">
         Already have an account?{" "}
-        <a href={`/login?parish=${parish.slug}`} className="text-primary hover:underline">
+        <a href={`/${parish.slug}/login`} className="font-medium text-primary hover:underline">
           Sign in
         </a>
       </p>

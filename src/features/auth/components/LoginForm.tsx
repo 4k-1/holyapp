@@ -119,9 +119,9 @@ export function LoginForm({ parish, onBack }: LoginFormProps) {
 
       <p className="border-t border-border pt-5 text-center text-sm text-ink-muted">
         No account?{" "}
-        <a href={`/register?parish=${parish.slug}`} className="font-medium text-primary hover:underline">
-          Register as a parishioner
-        </a>
+        <a href={`/${parish.slug}/register`} className="font-medium text-primary hover:underline">
+        Register as a parishioner
+      </a>
       </p>
     </form>
   );
