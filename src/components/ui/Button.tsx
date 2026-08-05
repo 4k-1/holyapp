@@ -1,6 +1,6 @@
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
 
-type Variant = "primary" | "secondary" | "danger" | "ghost";
+type Variant = "primary" | "accent" | "secondary" | "danger" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -11,6 +11,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
   primary: "bg-primary text-white hover:opacity-90",
+  accent: "bg-accent text-white hover:opacity-90",
   secondary: "bg-surface-alt text-ink border border-border hover:bg-border/40",
   danger: "bg-danger text-white hover:opacity-90",
   ghost: "bg-transparent text-ink hover:bg-surface-alt",
@@ -31,7 +32,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className} cursor-pointer`}
+      className={`cursor-pointer inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {children}

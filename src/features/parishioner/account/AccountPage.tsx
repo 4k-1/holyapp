@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/features/auth/api/authApi";
+import { getCurrentUser, logout } from "@/features/auth/api/authApi";
 import { AccountListRow } from "@/features/parishioner/account/components/AccountListRow";
 import { PersonalInfoPanel } from "@/features/parishioner/account/components/PersonalInfoPanel";
 import { ChangePasswordPanel } from "@/features/parishioner/account/components/ChangePasswordPanel";
@@ -19,6 +19,11 @@ export function AccountPage() {
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+  function handleLogout() {
+    logout();
+    navigate("/login");
+  }
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8 sm:px-6">
@@ -41,7 +46,7 @@ export function AccountPage() {
             title="Change photo"
             className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface bg-primary text-xs text-white shadow-sm"
           >
-            📷
+            
           </button>
         </div>
         <h2 className="mt-3 font-serif text-xl font-bold text-ink">{user.fullName}</h2>
@@ -55,7 +60,7 @@ export function AccountPage() {
       </div>
 
       <p className="mb-2.5 ml-1 text-xs font-bold uppercase tracking-wide text-ink-muted">Security</p>
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+      <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
         <AccountListRow icon="🛡" label="Change Password">
           <ChangePasswordPanel email={user.email} />
         </AccountListRow>
@@ -63,6 +68,14 @@ export function AccountPage() {
           <DeleteAccountPanel />
         </AccountListRow>
       </div>
+
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="w-full rounded-2xl border border-border bg-surface px-4 py-3.5 text-center text-sm font-semibold text-danger shadow-sm transition-colors hover:bg-danger/5"
+      >
+        Log Out
+      </button>
     </div>
   );
 }

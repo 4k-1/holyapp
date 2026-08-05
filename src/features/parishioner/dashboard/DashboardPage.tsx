@@ -35,17 +35,17 @@ export function DashboardPage({ parishSlug, userName }: DashboardPageProps) {
           style={{ background: "radial-gradient(circle, rgba(230,204,143,0.18), transparent 70%)" }}
         />
         <p className="relative text-xs font-semibold uppercase tracking-wide text-accent">Welcome back</p>
-        <h1 className="relative mt-2 font-serif text-[29px] font-semibold">
+        <h1 className="relative mt-2 font-serif text-[22px] font-semibold sm:text-[25px] md:text-[29px]">
           Good morning, {userName} <span aria-hidden="true">🕊</span>
         </h1>
-      </div>
+      </div>  
 
       <div className="mb-6 rounded-[18px] border border-border bg-surface p-6 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-serif text-xl font-semibold text-ink">My Certificate Requests</h2>
           <Link
             to={`/${parishSlug}/portal/requests`}
-            className="flex items-center gap-1 text-sm font-semibold text-accent hover:underline"
+            className="flex items-center gap-1 text-sm font-semibold text-ink-muted hover:underline"
           >
             View all →
           </Link>

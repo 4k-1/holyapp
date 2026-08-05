@@ -21,7 +21,8 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
   return (
     <nav className="sticky top-0 z-50 bg-primary text-white shadow-md">
       <div className="mx-auto flex h-[64px] max-w-6xl items-center justify-between gap-3 px-4 sm:h-[68px] sm:px-6">
-        <div className="flex min-w-0 shrink-0 items-center gap-2.5">
+        {/* ⬇️ THIS is the block that got replaced */}
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           {parish.sealUrl ? (
             <img
               src={parish.sealUrl}
@@ -33,9 +34,9 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
               ✝
             </div>
           )}
-          <div className="hidden min-w-0 leading-tight sm:block">
+          <div className="min-w-0 leading-tight">
             <div
-              className="line-clamp-2 max-w-[180px] font-serif text-[12.5px] font-semibold leading-tight lg:max-w-[200px]"
+              className="truncate font-serif text-[14px] font-semibold leading-tight sm:line-clamp-2 sm:max-w-[280px] sm:text-[12.5px] sm:whitespace-normal lg:max-w-[420px]"
               title={parish.name}
             >
               {parish.name}
@@ -45,9 +46,10 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
             </div>
           </div>
         </div>
+        {/* ⬆️ end of replaced block */}
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden shrink-0 items-center gap-1 md:flex">
           {navItems.map((item) => (
             <NavLink
               key={item.label}

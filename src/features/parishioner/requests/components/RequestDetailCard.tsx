@@ -34,25 +34,30 @@ export function RequestDetailCard({ request, parishSlug }: RequestDetailCardProp
   const isRejected = label === "Rejected";
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6">
-      <div className="flex items-start gap-3.5">
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${getSacramentIconStyle(request.sacramentType)}`}>
-          <Icon className="h-[18px] w-[18px]" />
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
+      <div className="flex items-start gap-3 sm:gap-3.5">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10 ${getSacramentIconStyle(
+            request.sacramentType
+          )}`}
+        >
+          <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-serif text-lg font-semibold text-ink">{sacramentLabels[request.sacramentType]}</p>
+          <p className="font-serif text-[15px] font-semibold leading-snug text-ink sm:text-lg">
+            {sacramentLabels[request.sacramentType]}
+          </p>
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-ink-muted">
             <span
-              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide ${getStatusPillClasses(
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${getStatusPillClasses(
                 request
               )}`}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
               {label}
             </span>
-          </div>
-
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+            <span className="text-border">·</span>
             <span>
               {new Date(request.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </span>
@@ -69,14 +74,14 @@ export function RequestDetailCard({ request, parishSlug }: RequestDetailCardProp
           <RequestStepTracker request={request} />
 
           {isReadyForPickup && (
-            <div className="mt-4 flex gap-2.5 rounded-xl border border-primary/15 bg-primary/[0.04] px-4 py-3.5 text-sm text-primary">
-              <span className="shrink-0">⛪</span>
+            <div className="mt-4 flex gap-2.5 rounded-xl border border-primary/15 bg-primary/[0.04] px-3.5 py-3 text-sm text-primary sm:px-4 sm:py-3.5">
+              <span className="shrink-0"></span>
               <p>Your printed certificate is ready at the parish office. Bring a valid ID to claim it.</p>
             </div>
           )}
 
           {isRejected && (
-            <div className="mt-4 flex gap-2.5 rounded-xl border border-danger/20 bg-danger/[0.05] px-4 py-3.5 text-sm text-danger">
+            <div className="mt-4 flex gap-2.5 rounded-xl border border-danger/20 bg-danger/[0.05] px-3.5 py-3 text-sm text-danger sm:px-4 sm:py-3.5">
               <span className="shrink-0">ℹ</span>
               <p>
                 We couldn't match a {sacramentLabels[request.sacramentType].replace("Certificate of ", "")} record with
@@ -88,18 +93,30 @@ export function RequestDetailCard({ request, parishSlug }: RequestDetailCardProp
       </div>
 
       {isAwaitingPayment && (
-        <div className="mt-4 flex justify-end border-t border-border pt-4">
-            <button className="rounded-lg bg-[#b5773a] px-4 py-2 text-[13.5px] font-bold text-white shadow-sm transition-colors hover:bg-[#9c6530]">
+        <div className="mt-4 border-t border-border pt-4">
+          <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[13.5px] font-bold text-white shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] sm:w-auto sm:ml-auto">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              className="h-4 w-4"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+              <line x1="2.5" y1="10" x2="21.5" y2="10" />
+            </svg>
             Proceed to Payment
-            </button>
+          </button>
         </div>
-        )}
+      )}
 
       {isReleased && (
-        <div className="mt-4 flex justify-end border-t border-border pt-4">
+        <div className="mt-4 border-t border-border pt-4">
           <Link
             to={`/${parishSlug}/portal/wallet`}
-            className="text-[13.5px] font-semibold text-accent hover:underline"
+            className="flex w-full items-center justify-center gap-1 rounded-xl border border-accent/40 px-4 py-2.5 text-[13.5px] font-semibold text-accent transition-colors hover:bg-accent/10 sm:w-auto sm:ml-auto sm:border-0 sm:px-0 sm:py-0 sm:hover:bg-transparent sm:hover:underline"
           >
             View in wallet →
           </Link>
