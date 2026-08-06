@@ -1,5 +1,6 @@
 import { DropletIcon, DoveIcon, HeartIcon, CandleIcon } from "@/components/ui/icons/SacramentIcons";
 import type { IssuedCertificate, SacramentType } from "@/types";
+import { Button } from "@/components/ui/Button";
 
 const sacramentLabels: Record<SacramentType, string> = {
   baptism: "Certificate of Baptism",
@@ -41,18 +42,20 @@ export function CertificateCard({ certificate, onView, onDownload }: Certificate
         {new Date(certificate.issuedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
       </p>
       <div className="relative mt-3.5 flex gap-1.5">
-        <button
-          onClick={() => onView(certificate)}
-          className="flex-1 rounded-lg border border-border py-2 text-xs font-bold text-ink transition-transform hover:bg-surface-alt active:scale-95"
-        >
-          View
-        </button>
-        <button
-          onClick={() => onDownload(certificate)}
-          className="flex-1 rounded-lg bg-primary py-2 text-xs font-bold text-white transition-transform hover:opacity-90 active:scale-95"
-        >
-          Download
-        </button>
+      <Button
+        variant="outline"
+        className="flex-1 py-2 text-xs active:scale-95"
+        onClick={() => onView(certificate)}
+      >
+        View
+      </Button>
+      <Button
+        variant="primary"
+        className="flex-1 py-2 text-xs active:scale-95"
+        onClick={() => onDownload(certificate)}
+      >
+        Download
+      </Button>
       </div>
     </div>
   );

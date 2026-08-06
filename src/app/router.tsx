@@ -11,6 +11,8 @@ import { PublicDonatePage } from "@/features/public/PublicDonatePage";
 import { PublicIntentionPage } from "@/features/public/PublicIntentionPage";
 import { ParishLoginPage } from "@/features/auth/pages/ParishLoginPage";
 import { ParishRegisterPage } from "@/features/auth/pages/ParishRegisterPage";
+import { parishAdminRoutes } from "@/features/parish-admin/routes";
+
 
 // inside createBrowserRouter([...]) array:
 
@@ -67,7 +69,7 @@ export const router = createBrowserRouter([
       {
         path: "admin",
         loader: requireRole(["parish_admin", "parish_staff"]),
-        children: [],
+        children: parishAdminRoutes,
       },
     ],
   },

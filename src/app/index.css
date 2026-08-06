@@ -2,16 +2,28 @@
 @import "../theme/tokens.css";
 @import "../theme/themes/light.css";
 @import "../theme/themes/dark.css";
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap");
+@import "../theme/themes/admin.css";
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap");
+
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-@theme {
-  /* --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif; */
-  --font-serif: "Fraunces", ui-serif, Georgia, serif;
-
+/* Default fonts — parishioner-facing pages */
+:root {
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
   --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
-  /* --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif; */
+}
+
+/* Admin/staff portal override — matches admin prototype's own typography */
+[data-portal="admin"] {
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@theme {
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+
   --color-primary: var(--color-primary);
   --color-accent: var(--color-accent);
   --color-surface: var(--color-surface);
@@ -20,6 +32,27 @@
   --color-ink-muted: var(--color-ink-muted);
   --color-border: var(--color-border);
   --color-danger: var(--color-danger);
+
+  --color-admin-bg: var(--color-admin-bg);
+  --color-admin-surface: var(--color-admin-surface);
+  --color-admin-surface-alt: var(--color-admin-surface-alt);
+  --color-admin-border: var(--color-admin-border);
+  --color-admin-border-strong: var(--color-admin-border-strong);
+  --color-admin-ink: var(--color-admin-ink);
+  --color-admin-ink-muted: var(--color-admin-ink-muted);
+  --color-admin-ink-faint: var(--color-admin-ink-faint);
+  --color-admin-green-900: var(--color-admin-green-900);
+  --color-admin-green-700: var(--color-admin-green-700);
+  --color-admin-green-600: var(--color-admin-green-600);
+  --color-admin-green-100: var(--color-admin-green-100);
+  --color-admin-green-050: var(--color-admin-green-050);
+  --color-admin-gold-700: var(--color-admin-gold-700);
+  --color-admin-gold-600: var(--color-admin-gold-600);
+  --color-admin-gold-100: var(--color-admin-gold-100);
+  --color-admin-red-700: var(--color-admin-red-700);
+  --color-admin-red-100: var(--color-admin-red-100);
+  --color-admin-amber-700: var(--color-admin-amber-700);
+  --color-admin-amber-100: var(--color-admin-amber-100);
 }
 
 body {
@@ -30,4 +63,8 @@ body {
 
 h1, h2, h3, h4 {
   font-family: var(--font-serif);
+}
+
+button{
+  cursor: pointer;
 }

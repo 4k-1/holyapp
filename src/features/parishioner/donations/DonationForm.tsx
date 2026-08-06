@@ -4,6 +4,14 @@ import type { Parish } from "@/types";
 
 const presetAmounts = [100, 300, 500, 1000];
 
+const donationPurposes = [
+  "General Fund",
+  "Church Repair & Maintenance",
+  "Outreach & Charity Program",
+  "Feast Day Celebration",
+  "Other",
+];
+
 interface DonationFormProps {
   parish: Parish;
   defaultFullName?: string;
@@ -12,6 +20,7 @@ interface DonationFormProps {
 export function DonationForm({ parish, defaultFullName = "" }: DonationFormProps) {
   const [amount, setAmount] = useState<string>("500");
   const [isCustom, setIsCustom] = useState(false);
+  const [purpose, setPurpose] = useState(donationPurposes[0]);
   const [fullName, setFullName] = useState(defaultFullName);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -35,6 +44,7 @@ export function DonationForm({ parish, defaultFullName = "" }: DonationFormProps
     setSubmitting(true);
     console.info("[mock] Redirecting to GCash", {
       amount: effectiveAmount,
+      purpose,
       fullName: fullName || "Anonymous",
       message,
       parishId: parish.id,
@@ -81,6 +91,21 @@ export function DonationForm({ parish, defaultFullName = "" }: DonationFormProps
       />
 
       <div className="mt-5">
+        <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">
+          Purpose
+        </label>
+        <select
+          value={purpose}
+          onChange={(e) => setPurpose(e.target.value)}
+          className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/25"
+        >
+          {donationPurposes.map((p) => (
+            <option key={p}>{p}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mt-4">
         <Input label="Full name" placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
         <p className="mt-1 text-xs text-ink-muted">Optional — leave blank to donate anonymously.</p>
       </div>

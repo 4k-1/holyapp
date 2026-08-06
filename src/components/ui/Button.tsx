@@ -1,6 +1,6 @@
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
 
-type Variant = "primary" | "accent" | "secondary" | "danger" | "ghost";
+type Variant = "primary" | "accent" | "role" | "secondary" | "outline" | "danger" | "danger-ghost" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -9,11 +9,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
+
 const variantClasses: Record<Variant, string> = {
   primary: "bg-primary text-white hover:opacity-90",
   accent: "bg-accent text-white hover:opacity-90",
+  role: "bg-role-accent text-white hover:opacity-90",
   secondary: "bg-surface-alt text-ink border border-border hover:bg-border/40",
+  outline: "bg-transparent text-ink border border-border hover:bg-surface-alt",
   danger: "bg-danger text-white hover:opacity-90",
+  "danger-ghost": "bg-transparent text-danger border border-border hover:bg-danger/5",
   ghost: "bg-transparent text-ink hover:bg-surface-alt",
 };
 

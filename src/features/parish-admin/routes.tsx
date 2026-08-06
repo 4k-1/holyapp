@@ -1,0 +1,25 @@
+import type { RouteObject } from "react-router-dom";
+import { AdminLayout } from "@/features/parish-admin/AdminLayout";
+import { AdminDashboardPage } from "@/features/parish-admin/dashboard/AdminDashboardPage";
+import { AdminRequestsPage } from "@/features/parish-admin/requests/AdminRequestsPage";
+import { AdminBaptismalRecordsPage } from "@/features/parish-admin/records/baptismal/AdminBaptismalRecordsPage";
+import { AdminBaptismalRecordDetailPage } from "@/features/parish-admin/records/baptismal/AdminBaptismalRecordDetailPage";
+import { AdminBaptismalRecordFormPage } from "@/features/parish-admin/records/baptismal/AdminBaptismalRecordFormPage";
+
+export const parishAdminRoutes: RouteObject[] = [
+  {
+    element: <AdminLayout />,
+    children: [
+      { index: true, element: <AdminDashboardPage /> },
+      { path: "requests", element: <AdminRequestsPage /> },
+      { path: "records/baptismal", element: <AdminBaptismalRecordsPage /> },
+      { path: "records/baptismal/new", element: <AdminBaptismalRecordFormPage mode="create" /> },
+      { path: "records/baptismal/:recordId", element: <AdminBaptismalRecordDetailPage /> },
+      {
+        path: "records/baptismal/:recordId/edit",
+        element: <AdminBaptismalRecordFormPage mode="edit" />,
+      },
+      // confirmation, marriage, death, ledgers, schedule, donations, reports, settings go here next
+    ],
+  },
+];
