@@ -1,6 +1,6 @@
 import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
 import { delay } from "@/services/delay";
-import type { BaptismalRecord } from "@/features/parish-admin/records/types";
+import type { BaptismalRecord, RecordAnnotation } from "@/features/parish-admin/records/types";
 
 /**
  * Only this file is allowed to import MOCK_BAPTISMAL_RECORDS. Pages call
@@ -64,5 +64,30 @@ export async function updateBaptismalRecord(
   const record = MOCK_BAPTISMAL_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
   if (!record) throw new Error(`Record ${recordId} not found`);
   Object.assign(record, input, { lastUpdated: new Date().toISOString() });
+  return { ...record };
+}
+
+export type AddBaptismalAnnotationInput = Omit<RecordAnnotation, "by">;
+
+export async function addBaptismalAnnotation(
+  parishId: string,
+  recordId: string,
+  input: AddBaptismalAnnotationInput
+): Promise<BaptismalRecord> {
+  await delay(300);
+  const record = MOCK_BAPTISMAL_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
+  if (!record) throw new Error(`Record ${recordId} not found`);
+
+  const annotation: RecordAnnotation = {
+    ...input,
+    by: "Rec. Staff Carla Bautista",
+  };
+  record.annotations = [...record.annotations, annotation];
+  record.lastUpdated = new Date().toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  record.lastUpdatedBy = annotation.by;
   return { ...record };
 }

@@ -20,7 +20,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
       birthplace: "Cebu City, Cebu",
       motherName: "Belinda Santos",
       fatherName: "Eduardo Santos",
-      sponsor1: "Carmela Diaz",
+      sponsor1: "Carmen Diaz",
       sponsor2: "Rafael Diaz",
     },
   },
@@ -83,6 +83,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
     createdAt: "2026-06-18",
     copies: 1,
     linkedRecordId: "1:36",
+    pickupReady: true,
     details: {
       subjectName: "Ethan Hawke",
       birthdate: "February 2, 2000",

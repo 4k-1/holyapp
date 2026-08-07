@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
 import {
+  canRejectRequest,
   deriveAdminStatusLabel,
   getAdminStatusTone,
   getRequestCopyCount,
@@ -15,7 +16,9 @@ import {
   initials,
   recordFullName,
 } from "@/features/parish-admin/records/baptismalHelpers";
-import type { CertificateRequest, SacramentType } from "@/types";
+import { AdminIssueCertificateModal } from "@/features/parish-admin/requests/AdminIssueCertificateModal";
+import { AdminReleaseCertificateModal } from "@/features/parish-admin/requests/AdminReleaseCertificateModal";
+import type { CertificateRequest, Parish, SacramentType } from "@/types";
 
 const sacramentLabels: Record<SacramentType, string> = {
   baptism: "Baptismal",
@@ -26,12 +29,25 @@ const sacramentLabels: Record<SacramentType, string> = {
 
 interface AdminRequestDetailModalProps {
   request: CertificateRequest;
+  parish: Parish;
   onClose: () => void;
   onReject?: (request: CertificateRequest) => void;
+  onIssueComplete?: () => void;
+  onReleaseComplete?: () => void;
 }
 
-export function AdminRequestDetailModal({ request, onClose, onReject }: AdminRequestDetailModalProps) {
+export function AdminRequestDetailModal({
+  request,
+  parish,
+  onClose,
+  onReject,
+  onIssueComplete,
+  onReleaseComplete,
+}: AdminRequestDetailModalProps) {
+  const [issueOpen, setIssueOpen] = useState(false);
+  const [releaseOpen, setReleaseOpen] = useState(false);
   const statusKey = deriveStatusKey(request);
+  const canReject = canRejectRequest(request);
   const subjectName = request.details?.subjectName ?? request.requesterId;
   const copies = getRequestCopyCount(request);
   const fee = request.payment?.amount ?? 100 * copies;
@@ -196,9 +212,11 @@ export function AdminRequestDetailModal({ request, onClose, onReject }: AdminReq
         <div className="flex flex-wrap justify-end gap-2.5 border-t border-admin-border px-6 py-4">
           {statusKey === "pending" && (
             <>
-              <AdminButton variant="danger" onClick={reject}>
-                Reject request
-              </AdminButton>
+              {canReject && (
+                <AdminButton variant="danger" onClick={reject}>
+                  Reject request
+                </AdminButton>
+              )}
               <Link to={`${request.id}/find-record`} onClick={onClose}>
                 <AdminButton>
                   <FileIcon />
@@ -210,9 +228,11 @@ export function AdminRequestDetailModal({ request, onClose, onReject }: AdminReq
 
           {statusKey === "awaiting_payment" && (
             <>
-              <AdminButton variant="danger" onClick={reject}>
-                Reject request
-              </AdminButton>
+              {canReject && (
+                <AdminButton variant="danger" onClick={reject}>
+                  Reject request
+                </AdminButton>
+              )}
               <AdminButton variant="secondary" disabled>
                 <ClockIcon />
                 Awaiting payment
@@ -221,15 +241,10 @@ export function AdminRequestDetailModal({ request, onClose, onReject }: AdminReq
           )}
 
           {statusKey === "processing" && (
-            <>
-              <AdminButton variant="danger" onClick={reject}>
-                Reject request
-              </AdminButton>
-              <AdminButton onClick={() => console.info("[mock] issue certificate", request.id)}>
-                <FileIcon />
-                Issue certificate
-              </AdminButton>
-            </>
+            <AdminButton onClick={() => setIssueOpen(true)}>
+              <FileIcon />
+              {request.deliveryMethod === "digital" ? "Issue certificate" : "Mark ready for pickup"}
+            </AdminButton>
           )}
 
           {statusKey === "ready" && (
@@ -237,7 +252,7 @@ export function AdminRequestDetailModal({ request, onClose, onReject }: AdminReq
               <AdminButton variant="secondary" onClick={onClose}>
                 Close
               </AdminButton>
-              <AdminButton onClick={() => console.info("[mock] release pickup", request.id)}>
+              <AdminButton onClick={() => setReleaseOpen(true)}>
                 <CheckIcon />
                 Release certificate
               </AdminButton>
@@ -251,6 +266,32 @@ export function AdminRequestDetailModal({ request, onClose, onReject }: AdminReq
           )}
         </div>
       </div>
+
+      {issueOpen && (
+        <AdminIssueCertificateModal
+          request={request}
+          parish={parish}
+          onClose={() => setIssueOpen(false)}
+          onComplete={() => {
+            setIssueOpen(false);
+            onIssueComplete?.();
+            onClose();
+          }}
+        />
+      )}
+
+      {releaseOpen && (
+        <AdminReleaseCertificateModal
+          request={request}
+          parish={parish}
+          onClose={() => setReleaseOpen(false)}
+          onComplete={() => {
+            setReleaseOpen(false);
+            onReleaseComplete?.();
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 }

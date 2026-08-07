@@ -17,6 +17,7 @@ export function deriveStatusKey(request: CertificateRequest): DerivedStatusKey {
 
   if (status === "processing") {
     if (!payment || payment.status === "unpaid") return "awaiting_payment";
+    if (deliveryMethod === "pickup" && !request.pickupReady) return "processing";
     if (deliveryMethod === "pickup") return "ready";
     return "processing";
   }

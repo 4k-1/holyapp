@@ -61,3 +61,43 @@ export interface BaptismalSearchCriteria {
   father: string;
   priest: string;
 }
+
+export interface ConfirmationRecord {
+  id: string;
+  parishId: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  dob: string;
+  birthplace: string;
+  sex: "Male" | "Female";
+  confirmationDate: string;
+  priest: string;
+  sponsor: string;
+  sponsor2?: string;
+  baptismDate?: string;
+  baptismParish?: string;
+  motherFirstName: string;
+  motherLastName: string;
+  fatherFirstName: string;
+  fatherLastName: string;
+  book: string;
+  page: string;
+  line: string;
+  lastUpdated: string;
+  lastUpdatedBy: string;
+  issuedCount: number;
+  status: RecordStatus;
+  annotations: RecordAnnotation[];
+  certificates: IssuedRecordCertificate[];
+}
+
+export interface ConfirmationSearchCriteria {
+  name: string;
+  birthdate: string;
+  birthplace: string;
+  mother: string;
+  father: string;
+  priest: string;
+  sponsor: string;
+}

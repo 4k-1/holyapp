@@ -1,8 +1,13 @@
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useState } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminBadge } from "@/components/ui/AdminBadge";
-import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import {
+  addBaptismalAnnotation,
+  getBaptismalRecord,
+} from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { AdminAddAnnotationModal } from "@/features/parish-admin/records/baptismal/AdminAddAnnotationModal";
 import { useAsync } from "@/hooks/useAsync";
 import {
   annotationDotClass,
@@ -21,7 +26,8 @@ export function AdminBaptismalRecordDetailPage() {
   const navigate = useNavigate();
   const id = decodeURIComponent(recordId);
 
-  const { data: record, loading } = useAsync(() => getBaptismalRecord(parish.id, id), [parish.id, id]);
+  const { data: record, loading, refetch } = useAsync(() => getBaptismalRecord(parish.id, id), [parish.id, id]);
+  const [showAddAnnotation, setShowAddAnnotation] = useState(false);
 
   if (loading) {
     return (
@@ -158,7 +164,7 @@ export function AdminBaptismalRecordDetailPage() {
           <AdminButton
             variant="ghost"
             className="py-0.5"
-            onClick={() => console.info("[mock] add annotation", record.id)}
+            onClick={() => setShowAddAnnotation(true)}
           >
             + Add annotation
           </AdminButton>
@@ -204,6 +210,17 @@ export function AdminBaptismalRecordDetailPage() {
           ))
         )}
       </AdminCard>
+
+      {showAddAnnotation && (
+        <AdminAddAnnotationModal
+          subjectName={name}
+          onClose={() => setShowAddAnnotation(false)}
+          onSubmit={async (input) => {
+            await addBaptismalAnnotation(parish.id, record.id, input);
+            refetch();
+          }}
+        />
+      )}
 
       {/* Issued certificates */}
       <AdminCard className="p-5 px-[22px]">

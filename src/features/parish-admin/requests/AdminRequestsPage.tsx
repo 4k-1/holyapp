@@ -6,6 +6,8 @@ import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDelive
 import { AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
+import { AdminIssueCertificateModal } from "@/features/parish-admin/requests/AdminIssueCertificateModal";
+import { AdminReleaseCertificateModal } from "@/features/parish-admin/requests/AdminReleaseCertificateModal";
 import { AdminRequestDetailModal } from "@/features/parish-admin/requests/AdminRequestDetailModal";
 import { listAdminRequests, rejectAdminRequest } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import { useAsync } from "@/hooks/useAsync";
@@ -47,6 +49,8 @@ export function AdminRequestsPage() {
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [detailRequestId, setDetailRequestId] = useState<string | null>(null);
+  const [issueRequestId, setIssueRequestId] = useState<string | null>(null);
+  const [releaseRequestId, setReleaseRequestId] = useState<string | null>(null);
 
   const { data: parishRequests = [], refetch } = useAsync(
     () => listAdminRequests(parish.id),
@@ -55,6 +59,14 @@ export function AdminRequestsPage() {
 
   const detailRequest = detailRequestId
     ? parishRequests.find((r) => r.id === detailRequestId) ?? null
+    : null;
+
+  const issueRequest = issueRequestId
+    ? parishRequests.find((r) => r.id === issueRequestId) ?? null
+    : null;
+
+  const releaseRequest = releaseRequestId
+    ? parishRequests.find((r) => r.id === releaseRequestId) ?? null
     : null;
 
   const counts = useMemo(() => {
@@ -155,6 +167,22 @@ export function AdminRequestsPage() {
                 >
                   Find record
                 </Link>
+              ) : primary === "Release →" ? (
+                <button
+                  type="button"
+                  onClick={() => setReleaseRequestId(r.id)}
+                  className="font-semibold text-admin-green-700 hover:underline"
+                >
+                  Release
+                </button>
+              ) : primary.endsWith("→") ? (
+                <button
+                  type="button"
+                  onClick={() => setIssueRequestId(r.id)}
+                  className="font-semibold text-admin-green-700 hover:underline"
+                >
+                  {primary.replace(" →", "")}
+                </button>
               ) : (
                 <button
                   type="button"
@@ -263,9 +291,36 @@ export function AdminRequestsPage() {
       {detailRequest && (
         <AdminRequestDetailModal
           request={detailRequest}
+          parish={parish}
           onClose={() => setDetailRequestId(null)}
           onReject={async (r) => {
             await rejectAdminRequest(r.id);
+            refetch();
+          }}
+          onIssueComplete={refetch}
+          onReleaseComplete={refetch}
+        />
+      )}
+
+      {issueRequest && (
+        <AdminIssueCertificateModal
+          request={issueRequest}
+          parish={parish}
+          onClose={() => setIssueRequestId(null)}
+          onComplete={() => {
+            setIssueRequestId(null);
+            refetch();
+          }}
+        />
+      )}
+
+      {releaseRequest && (
+        <AdminReleaseCertificateModal
+          request={releaseRequest}
+          parish={parish}
+          onClose={() => setReleaseRequestId(null)}
+          onComplete={() => {
+            setReleaseRequestId(null);
             refetch();
           }}
         />

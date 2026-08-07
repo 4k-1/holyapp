@@ -60,3 +60,11 @@ export function getRequestCopyCount(request: CertificateRequest): number {
   if (request.deliveryMethod === "digital") return 1;
   return Math.max(1, request.copies ?? 1);
 }
+
+/**
+ * Reject is only allowed before payment. Once paid, cancellation is a
+ * refund case — not the same as staff reject.
+ */
+export function canRejectRequest(request: CertificateRequest): boolean {
+  return request.payment?.status !== "paid";
+}

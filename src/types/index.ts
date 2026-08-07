@@ -66,6 +66,8 @@ export interface CertificateRequest {
   details?: CertificateRequestDetails;
   linkedRecordId?: string | null;
   rejectionReason?: string;
+  /** Pickup only — set when staff confirms print/seal; unlocks "Ready for Pickup" status. */
+  pickupReady?: boolean;
 }
 
 export interface IssuedCertificate {
