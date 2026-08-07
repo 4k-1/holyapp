@@ -54,3 +54,9 @@ export function getAdminActionLabel(request: CertificateRequest): string {
       return "View";
   }
 }
+
+/** Digital wallet certificates are always a single copy. */
+export function getRequestCopyCount(request: CertificateRequest): number {
+  if (request.deliveryMethod === "digital") return 1;
+  return Math.max(1, request.copies ?? 1);
+}

@@ -6,7 +6,9 @@ import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDelive
 import { AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
-import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
+import { AdminRequestDetailModal } from "@/features/parish-admin/requests/AdminRequestDetailModal";
+import { listAdminRequests, rejectAdminRequest } from "@/features/parish-admin/requests/api/requestsAdminApi";
+import { useAsync } from "@/hooks/useAsync";
 import { deriveStatusLabel } from "@/features/parishioner/dashboard/deriveStatusLabel";
 import { getAdminStatusTone, getAdminActionLabel } from "@/features/parish-admin/requests/adminRequestHelpers";
 import type { CertificateRequest, Parish, SacramentType } from "@/types";
@@ -44,11 +46,16 @@ export function AdminRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All statuses");
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [detailRequestId, setDetailRequestId] = useState<string | null>(null);
 
-  const parishRequests = useMemo(
-    () => MOCK_REQUESTS.filter((r) => r.parishId === parish.id),
+  const { data: parishRequests = [], refetch } = useAsync(
+    () => listAdminRequests(parish.id),
     [parish.id]
   );
+
+  const detailRequest = detailRequestId
+    ? parishRequests.find((r) => r.id === detailRequestId) ?? null
+    : null;
 
   const counts = useMemo(() => {
     const dateMatched = parishRequests.filter((r) => !dateFilter || r.createdAt.startsWith(dateFilter));
@@ -82,7 +89,15 @@ export function AdminRequestsPage() {
   }, [parishRequests, statusFilter, search, dateFilter]);
 
   const columns: AdminTableColumn<CertificateRequest>[] = [
-    { key: "id", header: "ID", render: (r) => <span className="font-medium text-admin-ink">{r.id}</span> },
+    { key: "id", header: "ID", render: (r) => (
+      <button
+        type="button"
+        onClick={() => setDetailRequestId(r.id)}
+        className="font-medium text-admin-ink hover:text-admin-green-700 hover:underline"
+      >
+        {r.id}
+      </button>
+    ) },
     {
       key: "requestedBy",
       header: "Request by",
@@ -122,25 +137,34 @@ export function AdminRequestsPage() {
       key: "actions",
       header: "Actions",
       render: (r) => {
-        const label = getAdminActionLabel(r);
-        if (label === "Find record") {
-          return (
-            <Link
-              to={`${r.id}/find-record`}
+        const primary = getAdminActionLabel(r);
+        return (
+          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+            <button
+              type="button"
+              onClick={() => setDetailRequestId(r.id)}
               className="font-semibold text-admin-green-700 hover:underline"
             >
-              Find record
-            </Link>
-          );
-        }
-        return (
-          <button
-            type="button"
-            onClick={() => console.info("[mock] action for", r.id)}
-            className="font-semibold text-admin-green-700 hover:underline"
-          >
-            {label}
-          </button>
+              View
+            </button>
+            {primary !== "View" &&
+              (primary === "Find record" ? (
+                <Link
+                  to={`${r.id}/find-record`}
+                  className="font-semibold text-admin-green-700 hover:underline"
+                >
+                  Find record
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => console.info("[mock] action for", r.id)}
+                  className="font-semibold text-admin-green-700 hover:underline"
+                >
+                  {primary}
+                </button>
+              ))}
+          </span>
         );
       },
     },
@@ -235,6 +259,17 @@ export function AdminRequestsPage() {
           emptyMessage="No matching requests. Try a different status or search term."
         />
       </AdminCard>
+
+      {detailRequest && (
+        <AdminRequestDetailModal
+          request={detailRequest}
+          onClose={() => setDetailRequestId(null)}
+          onReject={async (r) => {
+            await rejectAdminRequest(r.id);
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 }

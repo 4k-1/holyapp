@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
+import { listRequests } from "@/features/parishioner/requests/api/requestsApi";
+import { useAsync } from "@/hooks/useAsync";
 import { deriveStatusLabel } from "@/features/parishioner/dashboard/deriveStatusLabel";
 import { getStatusPillClasses, getSacramentIconStyle } from "@/features/parishioner/dashboard/statusStyles";
 import { DropletIcon, DoveIcon, HeartIcon, CandleIcon, GiveIcon, IntentionIcon } from "@/components/ui/icons/SacramentIcons";
@@ -20,12 +21,14 @@ const sacramentIcons: Record<SacramentType, React.ComponentType<React.SVGProps<S
 };
 
 interface DashboardPageProps {
+  parishId: string;
   parishSlug: string;
   userName: string;
 }
 
-export function DashboardPage({ parishSlug, userName }: DashboardPageProps) {
-  const recentRequests = MOCK_REQUESTS.slice(0, 4);
+export function DashboardPage({ parishId, parishSlug, userName }: DashboardPageProps) {
+  const { data: requests = [] } = useAsync(() => listRequests(parishId), [parishId]);
+  const recentRequests = requests.slice(0, 4);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">

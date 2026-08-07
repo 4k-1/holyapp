@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { MOCK_MASS_SCHEDULE } from "@/services/mocks/massSchedule.mock";
+import { listMassSchedule } from "@/features/parishioner/intentions/api/massScheduleApi";
+import { useAsync } from "@/hooks/useAsync";
 import { getAvailableTimes, getScheduleLabel } from "@/features/parishioner/intentions/massScheduleUtils";
 import { submitMassIntention } from "@/features/parishioner/intentions/intentionsApi";
 import type { Parish } from "@/types";
@@ -23,8 +24,9 @@ export function IntentionForm({ parish, requesterId, defaultRequestedBy = "", on
   const [requestedBy, setRequestedBy] = useState(defaultRequestedBy);
   const [submitting, setSubmitting] = useState(false);
 
-  const availableTimes = getAvailableTimes(massDate, MOCK_MASS_SCHEDULE);
-  const scheduleLabel = getScheduleLabel(massDate, MOCK_MASS_SCHEDULE);
+  const { data: massSchedule = [] } = useAsync(() => listMassSchedule(), []);
+  const availableTimes = getAvailableTimes(massDate, massSchedule);
+  const scheduleLabel = getScheduleLabel(massDate, massSchedule);
   const canSubmit = Boolean(massDate && massTime && intentionFor.trim());
 
   function handleDateChange(value: string) {

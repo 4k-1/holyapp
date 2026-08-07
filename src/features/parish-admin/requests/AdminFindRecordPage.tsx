@@ -1,10 +1,15 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
-import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
-import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
+import {
+  getAdminRequest,
+  linkRequestToRecord,
+  rejectAdminRequest,
+} from "@/features/parish-admin/requests/api/requestsAdminApi";
+import { listBaptismalRecords } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { useAsync } from "@/hooks/useAsync";
 import {
   initials,
   recordFatherName,
@@ -53,41 +58,69 @@ function searchRecords(records: BaptismalRecord[], f: MatchFilters) {
   });
 }
 
+const emptyFilters: MatchFilters = {
+  name: "",
+  baptismDate: "",
+  birthdate: "",
+  birthplace: "",
+  mother: "",
+  father: "",
+  sponsor1: "",
+  sponsor2: "",
+};
+
 export function AdminFindRecordPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { requestId = "" } = useParams();
   const navigate = useNavigate();
 
-  const request = MOCK_REQUESTS.find((r) => r.id === requestId && r.parishId === parish.id);
-  const details = request?.details;
-  const parishRecords = useMemo(
-    () => MOCK_BAPTISMAL_RECORDS.filter((r) => r.parishId === parish.id),
-    [parish.id]
+  const { data: request, loading: requestLoading } = useAsync(
+    () => getAdminRequest(parish.id, requestId),
+    [parish.id, requestId]
   );
+  const { data: parishRecords = [] } = useAsync(() => listBaptismalRecords(parish.id), [parish.id]);
 
-  const [filters, setFilters] = useState<MatchFilters>(() => ({
-    name: details?.subjectName ?? "",
-    baptismDate: details?.baptismDate ?? "",
-    birthdate: details?.birthdate ?? "",
-    birthplace: details?.birthplace ?? "",
-    mother: details?.motherName ?? "",
-    father: details?.fatherName ?? "",
-    sponsor1: details?.sponsor1 ?? "",
-    sponsor2: details?.sponsor2 ?? "",
-  }));
-  const [results, setResults] = useState(() =>
-    searchRecords(parishRecords, {
+  const [filters, setFilters] = useState<MatchFilters>(emptyFilters);
+  const [results, setResults] = useState<BaptismalRecord[]>([]);
+  const [seeded, setSeeded] = useState(false);
+  const [reviewRecord, setReviewRecord] = useState<BaptismalRecord | null>(null);
+
+  useEffect(() => {
+    if (!request || seeded) return;
+    const details = request.details;
+    setFilters({
       name: details?.subjectName ?? "",
       baptismDate: details?.baptismDate ?? "",
       birthdate: details?.birthdate ?? "",
       birthplace: details?.birthplace ?? "",
       mother: details?.motherName ?? "",
       father: details?.fatherName ?? "",
-      sponsor1: "",
-      sponsor2: "",
-    })
-  );
-  const [reviewRecord, setReviewRecord] = useState<BaptismalRecord | null>(null);
+      sponsor1: details?.sponsor1 ?? "",
+      sponsor2: details?.sponsor2 ?? "",
+    });
+    setResults(
+      searchRecords(parishRecords, {
+        name: details?.subjectName ?? "",
+        baptismDate: details?.baptismDate ?? "",
+        birthdate: details?.birthdate ?? "",
+        birthplace: details?.birthplace ?? "",
+        mother: details?.motherName ?? "",
+        father: details?.fatherName ?? "",
+        sponsor1: "",
+        sponsor2: "",
+      })
+    );
+    setSeeded(true);
+  }, [request, parishRecords, seeded]);
+
+  if (requestLoading) {
+    return (
+      <div className="p-6">
+        <BackLink />
+        <p className="text-[13.5px] text-admin-ink-muted">Loading request…</p>
+      </div>
+    );
+  }
 
   if (!request) {
     return (
@@ -98,7 +131,9 @@ export function AdminFindRecordPage() {
     );
   }
 
-  const subjectName = details?.subjectName ?? request.requesterId;
+  const currentRequest = request; // narrowed, stable reference for the closures below
+  const details = currentRequest.details;
+  const subjectName = details?.subjectName ?? currentRequest.requesterId;
 
   function setFilter<K extends keyof MatchFilters>(key: K, value: MatchFilters[K]) {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -108,21 +143,13 @@ export function AdminFindRecordPage() {
     setResults(searchRecords(parishRecords, filters));
   }
 
-  function handleReject() {
-    request.status = "rejected";
-    request.rejectionReason = "No matching baptismal record found in parish register.";
-    console.info("[mock] rejected request", request.id);
+  async function handleReject() {
+    await rejectAdminRequest(currentRequest.id, "No matching baptismal record found in parish register.");
     navigate("../..");
   }
 
-  function handleLink(record: BaptismalRecord) {
-    request.linkedRecordId = record.id;
-    request.status = "processing";
-    request.payment = request.payment ?? { status: "unpaid", amount: 100 };
-    if (request.payment.status !== "paid") {
-      request.payment = { ...request.payment, status: "unpaid" };
-    }
-    console.info("[mock] linked record", record.id, "to request", request.id);
+  async function handleLink(record: BaptismalRecord) {
+    await linkRequestToRecord(currentRequest.id, record.id);
     setReviewRecord(null);
     navigate("../..");
   }

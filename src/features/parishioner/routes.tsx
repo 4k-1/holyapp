@@ -18,7 +18,8 @@ export const parishionerRoutes: RouteObject[] = [
       { path: "wallet", element: <CertificatesWalletPage /> },
       { path: "account", element: <AccountPage /> },
       { path: "donate", element: <DonationsPage /> },
-      {path: "intention", element: <MassIntentionPage /> },
+      { path: "intention", element: <MassIntentionPage /> },
+      { path: "intentions", element: <MyIntentionsPage /> },
     ],
   },
 ];

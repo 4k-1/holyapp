@@ -1,11 +1,12 @@
 import { Link, useOutletContext } from "react-router-dom";
-import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
+import { listRequests } from "@/features/parishioner/requests/api/requestsApi";
+import { useAsync } from "@/hooks/useAsync";
 import { RequestDetailCard } from "@/features/parishioner/requests/components/RequestDetailCard";
 import type { Parish } from "@/types";
 
 export function RequestsListPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
-  const requests = MOCK_REQUESTS.filter((r) => r.parishId === parish.id);
+  const { data: requests = [], loading } = useAsync(() => listRequests(parish.id), [parish.id]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
@@ -19,7 +20,9 @@ export function RequestsListPage() {
         </Link>
       </div>
 
-      {requests.length === 0 ? (
+      {loading ? (
+        <p className="text-sm text-ink-muted">Loading your requests…</p>
+      ) : requests.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center text-sm text-ink-muted">
           You haven't made any certificate requests yet.
         </div>

@@ -1,12 +1,20 @@
 import type { RequestFormState } from "@/features/parishioner/requests/types";
 import type { CertificateRequest } from "@/types";
+import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
+import { delay } from "@/services/delay";
+
+/** Only this file is allowed to import MOCK_REQUESTS on the parishioner side. */
+export async function listRequests(parishId: string): Promise<CertificateRequest[]> {
+  await delay(200);
+  return MOCK_REQUESTS.filter((r) => r.parishId === parishId);
+}
 
 export async function submitRequest(
   form: RequestFormState,
   parishId: string,
   requesterId: string
 ): Promise<CertificateRequest> {
-  await new Promise((r) => setTimeout(r, 500));
+  await delay(500);
 
   return {
     id: `req-${Date.now()}`,

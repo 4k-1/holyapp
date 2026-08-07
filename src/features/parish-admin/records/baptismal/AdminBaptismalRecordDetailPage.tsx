@@ -2,7 +2,8 @@ import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminBadge } from "@/components/ui/AdminBadge";
-import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
+import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { useAsync } from "@/hooks/useAsync";
 import {
   annotationDotClass,
   annotationTagClass,
@@ -20,7 +21,16 @@ export function AdminBaptismalRecordDetailPage() {
   const navigate = useNavigate();
   const id = decodeURIComponent(recordId);
 
-  const record = MOCK_BAPTISMAL_RECORDS.find((r) => r.id === id && r.parishId === parish.id);
+  const { data: record, loading } = useAsync(() => getBaptismalRecord(parish.id, id), [parish.id, id]);
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <BackLink />
+        <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
+      </div>
+    );
+  }
 
   if (!record) {
     return (

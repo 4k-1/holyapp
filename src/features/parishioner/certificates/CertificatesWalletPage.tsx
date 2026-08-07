@@ -1,11 +1,12 @@
 import { useOutletContext } from "react-router-dom";
-import { MOCK_CERTIFICATES } from "@/services/mocks/certificates.mock";
+import { listCertificates } from "@/features/parishioner/certificates/api/certificatesApi";
+import { useAsync } from "@/hooks/useAsync";
 import { CertificateCard } from "@/features/parishioner/certificates/CertificateCard";
 import type { IssuedCertificate, Parish } from "@/types";
 
 export function CertificatesWalletPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
-  const certificates = MOCK_CERTIFICATES.filter((c) => c.parishId === parish.id);
+  const { data: certificates = [], loading } = useAsync(() => listCertificates(parish.id), [parish.id]);
 
   function handleView(certificate: IssuedCertificate) {
     console.info("View certificate", certificate.id);
@@ -24,7 +25,9 @@ export function CertificatesWalletPage() {
         Every certificate released to you lives here. Download or view anytime — no need to request again.
       </p>
 
-      {certificates.length === 0 ? (
+      {loading ? (
+        <p className="text-sm text-ink-muted">Loading your certificates…</p>
+      ) : certificates.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center text-sm text-ink-muted">
           No certificates yet. Once a request is released, it'll show up here.
         </div>

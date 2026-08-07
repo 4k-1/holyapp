@@ -1,8 +1,13 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
-import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
+import {
+  createBaptismalRecord,
+  getBaptismalRecord,
+  updateBaptismalRecord,
+} from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { useAsync } from "@/hooks/useAsync";
 import type { Parish } from "@/types";
 
 interface FormState {
@@ -48,14 +53,19 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   const { recordId = "" } = useParams();
   const navigate = useNavigate();
   const id = decodeURIComponent(recordId);
-  const existing =
-    mode === "edit"
-      ? MOCK_BAPTISMAL_RECORDS.find((r) => r.id === id && r.parishId === parish.id)
-      : undefined;
 
-  const [form, setForm] = useState<FormState>(() => {
-    if (!existing) return emptyForm();
-    return {
+  const { data: existing, loading: existingLoading } = useAsync(
+    () => (mode === "edit" ? getBaptismalRecord(parish.id, id) : Promise.resolve(undefined)),
+    [parish.id, id, mode]
+  );
+
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [showGodparent2, setShowGodparent2] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!existing) return;
+    setForm({
       firstName: existing.firstName,
       middleName: existing.middleName,
       lastName: existing.lastName,
@@ -72,10 +82,18 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       line: existing.line,
       sponsor1: existing.sponsor1,
       sponsor2: existing.sponsor2,
-    };
-  });
+    });
+    setShowGodparent2(Boolean(existing.sponsor2));
+  }, [existing]);
 
-  const [showGodparent2, setShowGodparent2] = useState(Boolean(existing?.sponsor2));
+  if (mode === "edit" && existingLoading) {
+    return (
+      <div className="p-6">
+        <BackLink />
+        <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
+      </div>
+    );
+  }
 
   if (mode === "edit" && !existing) {
     return (
@@ -90,10 +108,37 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    console.info(`[mock] ${mode === "edit" ? "update" : "create"} baptismal record`, form);
-    navigate(-1);
+    setSubmitting(true);
+    const input = {
+      firstName: form.firstName,
+      middleName: form.middleName,
+      lastName: form.lastName,
+      dob: form.birthdate,
+      birthplace: form.birthplace,
+      baptismDate: form.baptismDate,
+      priest: form.priest,
+      motherFirstName: form.motherFirstName,
+      motherLastName: form.motherLastName,
+      fatherFirstName: form.fatherFirstName,
+      fatherLastName: form.fatherLastName,
+      sponsor1: form.sponsor1,
+      sponsor2: form.sponsor2,
+      book: form.book,
+      page: form.page,
+      line: form.line,
+    };
+    try {
+      if (mode === "edit") {
+        await updateBaptismalRecord(parish.id, id, input);
+      } else {
+        await createBaptismalRecord(parish.id, input);
+      }
+      navigate(-1);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -297,9 +342,9 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
             <AdminButton variant="secondary" type="button" onClick={() => navigate(-1)}>
               Cancel
             </AdminButton>
-            <AdminButton type="submit">
+            <AdminButton type="submit" disabled={submitting}>
               <CheckIcon />
-              {mode === "edit" ? "Save changes" : "Confirm & add record"}
+              {submitting ? "Saving…" : mode === "edit" ? "Save changes" : "Confirm & add record"}
             </AdminButton>
           </div>
         </form>

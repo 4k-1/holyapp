@@ -79,6 +79,14 @@ export interface IssuedCertificate {
   state: CertificateState;
 }
 
+export type MassDayType = "weekday" | "saturday" | "sunday" | "firstFriday";
+
+export interface MassScheduleEntry {
+  dayType: MassDayType;
+  label: string;
+  times: string[];
+}
+
 export interface MassIntentionRequest {
   id: string;
   parishId: string;

@@ -3,7 +3,8 @@ import { Link, useOutletContext } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
-import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
+import { listBaptismalRecords } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { useAsync } from "@/hooks/useAsync";
 import {
   emptySearchCriteria,
   filterBaptismalRecords,
@@ -20,7 +21,7 @@ export function AdminBaptismalRecordsPage() {
   const [draft, setDraft] = useState<BaptismalSearchCriteria>(emptySearchCriteria);
   const [applied, setApplied] = useState<BaptismalSearchCriteria>(emptySearchCriteria);
 
-  const parishRecords = MOCK_BAPTISMAL_RECORDS.filter((r) => r.parishId === parish.id);
+  const { data: parishRecords = [] } = useAsync(() => listBaptismalRecords(parish.id), [parish.id]);
   const filtered = filterBaptismalRecords(parishRecords, applied);
 
   const columns: AdminTableColumn<BaptismalRecord>[] = [
