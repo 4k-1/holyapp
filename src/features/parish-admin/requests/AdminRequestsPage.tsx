@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
+import { AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
@@ -19,9 +20,17 @@ const sacramentLabels: Record<SacramentType, string> = {
   death: "Death",
 };
 
-type StatusFilter = "All statuses" | "Pending" | "Awaiting Payment" | "Processing" | "Ready" | "Released" | "Rejected";
+type StatusFilter =
+  | "All statuses"
+  | "Pending"
+  | "Awaiting Payment"
+  | "Processing"
+  | "Ready"
+  | "Released"
+  | "Rejected"
+  | "In Progress";
 
-const filterToKey: Record<Exclude<StatusFilter, "All statuses">, ReturnType<typeof deriveStatusKey>> = {
+const filterToKey: Record<Exclude<StatusFilter, "All statuses" | "In Progress">, ReturnType<typeof deriveStatusKey>> = {
   Pending: "pending",
   "Awaiting Payment": "awaiting_payment",
   Processing: "processing",
@@ -56,14 +65,17 @@ export function AdminRequestsPage() {
 
   const filtered = useMemo(() => {
     return parishRequests.filter((r) => {
-      const label = deriveStatusLabel(r);
+      const key = deriveStatusKey(r);
       const matchesStatus =
         statusFilter === "All statuses" ||
         (statusFilter === "In Progress"
-          ? label === "Processing" || label === "Ready for Pickup"
-          : label === statusFilter || (statusFilter === "Pending" && r.status === "pending"));
+          ? key === "processing" || key === "ready"
+          : key === filterToKey[statusFilter]);
       const q = search.trim().toLowerCase();
-      const matchesSearch = !q || r.id.toLowerCase().includes(q);
+      const matchesSearch =
+        !q ||
+        r.id.toLowerCase().includes(q) ||
+        (r.details?.subjectName ?? "").toLowerCase().includes(q);
       const matchesDate = !dateFilter || r.createdAt.startsWith(dateFilter);
       return matchesStatus && matchesSearch && matchesDate;
     });
@@ -76,7 +88,7 @@ export function AdminRequestsPage() {
       header: "Request by",
       render: (r) => (
         <span>
-          {r.requesterId}
+          {r.details?.subjectName ?? r.requesterId}
           {r.origin === "walkin" && (
             <span className="ml-2 inline-flex items-center rounded-full bg-admin-surface-alt px-2 py-0.5 text-[11px] font-semibold text-admin-ink-muted">
               Walk-in
@@ -109,15 +121,28 @@ export function AdminRequestsPage() {
     {
       key: "actions",
       header: "Actions",
-      render: (r) => (
-        <button
-          type="button"
-          onClick={() => console.info("[mock] action for", r.id)}
-          className="font-semibold text-admin-green-700 hover:underline"
-        >
-          {getAdminActionLabel(r)}
-        </button>
-      ),
+      render: (r) => {
+        const label = getAdminActionLabel(r);
+        if (label === "Find record") {
+          return (
+            <Link
+              to={`${r.id}/find-record`}
+              className="font-semibold text-admin-green-700 hover:underline"
+            >
+              Find record
+            </Link>
+          );
+        }
+        return (
+          <button
+            type="button"
+            onClick={() => console.info("[mock] action for", r.id)}
+            className="font-semibold text-admin-green-700 hover:underline"
+          >
+            {label}
+          </button>
+        );
+      },
     },
   ];
 
@@ -142,29 +167,29 @@ export function AdminRequestsPage() {
         ))}
     </div>
 
-      <div className="mb-3.5 flex flex-wrap items-center gap-2.5">
-      <div className="relative max-w-[320px] flex-1">
-        <svg
+      <div className="mb-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+        <div className="relative min-w-0 sm:max-w-[320px]">
+          <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth={2}
-            className="pointer-events-none absolute left-[11px] top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-admin-ink-faint"
-        >
+            className="pointer-events-none absolute left-[11px] top-1/2 z-10 h-[15px] w-[15px] -translate-y-1/2 text-admin-ink-faint"
+          >
             <circle cx="11" cy="11" r="7" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
+          </svg>
+          <AdminInput
             placeholder="Search by request ID"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-admin-border-strong py-[9px] pl-[34px] pr-3 text-[13.5px] focus:outline-none focus:ring-2 focus:ring-admin-green-600/25"
-        />
+            className="pl-[34px]"
+          />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          className="rounded-lg border border-admin-border-strong bg-white py-[9px] pl-3 pr-[30px] text-[13.5px]"
+          className="w-full rounded-[7px] border border-admin-border-strong bg-white py-[9px] pl-3 pr-[30px] text-[13.5px] text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25 sm:w-auto"
         >
           {(["All statuses", "Pending", "Awaiting Payment", "In Progress", "Released", "Rejected"] as StatusFilter[]).map(
             (s) => (
@@ -172,26 +197,34 @@ export function AdminRequestsPage() {
             )
           )}
         </select>
-        <input
-          type="date"
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-          className={`rounded-lg border py-[9px] pl-3 pr-[30px] text-[13.5px] ${
-            dateFilter ? "border-2 border-admin-green-600 bg-admin-green-050 font-semibold text-admin-green-900" : "border-admin-border-strong"
-          }`}
-        />
-        {dateFilter && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-admin-green-100 py-[7px] pl-3 pr-2 text-[12.5px] font-semibold text-admin-green-700">
-             {new Date(dateFilter + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-            <button
-              type="button"
-              onClick={() => setDateFilter("")}
-              className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-admin-green-600 hover:text-white"
-            >
-              ✕
-            </button>
-          </span>
-        )}
+        <div className="flex min-w-0 items-center gap-2.5">
+          <AdminInput
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className={
+              dateFilter
+                ? "!w-full border-2 border-admin-green-600 bg-admin-green-050 font-semibold text-admin-green-900 sm:!w-auto"
+                : "!w-full sm:!w-auto"
+            }
+          />
+          {dateFilter && (
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-admin-green-100 py-[7px] pl-3 pr-2 text-[12.5px] font-semibold text-admin-green-700">
+              {new Date(dateFilter + "T00:00:00").toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+              <button
+                type="button"
+                onClick={() => setDateFilter("")}
+                className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-admin-green-600 hover:text-white"
+              >
+                ✕
+              </button>
+            </span>
+          )}
+        </div>
       </div>
 
       <AdminCard>

@@ -40,6 +40,17 @@ export interface Payment {
   method?: string;
 }
 
+export interface CertificateRequestDetails {
+  subjectName: string;
+  birthdate?: string;
+  birthplace?: string;
+  motherName?: string;
+  fatherName?: string;
+  sponsor1?: string;
+  sponsor2?: string;
+  baptismDate?: string;
+}
+
 export interface CertificateRequest {
   id: string;
   parishId: string;
@@ -51,6 +62,10 @@ export interface CertificateRequest {
   payment: Payment | null;
   purpose?: string;
   createdAt: string;
+  copies?: number;
+  details?: CertificateRequestDetails;
+  linkedRecordId?: string | null;
+  rejectionReason?: string;
 }
 
 export interface IssuedCertificate {
