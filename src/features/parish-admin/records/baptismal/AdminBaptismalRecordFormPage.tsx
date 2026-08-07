@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
@@ -80,7 +80,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   if (mode === "edit" && !existing) {
     return (
       <div className="p-6">
-        <BackLink to=".." />
+        <BackLink />
         <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
       </div>
     );
@@ -93,14 +93,12 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     console.info(`[mock] ${mode === "edit" ? "update" : "create"} baptismal record`, form);
-    navigate("..");
+    navigate(-1);
   }
-
-  const backTo = "..";
 
   return (
     <div className="p-6">
-      <BackLink to={backTo} label="Back" />
+      <BackLink />
 
       <div className="mb-5">
         <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">
@@ -296,7 +294,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
           </div>
 
           <div className="mt-2.5 flex justify-end gap-2.5">
-            <AdminButton variant="secondary" type="button" onClick={() => navigate(backTo)}>
+            <AdminButton variant="secondary" type="button" onClick={() => navigate(-1)}>
               Cancel
             </AdminButton>
             <AdminButton type="submit">
@@ -310,17 +308,19 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   );
 }
 
-function BackLink({ to, label = "Back to Baptismal Records" }: { to: string; label?: string }) {
+function BackLink() {
+  const navigate = useNavigate();
   return (
-    <Link
-      to={to}
+    <button
+      type="button"
+      onClick={() => navigate(-1)}
       className="mb-3.5 inline-flex items-center gap-1.5 text-[13px] text-admin-ink-muted hover:text-admin-green-700"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
         <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      {label}
-    </Link>
+      Back
+    </button>
   );
 }
 

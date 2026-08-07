@@ -26,7 +26,7 @@ export function AdminBaptismalRecordsPage() {
   const columns: AdminTableColumn<BaptismalRecord>[] = [
     {
       key: "ref",
-      header: "Bk:Page",
+      header: "Bk:Page:Line",
       render: (r) => <span className="font-medium text-admin-ink">{recordRef(r)}</span>,
     },
     { key: "name", header: "Name", render: (r) => recordFullName(r) },

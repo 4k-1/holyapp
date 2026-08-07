@@ -22,8 +22,30 @@ export function AdminField({
   );
 }
 
-export function AdminInput({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={`${fieldInputClass} ${className}`} {...props} />;
+export function AdminInput({
+  className = "",
+  type,
+  max,
+  onChange,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement>) {
+  const isDate = type === "date";
+
+  return (
+    <input
+      type={type}
+      max={isDate ? max ?? "9999-12-31" : max}
+      className={`${fieldInputClass} ${className}`}
+      onChange={(e) => {
+        if (isDate) {
+          const year = e.target.value.split("-")[0] ?? "";
+          if (year.length > 4) return;
+        }
+        onChange?.(e);
+      }}
+      {...props}
+    />
+  );
 }
 
 type AdminBtnVariant = "primary" | "secondary" | "danger" | "ghost";

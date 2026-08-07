@@ -1,4 +1,4 @@
-import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminBadge } from "@/components/ui/AdminBadge";
@@ -25,7 +25,7 @@ export function AdminBaptismalRecordDetailPage() {
   if (!record) {
     return (
       <div className="p-6">
-        <BackLink to=".." />
+        <BackLink />
         <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
         <p className="text-[13.5px] text-admin-ink-muted">
           This baptismal record is not available for this parish.
@@ -42,8 +42,8 @@ export function AdminBaptismalRecordDetailPage() {
   const certs = record.certificates;
 
   return (
-    <div className="p-6">
-      <BackLink to=".." />
+    <div className="mx-auto max-w-[920px] p-6">
+      <BackLink />
 
       {/* Header */}
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[22px] px-6">
@@ -248,17 +248,19 @@ export function AdminBaptismalRecordDetailPage() {
   );
 }
 
-function BackLink({ to }: { to: string }) {
+function BackLink() {
+  const navigate = useNavigate();
   return (
-    <Link
-      to={to}
+    <button
+      type="button"
+      onClick={() => navigate(-1)}
       className="mb-3.5 inline-flex items-center gap-1.5 text-[13px] text-admin-ink-muted hover:text-admin-green-700"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
         <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      Back to Baptismal Records
-    </Link>
+      Back
+    </button>
   );
 }
 
