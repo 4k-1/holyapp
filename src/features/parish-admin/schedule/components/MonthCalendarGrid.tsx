@@ -36,31 +36,46 @@ export function MonthCalendarGrid({
     <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4">
       <div className="grid grid-cols-7 gap-1.5">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-          <div key={d} className="pb-1.5 text-center text-[10.5px] font-semibold uppercase tracking-wide text-admin-ink-faint">
+          <div key={d} className="pb-1.5 text-center text-[13px] font-semibold uppercase tracking-wide text-admin-ink-faint">
             {d}
           </div>
         ))}
         {cells.map((c, i) => {
-          if (c.muted) {
-            return <div key={i} className="min-h-[76px] rounded-lg p-1.5 text-[11px] text-admin-ink-faint/50">{c.num || ""}</div>;
+         if (c.muted) {
+            return (
+              <div
+                key={i}
+                className="min-h-[76px] rounded-lg border border-transparent bg-gray-100/60 p-1.5 text-left text-[11px] font-medium text-gray-400"
+              >
+                {c.num || ""}
+              </div>
+            );
           }
           const occurrences = (monthData[c.dateStr!] ?? []).filter((o) => o.showOnOverview !== false);
           const types = [...new Set(occurrences.map((o) => o.type))];
           const isToday = c.dateStr === todayStr;
           const isSelected = c.dateStr === selectedDate;
           return (
-            <button
+            <div
               key={i}
+              role="button"
+              tabIndex={0}
               onClick={() => onSelectDate(c.dateStr!)}
-              className={`min-h-[76px] rounded-lg border p-1.5 text-left transition ${
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelectDate(c.dateStr!);
+                }
+              }}
+              className={`flex min-h-[76px] cursor-pointer flex-col items-start rounded-lg border p-1.5 text-left transition ${
                 isSelected
-                  ? "border-admin-green-700 bg-admin-green-050"
+                  ? "border-transparent bg-admin-green-100"
                   : isToday
                     ? "border-admin-gold-600/50 bg-admin-gold-100/40"
-                    : "border-transparent hover:border-admin-border hover:bg-admin-surface-alt"
+                    : "border-admin-border hover:border-admin-ink-faint/40 hover:bg-admin-surface-alt"
               }`}
             >
-              <div className={`text-[12px] font-semibold ${isToday ? "text-admin-gold-700" : "text-admin-ink"}`}>
+              <div className={`text-[14px] font-semibold ${isToday ? "text-admin-gold-700" : "text-admin-ink"}`}>
                 {c.num}
               </div>
               {types.length > 0 && (
@@ -75,7 +90,7 @@ export function MonthCalendarGrid({
                   {occurrences.length} event{occurrences.length > 1 ? "s" : ""}
                 </div>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
