@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import {
@@ -7,6 +7,7 @@ import {
   getBaptismalRecord,
   updateBaptismalRecord,
 } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { markRecordStatus } from "@/features/parish-admin/schedule/api/scheduleApi";
 import { useAsync } from "@/hooks/useAsync";
 import type { Parish } from "@/types";
 
@@ -27,6 +28,13 @@ interface FormState {
   line: string;
   sponsor1: string;
   sponsor2: string;
+}
+
+interface ScheduleLinkPrefill {
+  subjectNameHint?: string;
+  date?: string;
+  priest?: string;
+  scheduleBlockId?: string;
 }
 
 const emptyForm = (): FormState => ({
@@ -52,14 +60,28 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { recordId = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const id = decodeURIComponent(recordId);
+
+  // Present when this form was opened via "Input record" from a scheduled sacrament block.
+  const prefill = mode === "create" ? (location.state as ScheduleLinkPrefill | null) : null;
 
   const { data: existing, loading: existingLoading } = useAsync(
     () => (mode === "edit" ? getBaptismalRecord(parish.id, id) : Promise.resolve(undefined)),
     [parish.id, id, mode]
   );
 
-  const [form, setForm] = useState<FormState>(emptyForm);
+  const [form, setForm] = useState<FormState>(() => {
+    const base = emptyForm();
+    if (prefill) {
+      return {
+        ...base,
+        baptismDate: prefill.date ?? base.baptismDate,
+        priest: prefill.priest ?? base.priest,
+      };
+    }
+    return base;
+  });
   const [showGodparent2, setShowGodparent2] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -135,6 +157,9 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       } else {
         await createBaptismalRecord(parish.id, input);
       }
+      if (prefill?.scheduleBlockId) {
+        await markRecordStatus(prefill.scheduleBlockId, "Recorded");
+      }
       navigate(-1);
     } finally {
       setSubmitting(false);
@@ -154,6 +179,12 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
             ? "Update the details of this record."
             : "Enter details exactly as they appear in the parish register."}
         </p>
+        {prefill && (
+          <p className="mt-2 rounded-[8px] border border-admin-gold-600/30 bg-admin-gold-100/40 px-3 py-2 text-[12.5px] text-admin-gold-700">
+            Linked from schedule: <span className="font-semibold">{prefill.subjectNameHint || "Untitled block"}</span>
+            {prefill.date ? ` · ${prefill.date}` : ""}
+          </p>
+        )}
       </div>
 
       <AdminCard className="p-5 px-[22px]">

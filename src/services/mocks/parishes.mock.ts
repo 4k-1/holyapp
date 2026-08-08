@@ -4,7 +4,7 @@ import mtcarmelllogo from "@/assets/mtcarmellogo.png";
 export const MOCK_PARISHES: Parish[] = [
   {
     id: "parish-1",
-    slug: "immaculada",
+    slug: "mtcarmel",
     name: "Santuario Arquidiocesano de Nuestra Señora del Carmen, la Limpia",
     address: "Cebu City, Cebu",
     sealUrl: mtcarmelllogo,

@@ -101,3 +101,41 @@ export interface ConfirmationSearchCriteria {
   priest: string;
   sponsor: string;
 }
+
+export interface MarriageRecord {
+  id: string;
+  parishId: string;
+  groomFirstName: string;
+  groomMiddleName: string;
+  groomLastName: string;
+  groomDateOfBirth: string;
+  groomBaptismalRecordId?: string;
+  brideFirstName: string;
+  brideMiddleName: string;
+  brideLastName: string;
+  brideDateOfBirth: string;
+  brideBaptismalRecordId?: string;
+  dateOfMarriage: string;
+  placeOfMarriage: string;
+  minister: string;
+  witnessOne: string;
+  witnessTwo: string;
+  bookNumber: string;
+  pageNumber: string;
+  entryNumber: string;
+  remarks?: string;
+  encodedBy: string;
+  createdAt: string;
+  updatedAt: string;
+  status: RecordStatus;
+  certificates: IssuedRecordCertificate[];
+}
+
+export interface MarriageSearchCriteria {
+  groom: string;
+  bride: string;
+  marriageDate: string;
+  place: string;
+  witness: string;
+  minister: string;
+}

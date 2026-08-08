@@ -12,6 +12,7 @@ import { AdminConfirmationRecordFormPage } from "@/features/parish-admin/records
 import { AdminMarriageRecordsPage } from "@/features/parish-admin/records/marriage/AdminMarriageRecordsPage";
 import { AdminMarriageRecordDetailPage } from "@/features/parish-admin/records/marriage/AdminMarriageRecordDetailPage";
 import { AdminMarriageRecordFormPage } from "@/features/parish-admin/records/marriage/AdminMarriageRecordFormPage";
+import { AdminSchedulePage } from "@/features/parish-admin/schedule/AdminSchedulePage";
 
 export const parishAdminRoutes: RouteObject[] = [
   {
@@ -41,6 +42,9 @@ export const parishAdminRoutes: RouteObject[] = [
         path: "records/marriage/:recordId/edit",
         element: <AdminMarriageRecordFormPage mode="edit" />,
       },
+     {
+      path: "schedule", element: <AdminSchedulePage />,
+     }
       // death, ledgers, schedule, donations, reports, settings go here next
     ],
   },
