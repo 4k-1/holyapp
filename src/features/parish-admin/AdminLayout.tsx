@@ -15,7 +15,7 @@ export function AdminLayout() {
       <AdminSidebar parish={parish} role={user.role} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AdminTopbar user={user} />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto p-6">
           <Outlet context={{ parish }} />
         </main>
       </div>

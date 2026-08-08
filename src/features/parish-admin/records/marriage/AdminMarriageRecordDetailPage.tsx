@@ -83,7 +83,7 @@ export function AdminMarriageRecordDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[920px] p-6">
+    <div className="mx-auto max-w-[920px]">
       <BackLink />
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[22px] px-6">

@@ -58,7 +58,7 @@ export function AdminBaptismalRecordDetailPage() {
   const certs = record.certificates;
 
   return (
-    <div className="mx-auto max-w-[920px] p-6">
+    <div className="mx-auto max-w-[920px]">
       <BackLink />
 
       {/* Header */}

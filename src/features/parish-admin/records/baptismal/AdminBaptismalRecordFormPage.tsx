@@ -167,7 +167,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   }
 
   return (
-    <div className="p-6">
+    <div>
       <BackLink />
 
       <div className="mb-5">

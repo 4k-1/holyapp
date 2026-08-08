@@ -54,7 +54,7 @@ export function AdminMarriageRecordsPage() {
   }
 
   return (
-    <div className="p-6">
+    <div>
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
           <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Marriage Records</h1>

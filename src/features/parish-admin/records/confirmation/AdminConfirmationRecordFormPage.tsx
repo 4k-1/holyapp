@@ -150,7 +150,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
   }
 
   return (
-    <div className="p-6">
+    <div>
       <BackLink />
 
       <div className="mb-5">
