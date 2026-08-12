@@ -6,12 +6,13 @@ import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { listConfirmationRecords } from "@/features/parish-admin/records/api/confirmationRecordsApi";
 import { useAsync } from "@/hooks/useAsync";
 import {
+  confirmationRecordRef,
   emptyConfirmationSearchCriteria,
   filterConfirmationRecords,
+  formatRecordDate,
   recordFatherName,
   recordFullName,
   recordMotherName,
-  recordRef,
 } from "@/features/parish-admin/records/confirmationHelpers";
 import type { ConfirmationRecord, ConfirmationSearchCriteria } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
@@ -27,15 +28,15 @@ export function AdminConfirmationRecordsPage() {
   const columns: AdminTableColumn<ConfirmationRecord>[] = [
     {
       key: "ref",
-      header: "Bk:Page:Line",
-      render: (r) => <span className="font-medium text-admin-ink">{recordRef(r)}</span>,
+      header: "Bk:Page:Entry",
+      render: (r) => <span className="font-medium text-admin-ink">{confirmationRecordRef(r)}</span>,
     },
     { key: "name", header: "Name", render: (r) => recordFullName(r) },
-    { key: "confirmationDate", header: "Conf. date", render: (r) => r.confirmationDate },
-    { key: "dob", header: "Birthdate", render: (r) => r.dob },
-    { key: "sponsor", header: "Sponsor", render: (r) => r.sponsor },
-    { key: "mother", header: "Mother", render: (r) => recordMotherName(r) },
-    { key: "father", header: "Father", render: (r) => recordFatherName(r) },
+    { key: "dateOfConfirmation", header: "Conf. date", render: (r) => formatRecordDate(r.dateOfConfirmation) },
+    { key: "dateOfBirth", header: "Birthdate", render: (r) => (r.dateOfBirth ? formatRecordDate(r.dateOfBirth) : "—") },
+    { key: "place", header: "Place", render: (r) => r.placeOfConfirmation },
+    { key: "mother", header: "Mother", render: (r) => recordMotherName(r) || "—" },
+    { key: "father", header: "Father", render: (r) => recordFatherName(r) || "—" },
     {
       key: "actions",
       header: "Actions",
@@ -83,18 +84,18 @@ export function AdminConfirmationRecordsPage() {
               onChange={(e) => setField("name", e.target.value)}
             />
           </AdminField>
-          <AdminField label="Birthdate" className="mb-0">
+          <AdminField label="Date of birth" className="mb-0">
             <AdminInput
               type="date"
               value={draft.birthdate}
               onChange={(e) => setField("birthdate", e.target.value)}
             />
           </AdminField>
-          <AdminField label="Birthplace" className="mb-0">
+          <AdminField label="Address" className="mb-0">
             <AdminInput
-              placeholder="City / Province"
-              value={draft.birthplace}
-              onChange={(e) => setField("birthplace", e.target.value)}
+              placeholder="City / barangay"
+              value={draft.address}
+              onChange={(e) => setField("address", e.target.value)}
             />
           </AdminField>
           <AdminField label="Mother's name" className="mb-0">
@@ -111,18 +112,18 @@ export function AdminConfirmationRecordsPage() {
               onChange={(e) => setField("father", e.target.value)}
             />
           </AdminField>
-          <AdminField label="Sponsor" className="mb-0">
+          <AdminField label="Place of confirmation" className="mb-0">
             <AdminInput
-              placeholder="Confirmation sponsor"
-              value={draft.sponsor}
-              onChange={(e) => setField("sponsor", e.target.value)}
+              placeholder="Church / parish"
+              value={draft.place}
+              onChange={(e) => setField("place", e.target.value)}
             />
           </AdminField>
           <AdminField label="Minister" className="mb-0">
             <AdminInput
-              placeholder="Officiating bishop or priest"
-              value={draft.priest}
-              onChange={(e) => setField("priest", e.target.value)}
+              placeholder="Officiating minister"
+              value={draft.minister}
+              onChange={(e) => setField("minister", e.target.value)}
             />
           </AdminField>
         </div>

@@ -1,7 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import {
+  AdminButton,
+  AdminField,
+  AdminFieldGroup,
+  AdminFormSection,
+  AdminInput,
+  NoteIcon,
+  UserIcon,
+} from "@/features/parish-admin/components/AdminForm";
+import { DropletIcon, ShieldIcon } from "@/components/ui/icons/SacramentIcons";
 import {
   createConfirmationRecord,
   getConfirmationRecord,
@@ -14,43 +22,57 @@ interface FormState {
   firstName: string;
   middleName: string;
   lastName: string;
-  birthdate: string;
-  birthplace: string;
-  motherFirstName: string;
-  motherLastName: string;
-  fatherFirstName: string;
+  sex: string;
+  dateOfBirth: string;
+  address: string;
   fatherLastName: string;
-  priest: string;
-  confirmationDate: string;
+  fatherFirstName: string;
+  motherLastName: string;
+  motherFirstName: string;
+  dateOfConfirmation: string;
+  placeOfConfirmation: string;
+  minister: string;
+  baptismalRecordId: string;
   baptismDate: string;
-  baptismParish: string;
-  book: string;
-  page: string;
-  line: string;
-  sponsor: string;
-  sponsor2: string;
+  baptismPlace: string;
+  isPriorMarriage: boolean;
+  isAdult: boolean;
+  bookNumber: string;
+  pageNumber: string;
+  entryNumber: string;
+  remarks: string;
 }
 
 const emptyForm = (): FormState => ({
   firstName: "",
   middleName: "",
   lastName: "",
-  birthdate: "",
-  birthplace: "",
-  motherFirstName: "",
-  motherLastName: "",
-  fatherFirstName: "",
+  sex: "",
+  dateOfBirth: "",
+  address: "",
   fatherLastName: "",
-  priest: "",
-  confirmationDate: "",
+  fatherFirstName: "",
+  motherLastName: "",
+  motherFirstName: "",
+  dateOfConfirmation: "",
+  placeOfConfirmation: "",
+  minister: "",
+  baptismalRecordId: "",
   baptismDate: "",
-  baptismParish: "",
-  book: "",
-  page: "",
-  line: "",
-  sponsor: "",
-  sponsor2: "",
+  baptismPlace: "",
+  isPriorMarriage: false,
+  isAdult: false,
+  bookNumber: "",
+  pageNumber: "",
+  entryNumber: "",
+  remarks: "",
 });
+
+const selectClass =
+  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+
+const textareaClass =
+  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "edit" }) {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -64,7 +86,6 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
   );
 
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [showSponsor2, setShowSponsor2] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -73,28 +94,31 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
       firstName: existing.firstName,
       middleName: existing.middleName,
       lastName: existing.lastName,
-      birthdate: "",
-      birthplace: existing.birthplace,
-      motherFirstName: existing.motherFirstName,
-      motherLastName: existing.motherLastName,
-      fatherFirstName: existing.fatherFirstName,
-      fatherLastName: existing.fatherLastName,
-      priest: existing.priest,
-      confirmationDate: "",
+      sex: existing.sex ?? "",
+      dateOfBirth: existing.dateOfBirth ?? "",
+      address: existing.address ?? "",
+      fatherLastName: existing.fatherLastName ?? "",
+      fatherFirstName: existing.fatherFirstName ?? "",
+      motherLastName: existing.motherLastName ?? "",
+      motherFirstName: existing.motherFirstName ?? "",
+      dateOfConfirmation: existing.dateOfConfirmation,
+      placeOfConfirmation: existing.placeOfConfirmation,
+      minister: existing.minister,
+      baptismalRecordId: existing.baptismalRecordId ?? "",
       baptismDate: existing.baptismDate ?? "",
-      baptismParish: existing.baptismParish ?? "",
-      book: existing.book,
-      page: existing.page,
-      line: existing.line,
-      sponsor: existing.sponsor,
-      sponsor2: existing.sponsor2 ?? "",
+      baptismPlace: existing.baptismPlace ?? "",
+      isPriorMarriage: existing.isPriorMarriage,
+      isAdult: existing.isAdult,
+      bookNumber: existing.bookNumber,
+      pageNumber: existing.pageNumber,
+      entryNumber: existing.entryNumber,
+      remarks: existing.remarks ?? "",
     });
-    setShowSponsor2(Boolean(existing.sponsor2));
   }, [existing]);
 
   if (mode === "edit" && existingLoading) {
     return (
-      <div className="p-6">
+      <div>
         <BackLink />
         <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
       </div>
@@ -103,7 +127,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
 
   if (mode === "edit" && !existing) {
     return (
-      <div className="p-6">
+      <div>
         <BackLink />
         <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
       </div>
@@ -121,21 +145,25 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
       firstName: form.firstName,
       middleName: form.middleName,
       lastName: form.lastName,
-      dob: form.birthdate,
-      birthplace: form.birthplace,
-      confirmationDate: form.confirmationDate,
-      priest: form.priest,
-      sponsor: form.sponsor,
-      sponsor2: form.sponsor2 || undefined,
+      sex: form.sex || undefined,
+      dateOfBirth: form.dateOfBirth || undefined,
+      address: form.address || undefined,
+      fatherLastName: form.fatherLastName || undefined,
+      fatherFirstName: form.fatherFirstName || undefined,
+      motherLastName: form.motherLastName || undefined,
+      motherFirstName: form.motherFirstName || undefined,
+      dateOfConfirmation: form.dateOfConfirmation,
+      placeOfConfirmation: form.placeOfConfirmation,
+      minister: form.minister,
+      baptismalRecordId: form.baptismalRecordId || undefined,
       baptismDate: form.baptismDate || undefined,
-      baptismParish: form.baptismParish || undefined,
-      motherFirstName: form.motherFirstName,
-      motherLastName: form.motherLastName,
-      fatherFirstName: form.fatherFirstName,
-      fatherLastName: form.fatherLastName,
-      book: form.book,
-      page: form.page,
-      line: form.line,
+      baptismPlace: form.baptismPlace || undefined,
+      isPriorMarriage: form.isPriorMarriage,
+      isAdult: form.isAdult,
+      bookNumber: form.bookNumber,
+      pageNumber: form.pageNumber,
+      entryNumber: form.entryNumber,
+      remarks: form.remarks || undefined,
     };
     try {
       if (mode === "edit") {
@@ -158,225 +186,204 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
           {mode === "edit" ? "Edit" : "Add"} Confirmation Record
         </h1>
         <p className="text-[13.5px] text-admin-ink-muted">
-          {mode === "edit"
-            ? "Update the details of this record."
-            : "Enter details exactly as they appear in the parish register."}
+          Enter details exactly as they appear in the parish confirmation register.
         </p>
       </div>
 
-      <AdminCard className="p-5 px-[22px]">
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
-            <div>
-              <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-                Personal information
-              </h2>
+      <form onSubmit={handleSubmit}>
+        <AdminFormSection
+          tone="blue"
+          icon={<UserIcon className="h-4.5 w-4.5" />}
+          title="Personal information"
+          description="Who was confirmed, and their family details."
+        >
+          <AdminFieldGroup title="Name of confirmed">
+            <AdminField label="First" className="mb-0 w-[130px]">
+              <AdminInput value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} required />
+            </AdminField>
+            <AdminField label="Middle" className="mb-0 w-[130px]">
+              <AdminInput value={form.middleName} onChange={(e) => setField("middleName", e.target.value)} required />
+            </AdminField>
+            <AdminField label="Last" className="mb-0 w-[150px]">
+              <AdminInput value={form.lastName} onChange={(e) => setField("lastName", e.target.value)} required />
+            </AdminField>
+          </AdminFieldGroup>
 
-              <div className="mb-4">
-                <p className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-gold-700">
-                  Name of confirmed
-                </p>
-                <div className="flex flex-wrap gap-2.5">
-                  <AdminField label="First" className="mb-0 w-[130px]">
-                    <AdminInput
-                      placeholder="First"
-                      value={form.firstName}
-                      onChange={(e) => setField("firstName", e.target.value)}
-                      required
-                    />
-                  </AdminField>
-                  <AdminField label="Middle" className="mb-0 w-[130px]">
-                    <AdminInput
-                      placeholder="Middle"
-                      value={form.middleName}
-                      onChange={(e) => setField("middleName", e.target.value)}
-                    />
-                  </AdminField>
-                  <AdminField label="Last" className="mb-0 w-[150px]">
-                    <AdminInput
-                      placeholder="Last"
-                      value={form.lastName}
-                      onChange={(e) => setField("lastName", e.target.value)}
-                      required
-                    />
-                  </AdminField>
-                </div>
-              </div>
+          <AdminFieldGroup title="Birth & residence">
+            <AdminField label="Sex" className="mb-0 w-[110px]">
+              <select value={form.sex} onChange={(e) => setField("sex", e.target.value)} className={selectClass}>
+                <option value="">—</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </AdminField>
+            <AdminField label="Date of birth" className="mb-0 w-[150px]">
+              <AdminInput
+                type="date"
+                value={form.dateOfBirth}
+                onChange={(e) => setField("dateOfBirth", e.target.value)}
+              />
+            </AdminField>
+            <AdminField label="Address" className="mb-0 flex-1">
+              <AdminInput
+                value={form.address}
+                onChange={(e) => setField("address", e.target.value)}
+                placeholder="City / barangay"
+              />
+            </AdminField>
+          </AdminFieldGroup>
 
-              <div className="mb-4 flex flex-wrap gap-2.5">
-                <AdminField label="Birthdate" className="mb-0 w-[150px]">
-                  <AdminInput
-                    type="date"
-                    value={form.birthdate}
-                    onChange={(e) => setField("birthdate", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Birthplace" className="mb-0 w-[200px]">
-                  <AdminInput
-                    value={form.birthplace}
-                    onChange={(e) => setField("birthplace", e.target.value)}
-                  />
-                </AdminField>
-              </div>
+          <AdminFieldGroup title="Father">
+            <AdminField label="Last" className="mb-0 w-[140px]">
+              <AdminInput value={form.fatherLastName} onChange={(e) => setField("fatherLastName", e.target.value)} />
+            </AdminField>
+            <AdminField label="First" className="mb-0 w-[160px]">
+              <AdminInput value={form.fatherFirstName} onChange={(e) => setField("fatherFirstName", e.target.value)} />
+            </AdminField>
+          </AdminFieldGroup>
 
-              <div className="mb-4">
-                <p className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-gold-700">
-                  Mother
-                </p>
-                <div className="flex flex-wrap gap-2.5">
-                  <AdminField label="First" className="mb-0 w-[140px]">
-                    <AdminInput
-                      placeholder="First"
-                      value={form.motherFirstName}
-                      onChange={(e) => setField("motherFirstName", e.target.value)}
-                    />
-                  </AdminField>
-                  <AdminField label="Last" className="mb-0 w-[160px]">
-                    <AdminInput
-                      placeholder="Last"
-                      value={form.motherLastName}
-                      onChange={(e) => setField("motherLastName", e.target.value)}
-                    />
-                  </AdminField>
-                </div>
-              </div>
+          <AdminFieldGroup title="Mother" className="mb-0">
+            <AdminField label="Last" className="mb-0 w-[140px]">
+              <AdminInput value={form.motherLastName} onChange={(e) => setField("motherLastName", e.target.value)} />
+            </AdminField>
+            <AdminField label="First" className="mb-0 w-[160px]">
+              <AdminInput value={form.motherFirstName} onChange={(e) => setField("motherFirstName", e.target.value)} />
+            </AdminField>
+          </AdminFieldGroup>
+        </AdminFormSection>
 
-              <div className="mb-4">
-                <p className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-gold-700">
-                  Father
-                </p>
-                <div className="flex flex-wrap gap-2.5">
-                  <AdminField label="First" className="mb-0 w-[140px]">
-                    <AdminInput
-                      placeholder="First"
-                      value={form.fatherFirstName}
-                      onChange={(e) => setField("fatherFirstName", e.target.value)}
-                    />
-                  </AdminField>
-                  <AdminField label="Last" className="mb-0 w-[160px]">
-                    <AdminInput
-                      placeholder="Last"
-                      value={form.fatherLastName}
-                      onChange={(e) => setField("fatherLastName", e.target.value)}
-                    />
-                  </AdminField>
-                </div>
-              </div>
-            </div>
+        <AdminFormSection
+          tone="gold"
+          icon={<ShieldIcon className="h-4.5 w-4.5" />}
+          title="Confirmation details"
+          description="Minister, date, and register reference for this sacrament."
+        >
+          <AdminField label="Date of confirmation">
+            <AdminInput
+              type="date"
+              value={form.dateOfConfirmation}
+              onChange={(e) => setField("dateOfConfirmation", e.target.value)}
+              required
+            />
+          </AdminField>
 
-            <div>
-              <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-                Confirmation information
-              </h2>
+          <AdminField label="Place of confirmation">
+            <AdminInput
+              placeholder="Church / parish"
+              value={form.placeOfConfirmation}
+              onChange={(e) => setField("placeOfConfirmation", e.target.value)}
+              required
+            />
+          </AdminField>
 
-              <AdminField label="Minister (bishop or priest)">
-                <AdminInput
-                  placeholder="Most Rev. / Rev. Fr."
-                  value={form.priest}
-                  onChange={(e) => setField("priest", e.target.value)}
-                />
-              </AdminField>
+          <AdminField label="Minister">
+            <AdminInput
+              placeholder="Most Rev. / Rev. Fr."
+              value={form.minister}
+              onChange={(e) => setField("minister", e.target.value)}
+              required
+            />
+          </AdminField>
 
-              <AdminField label="Confirmation date">
-                <AdminInput
-                  type="date"
-                  value={form.confirmationDate}
-                  onChange={(e) => setField("confirmationDate", e.target.value)}
-                />
-              </AdminField>
+          <AdminFieldGroup title="Register reference">
+            <AdminField label="Book no." className="mb-0">
+              <AdminInput
+                value={form.bookNumber}
+                onChange={(e) => setField("bookNumber", e.target.value)}
+                className="max-w-[72px]"
+                required
+              />
+            </AdminField>
+            <AdminField label="Page no." className="mb-0">
+              <AdminInput
+                value={form.pageNumber}
+                onChange={(e) => setField("pageNumber", e.target.value)}
+                className="max-w-[72px]"
+                required
+              />
+            </AdminField>
+            <AdminField label="Entry no." className="mb-0">
+              <AdminInput
+                value={form.entryNumber}
+                onChange={(e) => setField("entryNumber", e.target.value)}
+                className="max-w-[72px]"
+                required
+              />
+            </AdminField>
+          </AdminFieldGroup>
 
-              <div className="mb-4 grid grid-cols-3 gap-2.5">
-                <AdminField label="Book no." className="mb-0">
-                  <AdminInput
-                    placeholder="2"
-                    value={form.book}
-                    onChange={(e) => setField("book", e.target.value)}
-                    className="max-w-[72px]"
-                  />
-                </AdminField>
-                <AdminField label="Page no." className="mb-0">
-                  <AdminInput
-                    placeholder="08"
-                    value={form.page}
-                    onChange={(e) => setField("page", e.target.value)}
-                    className="max-w-[72px]"
-                  />
-                </AdminField>
-                <AdminField label="Line no." className="mb-0">
-                  <AdminInput
-                    placeholder="14"
-                    value={form.line}
-                    onChange={(e) => setField("line", e.target.value)}
-                    className="max-w-[72px]"
-                  />
-                </AdminField>
-              </div>
-
-              <AdminField label="Sponsors">
-                {mode === "edit" && existing && (
-                  <p className="mb-1.5 text-[11.5px] text-admin-ink-faint">
-                    {existing.sponsor}
-                    {existing.sponsor2 ? `, ${existing.sponsor2}` : ""}
-                  </p>
-                )}
-                <AdminInput
-                  placeholder="Sponsor"
-                  value={form.sponsor}
-                  onChange={(e) => setField("sponsor", e.target.value)}
-                  className="mb-2.5"
-                />
-                {showSponsor2 ? (
-                  <AdminInput
-                    placeholder="Sponsor 2"
-                    value={form.sponsor2}
-                    onChange={(e) => setField("sponsor2", e.target.value)}
-                  />
-                ) : (
-                  <AdminButton
-                    variant="secondary"
-                    size="sm"
-                    type="button"
-                    onClick={() => setShowSponsor2(true)}
-                  >
-                    <PlusIcon />
-                    Add sponsor
-                  </AdminButton>
-                )}
-              </AdminField>
-
-              <h2 className="mb-3.5 mt-5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-                Baptism reference (optional)
-              </h2>
-
-              <AdminField label="Baptismal date">
-                <AdminInput
-                  type="date"
-                  value={form.baptismDate}
-                  onChange={(e) => setField("baptismDate", e.target.value)}
-                />
-              </AdminField>
-
-              <AdminField label="Parish of baptism">
-                <AdminInput
-                  placeholder="Leave blank if this parish"
-                  value={form.baptismParish}
-                  onChange={(e) => setField("baptismParish", e.target.value)}
-                />
-              </AdminField>
-            </div>
+          <div className="flex flex-col gap-2.5">
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                checked={form.isAdult}
+                onChange={(e) => setField("isAdult", e.target.checked)}
+                className="h-4 w-4 rounded border-admin-border-strong text-admin-green-700 focus:ring-admin-green-600/25"
+              />
+              <span className="text-[13px] text-admin-ink">Adult confirmation (RCIA / OCIA)</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                checked={form.isPriorMarriage}
+                onChange={(e) => setField("isPriorMarriage", e.target.checked)}
+                className="h-4 w-4 rounded border-admin-border-strong text-admin-green-700 focus:ring-admin-green-600/25"
+              />
+              <span className="text-[13px] text-admin-ink">Prior marriage on record</span>
+            </label>
           </div>
+        </AdminFormSection>
 
-          <div className="mt-2.5 flex justify-end gap-2.5">
-            <AdminButton variant="secondary" type="button" onClick={() => navigate(-1)}>
-              Cancel
-            </AdminButton>
-            <AdminButton type="submit" disabled={submitting}>
-              <CheckIcon />
-              {submitting ? "Saving…" : mode === "edit" ? "Save changes" : "Confirm & add record"}
-            </AdminButton>
-          </div>
-        </form>
-      </AdminCard>
+        <AdminFormSection
+          tone="green"
+          icon={<DropletIcon className="h-4.5 w-4.5" />}
+          title="Baptism reference"
+          description="Optional — link back to the baptismal register."
+        >
+          <AdminField label="Baptismal record ID">
+            <AdminInput
+              placeholder="e.g. 6:21"
+              value={form.baptismalRecordId}
+              onChange={(e) => setField("baptismalRecordId", e.target.value)}
+            />
+          </AdminField>
+
+          <AdminField label="Baptismal date">
+            <AdminInput
+              type="date"
+              value={form.baptismDate}
+              onChange={(e) => setField("baptismDate", e.target.value)}
+            />
+          </AdminField>
+
+          <AdminField label="Place of baptism" className="mb-0">
+            <AdminInput
+              placeholder="Parish / city"
+              value={form.baptismPlace}
+              onChange={(e) => setField("baptismPlace", e.target.value)}
+            />
+          </AdminField>
+        </AdminFormSection>
+
+        <AdminFormSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks" className="mb-0">
+          <textarea
+            value={form.remarks}
+            onChange={(e) => setField("remarks", e.target.value)}
+            placeholder="Additional notes about this entry"
+            className={textareaClass}
+          />
+        </AdminFormSection>
+
+        <div className="mt-5 flex justify-end gap-2.5">
+          <AdminButton variant="secondary" type="button" onClick={() => navigate(-1)}>
+            Cancel
+          </AdminButton>
+          <AdminButton type="submit" disabled={submitting}>
+            <CheckIcon />
+            {submitting ? "Saving…" : mode === "edit" ? "Save changes" : "Confirm & add record"}
+          </AdminButton>
+        </div>
+      </form>
     </div>
   );
 }
@@ -394,15 +401,6 @@ function BackLink() {
       </svg>
       Back
     </button>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-      <line x1="12" y1="5" x2="12" y2="19" strokeLinecap="round" />
-      <line x1="5" y1="12" x2="19" y2="12" strokeLinecap="round" />
-    </svg>
   );
 }
 

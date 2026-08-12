@@ -1,13 +1,21 @@
-import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useState } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminBadge } from "@/components/ui/AdminBadge";
-import { getConfirmationRecord } from "@/features/parish-admin/records/api/confirmationRecordsApi";
+import {
+  generateConfirmationCertificate,
+  getConfirmationRecord,
+} from "@/features/parish-admin/records/api/confirmationRecordsApi";
+import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { recordFullName as baptismFullName } from "@/features/parish-admin/records/baptismalHelpers";
 import { useAsync } from "@/hooks/useAsync";
 import {
-  annotationDotClass,
-  annotationTagClass,
   certStatusTone,
+  confirmationRecordRef,
+  encodedByLabel,
+  formatDateTime,
+  formatRecordDate,
   initials,
   recordFatherName,
   recordFullName,
@@ -21,11 +29,20 @@ export function AdminConfirmationRecordDetailPage() {
   const navigate = useNavigate();
   const id = decodeURIComponent(recordId);
 
-  const { data: record, loading } = useAsync(() => getConfirmationRecord(parish.id, id), [parish.id, id]);
+  const { data: record, loading, refetch } = useAsync(() => getConfirmationRecord(parish.id, id), [parish.id, id]);
+  const [generating, setGenerating] = useState(false);
+
+  const { data: linkedBaptism } = useAsync(
+    () =>
+      record?.baptismalRecordId
+        ? getBaptismalRecord(parish.id, record.baptismalRecordId)
+        : Promise.resolve(undefined),
+    [parish.id, record?.baptismalRecordId]
+  );
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div>
         <BackLink />
         <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
       </div>
@@ -34,7 +51,7 @@ export function AdminConfirmationRecordDetailPage() {
 
   if (!record) {
     return (
-      <div className="p-6">
+      <div>
         <BackLink />
         <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
         <p className="text-[13.5px] text-admin-ink-muted">
@@ -45,11 +62,17 @@ export function AdminConfirmationRecordDetailPage() {
   }
 
   const name = recordFullName(record);
-  const sponsors = [
-    { name: record.sponsor, role: "Sponsor" },
-    ...(record.sponsor2 ? [{ name: record.sponsor2, role: "Sponsor" as const }] : []),
-  ].filter((s) => s.name);
   const certs = record.certificates;
+
+  async function handleGenerateCertificate() {
+    setGenerating(true);
+    try {
+      await generateConfirmationCertificate(parish.id, record.id);
+      refetch();
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-[920px]">
@@ -64,23 +87,29 @@ export function AdminConfirmationRecordDetailPage() {
             <h1 className="mb-2 text-[22px] font-semibold text-admin-ink">{name}</h1>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
-                Book {record.book}
+                Book {record.bookNumber}
                 <span className="text-admin-border-strong">/</span>
-                Page {record.page}
+                Page {record.pageNumber}
                 <span className="text-admin-border-strong">/</span>
-                Line {record.line || "—"}
+                Entry {record.entryNumber}
               </span>
               <AdminBadge tone={record.status === "Archived" ? "muted" : "green"}>
                 {record.status}
               </AdminBadge>
+              {record.isAdult && (
+                <AdminBadge tone="amber">Adult confirmation</AdminBadge>
+              )}
+              {record.isPriorMarriage && (
+                <AdminBadge tone="muted">Prior marriage</AdminBadge>
+              )}
             </div>
           </div>
         </div>
 
         <div className="flex shrink-0 flex-col gap-2">
-          <AdminButton onClick={() => console.info("[mock] generate certificate", record.id)}>
+          <AdminButton onClick={handleGenerateCertificate} disabled={generating}>
             <FileIcon />
-            Generate Certificate
+            {generating ? "Generating…" : "Generate Certificate"}
           </AdminButton>
           <div className="flex gap-2">
             <AdminButton variant="secondary" className="flex-1" onClick={() => navigate("edit")}>
@@ -105,104 +134,69 @@ export function AdminConfirmationRecordDetailPage() {
             Personal Information
           </h2>
           <InfoRow label="Full name" value={name} />
-          <InfoRow label="Sex" value={record.sex} />
-          <InfoRow label="Birthplace" value={record.birthplace} />
-          <InfoRow label="Date of birth" value={record.dob} last />
+          <InfoRow label="Sex" value={record.sex ?? "—"} />
+          <InfoRow label="Address" value={record.address ?? "—"} />
+          <InfoRow
+            label="Date of birth"
+            value={record.dateOfBirth ? formatRecordDate(record.dateOfBirth) : "—"}
+            last
+          />
         </AdminCard>
 
         <AdminCard className="p-5 px-[22px]">
           <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
             Confirmation Information
           </h2>
-          <InfoRow label="Confirmation date" value={record.confirmationDate} />
-          <InfoRow label="Minister" value={record.priest} />
-          <InfoRow label="Mother's name" value={recordMotherName(record)} />
-          <InfoRow label="Father's name" value={recordFatherName(record)} last />
+          <InfoRow label="Date of confirmation" value={formatRecordDate(record.dateOfConfirmation)} />
+          <InfoRow label="Place of confirmation" value={record.placeOfConfirmation} />
+          <InfoRow label="Minister" value={record.minister} />
+          <InfoRow label="Father's name" value={recordFatherName(record) || "—"} />
+          <InfoRow label="Mother's name" value={recordMotherName(record) || "—"} last />
         </AdminCard>
       </div>
 
-      {(record.baptismDate || record.baptismParish) && (
+      {(record.baptismalRecordId || record.baptismDate || record.baptismPlace) && (
         <AdminCard className="mb-4 p-5 px-[22px]">
           <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
             Baptism Reference
           </h2>
-          {record.baptismDate && <InfoRow label="Baptismal date" value={record.baptismDate} />}
-          {record.baptismParish && <InfoRow label="Parish of baptism" value={record.baptismParish} last />}
+          {record.baptismDate && (
+            <InfoRow label="Baptismal date" value={formatRecordDate(record.baptismDate)} />
+          )}
+          {record.baptismPlace && <InfoRow label="Place of baptism" value={record.baptismPlace} />}
+          {record.baptismalRecordId && (
+            <div className={`flex items-baseline justify-between gap-4 py-[10.5px] ${record.baptismPlace || record.baptismDate ? "" : ""}`}>
+              <span className="shrink-0 text-xs text-admin-ink-muted">Linked baptismal record</span>
+              <Link
+                to={`../../baptismal/${encodeURIComponent(record.baptismalRecordId)}`}
+                className="text-right text-[13.5px] font-semibold text-admin-green-700 hover:underline"
+              >
+                {linkedBaptism ? baptismFullName(linkedBaptism) : record.baptismalRecordId} — Bk{" "}
+                {linkedBaptism?.bookNumber ?? "?"}:{linkedBaptism?.pageNumber ?? "?"}:
+                {linkedBaptism?.entryNumber ?? "?"}
+              </Link>
+            </div>
+          )}
+        </AdminCard>
+      )}
+
+      {record.remarks && (
+        <AdminCard className="mb-4 p-5 px-[22px]">
+          <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+            Remarks
+          </h2>
+          <p className="text-[13.5px] leading-relaxed text-admin-ink">{record.remarks}</p>
         </AdminCard>
       )}
 
       <AdminCard className="mb-4 p-5 px-[22px]">
         <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-          Sponsors ({sponsors.length})
+          Record metadata
         </h2>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          {sponsors.map((s, i) => (
-            <div
-              key={`${s.name}-${i}`}
-              className="flex items-center justify-between gap-2.5 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5"
-            >
-              <span className="text-[13.5px] font-semibold text-admin-ink">{s.name}</span>
-              <span className="inline-flex items-center rounded-full bg-[#E3E8F5] px-2.5 py-1 text-[11px] font-semibold text-[#3B4E8A]">
-                {s.role}
-              </span>
-            </div>
-          ))}
-        </div>
-      </AdminCard>
-
-      <AdminCard className="mb-4 p-5 px-[22px]">
-        <div className="mb-3.5 flex items-center justify-between gap-3">
-          <h2 className="m-0 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-            Annotation History
-          </h2>
-          <AdminButton
-            variant="ghost"
-            className="py-0.5"
-            onClick={() => console.info("[mock] add annotation", record.id)}
-          >
-            + Add annotation
-          </AdminButton>
-        </div>
-
-        {record.annotations.length === 0 ? (
-          <p className="text-[11.5px] text-admin-ink-faint">
-            No later sacraments have been annotated on this record yet.
-          </p>
-        ) : (
-          record.annotations.map((a, i) => (
-            <div key={`${a.category}-${a.date}-${i}`} className="relative flex gap-3 pb-4 last:pb-0">
-              {i < record.annotations.length - 1 && (
-                <span className="absolute bottom-0 left-[5px] top-4 w-px bg-admin-border-strong" />
-              )}
-              <span
-                className={`mt-1 h-[11px] w-[11px] shrink-0 rounded-full ${annotationDotClass[a.category]}`}
-              />
-              <div className="min-w-0">
-                <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded-[5px] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.3px] ${annotationTagClass[a.category]}`}
-                  >
-                    {a.category}
-                  </span>
-                  <span className="text-xs text-admin-ink-muted">{a.date}</span>
-                </div>
-                <p className="mb-1 text-[13px] leading-relaxed text-admin-ink">{a.note}</p>
-                {a.linked && (
-                  <button
-                    type="button"
-                    className="mb-1 inline-flex items-center gap-1.5 rounded-[7px] border border-admin-green-100 bg-admin-green-050 px-2.5 py-1 text-xs font-semibold text-admin-green-700 hover:bg-admin-green-100"
-                    onClick={() => console.info("[mock] open linked record", a.linked)}
-                  >
-                    <LinkIcon />
-                    Linked to {a.linked.category} record — Book {a.linked.book}:{a.linked.page}, Line{" "}
-                    {a.linked.line || "—"}
-                  </button>
-                )}
-                <p className="text-xs leading-relaxed text-admin-ink-muted">Entered by: {a.by}</p>
-              </div>
-            </div>
-          ))
-        )}
+        <InfoRow label="Register reference" value={confirmationRecordRef(record)} />
+        <InfoRow label="Encoded by" value={encodedByLabel(record.encodedBy)} />
+        <InfoRow label="Created" value={formatDateTime(record.createdAt)} />
+        <InfoRow label="Last updated" value={formatDateTime(record.updatedAt)} last />
       </AdminCard>
 
       <AdminCard className="p-5 px-[22px]">
@@ -309,15 +303,6 @@ function TrashIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
       <polyline points="3 6 5 6 21 6" strokeLinecap="round" />
       <path d="M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function LinkIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3 w-3">
-      <path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2" strokeLinecap="round" />
-      <path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2" strokeLinecap="round" />
     </svg>
   );
 }
