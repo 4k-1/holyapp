@@ -1,6 +1,6 @@
 // src/features/parish-admin/schedule/components/MonthCalendarGrid.tsx
 import { daysInMonth, toISO } from "../scheduleHelpers";
-import { EVENT_TYPE_STYLES } from "../types";
+import { EVENT_TYPE_STYLES, EVENT_TYPE_LABELS } from "@/features/parish-admin/schedule/eventTypeStyles";
 import type { ScheduleOccurrence } from "../types";
 
 interface MonthCalendarGridProps {
@@ -33,7 +33,7 @@ export function MonthCalendarGrid({
   while (cells.length % 7 !== 0) cells.push({ num: 0, muted: true });
 
   return (
-    <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4">
+    <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4 shadow-md">
       <div className="grid grid-cols-7 gap-1.5">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
           <div key={d} className="pb-1.5 text-center text-[13px] font-semibold uppercase tracking-wide text-admin-ink-faint">

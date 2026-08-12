@@ -61,7 +61,7 @@ export function AdminSchedulePage() {
     <div>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-serif text-2xl font-semibold text-admin-ink">Priest & Parish Schedule</h1>
+          <h1 className="font-serif text-2xl font-semibold text-admin-ink">Parish Schedule & Events</h1>
           <p className="mt-1 max-w-xl text-[13px] text-admin-ink-muted">
             Internal tool for parish staff — tracks Masses, devotions, blessings, and interviews so nothing gets
             double-booked. Not visible to parishioners.
@@ -102,7 +102,7 @@ export function AdminSchedulePage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => shiftMonth(-1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border text-admin-ink-muted hover:bg-admin-surface-alt"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border bg-surface text-admin-ink-muted hover:bg-admin-surface-alt"
               aria-label="Previous month"
             >
               ‹
@@ -112,7 +112,7 @@ export function AdminSchedulePage() {
             </span>
             <button
               onClick={() => shiftMonth(1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border text-admin-ink-muted hover:bg-admin-surface-alt"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border bg-surface text-admin-ink-muted hover:bg-admin-surface-alt"
               aria-label="Next month"
             >
               ›
@@ -130,7 +130,7 @@ export function AdminSchedulePage() {
       {view === "list" ? (
         <EventsListView onViewDay={jumpToDay} />
       ) : (
-        <div className={`grid grid-cols-1 gap-4 ${sidebarCollapsed ? "" : "lg:grid-cols-[1fr_300px]"}`}>
+        <div className={`grid grid-cols-1 gap-4 ${sidebarCollapsed ? "" : "lg:grid-cols-[1fr_400px]"}`}>
           <MonthCalendarGrid
             cursor={cursor}
             monthData={monthData}

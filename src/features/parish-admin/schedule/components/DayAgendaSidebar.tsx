@@ -3,7 +3,8 @@ import { useNavigate } from "react-router";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { markRecordStatus } from "../api/scheduleApi";
 import { getRecordFormPath, getRecordFormPrefill } from "../recordLinkHelpers";
-import { EVENT_TYPE_LABELS, EVENT_TYPE_STYLES } from "../types";
+import { ScheduleKebabMenu } from "./ScheduleKebabMenu";
+import { EVENT_TYPE_STYLES, EVENT_TYPE_LABELS } from "@/features/parish-admin/schedule/eventTypeStyles";
 import type { ScheduleOccurrence } from "../types";
 
 interface DayAgendaSidebarProps {
@@ -36,10 +37,10 @@ export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssi
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4">
+    <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4 shadow-md">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
-          <p className="font-serif text-[15px] font-semibold text-admin-ink">
+          <p className="font-serif text-xl font-semibold text-admin-ink">
             {d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
           </p>
           <p className="mt-0.5 text-[12px] text-admin-ink-muted">
@@ -49,7 +50,7 @@ export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssi
         </div>
         <button
           onClick={onAdd}
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-admin-green-700 text-white hover:bg-admin-green-800"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-2xl bg-admin-green-700 text-white hover:bg-admin-green-800"
           title="Add to this date"
         >
           +
@@ -66,7 +67,7 @@ export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssi
           {occurrences.map((o) => {
             const sourceLabel = o.source === "recurring" ? "Recurring" : o.source === "manual" ? "Manual" : `Auto · ${o.source}`;
             return (
-              <div key={o.id} className="rounded-[10px] border border-admin-border bg-admin-surface-alt p-3">
+              <div key={o.id} className={`rounded-[10px] p-3 ${EVENT_TYPE_STYLES[o.type].card}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-[11.5px] font-semibold text-admin-ink-muted">
@@ -74,18 +75,23 @@ export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssi
                     </p>
                     <p className="mt-0.5 text-[13.5px] font-semibold text-admin-ink">{o.title}</p>
                   </div>
-                  <button
-                    onClick={() => onAssign(o)}
-                    className="whitespace-nowrap shrink-0 rounded-md border border-admin-border px-2 py-1 text-[11px] font-semibold text-admin-ink-muted hover:bg-admin-surface"
-                  >
-                    {o.assignee ? "Reassign" : "Assign"}
-                  </button>
+                  <ScheduleKebabMenu
+                    items={[
+                      o.recordStatus === "Pending" && {
+                        label: "Input record",
+                        primary: true,
+                        onClick: () => handleInputRecord(o),
+                      },
+                      o.recordStatus === "Pending" && {
+                        label: "Already recorded",
+                        onClick: () => handleMarkRecorded(o),
+                      },
+                      { label: o.assignee ? "Reassign" : "Assign", onClick: () => onAssign(o) },
+                    ]}
+                  />
                 </div>
                 <div className="mt-1.5 flex items-center gap-1.5">
-                  <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${EVENT_TYPE_STYLES[o.type].tag}`}>
-                    {EVENT_TYPE_LABELS[o.type]}
-                  </span>
-                  <span className="text-[11px] text-admin-ink-faint">
+                  <span className="text-[12px] text-admin-ink-muted">
                     {sourceLabel}
                     {o.assignee ? ` · ${o.assignee}` : " · Unassigned"}
                   </span>
@@ -93,22 +99,6 @@ export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssi
                 {o.recordStatus && (
                   <div className="mt-2">
                     <AdminBadge tone={o.recordStatus === "Pending" ? "gold" : "green"}>{o.recordStatus}</AdminBadge>
-                  </div>
-                )}
-                {o.recordStatus === "Pending" && (
-                  <div className="mt-2 flex gap-1.5">
-                    <button
-                      onClick={() => handleInputRecord(o)}
-                      className="whitespace-nowrap shrink-0 rounded-md bg-admin-green-700 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-admin-green-800"
-                    >
-                      Input record
-                    </button>
-                    <button
-                      onClick={() => handleMarkRecorded(o)}
-                      className="whitespace-nowrap shrink-0 rounded-md border border-admin-border px-2.5 py-1 text-[11px] font-semibold text-admin-ink-muted hover:bg-admin-surface"
-                    >
-                      Already recorded
-                    </button>
                   </div>
                 )}
               </div>

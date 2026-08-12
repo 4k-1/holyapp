@@ -209,7 +209,7 @@ function SidebarSubLink({ to, label }: { to: string; label: string }) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `mb-0.5 block rounded-lg px-2.5 py-[7px] text-[13px] transition-colors duration-100 ${
+        `mb-0.5 block rounded-lg px-2.5 py-[7px] text-[14px] transition-colors duration-100 ${
           isActive
             ? "bg-admin-green-100/60 font-semibold text-admin-green-700"
             : "text-admin-ink-muted hover:bg-admin-surface-alt hover:text-admin-ink"
