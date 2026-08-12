@@ -36,7 +36,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
     purpose: "Personal records",
     createdAt: "2026-06-20",
     copies: 1,
-    linkedRecordId: "3:17",
+    linkedRecordId: "bap-002",
     details: {
       subjectName: "Roberto Cruz",
       birthdate: "March 3, 1998",
@@ -59,7 +59,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
     purpose: "Personal records",
     createdAt: "2026-06-15",
     copies: 1,
-    linkedRecordId: "2:44",
+    linkedRecordId: "bap-003",
     details: {
       subjectName: "Maria Consuelo Reyes",
       birthdate: "September 9, 2003",
@@ -82,7 +82,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
     purpose: "Estate settlement",
     createdAt: "2026-06-18",
     copies: 1,
-    linkedRecordId: "1:36",
+    linkedRecordId: "bap-006",
     pickupReady: true,
     details: {
       subjectName: "Ethan Hawke",
@@ -106,7 +106,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
     purpose: "Employment",
     createdAt: "2026-06-12",
     copies: 1,
-    linkedRecordId: "4:09",
+    linkedRecordId: "bap-005",
     details: {
       subjectName: "Julian Delpy",
       birthdate: "May 5, 1999",

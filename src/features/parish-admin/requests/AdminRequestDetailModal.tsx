@@ -146,7 +146,7 @@ export function AdminRequestDetailModal({
                   <div>
                     <p className="text-[13.5px] font-semibold text-admin-ink">{recordFullName(linked)}</p>
                     <p className="mt-0.5 text-[11.5px] text-admin-ink-faint">
-                      Baptismal record · Book {linked.book}, Page {linked.page}, Line {linked.line || "—"}
+                      Baptismal record · Book {linked.bookNumber}, Page {linked.pageNumber}, Entry {linked.entryNumber}
                     </p>
                   </div>
                 </div>

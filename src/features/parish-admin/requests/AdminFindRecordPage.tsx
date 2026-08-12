@@ -11,6 +11,8 @@ import {
 import { listBaptismalRecords } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { useAsync } from "@/hooks/useAsync";
 import {
+  baptismRecordRef,
+  formatRecordDate,
   recordFatherName,
   recordFullName,
   recordMotherName,
@@ -29,17 +31,10 @@ interface MatchFilters {
   name: string;
   baptismDate: string;
   birthdate: string;
-  birthplace: string;
+  placeOfBirth: string;
   mother: string;
   father: string;
-  sponsor1: string;
-  sponsor2: string;
 }
-
-// A few extra ledger-only fields the mock shows in the review modal
-// (officiating priest, register line) that aren't part of the core
-// BaptismalRecord contract everywhere yet.
-type LedgerRecord = BaptismalRecord & { line?: string; priest?: string };
 
 type MatchState = "match" | "partial" | "miss" | "none";
 type RequestStatus = "pending" | "confirmed" | "rejected";
@@ -54,13 +49,11 @@ function searchRecords(records: BaptismalRecord[], f: MatchFilters) {
     const mother = recordMotherName(rec);
     const father = recordFatherName(rec);
     if (norm(f.name) && !norm(full).includes(norm(f.name))) return false;
-    if (norm(f.birthplace) && !norm(rec.birthplace).includes(norm(f.birthplace))) return false;
+    if (norm(f.placeOfBirth) && !norm(rec.placeOfBirth).includes(norm(f.placeOfBirth))) return false;
     if (norm(f.mother) && !norm(mother).includes(norm(f.mother))) return false;
     if (norm(f.father) && !norm(father).includes(norm(f.father))) return false;
-    if (norm(f.birthdate) && !norm(rec.dob).includes(norm(f.birthdate))) return false;
-    if (norm(f.baptismDate) && !norm(rec.baptismDate).includes(norm(f.baptismDate))) return false;
-    if (norm(f.sponsor1) && !norm(rec.sponsor1).includes(norm(f.sponsor1))) return false;
-    if (norm(f.sponsor2) && !norm(rec.sponsor2).includes(norm(f.sponsor2))) return false;
+    if (norm(f.birthdate) && !norm(rec.dateOfBirth).includes(norm(f.birthdate))) return false;
+    if (norm(f.baptismDate) && !norm(rec.dateOfBaptism).includes(norm(f.baptismDate))) return false;
     return true;
   });
 }
@@ -90,11 +83,9 @@ const emptyFilters: MatchFilters = {
   name: "",
   baptismDate: "",
   birthdate: "",
-  birthplace: "",
+  placeOfBirth: "",
   mother: "",
   father: "",
-  sponsor1: "",
-  sponsor2: "",
 };
 
 export function AdminFindRecordPage() {
@@ -112,14 +103,14 @@ export function AdminFindRecordPage() {
   );
 
   const [filters, setFilters] = useState<MatchFilters>(emptyFilters);
-  const [results, setResults] = useState<LedgerRecord[]>([]);
+  const [results, setResults] = useState<BaptismalRecord[]>([]);
   const [seeded, setSeeded] = useState(false);
-  const [reviewRecord, setReviewRecord] = useState<LedgerRecord | null>(null);
+  const [reviewRecord, setReviewRecord] = useState<BaptismalRecord | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
   const [status, setStatus] = useState<RequestStatus>("pending");
-  const [confirmedRecord, setConfirmedRecord] = useState<LedgerRecord | null>(null);
+  const [confirmedRecord, setConfirmedRecord] = useState<BaptismalRecord | null>(null);
   const [rejectedNote, setRejectedNote] = useState("");
 
   // Wait until BOTH request and records are loaded before the first search.
@@ -133,11 +124,9 @@ export function AdminFindRecordPage() {
       name: details?.subjectName ?? "",
       baptismDate: details?.baptismDate ?? "",
       birthdate: details?.birthdate ?? "",
-      birthplace: details?.birthplace ?? "",
+      placeOfBirth: details?.birthplace ?? "",
       mother: details?.motherName ?? "",
       father: details?.fatherName ?? "",
-      sponsor1: "",
-      sponsor2: "",
     };
     setFilters(initial);
     setResults(searchRecords(parishRecords, initial));
@@ -146,7 +135,7 @@ export function AdminFindRecordPage() {
 
   if (requestLoading || (request && recordsLoading && !seeded)) {
     return (
-      <div className="p-6">
+      <div>
         <BackLink />
         <p className="text-[13.5px] text-admin-ink-muted">Loading request…</p>
       </div>
@@ -155,7 +144,7 @@ export function AdminFindRecordPage() {
 
   if (!request) {
     return (
-      <div className="p-6">
+      <div>
         <BackLink />
         <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Request not found</h1>
       </div>
@@ -175,7 +164,7 @@ export function AdminFindRecordPage() {
     setResults(searchRecords(parishRecords, filters));
   }
 
-  async function handleLink(record: LedgerRecord) {
+  async function handleLink(record: BaptismalRecord) {
     await linkRequestToRecord(currentRequest.id, record.id);
     setReviewRecord(null);
     setConfirmedRecord(record);
@@ -193,15 +182,23 @@ export function AdminFindRecordPage() {
     setStatus("rejected");
   }
 
-  const columns: AdminTableColumn<LedgerRecord>[] = [
+  const columns: AdminTableColumn<BaptismalRecord>[] = [
     {
       key: "ref",
-      header: "Bk:Page",
-      render: (r) => <span className="font-medium text-admin-ink">{`${r.book}:${r.page}`}</span>,
+      header: "Bk:Page:Entry",
+      render: (r) => <span className="font-medium text-admin-ink">{baptismRecordRef(r)}</span>,
     },
     { key: "name", header: "Name", render: (r) => recordFullName(r) },
-    { key: "baptismDate", header: "Bapt Date", render: (r) => r.baptismDate },
-    { key: "dob", header: "Birthdate", render: (r) => r.dob },
+    {
+      key: "dateOfBaptism",
+      header: "Bapt Date",
+      render: (r) => formatRecordDate(r.dateOfBaptism),
+    },
+    {
+      key: "dateOfBirth",
+      header: "Birthdate",
+      render: (r) => formatRecordDate(r.dateOfBirth),
+    },
     { key: "mother", header: "Mother", render: (r) => recordMotherName(r) },
     { key: "father", header: "Father", render: (r) => recordFatherName(r) },
     {
@@ -221,7 +218,7 @@ export function AdminFindRecordPage() {
   ];
 
   return (
-    <div className="p-6">
+    <div>
       <BackLink />
 
       <div className="mb-4 flex items-start justify-between gap-4">
@@ -242,7 +239,7 @@ export function AdminFindRecordPage() {
       {status === "confirmed" && confirmedRecord && (
         <StatusBanner tone="confirmed">
           <b className="font-serif text-[14px] font-semibold">
-            Record confirmed — {confirmedRecord.book}:{confirmedRecord.page}
+            Record confirmed — {baptismRecordRef(confirmedRecord)}
           </b>
           <div className="mt-0.5 text-[12.5px] opacity-90">
             {recordFullName(confirmedRecord)} matched to this request. The certificate can now be
@@ -338,10 +335,10 @@ export function AdminFindRecordPage() {
                   onChange={(e) => setFilter("birthdate", e.target.value)}
                 />
               </AdminField>
-              <AdminField label="Birthplace">
+              <AdminField label="Place of birth">
                 <AdminInput
-                  value={filters.birthplace}
-                  onChange={(e) => setFilter("birthplace", e.target.value)}
+                  value={filters.placeOfBirth}
+                  onChange={(e) => setFilter("placeOfBirth", e.target.value)}
                 />
               </AdminField>
               <AdminField label="Mother's name">
@@ -349,18 +346,6 @@ export function AdminFindRecordPage() {
               </AdminField>
               <AdminField label="Father's name">
                 <AdminInput value={filters.father} onChange={(e) => setFilter("father", e.target.value)} />
-              </AdminField>
-              <AdminField label="Sponsor 1">
-                <AdminInput
-                  value={filters.sponsor1}
-                  onChange={(e) => setFilter("sponsor1", e.target.value)}
-                />
-              </AdminField>
-              <AdminField label="Sponsor 2">
-                <AdminInput
-                  value={filters.sponsor2}
-                  onChange={(e) => setFilter("sponsor2", e.target.value)}
-                />
               </AdminField>
             </div>
 
@@ -400,8 +385,6 @@ export function AdminFindRecordPage() {
           requestBirthplace={details?.birthplace}
           requestMother={details?.motherName}
           requestFather={details?.fatherName}
-          requestSponsor1={details?.sponsor1}
-          requestSponsor2={details?.sponsor2}
           record={reviewRecord}
           onClose={() => setReviewRecord(null)}
           onLink={() => handleLink(reviewRecord)}
@@ -426,8 +409,6 @@ function ReviewMatchModal({
   requestBirthplace,
   requestMother,
   requestFather,
-  requestSponsor1,
-  requestSponsor2,
   record,
   onClose,
   onLink,
@@ -437,20 +418,16 @@ function ReviewMatchModal({
   requestBirthplace?: string;
   requestMother?: string;
   requestFather?: string;
-  requestSponsor1?: string;
-  requestSponsor2?: string;
-  record: LedgerRecord;
+  record: BaptismalRecord;
   onClose: () => void;
   onLink: () => void;
 }) {
   const fields: [string, string | undefined, string][] = [
     ["Name of baptized", requestName, recordFullName(record)],
-    ["Birthdate", requestBirthdate, record.dob],
-    ["Birthplace", requestBirthplace, record.birthplace],
+    ["Birthdate", requestBirthdate, formatRecordDate(record.dateOfBirth)],
+    ["Place of birth", requestBirthplace, record.placeOfBirth ?? ""],
     ["Mother's name", requestMother, recordMotherName(record)],
     ["Father's name", requestFather, recordFatherName(record)],
-    ["Sponsor 1", requestSponsor1, record.sponsor1],
-    ["Sponsor 2", requestSponsor2, record.sponsor2],
   ];
   const states = fields.map(([, left, right]) => matchState(left, right));
   const matches = states.filter((s) => s === "match").length;
@@ -466,10 +443,7 @@ function ReviewMatchModal({
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
           <div>
             <h3 className="font-serif text-lg font-semibold text-admin-ink">Review candidate record</h3>
-            <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">
-              {record.book}:{record.page}
-              {record.line ? `, line ${record.line}` : ""}
-            </p>
+            <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">{baptismRecordRef(record)}</p>
           </div>
           <button
             type="button"
@@ -544,16 +518,16 @@ function ReviewMatchModal({
                 Baptismal date
               </div>
               <div className="text-[13px] text-admin-ink">
-                {record.baptismDate}{" "}
+                {formatRecordDate(record.dateOfBaptism)}{" "}
                 <span className="text-[11.5px] text-admin-ink-muted">(not stated in request)</span>
               </div>
             </div>
-            {record.priest && (
+            {record.minister && (
               <div>
                 <div className="mb-0.5 text-[10.5px] font-semibold uppercase tracking-[0.4px] text-admin-ink-muted">
-                  Officiating priest
+                  Minister
                 </div>
-                <div className="text-[13px] text-admin-ink">{record.priest}</div>
+                <div className="text-[13px] text-admin-ink">{record.minister}</div>
               </div>
             )}
           </div>

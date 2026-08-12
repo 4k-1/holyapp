@@ -54,7 +54,7 @@ export function AdminReleaseCertificateModal({
 
   const registerName = linked ? recordFullName(linked) : holderName;
   const registerRef = linked
-    ? `Book ${linked.book}, Page ${linked.page}, Line ${linked.line || "—"}`
+    ? `Book ${linked.bookNumber}, Page ${linked.pageNumber}, Entry ${linked.entryNumber}`
     : "—";
 
   useEffect(() => {

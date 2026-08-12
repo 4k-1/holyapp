@@ -199,7 +199,7 @@ export function AdminRequestsPage() {
   ];
 
   return (
-    <div className="p-6">
+    <div>
       <div className="mb-5 flex items-end justify-between">
         <div>
           <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Requests</h1>

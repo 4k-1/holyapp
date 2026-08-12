@@ -15,6 +15,7 @@ import {
 } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import {
+  formatRecordDate,
   recordFatherName,
   recordFullName,
   recordMotherName,
@@ -89,15 +90,15 @@ export function AdminIssueCertificateModal({
 
   const previewName = linked ? recordFullName(linked) : subjectName;
   const previewRef = linked
-    ? `Book ${linked.book}, Page ${linked.page}, Line ${linked.line || "—"}`
+    ? `Book ${linked.bookNumber}, Page ${linked.pageNumber}, Entry ${linked.entryNumber}`
     : "—";
 
   const fields: CertificateFields = {
     requestId: request.id,
     registerRef: previewRef,
-    birthdate: linked?.dob ?? request.details?.birthdate ?? "—",
-    birthplace: linked?.birthplace ?? request.details?.birthplace ?? "—",
-    baptismDate: linked?.baptismDate ?? request.details?.baptismDate ?? "—",
+    birthdate: linked ? formatRecordDate(linked.dateOfBirth) : request.details?.birthdate ?? "—",
+    birthplace: linked?.placeOfBirth ?? request.details?.birthplace ?? "—",
+    baptismDate: linked ? formatRecordDate(linked.dateOfBaptism) : request.details?.baptismDate ?? "—",
     motherName: linked ? recordMotherName(linked) : request.details?.motherName ?? "—",
     fatherName: linked ? recordFatherName(linked) : request.details?.fatherName ?? "—",
     certCode: certCode || undefined,
