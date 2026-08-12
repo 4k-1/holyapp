@@ -6,12 +6,13 @@ import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { listBaptismalRecords } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { useAsync } from "@/hooks/useAsync";
 import {
+  baptismRecordRef,
   emptySearchCriteria,
   filterBaptismalRecords,
+  formatRecordDate,
   recordFatherName,
   recordFullName,
   recordMotherName,
-  recordRef,
 } from "@/features/parish-admin/records/baptismalHelpers";
 import type { BaptismalRecord, BaptismalSearchCriteria } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
@@ -27,12 +28,20 @@ export function AdminBaptismalRecordsPage() {
   const columns: AdminTableColumn<BaptismalRecord>[] = [
     {
       key: "ref",
-      header: "Bk:Page:Line",
-      render: (r) => <span className="font-medium text-admin-ink">{recordRef(r)}</span>,
+      header: "Bk:Page:Entry",
+      render: (r) => <span className="font-medium text-admin-ink">{baptismRecordRef(r)}</span>,
     },
     { key: "name", header: "Name", render: (r) => recordFullName(r) },
-    { key: "baptismDate", header: "Bapt. date", render: (r) => r.baptismDate },
-    { key: "dob", header: "Birthdate", render: (r) => r.dob },
+    {
+      key: "dateOfBaptism",
+      header: "Bapt. date",
+      render: (r) => formatRecordDate(r.dateOfBaptism),
+    },
+    {
+      key: "dateOfBirth",
+      header: "Birthdate",
+      render: (r) => formatRecordDate(r.dateOfBirth),
+    },
     { key: "mother", header: "Mother", render: (r) => recordMotherName(r) },
     { key: "father", header: "Father", render: (r) => recordFatherName(r) },
     {
@@ -89,11 +98,11 @@ export function AdminBaptismalRecordsPage() {
               onChange={(e) => setField("birthdate", e.target.value)}
             />
           </AdminField>
-          <AdminField label="Birthplace" className="mb-0">
+          <AdminField label="Place of birth" className="mb-0">
             <AdminInput
               placeholder="City / Province"
-              value={draft.birthplace}
-              onChange={(e) => setField("birthplace", e.target.value)}
+              value={draft.placeOfBirth}
+              onChange={(e) => setField("placeOfBirth", e.target.value)}
             />
           </AdminField>
           <AdminField label="Mother's name" className="mb-0">
@@ -110,11 +119,18 @@ export function AdminBaptismalRecordsPage() {
               onChange={(e) => setField("father", e.target.value)}
             />
           </AdminField>
-          <AdminField label="Priest" className="mb-0">
+          <AdminField label="Minister" className="mb-0">
             <AdminInput
-              placeholder="Officiating priest"
-              value={draft.priest}
-              onChange={(e) => setField("priest", e.target.value)}
+              placeholder="Officiating minister"
+              value={draft.minister}
+              onChange={(e) => setField("minister", e.target.value)}
+            />
+          </AdminField>
+          <AdminField label="Place of baptism" className="mb-0 md:col-span-2">
+            <AdminInput
+              placeholder="Parish or chapel"
+              value={draft.placeOfBaptism}
+              onChange={(e) => setField("placeOfBaptism", e.target.value)}
             />
           </AdminField>
         </div>

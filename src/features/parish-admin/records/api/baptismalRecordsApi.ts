@@ -1,12 +1,6 @@
 import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
 import { delay } from "@/services/delay";
-import type { BaptismalRecord, RecordAnnotation } from "@/features/parish-admin/records/types";
-
-/**
- * Only this file is allowed to import MOCK_BAPTISMAL_RECORDS. Pages call
- * these functions instead — when a real backend exists, only the bodies
- * below change (to `fetch` calls), not the pages that call them.
- */
+import type { BaptismalRecord } from "@/features/parish-admin/records/types";
 
 export async function listBaptismalRecords(parishId: string): Promise<BaptismalRecord[]> {
   await delay(200);
@@ -23,32 +17,24 @@ export async function getBaptismalRecord(
 
 export type BaptismalRecordInput = Omit<
   BaptismalRecord,
-  | "id"
-  | "parishId"
-  | "sex"
-  | "lastUpdated"
-  | "lastUpdatedBy"
-  | "issuedCount"
-  | "status"
-  | "annotations"
-  | "certificates"
+  "id" | "parishId" | "encodedBy" | "createdAt" | "updatedAt" | "status" | "certificates"
 >;
 
 export async function createBaptismalRecord(
   parishId: string,
-  input: BaptismalRecordInput
+  input: BaptismalRecordInput,
+  encodedBy = "u-admin"
 ): Promise<BaptismalRecord> {
   await delay(400);
+  const now = new Date().toISOString();
   const record: BaptismalRecord = {
     ...input,
-    id: `${input.book}:${input.page}${input.line ? `:${input.line}` : ""}`,
+    id: `bap-${Date.now()}`,
     parishId,
-    sex: "Male", // TODO: form doesn't collect sex yet
-    lastUpdated: new Date().toISOString(),
-    lastUpdatedBy: "Staff",
-    issuedCount: 0,
+    encodedBy,
+    createdAt: now,
+    updatedAt: now,
     status: "Active",
-    annotations: [],
     certificates: [],
   };
   MOCK_BAPTISMAL_RECORDS.push(record);
@@ -63,31 +49,36 @@ export async function updateBaptismalRecord(
   await delay(400);
   const record = MOCK_BAPTISMAL_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
   if (!record) throw new Error(`Record ${recordId} not found`);
-  Object.assign(record, input, { lastUpdated: new Date().toISOString() });
+  Object.assign(record, input, { updatedAt: new Date().toISOString() });
   return { ...record };
 }
 
-export type AddBaptismalAnnotationInput = Omit<RecordAnnotation, "by">;
-
-export async function addBaptismalAnnotation(
+export async function generateBaptismalCertificate(
   parishId: string,
-  recordId: string,
-  input: AddBaptismalAnnotationInput
+  recordId: string
 ): Promise<BaptismalRecord> {
-  await delay(300);
+  await delay(400);
   const record = MOCK_BAPTISMAL_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
   if (!record) throw new Error(`Record ${recordId} not found`);
 
-  const annotation: RecordAnnotation = {
-    ...input,
-    by: "Rec. Staff Carla Bautista",
-  };
-  record.annotations = [...record.annotations, annotation];
-  record.lastUpdated = new Date().toLocaleDateString("en-US", {
+  const seq = String(record.certificates.length + 1).padStart(2, "0");
+  const code = `CF-BAP-${record.bookNumber}${record.pageNumber}-${seq}`;
+  const issuedDate = new Date().toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
   });
-  record.lastUpdatedBy = annotation.by;
+
+  record.certificates.forEach((c) => {
+    if (c.status === "Valid") c.status = "Superseded";
+  });
+  record.certificates.push({
+    type: "Certificate of Baptism",
+    date: issuedDate,
+    by: "Admin Immaculada",
+    status: "Valid",
+    code,
+  });
+  record.updatedAt = new Date().toISOString();
   return { ...record };
 }

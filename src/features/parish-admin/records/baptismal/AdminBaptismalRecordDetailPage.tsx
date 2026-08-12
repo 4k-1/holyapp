@@ -4,15 +4,16 @@ import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import {
-  addBaptismalAnnotation,
+  generateBaptismalCertificate,
   getBaptismalRecord,
 } from "@/features/parish-admin/records/api/baptismalRecordsApi";
-import { AdminAddAnnotationModal } from "@/features/parish-admin/records/baptismal/AdminAddAnnotationModal";
 import { useAsync } from "@/hooks/useAsync";
 import {
-  annotationDotClass,
-  annotationTagClass,
+  baptismRecordRef,
   certStatusTone,
+  encodedByLabel,
+  formatDateTime,
+  formatRecordDate,
   initials,
   recordFatherName,
   recordFullName,
@@ -27,11 +28,11 @@ export function AdminBaptismalRecordDetailPage() {
   const id = decodeURIComponent(recordId);
 
   const { data: record, loading, refetch } = useAsync(() => getBaptismalRecord(parish.id, id), [parish.id, id]);
-  const [showAddAnnotation, setShowAddAnnotation] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div>
         <BackLink />
         <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
       </div>
@@ -40,7 +41,7 @@ export function AdminBaptismalRecordDetailPage() {
 
   if (!record) {
     return (
-      <div className="p-6">
+      <div>
         <BackLink />
         <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
         <p className="text-[13.5px] text-admin-ink-muted">
@@ -51,17 +52,22 @@ export function AdminBaptismalRecordDetailPage() {
   }
 
   const name = recordFullName(record);
-  const sponsors = [
-    { name: record.sponsor1, role: "Ninong" },
-    { name: record.sponsor2, role: "Ninang" },
-  ].filter((s) => s.name);
   const certs = record.certificates;
+
+  async function handleGenerateCertificate() {
+    setGenerating(true);
+    try {
+      await generateBaptismalCertificate(parish.id, record.id);
+      refetch();
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-[920px]">
       <BackLink />
 
-      {/* Header */}
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[22px] px-6">
         <div className="flex items-start gap-3.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-admin-green-100 font-serif text-[15px] font-bold text-admin-green-900">
@@ -71,23 +77,26 @@ export function AdminBaptismalRecordDetailPage() {
             <h1 className="mb-2 text-[22px] font-semibold text-admin-ink">{name}</h1>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
-                Book {record.book}
+                Book {record.bookNumber}
                 <span className="text-admin-border-strong">/</span>
-                Page {record.page}
+                Page {record.pageNumber}
                 <span className="text-admin-border-strong">/</span>
-                Line {record.line || "—"}
+                Entry {record.entryNumber}
               </span>
               <AdminBadge tone={record.status === "Archived" ? "muted" : "green"}>
                 {record.status}
               </AdminBadge>
+              {record.legitimacyStatus && (
+                <AdminBadge tone="muted">{record.legitimacyStatus}</AdminBadge>
+              )}
             </div>
           </div>
         </div>
 
         <div className="flex shrink-0 flex-col gap-2">
-          <AdminButton onClick={() => console.info("[mock] generate certificate", record.id)}>
+          <AdminButton onClick={handleGenerateCertificate} disabled={generating}>
             <FileIcon />
-            Generate Certificate
+            {generating ? "Generating…" : "Generate Certificate"}
           </AdminButton>
           <div className="flex gap-2">
             <AdminButton variant="secondary" className="flex-1" onClick={() => navigate("edit")}>
@@ -106,123 +115,74 @@ export function AdminBaptismalRecordDetailPage() {
         </div>
       </AdminCard>
 
-      {/* Personal + Baptismal */}
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <AdminCard className="p-5 px-[22px]">
           <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
             Personal Information
           </h2>
           <InfoRow label="Full name" value={name} />
-          <InfoRow label="Sex" value={record.sex} />
-          <InfoRow label="Birthplace" value={record.birthplace} />
-          <InfoRow label="Date of birth" value={record.dob} last />
+          <InfoRow label="Sex" value={record.sex ?? "—"} />
+          <InfoRow label="Place of birth" value={record.placeOfBirth ?? "—"} />
+          <InfoRow label="Date of birth" value={formatRecordDate(record.dateOfBirth)} />
+          <InfoRow label="Address" value={record.address ?? "—"} last />
         </AdminCard>
 
         <AdminCard className="p-5 px-[22px]">
           <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
             Baptismal Information
           </h2>
-          <InfoRow label="Baptismal date" value={record.baptismDate} />
-          <InfoRow label="Officiating priest" value={record.priest} />
+          <InfoRow label="Date of baptism" value={formatRecordDate(record.dateOfBaptism)} />
+          <InfoRow label="Place of baptism" value={record.placeOfBaptism} />
+          <InfoRow label="Minister" value={record.minister} />
           <InfoRow label="Mother's name" value={recordMotherName(record)} />
           <InfoRow label="Father's name" value={recordFatherName(record)} last />
         </AdminCard>
       </div>
 
-      {/* Sponsors */}
       <AdminCard className="mb-4 p-5 px-[22px]">
         <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-          Sponsors ({sponsors.length})
+          Grandparents
         </h2>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          {sponsors.map((s) => (
-            <div
-              key={`${s.role}-${s.name}`}
-              className="flex items-center justify-between gap-2.5 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5"
-            >
-              <span className="text-[13.5px] font-semibold text-admin-ink">{s.name}</span>
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                  s.role === "Ninong"
-                    ? "bg-[#D6EAF8] text-[#3A7CA5]"
-                    : "bg-[#F8D6E0] text-[#B85A75]"
-                }`}
-              >
-                {s.role}
-              </span>
-            </div>
-          ))}
-        </div>
+        <InfoRow label="Paternal grandfather" value={record.paternalGrandfather} />
+        <InfoRow label="Paternal grandmother" value={record.paternalGrandmother} />
+        <InfoRow label="Maternal grandfather" value={record.maternalGrandfather} />
+        <InfoRow label="Maternal grandmother" value={record.maternalGrandmother} last />
       </AdminCard>
 
-      {/* Annotation history */}
       <AdminCard className="mb-4 p-5 px-[22px]">
-        <div className="mb-3.5 flex items-center justify-between gap-3">
-          <h2 className="m-0 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-            Annotation History
-          </h2>
-          <AdminButton
-            variant="ghost"
-            className="py-0.5"
-            onClick={() => setShowAddAnnotation(true)}
-          >
-            + Add annotation
-          </AdminButton>
-        </div>
-
-        {record.annotations.length === 0 ? (
-          <p className="text-[11.5px] text-admin-ink-faint">
-            No later sacraments have been annotated on this record yet.
-          </p>
-        ) : (
-          record.annotations.map((a, i) => (
-            <div key={`${a.category}-${a.date}-${i}`} className="relative flex gap-3 pb-4 last:pb-0">
-              {i < record.annotations.length - 1 && (
-                <span className="absolute bottom-0 left-[5px] top-4 w-px bg-admin-border-strong" />
-              )}
-              <span
-                className={`mt-1 h-[11px] w-[11px] shrink-0 rounded-full ${annotationDotClass[a.category]}`}
-              />
-              <div className="min-w-0">
-                <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded-[5px] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.3px] ${annotationTagClass[a.category]}`}
-                  >
-                    {a.category}
-                  </span>
-                  <span className="text-xs text-admin-ink-muted">{a.date}</span>
-                </div>
-                <p className="mb-1 text-[13px] leading-relaxed text-admin-ink">{a.note}</p>
-                {a.linked && (
-                  <button
-                    type="button"
-                    className="mb-1 inline-flex items-center gap-1.5 rounded-[7px] border border-admin-green-100 bg-admin-green-050 px-2.5 py-1 text-xs font-semibold text-admin-green-700 hover:bg-admin-green-100"
-                    onClick={() => console.info("[mock] open linked record", a.linked)}
-                  >
-                    <LinkIcon />
-                    Linked to {a.linked.category} record — Book {a.linked.book}:{a.linked.page}, Line{" "}
-                    {a.linked.line || "—"}
-                  </button>
-                )}
-                <p className="text-xs leading-relaxed text-admin-ink-muted">Entered by: {a.by}</p>
-              </div>
-            </div>
-          ))
-        )}
+        <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+          Supporting Documents
+        </h2>
+        <InfoRow
+          label="Marriage certificate"
+          value={record.withMarriageCertificate ? "Present" : "Not on file"}
+        />
+        <InfoRow
+          label="Birth certificate"
+          value={record.withBirthCertificate ? "Present" : "Not on file"}
+          last
+        />
       </AdminCard>
 
-      {showAddAnnotation && (
-        <AdminAddAnnotationModal
-          subjectName={name}
-          onClose={() => setShowAddAnnotation(false)}
-          onSubmit={async (input) => {
-            await addBaptismalAnnotation(parish.id, record.id, input);
-            refetch();
-          }}
-        />
+      {record.remarks && (
+        <AdminCard className="mb-4 p-5 px-[22px]">
+          <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+            Remarks
+          </h2>
+          <p className="text-[13.5px] leading-relaxed text-admin-ink">{record.remarks}</p>
+        </AdminCard>
       )}
 
-      {/* Issued certificates */}
+      <AdminCard className="mb-4 p-5 px-[22px]">
+        <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+          Record metadata
+        </h2>
+        <InfoRow label="Register reference" value={baptismRecordRef(record)} />
+        <InfoRow label="Encoded by" value={encodedByLabel(record.encodedBy)} />
+        <InfoRow label="Created" value={formatDateTime(record.createdAt)} />
+        <InfoRow label="Last updated" value={formatDateTime(record.updatedAt)} last />
+      </AdminCard>
+
       <AdminCard className="p-5 px-[22px]">
         <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
           Issued Certificates{certs.length ? ` (${certs.length})` : ""}
@@ -327,15 +287,6 @@ function TrashIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
       <polyline points="3 6 5 6 21 6" strokeLinecap="round" />
       <path d="M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function LinkIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3 w-3">
-      <path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2" strokeLinecap="round" />
-      <path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2" strokeLinecap="round" />
     </svg>
   );
 }
