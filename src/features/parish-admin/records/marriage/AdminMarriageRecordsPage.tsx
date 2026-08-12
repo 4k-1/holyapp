@@ -32,9 +32,12 @@ export function AdminMarriageRecordsPage() {
     },
     { key: "groom", header: "Groom", render: (r) => groomFullName(r) },
     { key: "bride", header: "Bride", render: (r) => brideFullName(r) },
-    { key: "dateOfMarriage", header: "Marriage date", render: (r) => formatRecordDate(r.dateOfMarriage) },
+    {
+      key: "dateOfMarriage",
+      header: "Marriage date",
+      render: (r) => formatRecordDate(r.dateOfMarriage),
+    },
     { key: "place", header: "Place", render: (r) => r.placeOfMarriage },
-    { key: "minister", header: "Minister", render: (r) => r.minister },
     {
       key: "actions",
       header: "Actions",
@@ -103,18 +106,11 @@ export function AdminMarriageRecordsPage() {
               onChange={(e) => setField("place", e.target.value)}
             />
           </AdminField>
-          <AdminField label="Witness" className="mb-0">
+          <AdminField label="Witness" className="mb-0 md:col-span-2">
             <AdminInput
               placeholder="Witness name"
               value={draft.witness}
               onChange={(e) => setField("witness", e.target.value)}
-            />
-          </AdminField>
-          <AdminField label="Minister" className="mb-0">
-            <AdminInput
-              placeholder="Officiating minister"
-              value={draft.minister}
-              onChange={(e) => setField("minister", e.target.value)}
             />
           </AdminField>
         </div>

@@ -1,6 +1,10 @@
 import { MOCK_MARRIAGE_RECORDS } from "@/services/mocks/marriageRecords.mock";
 import { delay } from "@/services/delay";
-import type { MarriageRecord } from "@/features/parish-admin/records/types";
+import type {
+  MarriageConsentPerson,
+  MarriageParty,
+  MarriageRecord,
+} from "@/features/parish-admin/records/types";
 
 export async function listMarriageRecords(parishId: string): Promise<MarriageRecord[]> {
   await delay(200);
@@ -15,10 +19,29 @@ export async function getMarriageRecord(
   return MOCK_MARRIAGE_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
 }
 
+export type MarriageConsentPersonInput = Omit<MarriageConsentPerson, "id">;
+
+export type MarriagePartyInput = Omit<MarriageParty, "id" | "consentPersons"> & {
+  consentPersons: MarriageConsentPersonInput[];
+};
+
 export type MarriageRecordInput = Omit<
   MarriageRecord,
-  "id" | "parishId" | "encodedBy" | "createdAt" | "updatedAt" | "status" | "certificates"
->;
+  "id" | "parishId" | "encodedBy" | "createdAt" | "updatedAt" | "status" | "certificates" | "parties"
+> & {
+  parties: MarriagePartyInput[];
+};
+
+function assignPartyIds(parties: MarriagePartyInput[], marriageId: string): MarriageParty[] {
+  return parties.map((party, i) => ({
+    ...party,
+    id: `${marriageId}-party-${i + 1}`,
+    consentPersons: party.consentPersons.map((c, j) => ({
+      ...c,
+      id: `${marriageId}-party-${i + 1}-consent-${j + 1}`,
+    })),
+  }));
+}
 
 export async function createMarriageRecord(
   parishId: string,
@@ -27,10 +50,12 @@ export async function createMarriageRecord(
 ): Promise<MarriageRecord> {
   await delay(400);
   const now = new Date().toISOString();
+  const id = `mrg-${Date.now()}`;
   const record: MarriageRecord = {
     ...input,
-    id: `mrg-${Date.now()}`,
+    id,
     parishId,
+    parties: assignPartyIds(input.parties, id),
     encodedBy,
     createdAt: now,
     updatedAt: now,
@@ -49,7 +74,10 @@ export async function updateMarriageRecord(
   await delay(400);
   const record = MOCK_MARRIAGE_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
   if (!record) throw new Error(`Record ${recordId} not found`);
-  Object.assign(record, input, { updatedAt: new Date().toISOString() });
+  Object.assign(record, input, {
+    parties: assignPartyIds(input.parties, recordId),
+    updatedAt: new Date().toISOString(),
+  });
   return { ...record };
 }
 
