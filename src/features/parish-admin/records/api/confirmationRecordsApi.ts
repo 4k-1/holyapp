@@ -17,32 +17,24 @@ export async function getConfirmationRecord(
 
 export type ConfirmationRecordInput = Omit<
   ConfirmationRecord,
-  | "id"
-  | "parishId"
-  | "sex"
-  | "lastUpdated"
-  | "lastUpdatedBy"
-  | "issuedCount"
-  | "status"
-  | "annotations"
-  | "certificates"
+  "id" | "parishId" | "encodedBy" | "createdAt" | "updatedAt" | "status" | "certificates"
 >;
 
 export async function createConfirmationRecord(
   parishId: string,
-  input: ConfirmationRecordInput
+  input: ConfirmationRecordInput,
+  encodedBy = "u-admin"
 ): Promise<ConfirmationRecord> {
   await delay(400);
+  const now = new Date().toISOString();
   const record: ConfirmationRecord = {
     ...input,
-    id: `${input.book}:${input.page}${input.line ? `:${input.line}` : ""}`,
+    id: `cfm-${Date.now()}`,
     parishId,
-    sex: "Male",
-    lastUpdated: new Date().toISOString(),
-    lastUpdatedBy: "Staff",
-    issuedCount: 0,
+    encodedBy,
+    createdAt: now,
+    updatedAt: now,
     status: "Active",
-    annotations: [],
     certificates: [],
   };
   MOCK_CONFIRMATION_RECORDS.push(record);
@@ -57,6 +49,36 @@ export async function updateConfirmationRecord(
   await delay(400);
   const record = MOCK_CONFIRMATION_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
   if (!record) throw new Error(`Record ${recordId} not found`);
-  Object.assign(record, input, { lastUpdated: new Date().toISOString() });
+  Object.assign(record, input, { updatedAt: new Date().toISOString() });
+  return { ...record };
+}
+
+export async function generateConfirmationCertificate(
+  parishId: string,
+  recordId: string
+): Promise<ConfirmationRecord> {
+  await delay(400);
+  const record = MOCK_CONFIRMATION_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
+  if (!record) throw new Error(`Record ${recordId} not found`);
+
+  const seq = String(record.certificates.length + 1).padStart(2, "0");
+  const code = `CF-CFM-${record.bookNumber}${record.pageNumber}-${seq}`;
+  const issuedDate = new Date().toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  record.certificates.forEach((c) => {
+    if (c.status === "Valid") c.status = "Superseded";
+  });
+  record.certificates.push({
+    type: "Certificate of Confirmation",
+    date: issuedDate,
+    by: "Admin Immaculada",
+    status: "Valid",
+    code,
+  });
+  record.updatedAt = new Date().toISOString();
   return { ...record };
 }

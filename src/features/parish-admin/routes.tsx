@@ -12,7 +12,11 @@ import { AdminConfirmationRecordFormPage } from "@/features/parish-admin/records
 import { AdminMarriageRecordsPage } from "@/features/parish-admin/records/marriage/AdminMarriageRecordsPage";
 import { AdminMarriageRecordDetailPage } from "@/features/parish-admin/records/marriage/AdminMarriageRecordDetailPage";
 import { AdminMarriageRecordFormPage } from "@/features/parish-admin/records/marriage/AdminMarriageRecordFormPage";
+import { AdminDeathRecordsPage } from "@/features/parish-admin/records/death/AdminDeathRecordsPage";
+import { AdminDeathRecordDetailPage } from "@/features/parish-admin/records/death/AdminDeathRecordDetailPage";
+import { AdminDeathRecordFormPage } from "@/features/parish-admin/records/death/AdminDeathRecordFormPage";
 import { AdminSchedulePage } from "@/features/parish-admin/schedule/AdminSchedulePage";
+import { AdminDonationsPage } from "@/features/parish-admin/donations/AdminDonationsPage";
 
 export const parishAdminRoutes: RouteObject[] = [
   {
@@ -42,10 +46,18 @@ export const parishAdminRoutes: RouteObject[] = [
         path: "records/marriage/:recordId/edit",
         element: <AdminMarriageRecordFormPage mode="edit" />,
       },
+      { path: "records/death", element: <AdminDeathRecordsPage /> },
+      { path: "records/death/new", element: <AdminDeathRecordFormPage mode="create" /> },
+      { path: "records/death/:recordId", element: <AdminDeathRecordDetailPage /> },
+      {
+        path: "records/death/:recordId/edit",
+        element: <AdminDeathRecordFormPage mode="edit" />,
+      },
      {
       path: "schedule", element: <AdminSchedulePage />,
-     }
-      // death, ledgers, schedule, donations, reports, settings go here next
+     },
+     {path: "donations", element: <AdminDonationsPage />},
+      // ledgers, reports, settings go here next
     ],
   },
 ];

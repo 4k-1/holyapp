@@ -5,8 +5,15 @@ import type {
   IssuedCertificateStatus,
 } from "@/features/parish-admin/records/types";
 
-export function recordRef(rec: Pick<BaptismalRecord, "book" | "page" | "line">) {
-  return `${rec.book}:${rec.page}:${rec.line || "—"}`;
+export function baptismRecordRef(
+  rec: Pick<BaptismalRecord, "bookNumber" | "pageNumber" | "entryNumber">
+) {
+  return `${rec.bookNumber}:${rec.pageNumber}:${rec.entryNumber}`;
+}
+
+/** @deprecated Use baptismRecordRef — kept for linked-record display call sites */
+export function recordRef(rec: Pick<BaptismalRecord, "bookNumber" | "pageNumber" | "entryNumber">) {
+  return baptismRecordRef(rec);
 }
 
 export function fullName(parts: { firstName: string; middleName?: string; lastName: string }) {
@@ -38,27 +45,52 @@ export function initials(name: string) {
     .join("");
 }
 
+export function formatRecordDate(iso: string) {
+  if (!iso) return "—";
+  const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+export function formatDateTime(iso: string) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+const STAFF_NAMES: Record<string, string> = {
+  "u-admin": "Admin Immaculada",
+  "u-super": "Super Admin",
+};
+
+export function encodedByLabel(userId: string) {
+  return STAFF_NAMES[userId] ?? userId;
+}
+
 export function filterBaptismalRecords(records: BaptismalRecord[], criteria: BaptismalSearchCriteria) {
   const name = criteria.name.trim().toLowerCase();
-  const birthplace = criteria.birthplace.trim().toLowerCase();
+  const placeOfBirth = criteria.placeOfBirth.trim().toLowerCase();
   const mother = criteria.mother.trim().toLowerCase();
   const father = criteria.father.trim().toLowerCase();
-  const priest = criteria.priest.trim().toLowerCase();
+  const minister = criteria.minister.trim().toLowerCase();
+  const placeOfBaptism = criteria.placeOfBaptism.trim().toLowerCase();
   const birthdate = criteria.birthdate.trim();
 
   return records.filter((r) => {
     if (name && !recordFullName(r).toLowerCase().includes(name)) return false;
-    if (birthplace && !r.birthplace.toLowerCase().includes(birthplace)) return false;
+    if (placeOfBirth && !(r.placeOfBirth ?? "").toLowerCase().includes(placeOfBirth)) return false;
     if (mother && !recordMotherName(r).toLowerCase().includes(mother)) return false;
     if (father && !recordFatherName(r).toLowerCase().includes(father)) return false;
-    if (priest && !r.priest.toLowerCase().includes(priest)) return false;
-    if (birthdate) {
-      const parsed = Date.parse(r.dob);
-      if (!Number.isNaN(parsed)) {
-        const iso = new Date(parsed).toISOString().slice(0, 10);
-        if (iso !== birthdate) return false;
-      }
-    }
+    if (minister && !r.minister.toLowerCase().includes(minister)) return false;
+    if (placeOfBaptism && !r.placeOfBaptism.toLowerCase().includes(placeOfBaptism)) return false;
+    if (birthdate && r.dateOfBirth !== birthdate) return false;
     return true;
   });
 }
@@ -86,8 +118,9 @@ export function certStatusTone(status: IssuedCertificateStatus): "green" | "ambe
 export const emptySearchCriteria = (): BaptismalSearchCriteria => ({
   name: "",
   birthdate: "",
-  birthplace: "",
+  placeOfBirth: "",
   mother: "",
   father: "",
-  priest: "",
+  minister: "",
+  placeOfBaptism: "",
 });
