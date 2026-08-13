@@ -1,4 +1,5 @@
 import type { RouteObject } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { AdminLayout } from "@/features/parish-admin/AdminLayout";
 import { AdminDashboardPage } from "@/features/parish-admin/dashboard/AdminDashboardPage";
 import { AdminRequestsPage } from "@/features/parish-admin/requests/AdminRequestsPage";
@@ -17,6 +18,9 @@ import { AdminDeathRecordDetailPage } from "@/features/parish-admin/records/deat
 import { AdminDeathRecordFormPage } from "@/features/parish-admin/records/death/AdminDeathRecordFormPage";
 import { AdminSchedulePage } from "@/features/parish-admin/schedule/AdminSchedulePage";
 import { AdminDonationsPage } from "@/features/parish-admin/donations/AdminDonationsPage";
+import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSettingsLayout";
+import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
+import {ServiceFeesSection} from "@/features/parish-admin/settings/components/ServiceFeesSection";  
 
 export const parishAdminRoutes: RouteObject[] = [
   {
@@ -53,11 +57,21 @@ export const parishAdminRoutes: RouteObject[] = [
         path: "records/death/:recordId/edit",
         element: <AdminDeathRecordFormPage mode="edit" />,
       },
-     {
-      path: "schedule", element: <AdminSchedulePage />,
-     },
-     {path: "donations", element: <AdminDonationsPage />},
-      // ledgers, reports, settings go here next
+      {
+        path: "schedule",
+        element: <AdminSchedulePage />,
+      },
+      { path: "donations", element: <AdminDonationsPage /> },
+      {
+        path: "settings",
+        element: <AdminSettingsLayout />,
+        children: [
+          { index: true, element: <Navigate to="parish-profile" replace /> },
+          { path: "parish-profile", element: <ParishProfileSection /> },
+          { path: "fees", element: <ServiceFeesSection /> },
+        ],
+      },
+      // ledgers, reports go here next
     ],
   },
 ];
