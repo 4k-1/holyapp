@@ -1,7 +1,13 @@
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { useState, type ReactNode, type SVGProps } from "react";
+import { useState, type SVGProps } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, NoteIcon } from "@/features/parish-admin/components/AdminForm";
+import {
+  RecordDetailBackLink,
+  RecordDetailInfoRow,
+  RecordDetailSection,
+  type RecordDetailTone,
+} from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { HeartIcon } from "@/components/ui/icons/SacramentIcons";
 import {
@@ -12,7 +18,6 @@ import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptisma
 import { recordFullName } from "@/features/parish-admin/records/baptismalHelpers";
 import { useAsync } from "@/hooks/useAsync";
 import {
-  calcAgeAt,
   certStatusTone,
   consentPersonName,
   coupleLabel,
@@ -26,43 +31,8 @@ import {
   parentName,
   partyFullName,
 } from "@/features/parish-admin/records/marriageHelpers";
-import type { MarriageParty, MarriagePartyRole, MarriageRecord } from "@/features/parish-admin/records/types";
+import type { MarriageParty, MarriagePartyRole } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
-
-type Tone = "gold" | "green" | "blue" | "rose" | "neutral";
-
-const TONE_STYLES: Record<Tone, { headerBg: string; iconBg: string; iconText: string; eyebrowText: string }> = {
-  gold: {
-    headerBg: "bg-admin-gold-100/40",
-    iconBg: "bg-admin-gold-100",
-    iconText: "text-admin-gold-700",
-    eyebrowText: "text-admin-gold-700",
-  },
-  green: {
-    headerBg: "bg-admin-green-050",
-    iconBg: "bg-admin-green-100",
-    iconText: "text-admin-green-700",
-    eyebrowText: "text-admin-green-700",
-  },
-  blue: {
-    headerBg: "bg-[#EAF2FB]",
-    iconBg: "bg-[#D6EAF8]",
-    iconText: "text-[#2F6FA8]",
-    eyebrowText: "text-[#2F6FA8]",
-  },
-  rose: {
-    headerBg: "bg-[#FBEFF3]",
-    iconBg: "bg-[#F8D6E0]",
-    iconText: "text-[#B85A75]",
-    eyebrowText: "text-[#B85A75]",
-  },
-  neutral: {
-    headerBg: "bg-admin-surface-alt",
-    iconBg: "bg-admin-surface",
-    iconText: "text-admin-ink-muted",
-    eyebrowText: "text-admin-ink-muted",
-  },
-};
 
 export function AdminMarriageRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -95,7 +65,7 @@ export function AdminMarriageRecordDetailPage() {
   if (loading) {
     return (
       <div>
-        <BackLink />
+        <RecordDetailBackLink />
         <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
       </div>
     );
@@ -104,7 +74,7 @@ export function AdminMarriageRecordDetailPage() {
   if (!record) {
     return (
       <div>
-        <BackLink />
+        <RecordDetailBackLink />
         <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
         <p className="text-[13.5px] text-admin-ink-muted">
           This marriage record is not available for this parish.
@@ -115,8 +85,6 @@ export function AdminMarriageRecordDetailPage() {
 
   const couple = coupleLabel(record);
   const certs = record.certificates;
-  const latestCert = certs.find((c) => c.status === "Valid") ?? certs[0];
-  const witnessNames = [record.witnessOne, record.witnessTwo].filter(Boolean);
 
   async function handleGenerateCertificate() {
     setGenerating(true);
@@ -130,7 +98,7 @@ export function AdminMarriageRecordDetailPage() {
 
   return (
     <div className="mx-auto max-w-[920px]">
-      <BackLink />
+      <RecordDetailBackLink />
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
         <div className="flex items-start gap-4">
@@ -184,33 +152,21 @@ export function AdminMarriageRecordDetailPage() {
         </div>
       </AdminCard>
 
-      <AdminCard className="mb-4 overflow-hidden p-0">
-        <SectionHeader
-          tone="gold"
-          icon={<HeartIcon className="h-4.5 w-4.5" />}
-          eyebrow="Marriage Information"
-          title={formatRecordDate(record.dateOfMarriage)}
-          subtitle={marriageInfoSubtitle(record)}
-        />
+      <RecordDetailSection tone="gold" icon={<HeartIcon className="h-4.5 w-4.5" />} title="Marriage Information">
         <div className="p-5 px-[22px]">
-          <InfoRow label="Date of marriage" value={formatRecordDate(record.dateOfMarriage)} />
+          <RecordDetailInfoRow label="Date of marriage" value={formatRecordDate(record.dateOfMarriage)} />
           {record.timeOfMarriage && (
-            <InfoRow label="Time of marriage" value={formatRecordTime(record.timeOfMarriage)} />
+            <RecordDetailInfoRow label="Time of marriage" value={formatRecordTime(record.timeOfMarriage)} />
           )}
-          <InfoRow label="Place of marriage" value={record.placeOfMarriage} />
-          <InfoRow
-            label="Marriage address"
-            value={record.marriageAddress || "—"}
-            last
-          />
+          <RecordDetailInfoRow label="Place of marriage" value={record.placeOfMarriage} />
+          <RecordDetailInfoRow label="Marriage address" value={record.marriageAddress || "—"} last />
         </div>
-      </AdminCard>
+      </RecordDetailSection>
 
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         {groom && (
           <PartyDetailCard
             party={groom}
-            marriageDate={record.dateOfMarriage}
             linkedBaptism={groomBaptism}
             baptismRecordId={groom.baptismalRecordId}
             tone="blue"
@@ -219,7 +175,6 @@ export function AdminMarriageRecordDetailPage() {
         {bride && (
           <PartyDetailCard
             party={bride}
-            marriageDate={record.dateOfMarriage}
             linkedBaptism={brideBaptism}
             baptismRecordId={bride.baptismalRecordId}
             tone="rose"
@@ -227,14 +182,7 @@ export function AdminMarriageRecordDetailPage() {
         )}
       </div>
 
-      <AdminCard className="mb-4 overflow-hidden p-0">
-        <SectionHeader
-          tone="green"
-          icon={<PeopleIcon className="h-4.5 w-4.5" />}
-          eyebrow="Witnesses"
-          title={`${witnessNames.length} Witness${witnessNames.length === 1 ? "" : "es"}`}
-          subtitle={witnessNames.join(" & ") || "No witnesses on file"}
-        />
+      <RecordDetailSection tone="green" icon={<PeopleIcon className="h-4.5 w-4.5" />} title="Witnesses">
         <div className="p-5 px-[22px]">
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {[record.witnessOne, record.witnessTwo].map((name, i) => (
@@ -250,51 +198,30 @@ export function AdminMarriageRecordDetailPage() {
             ))}
           </div>
         </div>
-      </AdminCard>
+      </RecordDetailSection>
 
       {record.remarks && (
-        <AdminCard className="mb-4 overflow-hidden p-0">
-          <SectionHeader
-            tone="neutral"
-            icon={<NoteIcon className="h-4.5 w-4.5" />}
-            eyebrow="Notes"
-            title="Remarks"
-          />
+        <RecordDetailSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks">
           <div className="p-5 px-[22px]">
             <p className="text-[13.5px] leading-relaxed text-admin-ink">{record.remarks}</p>
           </div>
-        </AdminCard>
+        </RecordDetailSection>
       )}
 
-      <AdminCard className="mb-4 overflow-hidden p-0">
-        <SectionHeader
-          tone="neutral"
-          icon={<ClockIcon className="h-4.5 w-4.5" />}
-          eyebrow="Record Metadata"
-          title={`Logged by ${encodedByLabel(record.encodedBy)}`}
-          subtitle={metadataSubtitle(record)}
-        />
+      <RecordDetailSection tone="neutral" icon={<ClockIcon className="h-4.5 w-4.5" />} title="Record Metadata">
         <div className="p-5 px-[22px]">
-          <InfoRow label="Encoded by" value={encodedByLabel(record.encodedBy)} />
-          <InfoRow label="Created" value={formatDateTime(record.createdAt)} />
-          <InfoRow label="Last updated" value={formatDateTime(record.updatedAt)} last />
+          <RecordDetailInfoRow label="Encoded by" value={encodedByLabel(record.encodedBy)} />
+          <RecordDetailInfoRow label="Created" value={formatDateTime(record.createdAt)} />
+          <RecordDetailInfoRow label="Last updated" value={formatDateTime(record.updatedAt)} last />
         </div>
-      </AdminCard>
+      </RecordDetailSection>
 
-      <AdminCard className="overflow-hidden p-0">
-        <SectionHeader
-          tone="green"
-          icon={<FileIcon className="h-4.5 w-4.5" />}
-          eyebrow="Certificates"
-          title={certs.length ? `${certs.length} Certificate${certs.length === 1 ? "" : "s"} Issued` : "No Certificates Issued"}
-          subtitle={
-            latestCert
-              ? `Latest: ${latestCert.status} · Issued ${latestCert.date} by ${latestCert.by}`
-              : "Generate one using the button above once ready."
-          }
-          right={latestCert && <AdminBadge tone={certStatusTone(latestCert.status)}>{latestCert.status}</AdminBadge>}
-        />
-
+      <RecordDetailSection
+        tone="green"
+        icon={<FileIcon className="h-4.5 w-4.5" />}
+        title="Issued Certificates"
+        className="mb-0"
+      >
         <div className="px-[22px]">
           {certs.length === 0 ? (
             <p className="py-5 text-[11.5px] text-admin-ink-faint">
@@ -337,71 +264,21 @@ export function AdminMarriageRecordDetailPage() {
             ))
           )}
         </div>
-      </AdminCard>
-    </div>
-  );
-}
-
-function marriageInfoSubtitle(record: MarriageRecord) {
-  const parts = [record.placeOfMarriage];
-  if (record.marriageAddress) parts.push(record.marriageAddress);
-  const location = parts.join(", ");
-  return record.timeOfMarriage ? `${location} · ${formatRecordTime(record.timeOfMarriage)}` : location;
-}
-
-function metadataSubtitle(record: MarriageRecord) {
-  const created = `Created ${formatDateTime(record.createdAt)}`;
-  if (record.updatedAt && record.updatedAt !== record.createdAt) {
-    return `${created} · Updated ${formatDateTime(record.updatedAt)}`;
-  }
-  return created;
-}
-
-function SectionHeader({
-  icon,
-  eyebrow,
-  title,
-  subtitle,
-  tone = "neutral",
-  right,
-}: {
-  icon: ReactNode;
-  eyebrow: string;
-  title: ReactNode;
-  subtitle?: ReactNode;
-  tone?: Tone;
-  right?: ReactNode;
-}) {
-  const styles = TONE_STYLES[tone];
-  return (
-    <div className={`flex items-center gap-3 border-b border-admin-border px-[22px] py-4 ${styles.headerBg}`}>
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${styles.iconBg} ${styles.iconText}`}
-      >
-        {icon}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className={`text-[10px] font-bold uppercase tracking-[0.6px] ${styles.eyebrowText}`}>{eyebrow}</p>
-        <h2 className="truncate font-serif text-[17px] font-semibold leading-tight text-admin-ink">{title}</h2>
-        {subtitle && <p className="mt-0.5 truncate text-[12.5px] text-admin-ink-muted">{subtitle}</p>}
-      </div>
-      {right && <div className="shrink-0">{right}</div>}
+      </RecordDetailSection>
     </div>
   );
 }
 
 function PartyDetailCard({
   party,
-  marriageDate,
   linkedBaptism,
   baptismRecordId,
   tone,
 }: {
   party: MarriageParty;
-  marriageDate: string;
   linkedBaptism?: { bookNumber: string; pageNumber: string; entryNumber: string; firstName: string; middleName: string; lastName: string };
   baptismRecordId?: string;
-  tone: Tone;
+  tone: RecordDetailTone;
 }) {
   const roleLabel: Record<MarriagePartyRole, string> = { Groom: "Groom", Bride: "Bride" };
   const father = parentName({
@@ -414,28 +291,24 @@ function PartyDetailCard({
     lastName: party.motherLastName,
     middleInitial: party.motherMiddleInitial,
   });
-  const age = calcAgeAt(party.dateOfBirth, marriageDate);
-  const subtitle = [age !== null ? `${age} yrs old` : null, party.civilStatus].filter(Boolean).join(" · ");
 
   return (
-    <AdminCard className="overflow-hidden p-0">
-      <SectionHeader
-        tone={tone}
-        icon={<span className="font-serif text-[13px] font-bold">{initials(partyFullName(party))}</span>}
-        eyebrow={roleLabel[party.role]}
-        title={partyFullName(party)}
-        subtitle={subtitle || undefined}
-      />
+    <RecordDetailSection
+      tone={tone}
+      icon={<span className="font-serif text-[13px] font-bold">{initials(partyFullName(party))}</span>}
+      title={roleLabel[party.role]}
+    >
       <div className="p-5 px-[22px]">
-        <InfoRow label="Date of birth" value={formatRecordDate(party.dateOfBirth)} />
-        {party.birthplace && <InfoRow label="Birthplace" value={party.birthplace} />}
-        {party.sex && <InfoRow label="Sex" value={party.sex} />}
-        {party.citizenship && <InfoRow label="Citizenship" value={party.citizenship} />}
-        {party.address && <InfoRow label="Address" value={party.address} />}
-        {party.religion && <InfoRow label="Religion" value={party.religion} />}
-        {party.civilStatus && <InfoRow label="Civil status" value={party.civilStatus} />}
-        {father && <InfoRow label="Father" value={father} />}
-        {mother && <InfoRow label="Mother" value={mother} />}
+        <RecordDetailInfoRow label="Full name" value={partyFullName(party)} />
+        <RecordDetailInfoRow label="Date of birth" value={formatRecordDate(party.dateOfBirth)} />
+        {party.birthplace && <RecordDetailInfoRow label="Birthplace" value={party.birthplace} />}
+        {party.sex && <RecordDetailInfoRow label="Sex" value={party.sex} />}
+        {party.citizenship && <RecordDetailInfoRow label="Citizenship" value={party.citizenship} />}
+        {party.address && <RecordDetailInfoRow label="Address" value={party.address} />}
+        {party.religion && <RecordDetailInfoRow label="Religion" value={party.religion} />}
+        {party.civilStatus && <RecordDetailInfoRow label="Civil status" value={party.civilStatus} />}
+        {father && <RecordDetailInfoRow label="Father" value={father} />}
+        {mother && <RecordDetailInfoRow label="Mother" value={mother} />}
         {baptismRecordId ? (
           <div className="flex items-baseline justify-between gap-4 border-t border-admin-border py-[10.5px]">
             <span className="shrink-0 text-xs text-admin-ink-muted">Baptismal record</span>
@@ -468,36 +341,7 @@ function PartyDetailCard({
           </div>
         )}
       </div>
-    </AdminCard>
-  );
-}
-
-function BackLink() {
-  const navigate = useNavigate();
-  return (
-    <button
-      type="button"
-      onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-[13px] text-admin-ink-muted hover:text-admin-green-700"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-        <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      Back
-    </button>
-  );
-}
-
-function InfoRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
-  return (
-    <div
-      className={`flex items-baseline justify-between gap-4 py-[10.5px] ${
-        last ? "" : "border-b border-admin-border"
-      }`}
-    >
-      <span className="shrink-0 text-xs text-admin-ink-muted">{label}</span>
-      <span className="text-right text-[13.5px] font-semibold text-admin-ink">{value}</span>
-    </div>
+    </RecordDetailSection>
   );
 }
 
@@ -535,17 +379,6 @@ function PeopleIcon(props: SVGProps<SVGSVGElement>) {
       <path d="M3 20c0-3 2.7-5 6-5s6 2 6 5" strokeLinecap="round" />
       <circle cx="17" cy="8.5" r="2.4" />
       <path d="M15.5 15.2c2.6.3 4.5 2.1 4.5 4.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function NoteIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
-      <path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" strokeLinejoin="round" />
-      <path d="M15 3v5h5" strokeLinejoin="round" />
-      <line x1="8" y1="13" x2="16" y2="13" strokeLinecap="round" />
-      <line x1="8" y1="17" x2="13" y2="17" strokeLinecap="round" />
     </svg>
   );
 }

@@ -4,6 +4,7 @@ import {
   AdminButton,
   AdminField,
   AdminFieldGroup,
+  AdminFormPage,
   AdminFormSection,
   AdminInput,
   NoteIcon,
@@ -118,19 +119,19 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
 
   if (mode === "edit" && existingLoading) {
     return (
-      <div>
+      <AdminFormPage>
         <BackLink />
         <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
-      </div>
+      </AdminFormPage>
     );
   }
 
   if (mode === "edit" && !existing) {
     return (
-      <div>
+      <AdminFormPage>
         <BackLink />
         <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
-      </div>
+      </AdminFormPage>
     );
   }
 
@@ -178,7 +179,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
   }
 
   return (
-    <div>
+    <AdminFormPage>
       <BackLink />
 
       <div className="mb-5">
@@ -384,7 +385,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
           </AdminButton>
         </div>
       </form>
-    </div>
+    </AdminFormPage>
   );
 }
 

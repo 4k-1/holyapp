@@ -1,8 +1,14 @@
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, ChecklistIcon, FamilyIcon, NoteIcon, UserIcon } from "@/features/parish-admin/components/AdminForm";
+import {
+  RecordDetailBackLink,
+  RecordDetailInfoRow,
+  RecordDetailSection,
+} from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
+import { DropletIcon } from "@/components/ui/icons/SacramentIcons";
 import {
   generateBaptismalCertificate,
   getBaptismalRecord,
@@ -33,7 +39,7 @@ export function AdminBaptismalRecordDetailPage() {
   if (loading) {
     return (
       <div>
-        <BackLink />
+        <RecordDetailBackLink />
         <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
       </div>
     );
@@ -42,7 +48,7 @@ export function AdminBaptismalRecordDetailPage() {
   if (!record) {
     return (
       <div>
-        <BackLink />
+        <RecordDetailBackLink />
         <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
         <p className="text-[13.5px] text-admin-ink-muted">
           This baptismal record is not available for this parish.
@@ -57,7 +63,7 @@ export function AdminBaptismalRecordDetailPage() {
   async function handleGenerateCertificate() {
     setGenerating(true);
     try {
-      await generateBaptismalCertificate(parish.id, record.id);
+      await generateBaptismalCertificate(parish.id, record!.id);
       refetch();
     } finally {
       setGenerating(false);
@@ -66,15 +72,21 @@ export function AdminBaptismalRecordDetailPage() {
 
   return (
     <div className="mx-auto max-w-[920px]">
-      <BackLink />
+      <RecordDetailBackLink />
 
-      <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[22px] px-6">
-        <div className="flex items-start gap-3.5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-admin-green-100 font-serif text-[15px] font-bold text-admin-green-900">
+      <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
+        <div className="flex items-start gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-green-100 font-serif text-[17px] font-bold text-admin-green-700 ring-1 ring-inset ring-admin-green-600/20">
             {initials(name)}
           </div>
           <div>
-            <h1 className="mb-2 text-[22px] font-semibold text-admin-ink">{name}</h1>
+            <p className="mb-1 text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-green-700">
+              Baptismal Record
+            </p>
+            <h1 className="mb-1.5 font-serif text-[24px] font-semibold leading-tight text-admin-ink">{name}</h1>
+            <p className="mb-2.5 text-[13px] text-admin-ink-muted">
+              Baptized {formatRecordDate(record.dateOfBaptism)} at {record.placeOfBaptism}
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
                 Book {record.bookNumber}
@@ -83,12 +95,8 @@ export function AdminBaptismalRecordDetailPage() {
                 <span className="text-admin-border-strong">/</span>
                 Entry {record.entryNumber}
               </span>
-              <AdminBadge tone={record.status === "Archived" ? "muted" : "green"}>
-                {record.status}
-              </AdminBadge>
-              {record.legitimacyStatus && (
-                <AdminBadge tone="muted">{record.legitimacyStatus}</AdminBadge>
-              )}
+              <AdminBadge tone={record.status === "Archived" ? "muted" : "green"}>{record.status}</AdminBadge>
+              {record.legitimacyStatus && <AdminBadge tone="muted">{record.legitimacyStatus}</AdminBadge>}
             </div>
           </div>
         </div>
@@ -116,150 +124,110 @@ export function AdminBaptismalRecordDetailPage() {
       </AdminCard>
 
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <AdminCard className="p-5 px-[22px]">
-          <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-            Personal Information
-          </h2>
-          <InfoRow label="Full name" value={name} />
-          <InfoRow label="Sex" value={record.sex ?? "—"} />
-          <InfoRow label="Place of birth" value={record.placeOfBirth ?? "—"} />
-          <InfoRow label="Date of birth" value={formatRecordDate(record.dateOfBirth)} />
-          <InfoRow label="Address" value={record.address ?? "—"} last />
-        </AdminCard>
+        <RecordDetailSection tone="blue" icon={<UserIcon className="h-4.5 w-4.5" />} title="Personal Information">
+          <div className="p-5 px-[22px]">
+            <RecordDetailInfoRow label="Full name" value={name} />
+            <RecordDetailInfoRow label="Sex" value={record.sex ?? "—"} />
+            <RecordDetailInfoRow label="Place of birth" value={record.placeOfBirth ?? "—"} />
+            <RecordDetailInfoRow label="Date of birth" value={formatRecordDate(record.dateOfBirth)} />
+            <RecordDetailInfoRow label="Address" value={record.address ?? "—"} last />
+          </div>
+        </RecordDetailSection>
 
-        <AdminCard className="p-5 px-[22px]">
-          <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-            Baptismal Information
-          </h2>
-          <InfoRow label="Date of baptism" value={formatRecordDate(record.dateOfBaptism)} />
-          <InfoRow label="Place of baptism" value={record.placeOfBaptism} />
-          <InfoRow label="Minister" value={record.minister} />
-          <InfoRow label="Mother's name" value={recordMotherName(record)} />
-          <InfoRow label="Father's name" value={recordFatherName(record)} last />
-        </AdminCard>
+        <RecordDetailSection tone="gold" icon={<DropletIcon className="h-4.5 w-4.5" />} title="Baptismal Information">
+          <div className="p-5 px-[22px]">
+            <RecordDetailInfoRow label="Date of baptism" value={formatRecordDate(record.dateOfBaptism)} />
+            <RecordDetailInfoRow label="Place of baptism" value={record.placeOfBaptism} />
+            <RecordDetailInfoRow label="Minister" value={record.minister} />
+            <RecordDetailInfoRow label="Mother's name" value={recordMotherName(record)} />
+            <RecordDetailInfoRow label="Father's name" value={recordFatherName(record)} last />
+          </div>
+        </RecordDetailSection>
       </div>
 
-      <AdminCard className="mb-4 p-5 px-[22px]">
-        <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-          Grandparents
-        </h2>
-        <InfoRow label="Paternal grandfather" value={record.paternalGrandfather} />
-        <InfoRow label="Paternal grandmother" value={record.paternalGrandmother} />
-        <InfoRow label="Maternal grandfather" value={record.maternalGrandfather} />
-        <InfoRow label="Maternal grandmother" value={record.maternalGrandmother} last />
-      </AdminCard>
+      <RecordDetailSection tone="green" icon={<FamilyIcon className="h-4.5 w-4.5" />} title="Grandparents">
+        <div className="p-5 px-[22px]">
+          <RecordDetailInfoRow label="Paternal grandfather" value={record.paternalGrandfather} />
+          <RecordDetailInfoRow label="Paternal grandmother" value={record.paternalGrandmother} />
+          <RecordDetailInfoRow label="Maternal grandfather" value={record.maternalGrandfather} />
+          <RecordDetailInfoRow label="Maternal grandmother" value={record.maternalGrandmother} last />
+        </div>
+      </RecordDetailSection>
 
-      <AdminCard className="mb-4 p-5 px-[22px]">
-        <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-          Supporting Documents
-        </h2>
-        <InfoRow
-          label="Marriage certificate"
-          value={record.withMarriageCertificate ? "Present" : "Not on file"}
-        />
-        <InfoRow
-          label="Birth certificate"
-          value={record.withBirthCertificate ? "Present" : "Not on file"}
-          last
-        />
-      </AdminCard>
+      <RecordDetailSection tone="neutral" icon={<ChecklistIcon className="h-4.5 w-4.5" />} title="Supporting Documents">
+        <div className="p-5 px-[22px]">
+          <RecordDetailInfoRow
+            label="Marriage certificate"
+            value={record.withMarriageCertificate ? "Present" : "Not on file"}
+          />
+          <RecordDetailInfoRow
+            label="Birth certificate"
+            value={record.withBirthCertificate ? "Present" : "Not on file"}
+            last
+          />
+        </div>
+      </RecordDetailSection>
 
       {record.remarks && (
-        <AdminCard className="mb-4 p-5 px-[22px]">
-          <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-            Remarks
-          </h2>
-          <p className="text-[13.5px] leading-relaxed text-admin-ink">{record.remarks}</p>
-        </AdminCard>
+        <RecordDetailSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks">
+          <div className="p-5 px-[22px]">
+            <p className="text-[13.5px] leading-relaxed text-admin-ink">{record.remarks}</p>
+          </div>
+        </RecordDetailSection>
       )}
 
-      <AdminCard className="mb-4 p-5 px-[22px]">
-        <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-          Record metadata
-        </h2>
-        <InfoRow label="Register reference" value={baptismRecordRef(record)} />
-        <InfoRow label="Encoded by" value={encodedByLabel(record.encodedBy)} />
-        <InfoRow label="Created" value={formatDateTime(record.createdAt)} />
-        <InfoRow label="Last updated" value={formatDateTime(record.updatedAt)} last />
-      </AdminCard>
+      <RecordDetailSection tone="neutral" icon={<ClockIcon className="h-4.5 w-4.5" />} title="Record Metadata">
+        <div className="p-5 px-[22px]">
+          <RecordDetailInfoRow label="Register reference" value={baptismRecordRef(record)} />
+          <RecordDetailInfoRow label="Encoded by" value={encodedByLabel(record.encodedBy)} />
+          <RecordDetailInfoRow label="Created" value={formatDateTime(record.createdAt)} />
+          <RecordDetailInfoRow label="Last updated" value={formatDateTime(record.updatedAt)} last />
+        </div>
+      </RecordDetailSection>
 
-      <AdminCard className="p-5 px-[22px]">
-        <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-          Issued Certificates{certs.length ? ` (${certs.length})` : ""}
-        </h2>
-
-        {certs.length === 0 ? (
-          <p className="text-[11.5px] text-admin-ink-faint">
-            No certificates have been generated from this record yet.
-          </p>
-        ) : (
-          certs.map((c, i) => (
-            <div
-              key={c.code}
-              className={`flex flex-wrap items-center justify-between gap-3 py-3 ${
-                i < certs.length - 1 ? "border-b border-admin-border" : ""
-              }`}
-            >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold text-admin-ink">
-                  {c.type}
-                  <AdminBadge tone={certStatusTone(c.status)}>{c.status}</AdminBadge>
+      <RecordDetailSection
+        tone="green"
+        icon={<FileIcon className="h-4.5 w-4.5" />}
+        title="Issued Certificates"
+        className="mb-0"
+      >
+        <div className="px-[22px]">
+          {certs.length === 0 ? (
+            <p className="py-5 text-[11.5px] text-admin-ink-faint">
+              No certificates have been generated from this record yet.
+            </p>
+          ) : (
+            certs.map((c, i) => (
+              <div
+                key={c.code}
+                className={`flex flex-wrap items-center justify-between gap-3 py-3 ${
+                  i < certs.length - 1 ? "border-b border-admin-border" : ""
+                }`}
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold text-admin-ink">
+                    {c.type}
+                    <AdminBadge tone={certStatusTone(c.status)}>{c.status}</AdminBadge>
+                  </div>
+                  <p className="mt-0.5 text-xs text-admin-ink-muted">
+                    Issued {c.date} by {c.by} · {c.code}
+                  </p>
                 </div>
-                <p className="mt-0.5 text-xs text-admin-ink-muted">
-                  Issued {c.date} by {c.by} · {c.code}
-                </p>
+                <div className="flex shrink-0 gap-1.5">
+                  <AdminButton variant="secondary" size="sm" onClick={() => console.info("[mock] verify", c.code)}>
+                    <ScanIcon />
+                    Verify
+                  </AdminButton>
+                  <AdminButton variant="secondary" size="sm" onClick={() => console.info("[mock] download", c.code)}>
+                    <DownloadIcon />
+                    Download
+                  </AdminButton>
+                </div>
               </div>
-              <div className="flex shrink-0 gap-1.5">
-                <AdminButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => console.info("[mock] verify", c.code)}
-                >
-                  <ScanIcon />
-                  Verify
-                </AdminButton>
-                <AdminButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => console.info("[mock] download", c.code)}
-                >
-                  <DownloadIcon />
-                  Download
-                </AdminButton>
-              </div>
-            </div>
-          ))
-        )}
-      </AdminCard>
-    </div>
-  );
-}
-
-function BackLink() {
-  const navigate = useNavigate();
-  return (
-    <button
-      type="button"
-      onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-[13px] text-admin-ink-muted hover:text-admin-green-700"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-        <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      Back
-    </button>
-  );
-}
-
-function InfoRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
-  return (
-    <div
-      className={`flex items-baseline justify-between gap-4 py-[10.5px] ${
-        last ? "" : "border-b border-admin-border"
-      }`}
-    >
-      <span className="shrink-0 text-xs text-admin-ink-muted">{label}</span>
-      <span className="text-right text-[13.5px] font-semibold text-admin-ink">{value}</span>
+            ))
+          )}
+        </div>
+      </RecordDetailSection>
     </div>
   );
 }
@@ -306,6 +274,15 @@ function DownloadIcon() {
       <path d="M12 3v12" strokeLinecap="round" />
       <polyline points="7 11 12 16 17 11" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M5 21h14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4.5 w-4.5">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

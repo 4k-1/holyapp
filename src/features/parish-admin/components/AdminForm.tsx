@@ -4,6 +4,16 @@ import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 const fieldInputClass =
   "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
+export function AdminFormPage({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={`mx-auto w-full max-w-[720px] ${className}`}>{children}</div>;
+}
+
 export function AdminField({
   label,
   children,
@@ -124,14 +134,14 @@ export function AdminFormSection({
   const styles = SECTION_TONE_STYLES[tone];
   return (
     <AdminCard className={`mb-4 overflow-hidden p-0 ${className}`}>
-      <div className={`flex items-center gap-3 border-b border-admin-border px-[22px] py-4 ${styles.headerBg}`}>
+      <div className={`flex items-center gap-2.5 border-b border-admin-border px-5 py-2.5 ${styles.headerBg}`}>
         <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${styles.iconBg} ${styles.iconText}`}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${styles.iconBg} ${styles.iconText}`}
         >
           {icon}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-serif text-[16px] font-semibold leading-tight text-admin-ink">{title}</h2>
+          <h2 className="font-serif text-[15px] font-semibold leading-tight text-admin-ink">{title}</h2>
           {description && <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">{description}</p>}
         </div>
         {right && <div className="shrink-0">{right}</div>}
