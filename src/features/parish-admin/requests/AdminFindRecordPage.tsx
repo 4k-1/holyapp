@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, AdminField, AdminInput, BookIcon } from "@/features/parish-admin/components/AdminForm";
+import { RecordDetailSection } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import {
   getAdminRequest,
@@ -257,125 +257,132 @@ export function AdminFindRecordPage() {
       <div className={closed ? "pointer-events-none opacity-45 grayscale-[0.3]" : undefined}>
         {/* Request on file + Search ledger — equal width, equal height, compact */}
         <div className="mb-4 grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
-          <AdminCard className="flex h-full flex-col p-4 px-[18px]">
-            <div className="mb-1 flex items-baseline justify-between">
-              <h2 className="font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-                Request on file
-              </h2>
+          <RecordDetailSection
+            tone="gold"
+            icon={<FileIcon className="h-4 w-4" />}
+            title="Request on file"
+            right={
               <span className="rounded-full border border-admin-gold-700/30 bg-admin-gold-700/10 px-2 py-0.5 font-mono text-[11px] text-admin-gold-700">
                 {request.id}
               </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-4">
-              <InfoRow label="Requester's name" value={currentRequest.requesterId || "—"} compact />
-              <InfoRow
-                label="Certificate type &amp; purpose"
-                value={`${sacramentLabels[request.sacramentType]} Certificate`}
-                sub={request.purpose}
-                compact
-                last
-              />
-            </div>
-
-            <div className="mt-2.5 border-t-2 border-admin-gold-700/40 pt-1.5 font-serif text-[12px] italic text-admin-gold-700">
-              Person to be certified
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-4">
-              <InfoRow label="Name of baptized" value={details?.subjectName || "—"} compact />
-              <InfoRow
-                label="Baptismal date"
-                value={details?.baptismDate || "Not stated"}
-                muted={!details?.baptismDate}
-                compact
-              />
-              <InfoRow label="Birthdate" value={details?.birthdate || "—"} compact />
-              <InfoRow label="Birthplace" value={details?.birthplace || "—"} compact />
-              <InfoRow label="Mother's name" value={details?.motherName || "—"} compact />
-              <InfoRow label="Father's name" value={details?.fatherName || "—"} compact />
-              <InfoRow label="Sponsor 1" value={details?.sponsor1 || "—"} compact />
-              <InfoRow label="Sponsor 2" value={details?.sponsor2 || "—"} compact last />
-            </div>
-
-            <div className="mt-auto pt-2.5">
-              <AdminButton
-                variant="secondary"
-                size="sm"
-                onClick={() => console.info("[mock] view supporting docs", request.id)}
-              >
-                <FileIcon />
-                View Supporting Docs
-              </AdminButton>
-            </div>
-          </AdminCard>
-
-          <AdminCard className="flex h-full flex-col p-4 px-[18px]">
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <h2 className="font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-                Search the baptismal ledger
-              </h2>
-              <span className="text-[10px] uppercase tracking-[0.5px] text-admin-ink-muted">Editable</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-2.5 gap-y-0">
-              <AdminField label="Name of baptized">
-                <AdminInput value={filters.name} onChange={(e) => setFilter("name", e.target.value)} />
-              </AdminField>
-              <AdminField label="Baptismal date">
-                <AdminInput
-                  placeholder="If known"
-                  value={filters.baptismDate}
-                  onChange={(e) => setFilter("baptismDate", e.target.value)}
+            }
+            className="mb-0 flex h-full flex-col"
+          >
+            <div className="flex flex-1 flex-col p-4 px-5">
+              <div className="grid grid-cols-2 gap-x-4">
+                <InfoRow label="Requester's name" value={currentRequest.requesterId || "—"} compact />
+                <InfoRow
+                  label="Certificate type &amp; purpose"
+                  value={`${sacramentLabels[request.sacramentType]} Certificate`}
+                  sub={request.purpose}
+                  compact
+                  last
                 />
-              </AdminField>
-              <AdminField label="Birthdate">
-                <AdminInput
-                  value={filters.birthdate}
-                  onChange={(e) => setFilter("birthdate", e.target.value)}
-                />
-              </AdminField>
-              <AdminField label="Place of birth">
-                <AdminInput
-                  value={filters.placeOfBirth}
-                  onChange={(e) => setFilter("placeOfBirth", e.target.value)}
-                />
-              </AdminField>
-              <AdminField label="Mother's name">
-                <AdminInput value={filters.mother} onChange={(e) => setFilter("mother", e.target.value)} />
-              </AdminField>
-              <AdminField label="Father's name">
-                <AdminInput value={filters.father} onChange={(e) => setFilter("father", e.target.value)} />
-              </AdminField>
-            </div>
+              </div>
 
-            <div className="mt-auto flex items-center gap-3 border-t border-admin-border pt-2.5">
-              <AdminButton onClick={runSearch}>
-                <SearchIcon />
-                Search ledger
-              </AdminButton>
-              <p className="text-[11px] leading-snug text-admin-ink-muted">
-                Pre-filled from the request — narrow or clear a field before searching.
-              </p>
+              <div className="mt-2.5 border-t-2 border-admin-gold-700/40 pt-1.5 font-serif text-[12px] italic text-admin-gold-700">
+                Person to be certified
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4">
+                <InfoRow label="Name of baptized" value={details?.subjectName || "—"} compact />
+                <InfoRow
+                  label="Baptismal date"
+                  value={details?.baptismDate || "Not stated"}
+                  muted={!details?.baptismDate}
+                  compact
+                />
+                <InfoRow label="Birthdate" value={details?.birthdate || "—"} compact />
+                <InfoRow label="Birthplace" value={details?.birthplace || "—"} compact />
+                <InfoRow label="Mother's name" value={details?.motherName || "—"} compact />
+                <InfoRow label="Father's name" value={details?.fatherName || "—"} compact />
+                <InfoRow label="Sponsor 1" value={details?.sponsor1 || "—"} compact />
+                <InfoRow label="Sponsor 2" value={details?.sponsor2 || "—"} compact last />
+              </div>
+
+              <div className="mt-auto pt-2.5">
+                <AdminButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => console.info("[mock] view supporting docs", request.id)}
+                >
+                  <FileIcon />
+                  View Supporting Docs
+                </AdminButton>
+              </div>
             </div>
-          </AdminCard>
+          </RecordDetailSection>
+
+          <RecordDetailSection
+            tone="blue"
+            icon={<SearchIcon className="h-4 w-4" />}
+            title="Search the baptismal ledger"
+            right={
+              <span className="text-[10px] font-semibold uppercase tracking-[0.5px] text-admin-ink-muted">
+                Editable
+              </span>
+            }
+            className="mb-0 flex h-full flex-col"
+          >
+            <div className="flex flex-1 flex-col p-4 px-5">
+              <div className="grid grid-cols-2 gap-x-2.5 gap-y-0">
+                <AdminField label="Name of baptized">
+                  <AdminInput value={filters.name} onChange={(e) => setFilter("name", e.target.value)} />
+                </AdminField>
+                <AdminField label="Baptismal date">
+                  <AdminInput
+                    placeholder="If known"
+                    value={filters.baptismDate}
+                    onChange={(e) => setFilter("baptismDate", e.target.value)}
+                  />
+                </AdminField>
+                <AdminField label="Birthdate">
+                  <AdminInput
+                    value={filters.birthdate}
+                    onChange={(e) => setFilter("birthdate", e.target.value)}
+                  />
+                </AdminField>
+                <AdminField label="Place of birth">
+                  <AdminInput
+                    value={filters.placeOfBirth}
+                    onChange={(e) => setFilter("placeOfBirth", e.target.value)}
+                  />
+                </AdminField>
+                <AdminField label="Mother's name">
+                  <AdminInput value={filters.mother} onChange={(e) => setFilter("mother", e.target.value)} />
+                </AdminField>
+                <AdminField label="Father's name">
+                  <AdminInput value={filters.father} onChange={(e) => setFilter("father", e.target.value)} />
+                </AdminField>
+              </div>
+
+              <div className="mt-auto flex items-center gap-3 border-t border-admin-border pt-2.5">
+                <AdminButton onClick={runSearch}>
+                  <SearchIcon />
+                  Search ledger
+                </AdminButton>
+                <p className="text-[11px] leading-snug text-admin-ink-muted">
+                  Pre-filled from the request — narrow or clear a field before searching.
+                </p>
+              </div>
+            </div>
+          </RecordDetailSection>
         </div>
 
-        {/* Results — full width, stays compact and in view; badge makes the outcome obvious at a glance */}
-        <AdminCard className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-admin-border px-4 py-3">
-            <h2 className="font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
-              Candidate records
-            </h2>
-            <ResultBadge count={results.length} />
-          </div>
+        <RecordDetailSection
+          tone="green"
+          icon={<BookIcon className="h-4 w-4" />}
+          title="Candidate records"
+          right={<ResultBadge count={results.length} />}
+          className="mb-0 overflow-hidden"
+        >
           <AdminTable
             columns={columns}
             rows={results}
             getRowKey={(r) => r.id}
             emptyMessage="No matching entry found. Try loosening a field — a maiden name, spelling, or exact date can differ from the request — or reject the request if the entry genuinely can't be located."
           />
-        </AdminCard>
+        </RecordDetailSection>
       </div>
 
       {reviewRecord && (
@@ -715,18 +722,18 @@ function InfoRow({
   );
 }
 
-function SearchIcon() {
+function SearchIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
       <circle cx="11" cy="11" r="7" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" strokeLinecap="round" />
     </svg>
   );
 }
 
-function FileIcon() {
+function FileIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
       <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
       <polyline points="14 3 14 8 19 8" strokeLinejoin="round" />
     </svg>
