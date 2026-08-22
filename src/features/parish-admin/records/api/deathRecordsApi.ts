@@ -1,3 +1,4 @@
+import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
 import { MOCK_DEATH_RECORDS } from "@/services/mocks/deathRecords.mock";
 import { delay } from "@/services/delay";
 import type {
@@ -99,7 +100,11 @@ export async function generateDeathCertificate(
   if (!record) throw new Error(`Record ${recordId} not found`);
 
   const seq = String(record.certificates.length + 1).padStart(2, "0");
-  const code = `CF-DTH-${record.bookNumber}${record.pageNumber}-${seq}`;
+  const code = formatCertificateCode(
+    peekNumberingPrefix("death"),
+    `${record.bookNumber}${record.pageNumber}`,
+    seq
+  );
   const issuedDate = new Date().toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",

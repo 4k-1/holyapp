@@ -20,6 +20,7 @@ import {
   recordFullName,
   recordMotherName,
 } from "@/features/parish-admin/records/baptismalHelpers";
+import { getCertificateAppearance } from "@/features/parish-admin/settings/api/certificateConfigApi";
 import { useAsync } from "@/hooks/useAsync";
 import type { CertificateRequest, Parish } from "@/types";
 
@@ -47,6 +48,11 @@ export function AdminIssueCertificateModal({
         ? getBaptismalRecord(request.parishId, request.linkedRecordId)
         : Promise.resolve(undefined),
     [request.parishId, request.linkedRecordId]
+  );
+
+  const { data: appearance } = useAsync(
+    () => getCertificateAppearance(request.sacramentType),
+    [request.sacramentType]
   );
 
   const [verified, setVerified] = useState(false);
@@ -173,6 +179,7 @@ export function AdminIssueCertificateModal({
                     sacramentType={request.sacramentType}
                     subjectName={previewName}
                     fields={fields}
+                    appearance={appearance}
                   />
                 </div>
 

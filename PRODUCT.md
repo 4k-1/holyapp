@@ -45,8 +45,8 @@ Confirmed in the current frontend prototype:
 - Roles: `parishioner`, `parish_admin`, `parish_staff`; `super_admin` routed but not built.
 - Auth: find parish, login, register, OTP verification (mock).
 - Parishioner: certificate request wizard, request list/tracker, certificate wallet, donations, Mass intentions, account.
-- Admin: baptism, confirmation, marriage, and death registers (search, create, edit, detail, annotations); request queue with find-record, issue, and release; schedule; donations; parish profile; service fees; staff accounts; account security.
-- Settings stubs not yet built: certificate configuration, Mass intention rules, marriage application requirements, payment configuration, data & privacy.
+- Admin: baptism, confirmation, marriage, and death registers (search, create, edit, detail, annotations); request queue with find-record, issue, and release; schedule; donations; parish profile; service fees; staff accounts; certificate configuration (per-sacrament signatory, footer, numbering); account security.
+- Settings stubs not yet built: Mass intention rules, marriage application requirements, payment configuration, data & privacy.
 - Certificate verify route (`/verify/:hash`) is a placeholder.
 
 Constraints:

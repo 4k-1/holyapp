@@ -20,7 +20,8 @@ import { AdminSchedulePage } from "@/features/parish-admin/schedule/AdminSchedul
 import { AdminDonationsPage } from "@/features/parish-admin/donations/AdminDonationsPage";
 import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSettingsLayout";
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
-import {ServiceFeesSection} from "@/features/parish-admin/settings/components/ServiceFeesSection";  
+import { ServiceFeesSection } from "@/features/parish-admin/settings/components/ServiceFeesSection";
+import { CertificateConfigSection } from "@/features/parish-admin/settings/components/CertificateConfigSection";
 
 export const parishAdminRoutes: RouteObject[] = [
   {
@@ -69,6 +70,7 @@ export const parishAdminRoutes: RouteObject[] = [
           { index: true, element: <Navigate to="parish-profile" replace /> },
           { path: "parish-profile", element: <ParishProfileSection /> },
           { path: "fees", element: <ServiceFeesSection /> },
+          { path: "certificates", element: <CertificateConfigSection /> },
         ],
       },
       // ledgers, reports go here next

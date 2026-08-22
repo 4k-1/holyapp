@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import type { CertificateAppearance } from "@/features/parish-admin/settings/types";
 import type { Parish, SacramentType } from "@/types";
 
 export const sacramentCertTitles: Record<SacramentType, string> = {
@@ -14,6 +15,9 @@ export interface CertificateFields {
   birthdate?: string;
   birthplace?: string;
   baptismDate?: string;
+  confirmationDate?: string;
+  marriageDate?: string;
+  deathDate?: string;
   motherName?: string;
   fatherName?: string;
   certCode?: string;
@@ -24,13 +28,20 @@ interface CertificateDocumentProps {
   sacramentType: SacramentType;
   subjectName: string;
   fields: CertificateFields;
+  appearance?: CertificateAppearance;
 }
 
 const PRIMARY = "var(--color-primary, #0d3d30)";
 const ACCENT = "var(--color-accent, #c49a1a)";
 
+const FALLBACK_SIGNATORY_TITLE = "Parish Priest / Secretary";
+
 export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumentProps>(
-  function CertificateDocument({ parish, sacramentType, subjectName, fields }, ref) {
+  function CertificateDocument({ parish, sacramentType, subjectName, fields, appearance }, ref) {
+    const signatoryTitle = appearance?.signatoryTitle.trim() || FALLBACK_SIGNATORY_TITLE;
+    const signatoryName = appearance?.signatoryName.trim() ?? "";
+    const footerText = appearance?.footerText.trim() ?? "";
+
     return (
       <div
         ref={ref}
@@ -109,50 +120,34 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
         <p style={{ marginTop: 8, fontSize: 28, fontWeight: 600, lineHeight: 1.2, color: "#1a1f19" }}>{subjectName}</p>
 
         <div style={{ maxWidth: 420, margin: "22px auto 0", fontSize: 13, lineHeight: 1.7, color: "#3d443c" }}>
-          {fields.birthdate && (
-            <p style={{ margin: 0 }}>
-              was born on <b>{fields.birthdate}</b>
-              {fields.birthplace ? (
-                <>
-                  {" "}
-                  in <b>{fields.birthplace}</b>
-                </>
-              ) : null}
-            </p>
-          )}
-          {sacramentType === "baptism" && fields.baptismDate && (
-            <p style={{ margin: 0 }}>
-              and was baptized on <b>{fields.baptismDate}</b>
-            </p>
-          )}
-          {(fields.motherName || fields.fatherName) && (
-            <p style={{ margin: 0 }}>
-              child of{" "}
-              <b>
-                {fields.motherName || "—"} &amp; {fields.fatherName || "—"}
-              </b>
-            </p>
-          )}
+          <CertificateBody sacramentType={sacramentType} fields={fields} />
         </div>
 
         <div
           style={{
-            maxWidth: 300,
+            maxWidth: 360,
             margin: "22px auto 0",
             paddingTop: 8,
             borderTop: "1px solid #e6e6e0",
             fontSize: 10.5,
-            color: "#a3a39a",
+            color: "#7a8580",
+            lineHeight: 1.55,
           }}
         >
-          Register reference: {fields.registerRef}
+          {footerText && <p style={{ margin: "0 0 8px" }}>{footerText}</p>}
+          <p style={{ margin: 0, color: "#a3a39a" }}>Register reference: {fields.registerRef}</p>
         </div>
 
         <div style={{ marginTop: 34, display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 8px" }}>
           <div style={{ textAlign: "left" }}>
-            <div style={{ width: 120, height: 32, borderBottom: "1px solid #999" }} />
+            <div style={{ width: 148, height: 32, borderBottom: "1px solid #999" }} />
+            {signatoryName && (
+              <p style={{ marginTop: 6, marginBottom: 0, fontSize: 12, fontWeight: 600, color: "#1a1f19" }}>
+                {signatoryName}
+              </p>
+            )}
             <p style={{ marginTop: 4, fontSize: 9.5, letterSpacing: 0.5, textTransform: "uppercase", color: "#a3a39a" }}>
-              Parish Priest / Secretary
+              {signatoryTitle}
             </p>
           </div>
           <div
@@ -183,3 +178,59 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
     );
   }
 );
+
+function CertificateBody({
+  sacramentType,
+  fields,
+}: {
+  sacramentType: SacramentType;
+  fields: CertificateFields;
+}) {
+  const showParents =
+    (sacramentType === "baptism" || sacramentType === "confirmation") &&
+    (fields.motherName || fields.fatherName);
+
+  return (
+    <>
+      {fields.birthdate && sacramentType !== "marriage" && (
+        <p style={{ margin: 0 }}>
+          was born on <b>{fields.birthdate}</b>
+          {fields.birthplace ? (
+            <>
+              {" "}
+              in <b>{fields.birthplace}</b>
+            </>
+          ) : null}
+        </p>
+      )}
+      {sacramentType === "baptism" && fields.baptismDate && (
+        <p style={{ margin: 0 }}>
+          and was baptized on <b>{fields.baptismDate}</b>
+        </p>
+      )}
+      {sacramentType === "confirmation" && fields.confirmationDate && (
+        <p style={{ margin: 0 }}>
+          and was confirmed on <b>{fields.confirmationDate}</b>
+        </p>
+      )}
+      {sacramentType === "marriage" && fields.marriageDate && (
+        <p style={{ margin: 0 }}>
+          were united in holy matrimony on <b>{fields.marriageDate}</b>
+        </p>
+      )}
+      {sacramentType === "death" && fields.deathDate && (
+        <p style={{ margin: 0 }}>
+          departed this life on <b>{fields.deathDate}</b>
+        </p>
+      )}
+      {showParents && (
+        <p style={{ margin: 0 }}>
+          child of{" "}
+          <b>
+            {fields.motherName || "—"} &amp; {fields.fatherName || "—"}
+          </b>
+        </p>
+      )}
+    </>
+  );
+}

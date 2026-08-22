@@ -1,5 +1,6 @@
 import { MOCK_MARRIAGE_RECORDS } from "@/services/mocks/marriageRecords.mock";
 import { delay } from "@/services/delay";
+import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
 import type {
   MarriageConsentPerson,
   MarriageParty,
@@ -90,7 +91,11 @@ export async function generateMarriageCertificate(
   if (!record) throw new Error(`Record ${recordId} not found`);
 
   const seq = String(record.certificates.length + 1).padStart(2, "0");
-  const code = `CF-MRG-${record.bookNumber}${record.pageNumber}-${seq}`;
+  const code = formatCertificateCode(
+    peekNumberingPrefix("marriage"),
+    `${record.bookNumber}${record.pageNumber}`,
+    seq
+  );
   const issuedDate = new Date().toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",

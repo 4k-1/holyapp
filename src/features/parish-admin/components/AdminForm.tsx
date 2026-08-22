@@ -1,4 +1,10 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SVGProps } from "react";
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SVGProps,
+  TextareaHTMLAttributes,
+} from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 
 const fieldInputClass =
@@ -31,6 +37,13 @@ export function AdminField({
       {children}
     </div>
   );
+}
+
+export function AdminTextarea({
+  className = "",
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={`${fieldInputClass} min-h-[88px] resize-y ${className}`} {...props} />;
 }
 
 export function AdminInput({

@@ -1,3 +1,4 @@
+import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
 import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
 import { MOCK_CERTIFICATES } from "@/services/mocks/certificates.mock";
 import { delay } from "@/services/delay";
@@ -53,16 +54,9 @@ export async function linkRequestToRecord(
   return { ...request };
 }
 
-const certPrefix: Record<SacramentType, string> = {
-  baptism: "BAP",
-  confirmation: "CFM",
-  marriage: "MRG",
-  death: "DTH",
-};
-
 function generateCertCode(sacramentType: SacramentType): string {
   const suffix = String(Date.now()).slice(-4);
-  return `CF-${certPrefix[sacramentType]}-${suffix}-01`;
+  return formatCertificateCode(peekNumberingPrefix(sacramentType), suffix, "01");
 }
 
 export interface IssueCertificateResult {

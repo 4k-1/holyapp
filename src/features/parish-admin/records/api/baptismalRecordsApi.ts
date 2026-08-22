@@ -1,3 +1,4 @@
+import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
 import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
 import { delay } from "@/services/delay";
 import type { BaptismalRecord } from "@/features/parish-admin/records/types";
@@ -62,7 +63,11 @@ export async function generateBaptismalCertificate(
   if (!record) throw new Error(`Record ${recordId} not found`);
 
   const seq = String(record.certificates.length + 1).padStart(2, "0");
-  const code = `CF-BAP-${record.bookNumber}${record.pageNumber}-${seq}`;
+  const code = formatCertificateCode(
+    peekNumberingPrefix("baptism"),
+    `${record.bookNumber}${record.pageNumber}`,
+    seq
+  );
   const issuedDate = new Date().toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",

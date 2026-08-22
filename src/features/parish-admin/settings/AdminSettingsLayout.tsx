@@ -1,8 +1,11 @@
 // src/features/parish-admin/settings/AdminSettingsLayout.tsx
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useOutletContext } from "react-router-dom";
 import { SETTINGS_SECTIONS } from "./types";
+import type { Parish } from "@/types";
 
 export function AdminSettingsLayout() {
+  const { parish } = useOutletContext<{ parish: Parish }>();
+
   return (
     <div>
       <div className="mb-5">
@@ -42,7 +45,7 @@ export function AdminSettingsLayout() {
         </nav>
 
         <div>
-          <Outlet />
+          <Outlet context={{ parish }} />
         </div>
       </div>
     </div>

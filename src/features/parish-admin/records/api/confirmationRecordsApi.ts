@@ -1,3 +1,4 @@
+import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
 import { MOCK_CONFIRMATION_RECORDS } from "@/services/mocks/confirmationRecords.mock";
 import { delay } from "@/services/delay";
 import type { ConfirmationRecord } from "@/features/parish-admin/records/types";
@@ -62,7 +63,11 @@ export async function generateConfirmationCertificate(
   if (!record) throw new Error(`Record ${recordId} not found`);
 
   const seq = String(record.certificates.length + 1).padStart(2, "0");
-  const code = `CF-CFM-${record.bookNumber}${record.pageNumber}-${seq}`;
+  const code = formatCertificateCode(
+    peekNumberingPrefix("confirmation"),
+    `${record.bookNumber}${record.pageNumber}`,
+    seq
+  );
   const issuedDate = new Date().toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
