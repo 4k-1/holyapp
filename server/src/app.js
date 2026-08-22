@@ -26,7 +26,9 @@ app.get('/db-test', async (req, res) => {
 });
 
 const authRoutes = require('./routes/authRoutes');
+const rbacRoutes = require('./routes/rbacRoutes');
 app.use('/auth', authRoutes);
+app.use('/rbac', rbacRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
