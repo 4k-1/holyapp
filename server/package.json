@@ -8,7 +8,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/app.js",
-    "start": "node src/app.js"
+    "start": "node src/app.js",
+    "seed:auth": "node scripts/seed-auth-users.js",
+    "hash-password": "node scripts/hash-password.js"
   },
   "keywords": [],
   "author": "",
