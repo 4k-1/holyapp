@@ -1,9 +1,13 @@
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
+const { comparePassword } = require('../utils/password');
 
 async function login(req, res) {
-  const { email, password_hash } = req.body;
-  // NOTE: replace password_hash comparison with real bcrypt.compare in HS-7
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+
   try {
     const result = await pool.query(
       'SELECT id, parish_id, role, first_name, middle_name, last_name, email, password_hash, status FROM app_user WHERE email = $1',
@@ -12,14 +16,17 @@ async function login(req, res) {
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
     const user = result.rows[0];
     if (user.status !== 'active') {
       return res.status(403).json({ error: 'Account is not active' });
     }
-    // Temporary plain comparison — HS-7 replaces this with bcrypt.compare()
-    if (password_hash !== user.password_hash) {
+
+    const passwordMatches = await comparePassword(password, user.password_hash);
+    if (!passwordMatches) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
     const token = jwt.sign(
       {
         sub: user.id,
@@ -29,6 +36,7 @@ async function login(req, res) {
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
     );
+
     res.json({
       token,
       user: {
