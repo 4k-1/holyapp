@@ -22,6 +22,7 @@ import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSetti
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
 import { ServiceFeesSection } from "@/features/parish-admin/settings/components/ServiceFeesSection";
 import { CertificateConfigSection } from "@/features/parish-admin/settings/components/CertificateConfigSection";
+import { AccountSecuritySection } from "@/features/parish-admin/settings/components/AccountSecuritySection";
 
 export const parishAdminRoutes: RouteObject[] = [
   {
@@ -71,6 +72,7 @@ export const parishAdminRoutes: RouteObject[] = [
           { path: "parish-profile", element: <ParishProfileSection /> },
           { path: "fees", element: <ServiceFeesSection /> },
           { path: "certificates", element: <CertificateConfigSection /> },
+          { path: "security", element: <AccountSecuritySection /> },
         ],
       },
       // ledgers, reports go here next

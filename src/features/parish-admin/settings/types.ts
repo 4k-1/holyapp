@@ -30,6 +30,24 @@ export interface CertificateAppearance {
 
 export type CertificateConfigBySacrament = Record<SacramentType, CertificateAppearance>;
 
+export interface LoginSession {
+  id: string;
+  device: string;
+  location: string;
+  lastActive: string;
+  current: boolean;
+}
+
+export type LoginActivityStatus = "success" | "failed";
+
+export interface LoginActivityEntry {
+  id: string;
+  timestamp: string;
+  device: string;
+  location: string;
+  status: LoginActivityStatus;
+}
+
 export type SettingsSectionId =
   | "profile"
   | "fees"
@@ -59,5 +77,5 @@ export const SETTINGS_SECTIONS: SettingsSectionMeta[] = [
   { id: "marriage-reqs", label: "Marriage Application Requirements", path: "marriage-requirements", enabled: false },
   { id: "payment", label: "Payment Configuration", path: "payment", enabled: false },
   { id: "privacy", label: "Data & Privacy", path: "privacy", enabled: false },
-  { id: "security", label: "Account & Security", path: "security", enabled: false },
+  { id: "security", label: "Account & Security", path: "security", enabled: true },
 ];
