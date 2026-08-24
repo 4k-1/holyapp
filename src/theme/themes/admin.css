@@ -1,4 +1,18 @@
 [data-portal="admin"] {
+    /* Type roles: page / section / group / metric (Fraunces) + body / support / label (Inter). */
+    --text-admin-page: 1.5rem;
+    --text-admin-section: 1.1875rem;
+    --text-admin-group: 0.9375rem;
+    --text-admin-metric: 1.75rem;
+    --text-admin-body: 0.84375rem;
+    --text-admin-support: 0.78125rem;
+    --text-admin-label: 0.71875rem;
+    --tracking-admin-label: 0.04em;
+    font-size: var(--text-admin-body);
+    line-height: 1.45;
+    font-family: var(--font-sans);
+    caret-color: var(--color-admin-green-700);
+
     --color-admin-bg: #f7f9f9;
     --color-admin-surface: #ffffff;
     --color-admin-surface-alt: #f2f7f6;
@@ -21,4 +35,9 @@
     --color-admin-amber-100: #fef0d6;
     --radius: 12px;
     --radius-sm: 8px;
+  }
+
+  [data-portal="admin"] ::selection {
+    background: var(--color-admin-green-100);
+    color: var(--color-admin-green-900);
   }

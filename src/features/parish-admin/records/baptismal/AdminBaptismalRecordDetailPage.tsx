@@ -40,7 +40,7 @@ export function AdminBaptismalRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
+        <p className="text-admin-body text-admin-ink-muted">Loading record…</p>
       </div>
     );
   }
@@ -49,8 +49,8 @@ export function AdminBaptismalRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
-        <p className="text-[13.5px] text-admin-ink-muted">
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <p className="text-admin-body text-admin-ink-muted">
           This baptismal record is not available for this parish.
         </p>
       </div>
@@ -76,15 +76,15 @@ export function AdminBaptismalRecordDetailPage() {
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-green-100 font-serif text-[17px] font-bold text-admin-green-700 ring-1 ring-inset ring-admin-green-600/20">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-green-100 font-serif text-admin-group font-bold text-admin-green-700 ring-1 ring-inset ring-admin-green-600/20">
             {initials(name)}
           </div>
           <div>
-            <p className="mb-1 text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-green-700">
+            <p className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-green-700">
               Baptismal Record
             </p>
-            <h1 className="mb-1.5 font-serif text-[24px] font-semibold leading-tight text-admin-ink">{name}</h1>
-            <p className="mb-2.5 text-[13px] text-admin-ink-muted">
+            <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
+            <p className="mb-2.5 text-admin-body text-admin-ink-muted">
               Baptized {formatRecordDate(record.dateOfBaptism)} at {record.placeOfBaptism}
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -171,7 +171,7 @@ export function AdminBaptismalRecordDetailPage() {
       {record.remarks && (
         <RecordDetailSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks">
           <div className="p-5 px-[22px]">
-            <p className="text-[13.5px] leading-relaxed text-admin-ink">{record.remarks}</p>
+            <p className="text-admin-body leading-relaxed text-admin-ink">{record.remarks}</p>
           </div>
         </RecordDetailSection>
       )}
@@ -193,7 +193,7 @@ export function AdminBaptismalRecordDetailPage() {
       >
         <div className="px-[22px]">
           {certs.length === 0 ? (
-            <p className="py-5 text-[11.5px] text-admin-ink-faint">
+            <p className="py-5 text-admin-label text-admin-ink-faint">
               No certificates have been generated from this record yet.
             </p>
           ) : (
@@ -205,7 +205,7 @@ export function AdminBaptismalRecordDetailPage() {
                 }`}
               >
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold text-admin-ink">
+                  <div className="flex flex-wrap items-center gap-2 text-admin-body font-semibold text-admin-ink">
                     {c.type}
                     <AdminBadge tone={certStatusTone(c.status)}>{c.status}</AdminBadge>
                   </div>

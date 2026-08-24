@@ -8,7 +8,7 @@ import type {
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 
 const fieldInputClass =
-  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 export function AdminFormPage({
   children,
@@ -31,7 +31,7 @@ export function AdminField({
 }) {
   return (
     <div className={`mb-4 ${className}`}>
-      <label className="mb-1.5 block text-[11.5px] font-semibold uppercase tracking-[0.5px] text-admin-ink-muted">
+      <label className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
         {label}
       </label>
       {children}
@@ -154,8 +154,8 @@ export function AdminFormSection({
           {icon}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-serif text-[15px] font-semibold leading-tight text-admin-ink">{title}</h2>
-          {description && <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">{description}</p>}
+          <h2 className="font-serif text-admin-group font-semibold leading-tight text-admin-ink">{title}</h2>
+          {description && <p className="mt-0.5 text-admin-support text-admin-ink-muted">{description}</p>}
         </div>
         {right && <div className="shrink-0">{right}</div>}
       </div>
@@ -184,7 +184,7 @@ export function AdminFieldGroup({
       {(title || right) && (
         <div className="mb-2.5 flex items-center justify-between gap-2">
           {title && (
-            <p className="text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-gold-700">{title}</p>
+            <p className="text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">{title}</p>
           )}
           {right}
         </div>
@@ -258,7 +258,7 @@ export function AdminButton({
   size?: "sm" | "md";
   children: ReactNode;
 }) {
-  const sizeClass = size === "sm" ? "px-[11px] py-1.5 text-[12.5px]" : "px-4 py-[9px] text-[13.5px]";
+  const sizeClass = size === "sm" ? "px-[11px] py-1.5 text-admin-support" : "px-4 py-[9px] text-admin-body";
   return (
     <button
       type={type}

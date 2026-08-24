@@ -18,7 +18,7 @@ const toneClasses: Record<BadgeTone, string> = {
 export function AdminBadge({ tone, children }: AdminBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${toneClasses[tone]}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-1 text-admin-label font-semibold ${toneClasses[tone]}`}
     >
       {children}
     </span>

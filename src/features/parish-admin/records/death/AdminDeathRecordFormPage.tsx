@@ -87,7 +87,7 @@ const emptyForm = (): FormState => ({
 });
 
 const textareaClass =
-  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 function parseOptionalInt(value: string): number | undefined {
   const trimmed = value.trim();
@@ -145,7 +145,7 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
     return (
       <AdminFormPage>
         <BackLink />
-        <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
+        <p className="text-admin-body text-admin-ink-muted">Loading record…</p>
       </AdminFormPage>
     );
   }
@@ -154,7 +154,7 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
     return (
       <AdminFormPage>
         <BackLink />
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
       </AdminFormPage>
     );
   }
@@ -236,10 +236,10 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
       <BackLink />
 
       <div className="mb-5">
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">
           {mode === "edit" ? "Edit" : "Add"} Death Record
         </h1>
-        <p className="text-[13.5px] text-admin-ink-muted">
+        <p className="text-admin-body text-admin-ink-muted">
           Enter details exactly as they appear in the parish death register.
         </p>
       </div>
@@ -405,7 +405,7 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
         >
           <div className="flex flex-wrap gap-4">
             {DEATH_SACRAMENT_OPTIONS.map((name) => (
-              <label key={name} className="flex cursor-pointer items-center gap-2 text-[13.5px] text-admin-ink">
+              <label key={name} className="flex cursor-pointer items-center gap-2 text-admin-body text-admin-ink">
                 <input
                   type="checkbox"
                   checked={form.sacramentsReceived.includes(name)}
@@ -429,7 +429,7 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
           }
         >
           {form.kin.length === 0 ? (
-            <p className="text-[11.5px] text-admin-ink-faint">No next of kin recorded.</p>
+            <p className="text-admin-label text-admin-ink-faint">No next of kin recorded.</p>
           ) : (
             form.kin.map((k, i) => (
               <div
@@ -488,7 +488,7 @@ function BackLink() {
     <button
       type="button"
       onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-[13px] text-admin-ink-muted hover:text-admin-green-700"
+      className="mb-3.5 inline-flex items-center gap-1.5 text-admin-body text-admin-ink-muted hover:text-admin-green-700"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
         <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />

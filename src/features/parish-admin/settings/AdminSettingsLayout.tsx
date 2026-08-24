@@ -9,8 +9,8 @@ export function AdminSettingsLayout() {
   return (
     <div>
       <div className="mb-5">
-        <h1 className="font-serif text-2xl font-semibold text-admin-ink">Settings</h1>
-        <p className="mt-1 text-[13px] text-admin-ink-muted">
+        <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Settings</h1>
+        <p className="mt-1 text-admin-body text-admin-ink-muted">
           Parish-wide defaults that apply automatically across the rest of the system.
         </p>
       </div>
@@ -23,7 +23,7 @@ export function AdminSettingsLayout() {
                 key={s.id}
                 to={s.path}
                 className={({ isActive }) =>
-                  `rounded-lg px-3 py-2.5 text-left text-[13px] font-semibold transition ${
+                  `rounded-lg px-3 py-2.5 text-left text-admin-body font-semibold transition ${
                     isActive
                       ? "bg-admin-green-100 text-admin-green-900"
                       : "text-admin-ink-muted hover:bg-admin-surface-alt hover:text-admin-ink"
@@ -35,10 +35,10 @@ export function AdminSettingsLayout() {
             ) : (
               <span
                 key={s.id}
-                className="cursor-not-allowed rounded-lg px-3 py-2.5 text-left text-[13px] font-semibold text-admin-ink-faint"
+                className="cursor-not-allowed rounded-lg px-3 py-2.5 text-left text-admin-body font-semibold text-admin-ink-faint"
               >
                 {s.label}
-                <span className="ml-1.5 text-[10.5px] font-normal">(coming soon)</span>
+                <span className="ml-1.5 text-admin-label font-normal">(coming soon)</span>
               </span>
             )
           )}

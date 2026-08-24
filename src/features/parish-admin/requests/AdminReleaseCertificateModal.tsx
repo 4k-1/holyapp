@@ -98,10 +98,10 @@ export function AdminReleaseCertificateModal({
       <div className="relative z-10 flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
           <div>
-            <h3 className="font-serif text-lg font-semibold text-admin-ink">
+            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
               {done ? "Certificate released" : "Release certificate"}
             </h3>
-            <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">
+            <p className="mt-0.5 text-admin-support text-admin-ink-muted">
               Request {request.id} · {sacramentCertTitles[request.sacramentType]}
             </p>
           </div>
@@ -119,14 +119,14 @@ export function AdminReleaseCertificateModal({
 
         <div className="overflow-y-auto px-6 py-5">
           {loading ? (
-            <p className="text-[13.5px] text-admin-ink-muted">Loading record data…</p>
+            <p className="text-admin-body text-admin-ink-muted">Loading record data…</p>
           ) : done ? (
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-admin-green-100 text-admin-green-700">
                 <CheckIcon className="h-6 w-6" />
               </div>
-              <h4 className="font-serif text-xl font-semibold text-admin-ink">Certificate released</h4>
-              <p className="mx-auto mt-2 max-w-sm text-[13.5px] leading-relaxed text-admin-ink-muted">
+              <h4 className="font-serif text-admin-page font-semibold text-admin-ink">Certificate released</h4>
+              <p className="mx-auto mt-2 max-w-sm text-admin-body leading-relaxed text-admin-ink-muted">
                 {copies} {copies > 1 ? "copies" : "copy"} of{" "}
                 <span className="font-semibold text-admin-ink">{registerName}</span>&apos;s certificate
                 handed to <span className="font-semibold text-admin-ink">{releasedTo}</span>.
@@ -143,14 +143,14 @@ export function AdminReleaseCertificateModal({
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <AdminDeliveryTag method="pickup" />
                 <AdminBadge tone="gold">Ready for pickup</AdminBadge>
-                <span className="text-[12px] text-admin-ink-muted">
+                <span className="text-admin-support text-admin-ink-muted">
                   {copies} {copies > 1 ? "copies" : "copy"} · {request.purpose ?? "General purpose"}
                 </span>
               </div>
 
               <div className="mb-4 rounded-[10px] border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
-                <p className="text-[13.5px] font-semibold text-admin-green-900">{registerName}</p>
-                <p className="mt-0.5 text-[12px] text-admin-ink-muted">
+                <p className="text-admin-body font-semibold text-admin-green-900">{registerName}</p>
+                <p className="mt-0.5 text-admin-support text-admin-ink-muted">
                   {sacramentCertTitles[request.sacramentType]} · {registerRef}
                 </p>
               </div>
@@ -176,7 +176,7 @@ export function AdminReleaseCertificateModal({
               {ENABLE_PRINT_RECEIPT && (
                 <div className="mb-4">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <h4 className="font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+                    <h4 className="font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                       Pickup receipt preview
                     </h4>
                     <AdminButton variant="ghost" size="sm" className="py-0.5" onClick={printReceipt}>
@@ -207,7 +207,7 @@ export function AdminReleaseCertificateModal({
                     onChange={(e) => setPrintOnRelease(e.target.checked)}
                     className="mt-0.5 h-4 w-4 rounded border-admin-border-strong accent-admin-green-700"
                   />
-                  <span className="text-[13px] leading-relaxed text-admin-ink">
+                  <span className="text-admin-body leading-relaxed text-admin-ink">
                     Print pickup receipt when released (for parish records and recipient copy)
                   </span>
                 </label>
@@ -220,7 +220,7 @@ export function AdminReleaseCertificateModal({
                   onChange={(e) => setConfirmed(e.target.checked)}
                   className="mt-0.5 h-4 w-4 rounded border-admin-border-strong accent-admin-green-700"
                 />
-                <span className="text-[13px] leading-relaxed text-admin-ink">
+                <span className="text-admin-body leading-relaxed text-admin-ink">
                   I confirm the certificate was physically handed to the recipient listed above.
                 </span>
               </label>

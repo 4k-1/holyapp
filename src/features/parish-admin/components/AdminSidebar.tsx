@@ -77,10 +77,10 @@ export function AdminSidebar({ parish, role }: AdminSidebarProps) {
         )}
         {!collapsed && (
           <div className="min-w-0 overflow-hidden whitespace-nowrap leading-tight">
-            <p className="truncate font-serif text-[14.5px] font-semibold tracking-[0.2px] text-admin-green-900">
+            <p className="truncate font-serif text-admin-group font-semibold text-admin-green-900">
               Parish Admin Portal
             </p>
-            <p className="mt-0.5 truncate text-[10px] tracking-[0.3px] text-admin-ink-muted">{parish.name}</p>
+            <p className="mt-0.5 truncate text-admin-label tracking-admin-label text-admin-ink-muted">{parish.name}</p>
           </div>
         )}
       </div>
@@ -138,7 +138,7 @@ function SidebarLink({
       end={end}
       data-label={label}
       className={({ isActive }) =>
-        `group relative mb-0.5 flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-[13.5px] transition-colors duration-100 ${
+        `group relative mb-0.5 flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-admin-body transition-colors duration-100 ${
           collapsed ? "justify-center px-0 py-2.5" : "px-2.5 py-[9px]"
         } ${
           isActive
@@ -183,7 +183,7 @@ function SidebarGroup({
     <div>
       <div
         data-label={label}
-        className={`group relative mb-0.5 flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-[13.5px] ${
+        className={`group relative mb-0.5 flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-admin-body ${
           collapsed ? "justify-center px-0 py-2.5" : "px-2.5 py-[9px]"
         } ${active ? "font-semibold text-admin-green-700" : "text-admin-ink-muted"}`}
       >
@@ -209,7 +209,7 @@ function SidebarSubLink({ to, label }: { to: string; label: string }) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `mb-0.5 block rounded-lg px-2.5 py-[7px] text-[14px] transition-colors duration-100 ${
+        `mb-0.5 block rounded-lg px-2.5 py-[7px] text-admin-body transition-colors duration-100 ${
           isActive
             ? "bg-admin-green-100/60 font-semibold text-admin-green-700"
             : "text-admin-ink-muted hover:bg-admin-surface-alt hover:text-admin-ink"

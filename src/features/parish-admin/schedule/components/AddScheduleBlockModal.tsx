@@ -60,7 +60,7 @@ export function AddScheduleBlockModal({ defaultDate, onClose, onCreated }: AddSc
       <div className="absolute inset-0 bg-black/45" onClick={submitting ? undefined : onClose} aria-hidden="true" />
       <div className="relative z-10 w-full max-w-[480px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
         <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
-          <h3 className="font-serif text-lg font-semibold text-admin-ink">Add to schedule</h3>
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Add to schedule</h3>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt" aria-label="Close">
             ✕
           </button>
@@ -88,7 +88,7 @@ export function AddScheduleBlockModal({ defaultDate, onClose, onCreated }: AddSc
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as ScheduleEventType)}
-                className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-[13.5px] text-admin-ink"
+                className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
               >
                 {Object.entries(EVENT_TYPE_LABELS).map(([val, label]) => (
                   <option key={val} value={val}>
@@ -101,7 +101,7 @@ export function AddScheduleBlockModal({ defaultDate, onClose, onCreated }: AddSc
               <select
                 value={assignee}
                 onChange={(e) => setAssignee(e.target.value)}
-                className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-[13.5px] text-admin-ink"
+                className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
               >
                 <option value="">Unassigned</option>
                 {staff.map((s) => (
@@ -114,7 +114,7 @@ export function AddScheduleBlockModal({ defaultDate, onClose, onCreated }: AddSc
           </div>
 
           {conflict && (
-            <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-[12.5px] text-admin-gold-700">
+            <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">
               {conflict.assignee ? `${conflict.assignee} already has` : "There's already"}{" "}
               <span className="font-semibold">{conflict.title}</span> at {conflict.start}–{conflict.end} on this
               date.

@@ -30,8 +30,8 @@ export function AdminTopbar({ user }: AdminTopbarProps) {
           {initials}
         </div>
         <div className="leading-tight">
-          <p className="text-[13px] font-semibold text-admin-ink">{user.fullName}</p>
-          <p className="text-[11px] text-admin-ink-muted">{roleLabel}</p>
+          <p className="text-admin-body font-semibold text-admin-ink">{user.fullName}</p>
+          <p className="text-admin-label text-admin-ink-muted">{roleLabel}</p>
         </div>
         <ChevronDownIcon className="h-3.5 w-3.5 text-admin-ink-muted" />
       </div>

@@ -11,8 +11,8 @@ export function AdminSettingsPage() {
   return (
     <div>
       <div className="mb-5">
-        <h1 className="font-serif text-2xl font-semibold text-admin-ink">Settings</h1>
-        <p className="mt-1 text-[13px] text-admin-ink-muted">
+        <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Settings</h1>
+        <p className="mt-1 text-admin-body text-admin-ink-muted">
           Parish-wide defaults that apply automatically across the rest of the system.
         </p>
       </div>
@@ -24,7 +24,7 @@ export function AdminSettingsPage() {
               key={s.id}
               onClick={() => setSectionId(s.id)}
               disabled={!s.enabled}
-              className={`rounded-lg px-3 py-2.5 text-left text-[13px] font-semibold transition ${
+              className={`rounded-lg px-3 py-2.5 text-left text-admin-body font-semibold transition ${
                 sectionId === s.id
                   ? "bg-admin-green-100 text-admin-green-900"
                   : s.enabled
@@ -33,7 +33,7 @@ export function AdminSettingsPage() {
               }`}
             >
               {s.label}
-              {!s.enabled && <span className="ml-1.5 text-[10.5px] font-normal">(coming soon)</span>}
+              {!s.enabled && <span className="ml-1.5 text-admin-label font-normal">(coming soon)</span>}
             </button>
           ))}
         </nav>
@@ -43,8 +43,8 @@ export function AdminSettingsPage() {
             <ParishProfileSection />
           ) : (
             <div className="rounded-[10px] border border-dashed border-admin-border-strong px-5 py-10 text-center">
-              <p className="text-[13.5px] font-semibold text-admin-ink">{activeSection.label} isn't wired up yet</p>
-              <p className="mt-1 text-[12.5px] text-admin-ink-muted">Say the word when you're ready to build this one.</p>
+              <p className="text-admin-body font-semibold text-admin-ink">{activeSection.label} isn't wired up yet</p>
+              <p className="mt-1 text-admin-support text-admin-ink-muted">Say the word when you're ready to build this one.</p>
             </div>
           )}
         </div>

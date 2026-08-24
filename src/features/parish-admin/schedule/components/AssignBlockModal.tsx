@@ -34,8 +34,8 @@ export function AssignBlockModal({ occurrence, onClose, onAssigned }: AssignBloc
       <div className="absolute inset-0 bg-black/45" onClick={submitting ? undefined : onClose} aria-hidden="true" />
       <div className="relative z-10 w-full max-w-[380px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
         <div className="border-b border-admin-border px-6 py-4">
-          <h3 className="font-serif text-lg font-semibold text-admin-ink">{occurrence.assignee ? "Reassign" : "Assign"}</h3>
-          <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">{occurrence.assignee ? "Reassign" : "Assign"}</h3>
+          <p className="mt-0.5 text-admin-support text-admin-ink-muted">
             {occurrence.title} · {occurrence.start}–{occurrence.end}
           </p>
         </div>
@@ -44,7 +44,7 @@ export function AssignBlockModal({ occurrence, onClose, onAssigned }: AssignBloc
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-[13.5px] text-admin-ink"
+            className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
           >
             <option value="">Unassigned</option>
             {staff.map((s) => (
@@ -54,7 +54,7 @@ export function AssignBlockModal({ occurrence, onClose, onAssigned }: AssignBloc
             ))}
           </select>
           {occurrence.isRecurringOccurrence && (
-            <p className="mt-2 text-[11.5px] text-admin-ink-faint">
+            <p className="mt-2 text-admin-label text-admin-ink-faint">
               This only reassigns this single occurrence — the recurring schedule itself won't change.
             </p>
           )}

@@ -128,13 +128,13 @@ export function AccountSecuritySection() {
   }
 
   if (loading || !user) {
-    return <p className="text-[13.5px] text-admin-ink-muted">Loading…</p>;
+    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
   }
 
   if (loadError) {
     return (
       <AdminCard className="p-5 px-[22px]">
-        <p className="text-[13.5px] text-admin-ink">{loadError}</p>
+        <p className="text-admin-body text-admin-ink">{loadError}</p>
         <AdminButton variant="secondary" size="sm" className="mt-3" onClick={loadOverview}>
           Try again
         </AdminButton>
@@ -147,18 +147,18 @@ export function AccountSecuritySection() {
   return (
     <div className="space-y-5">
       <AdminCard className="p-5 px-[22px]">
-        <h2 className="mb-1 font-serif text-[19px] font-semibold text-admin-ink">Sign-in &amp; Password</h2>
-        <p className="mb-4 text-[12.5px] text-admin-ink-muted">
+        <h2 className="mb-1 font-serif text-admin-section font-semibold text-admin-ink">Sign-in &amp; Password</h2>
+        <p className="mb-4 text-admin-support text-admin-ink-muted">
           Passwords are changed by email verification rather than in-portal, so a stolen session alone
           can't be used to change your credentials.
         </p>
 
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-admin-border bg-admin-surface-alt px-4 py-3">
           <div className="min-w-0">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.5px] text-admin-ink-muted">
+            <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
               Account email
             </p>
-            <p className="break-all text-[13.5px] font-semibold text-admin-ink">{user.email}</p>
+            <p className="break-all text-admin-body font-semibold text-admin-ink">{user.email}</p>
           </div>
           <AdminButton
             variant="secondary"
@@ -170,12 +170,12 @@ export function AccountSecuritySection() {
           </AdminButton>
         </div>
         {resetSent && (
-          <p className="mt-2.5 text-[12px] text-admin-green-700" role="status">
+          <p className="mt-2.5 text-admin-support text-admin-green-700" role="status">
             Reset link sent to {user.email} — check your inbox. The link expires in 30 minutes.
           </p>
         )}
         {resetError && (
-          <p className="mt-2.5 text-[12px] font-semibold text-admin-red-700" role="alert">
+          <p className="mt-2.5 text-admin-support font-semibold text-admin-red-700" role="alert">
             {resetError}
           </p>
         )}
@@ -185,19 +185,19 @@ export function AccountSecuritySection() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 id="two-factor-heading" className="font-serif text-[19px] font-semibold text-admin-ink">
+              <h2 id="two-factor-heading" className="font-serif text-admin-section font-semibold text-admin-ink">
                 Two-Factor Authentication
               </h2>
               <AdminBadge tone={twoFactorEnabled ? "green" : "muted"}>
                 {twoFactorEnabled ? "On" : "Off"}
               </AdminBadge>
             </div>
-            <p className="mt-1 text-[12.5px] text-admin-ink-muted">
+            <p className="mt-1 text-admin-support text-admin-ink-muted">
               Require a one-time code sent to your email in addition to your password when signing in
               from a new device.
             </p>
             {twoFactorEnabled && (
-              <p className="mt-2 text-[12.5px] text-admin-ink">
+              <p className="mt-2 text-admin-support text-admin-ink">
                 Codes will be sent to {user.email} on the next sign-in from a new device.
               </p>
             )}
@@ -210,12 +210,12 @@ export function AccountSecuritySection() {
           />
         </div>
         {twoFactorJustEnabled && twoFactorEnabled && (
-          <p className="mt-3 text-[12px] text-admin-green-700" role="status">
+          <p className="mt-3 text-admin-support text-admin-green-700" role="status">
             Two-factor authentication is on.
           </p>
         )}
         {twoFactorError && (
-          <p className="mt-3 text-[12px] font-semibold text-admin-red-700" role="alert">
+          <p className="mt-3 text-admin-support font-semibold text-admin-red-700" role="alert">
             {twoFactorError}
           </p>
         )}
@@ -224,8 +224,8 @@ export function AccountSecuritySection() {
       <AdminCard className="overflow-hidden p-0">
         <div className="flex flex-wrap items-start justify-between gap-3 px-[22px] py-5">
           <div>
-            <h2 className="font-serif text-[19px] font-semibold text-admin-ink">Active Sessions</h2>
-            <p className="mt-1 text-[12.5px] text-admin-ink-muted">
+            <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Active Sessions</h2>
+            <p className="mt-1 text-admin-support text-admin-ink-muted">
               Devices currently signed in to this account.
             </p>
           </div>
@@ -233,7 +233,7 @@ export function AccountSecuritySection() {
             <button
               type="button"
               onClick={() => setConfirmSignOutAll(true)}
-              className="shrink-0 rounded-md text-[12.5px] font-semibold text-admin-red-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25"
+              className="shrink-0 rounded-md text-admin-support font-semibold text-admin-red-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25"
             >
               Sign out of all other sessions
             </button>
@@ -241,14 +241,14 @@ export function AccountSecuritySection() {
         </div>
 
         {sessionError && (
-          <p className="px-[22px] pb-3 text-[12px] font-semibold text-admin-red-700" role="alert">
+          <p className="px-[22px] pb-3 text-admin-support font-semibold text-admin-red-700" role="alert">
             {sessionError}
           </p>
         )}
 
         <div className="divide-y divide-admin-border border-t border-admin-border">
           {sessions.length === 0 ? (
-            <p className="px-[22px] py-8 text-center text-[13px] text-admin-ink-muted">
+            <p className="px-[22px] py-8 text-center text-admin-body text-admin-ink-muted">
               No active sessions on this account.
             </p>
           ) : (
@@ -259,15 +259,15 @@ export function AccountSecuritySection() {
                     {isMobileDevice(s.device) ? <PhoneIcon /> : <MonitorIcon />}
                   </span>
                   <div>
-                    <p className="text-[13.5px] font-semibold text-admin-ink">
+                    <p className="text-admin-body font-semibold text-admin-ink">
                       {s.device}
                       {s.current && (
-                        <span className="ml-2 text-[11px] font-semibold text-admin-green-700">
+                        <span className="ml-2 text-admin-label font-semibold text-admin-green-700">
                           This device
                         </span>
                       )}
                     </p>
-                    <p className="text-[12px] text-admin-ink-faint">
+                    <p className="text-admin-support text-admin-ink-faint">
                       {s.location} · {s.lastActive}
                     </p>
                   </div>
@@ -277,7 +277,7 @@ export function AccountSecuritySection() {
                     type="button"
                     onClick={() => handleEndSession(s.id)}
                     disabled={endingSessionId === s.id}
-                    className="shrink-0 rounded-md text-[12.5px] font-semibold text-admin-ink-muted hover:text-admin-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="shrink-0 rounded-md text-admin-support font-semibold text-admin-ink-muted hover:text-admin-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {endingSessionId === s.id ? "Signing out…" : "Sign out"}
                   </button>
@@ -290,16 +290,16 @@ export function AccountSecuritySection() {
 
       <AdminCard className="overflow-hidden p-0">
         <div className="px-[22px] py-5">
-          <h2 className="font-serif text-[19px] font-semibold text-admin-ink">Recent Login Activity</h2>
-          <p className="mt-1 text-[12.5px] text-admin-ink-muted">
+          <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Recent Login Activity</h2>
+          <p className="mt-1 text-admin-support text-admin-ink-muted">
             The last several sign-in attempts on this account. Don't recognize one? Send a password
             reset above.
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] border-t border-admin-border text-left text-[13px]">
+          <table className="w-full min-w-[520px] border-t border-admin-border text-left text-admin-body">
             <thead>
-              <tr className="border-b border-admin-border text-[10.5px] font-semibold uppercase tracking-wide text-admin-ink-muted">
+              <tr className="border-b border-admin-border text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">
                 <th className="px-[22px] py-2.5">When</th>
                 <th className="px-3 py-2.5">Device</th>
                 <th className="px-3 py-2.5">Location</th>

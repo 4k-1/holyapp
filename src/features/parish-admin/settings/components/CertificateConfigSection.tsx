@@ -182,7 +182,7 @@ export function CertificateConfigSection() {
   }
 
   if (loading || !draft || !saved || !appearance) {
-    return <p className="text-[13.5px] text-admin-ink-muted">Loading…</p>;
+    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
   }
 
   const sample = SAMPLE[activeType];
@@ -195,8 +195,8 @@ export function CertificateConfigSection() {
     <div className="selection:bg-admin-green-100 selection:text-admin-ink">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="max-w-[54ch]">
-          <h2 className="font-serif text-[19px] font-semibold text-admin-ink">Certificate Configuration</h2>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-admin-ink-muted">
+          <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Certificate Configuration</h2>
+          <p className="mt-1 text-admin-support leading-relaxed text-admin-ink-muted">
             How each issued certificate looks: who signs it, what it says at the foot, and how it is numbered.
             Parish name and seal come from the parish record.{" "}
             <Link to="../fees" className="font-semibold text-admin-green-700 hover:underline">
@@ -206,7 +206,7 @@ export function CertificateConfigSection() {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2.5">
-          {justSaved && !dirty && <span className="text-[12px] text-admin-green-700">Saved</span>}
+          {justSaved && !dirty && <span className="text-admin-support text-admin-green-700">Saved</span>}
           <AdminButton variant="secondary" onClick={cancelEditing} disabled={saving || !dirty}>
             Cancel
           </AdminButton>
@@ -237,7 +237,7 @@ export function CertificateConfigSection() {
                 setErrors({});
                 setSaveError("");
               }}
-              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
+              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-admin-body font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
                 selected
                   ? "bg-admin-green-100 text-admin-green-900"
                   : "text-admin-ink-muted hover:bg-admin-surface-alt hover:text-admin-ink"
@@ -254,7 +254,7 @@ export function CertificateConfigSection() {
       </div>
 
       {saveError && (
-        <p className="mb-4 rounded-[9px] border border-admin-red-700/20 bg-admin-red-100 px-3.5 py-2.5 text-[13px] text-admin-red-700">
+        <p className="mb-4 rounded-[9px] border border-admin-red-700/20 bg-admin-red-100 px-3.5 py-2.5 text-admin-body text-admin-red-700">
           {saveError}
         </p>
       )}
@@ -274,9 +274,9 @@ export function CertificateConfigSection() {
               className={errors.signatoryName ? "border-admin-red-700" : ""}
             />
             {errors.signatoryName ? (
-              <p className="mt-1.5 text-[12px] text-admin-red-700">{errors.signatoryName}</p>
+              <p className="mt-1.5 text-admin-support text-admin-red-700">{errors.signatoryName}</p>
             ) : (
-              <p className="mt-1.5 text-[11.5px] text-admin-ink-faint">Prints under the signature line.</p>
+              <p className="mt-1.5 text-admin-label text-admin-ink-faint">Prints under the signature line.</p>
             )}
           </AdminField>
 
@@ -287,9 +287,9 @@ export function CertificateConfigSection() {
               aria-invalid={Boolean(errors.signatoryTitle)}
             />
             {errors.signatoryTitle ? (
-              <p className="mt-1.5 text-[12px] text-admin-red-700">{errors.signatoryTitle}</p>
+              <p className="mt-1.5 text-admin-support text-admin-red-700">{errors.signatoryTitle}</p>
             ) : (
-              <p className="mt-1.5 text-[11.5px] text-admin-ink-faint">The office named on this certificate type.</p>
+              <p className="mt-1.5 text-admin-label text-admin-ink-faint">The office named on this certificate type.</p>
             )}
           </AdminField>
 
@@ -304,9 +304,9 @@ export function CertificateConfigSection() {
               className="font-mono tracking-wide"
             />
             {errors.numberingPrefix ? (
-              <p className="mt-1.5 text-[12px] text-admin-red-700">{errors.numberingPrefix}</p>
+              <p className="mt-1.5 text-admin-support text-admin-red-700">{errors.numberingPrefix}</p>
             ) : (
-              <p className="mt-1.5 text-[11.5px] text-admin-ink-faint">
+              <p className="mt-1.5 text-admin-label text-admin-ink-faint">
                 Future issues use{" "}
                 <span className="font-mono text-admin-ink-muted">
                   {previewCertificateCode(appearance.numberingPrefix)}
@@ -322,7 +322,7 @@ export function CertificateConfigSection() {
               onChange={(e) => setField("footerText", e.target.value)}
               rows={4}
             />
-            <p className="mt-1.5 text-[11.5px] text-admin-ink-faint">
+            <p className="mt-1.5 text-admin-label text-admin-ink-faint">
               Shown above the register reference. Leave blank to hide it.
             </p>
           </AdminField>
@@ -330,8 +330,8 @@ export function CertificateConfigSection() {
 
         <div>
           <div className="mb-2 flex items-baseline justify-between gap-3">
-            <h3 className="font-serif text-[16px] font-semibold text-admin-ink">Preview</h3>
-            <p className="text-[12px] text-admin-ink-muted">Sample names only — not an issued certificate.</p>
+            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Preview</h3>
+            <p className="text-admin-support text-admin-ink-muted">Sample names only — not an issued certificate.</p>
           </div>
           <CertificateDocument
             parish={parish}

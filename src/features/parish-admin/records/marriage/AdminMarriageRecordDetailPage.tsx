@@ -66,7 +66,7 @@ export function AdminMarriageRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
+        <p className="text-admin-body text-admin-ink-muted">Loading record…</p>
       </div>
     );
   }
@@ -75,8 +75,8 @@ export function AdminMarriageRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
-        <p className="text-[13.5px] text-admin-ink-muted">
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <p className="text-admin-body text-admin-ink-muted">
           This marriage record is not available for this parish.
         </p>
       </div>
@@ -102,17 +102,17 @@ export function AdminMarriageRecordDetailPage() {
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-gold-100 font-serif text-[17px] font-bold text-admin-gold-700 ring-1 ring-inset ring-admin-gold-600/20">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-gold-100 font-serif text-admin-group font-bold text-admin-gold-700 ring-1 ring-inset ring-admin-gold-600/20">
             {initials(groomFullName(record))}
           </div>
           <div>
-            <p className="mb-1 text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-gold-700">
+            <p className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">
               Marriage Record
             </p>
-            <h1 className="mb-1.5 font-serif text-[24px] font-semibold leading-tight text-admin-ink">
+            <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">
               {couple}
             </h1>
-            <p className="mb-2.5 text-[13px] text-admin-ink-muted">
+            <p className="mb-2.5 text-admin-body text-admin-ink-muted">
               Married {formatRecordDate(record.dateOfMarriage)} at {record.placeOfMarriage}
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -190,8 +190,8 @@ export function AdminMarriageRecordDetailPage() {
                 key={`${name}-${i}`}
                 className="flex items-center justify-between gap-2.5 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5"
               >
-                <span className="text-[13.5px] font-semibold text-admin-ink">{name}</span>
-                <span className="inline-flex items-center rounded-full bg-admin-green-100 px-2.5 py-1 text-[11px] font-semibold text-admin-green-700">
+                <span className="text-admin-body font-semibold text-admin-ink">{name}</span>
+                <span className="inline-flex items-center rounded-full bg-admin-green-100 px-2.5 py-1 text-admin-label font-semibold text-admin-green-700">
                   Witness {i + 1}
                 </span>
               </div>
@@ -203,7 +203,7 @@ export function AdminMarriageRecordDetailPage() {
       {record.remarks && (
         <RecordDetailSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks">
           <div className="p-5 px-[22px]">
-            <p className="text-[13.5px] leading-relaxed text-admin-ink">{record.remarks}</p>
+            <p className="text-admin-body leading-relaxed text-admin-ink">{record.remarks}</p>
           </div>
         </RecordDetailSection>
       )}
@@ -224,7 +224,7 @@ export function AdminMarriageRecordDetailPage() {
       >
         <div className="px-[22px]">
           {certs.length === 0 ? (
-            <p className="py-5 text-[11.5px] text-admin-ink-faint">
+            <p className="py-5 text-admin-label text-admin-ink-faint">
               No certificates have been generated from this record yet.
             </p>
           ) : (
@@ -236,7 +236,7 @@ export function AdminMarriageRecordDetailPage() {
                 }`}
               >
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold text-admin-ink">
+                  <div className="flex flex-wrap items-center gap-2 text-admin-body font-semibold text-admin-ink">
                     {c.type}
                     <AdminBadge tone={certStatusTone(c.status)}>{c.status}</AdminBadge>
                   </div>
@@ -295,7 +295,7 @@ function PartyDetailCard({
   return (
     <RecordDetailSection
       tone={tone}
-      icon={<span className="font-serif text-[13px] font-bold">{initials(partyFullName(party))}</span>}
+      icon={<span className="font-serif text-admin-body font-bold">{initials(partyFullName(party))}</span>}
       title={roleLabel[party.role]}
     >
       <div className="p-5 px-[22px]">
@@ -314,7 +314,7 @@ function PartyDetailCard({
             <span className="shrink-0 text-xs text-admin-ink-muted">Baptismal record</span>
             <Link
               to={`../../baptismal/${encodeURIComponent(baptismRecordId)}`}
-              className="text-right text-[13.5px] font-semibold text-admin-green-700 hover:underline"
+              className="text-right text-admin-body font-semibold text-admin-green-700 hover:underline"
             >
               {linkedBaptism ? recordFullName(linkedBaptism) : baptismRecordId} — Bk{" "}
               {linkedBaptism?.bookNumber ?? "?"}:{linkedBaptism?.pageNumber ?? "?"}:
@@ -324,7 +324,7 @@ function PartyDetailCard({
         ) : null}
         {party.consentPersons.length > 0 && (
           <div className="mt-3 border-t border-admin-border pt-3">
-            <p className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-gold-700">
+            <p className="mb-2 text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">
               Consent given by
             </p>
             {party.consentPersons.map((c) => (
@@ -332,7 +332,7 @@ function PartyDetailCard({
                 key={c.id}
                 className="mb-2 rounded-[8px] border border-admin-border bg-admin-surface-alt px-3 py-2 last:mb-0"
               >
-                <p className="text-[13px] font-semibold text-admin-ink">{consentPersonName(c) || "—"}</p>
+                <p className="text-admin-body font-semibold text-admin-ink">{consentPersonName(c) || "—"}</p>
                 <p className="text-xs text-admin-ink-muted">
                   {[c.relation, c.residence].filter(Boolean).join(" · ") || "No details"}
                 </p>

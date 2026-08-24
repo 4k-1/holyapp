@@ -65,7 +65,7 @@ export function RecordDetailSection({
           {icon}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-serif text-[15px] font-semibold leading-tight text-admin-ink">{title}</h2>
+          <h2 className="font-serif text-admin-group font-semibold leading-tight text-admin-ink">{title}</h2>
         </div>
         {right && <div className="shrink-0">{right}</div>}
       </div>
@@ -89,8 +89,8 @@ export function RecordDetailInfoRow({
         last ? "" : "border-b border-admin-border"
       }`}
     >
-      <span className="shrink-0 text-xs text-admin-ink-muted">{label}</span>
-      <span className="text-right text-[13.5px] font-semibold text-admin-ink">{value}</span>
+      <span className="shrink-0 text-admin-label text-admin-ink-muted">{label}</span>
+      <span className="text-right text-admin-body font-semibold text-admin-ink">{value}</span>
     </div>
   );
 }
@@ -101,7 +101,7 @@ export function RecordDetailBackLink() {
     <button
       type="button"
       onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-[13px] text-admin-ink-muted hover:text-admin-green-700"
+      className="mb-3.5 inline-flex items-center gap-1.5 text-admin-body text-admin-ink-muted hover:text-admin-green-700"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
         <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />

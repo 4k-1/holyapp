@@ -22,13 +22,13 @@ function PinIcon() {
 export function AdminDeliveryTag({ method }: { method: DeliveryMethod }) {
   if (method === "digital") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-admin-green-700">
+      <span className="inline-flex items-center gap-1.5 text-admin-support font-semibold text-admin-green-700">
         <WalletIcon /> Digital Wallet
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-admin-gold-700">
+    <span className="inline-flex items-center gap-1.5 text-admin-support font-semibold text-admin-gold-700">
       <PinIcon /> Self Pickup
     </span>
   );

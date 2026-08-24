@@ -50,7 +50,7 @@ export function AdminConfirmationRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
+        <p className="text-admin-body text-admin-ink-muted">Loading record…</p>
       </div>
     );
   }
@@ -59,8 +59,8 @@ export function AdminConfirmationRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
-        <p className="text-[13.5px] text-admin-ink-muted">
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <p className="text-admin-body text-admin-ink-muted">
           This confirmation record is not available for this parish.
         </p>
       </div>
@@ -90,15 +90,15 @@ export function AdminConfirmationRecordDetailPage() {
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-[#E3E8F5] font-serif text-[17px] font-bold text-[#3B4E8A] ring-1 ring-inset ring-[#3B4E8A]/20">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-[#E3E8F5] font-serif text-admin-group font-bold text-[#3B4E8A] ring-1 ring-inset ring-[#3B4E8A]/20">
             {initials(name)}
           </div>
           <div>
-            <p className="mb-1 text-[10.5px] font-bold uppercase tracking-[0.6px] text-[#3B4E8A]">
+            <p className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-[#3B4E8A]">
               Confirmation Record
             </p>
-            <h1 className="mb-1.5 font-serif text-[24px] font-semibold leading-tight text-admin-ink">{name}</h1>
-            <p className="mb-2.5 text-[13px] text-admin-ink-muted">
+            <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
+            <p className="mb-2.5 text-admin-body text-admin-ink-muted">
               Confirmed {formatRecordDate(record.dateOfConfirmation)} at {record.placeOfConfirmation}
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -186,7 +186,7 @@ export function AdminConfirmationRecordDetailPage() {
                 <span className="shrink-0 text-xs text-admin-ink-muted">Linked baptismal record</span>
                 <Link
                   to={`../../baptismal/${encodeURIComponent(record.baptismalRecordId)}`}
-                  className="text-right text-[13.5px] font-semibold text-admin-green-700 hover:underline"
+                  className="text-right text-admin-body font-semibold text-admin-green-700 hover:underline"
                 >
                   {linkedBaptism ? baptismFullName(linkedBaptism) : record.baptismalRecordId} — Bk{" "}
                   {linkedBaptism?.bookNumber ?? "?"}:{linkedBaptism?.pageNumber ?? "?"}:
@@ -201,7 +201,7 @@ export function AdminConfirmationRecordDetailPage() {
       {record.remarks && (
         <RecordDetailSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks">
           <div className="p-5 px-[22px]">
-            <p className="text-[13.5px] leading-relaxed text-admin-ink">{record.remarks}</p>
+            <p className="text-admin-body leading-relaxed text-admin-ink">{record.remarks}</p>
           </div>
         </RecordDetailSection>
       )}
@@ -223,7 +223,7 @@ export function AdminConfirmationRecordDetailPage() {
       >
         <div className="px-[22px]">
           {certs.length === 0 ? (
-            <p className="py-5 text-[11.5px] text-admin-ink-faint">
+            <p className="py-5 text-admin-label text-admin-ink-faint">
               No certificates have been generated from this record yet.
             </p>
           ) : (
@@ -235,7 +235,7 @@ export function AdminConfirmationRecordDetailPage() {
                 }`}
               >
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold text-admin-ink">
+                  <div className="flex flex-wrap items-center gap-2 text-admin-body font-semibold text-admin-ink">
                     {c.type}
                     <AdminBadge tone={certStatusTone(c.status)}>{c.status}</AdminBadge>
                   </div>

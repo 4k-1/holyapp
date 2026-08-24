@@ -137,7 +137,7 @@ export function AdminFindRecordPage() {
     return (
       <div>
         <BackLink />
-        <p className="text-[13.5px] text-admin-ink-muted">Loading request…</p>
+        <p className="text-admin-body text-admin-ink-muted">Loading request…</p>
       </div>
     );
   }
@@ -146,7 +146,7 @@ export function AdminFindRecordPage() {
     return (
       <div>
         <BackLink />
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Request not found</h1>
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Request not found</h1>
       </div>
     );
   }
@@ -223,8 +223,8 @@ export function AdminFindRecordPage() {
 
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record Matching</h1>
-          <p className="text-[13.5px] text-admin-ink-muted">
+          <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record Matching</h1>
+          <p className="text-admin-body text-admin-ink-muted">
             Request {request.id} · {subjectName}
           </p>
         </div>
@@ -238,10 +238,10 @@ export function AdminFindRecordPage() {
 
       {status === "confirmed" && confirmedRecord && (
         <StatusBanner tone="confirmed">
-          <b className="font-serif text-[14px] font-semibold">
+          <b className="font-serif text-admin-body font-semibold">
             Record confirmed — {baptismRecordRef(confirmedRecord)}
           </b>
-          <div className="mt-0.5 text-[12.5px] opacity-90">
+          <div className="mt-0.5 text-admin-support opacity-90">
             {recordFullName(confirmedRecord)} matched to this request. The certificate can now be
             issued from the confirmed ledger entry.
           </div>
@@ -249,8 +249,8 @@ export function AdminFindRecordPage() {
       )}
       {status === "rejected" && (
         <StatusBanner tone="rejected">
-          <b className="font-serif text-[14px] font-semibold">Request rejected — no matching record found</b>
-          <div className="mt-0.5 text-[12.5px] opacity-90">{rejectedNote || "No note was added."}</div>
+          <b className="font-serif text-admin-body font-semibold">Request rejected — no matching record found</b>
+          <div className="mt-0.5 text-admin-support opacity-90">{rejectedNote || "No note was added."}</div>
         </StatusBanner>
       )}
 
@@ -262,7 +262,7 @@ export function AdminFindRecordPage() {
             icon={<FileIcon className="h-4 w-4" />}
             title="Request on file"
             right={
-              <span className="rounded-full border border-admin-gold-700/30 bg-admin-gold-700/10 px-2 py-0.5 font-mono text-[11px] text-admin-gold-700">
+              <span className="rounded-full border border-admin-gold-700/30 bg-admin-gold-700/10 px-2 py-0.5 font-mono text-admin-label text-admin-gold-700">
                 {request.id}
               </span>
             }
@@ -280,7 +280,7 @@ export function AdminFindRecordPage() {
                 />
               </div>
 
-              <div className="mt-2.5 border-t-2 border-admin-gold-700/40 pt-1.5 font-serif text-[12px] italic text-admin-gold-700">
+              <div className="mt-2.5 border-t-2 border-admin-gold-700/40 pt-1.5 font-serif text-admin-support italic text-admin-gold-700">
                 Person to be certified
               </div>
 
@@ -318,7 +318,7 @@ export function AdminFindRecordPage() {
             icon={<SearchIcon className="h-4 w-4" />}
             title="Search the baptismal ledger"
             right={
-              <span className="text-[10px] font-semibold uppercase tracking-[0.5px] text-admin-ink-muted">
+              <span className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                 Editable
               </span>
             }
@@ -361,7 +361,7 @@ export function AdminFindRecordPage() {
                   <SearchIcon />
                   Search ledger
                 </AdminButton>
-                <p className="text-[11px] leading-snug text-admin-ink-muted">
+                <p className="text-admin-label leading-snug text-admin-ink-muted">
                   Pre-filled from the request — narrow or clear a field before searching.
                 </p>
               </div>
@@ -449,8 +449,8 @@ function ReviewMatchModal({
       <div className="relative z-10 flex max-h-[90vh] w-full max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
           <div>
-            <h3 className="font-serif text-lg font-semibold text-admin-ink">Review candidate record</h3>
-            <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">{baptismRecordRef(record)}</p>
+            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Review candidate record</h3>
+            <p className="mt-0.5 text-admin-support text-admin-ink-muted">{baptismRecordRef(record)}</p>
           </div>
           <button
             type="button"
@@ -463,10 +463,10 @@ function ReviewMatchModal({
         </div>
 
         <div className="flex gap-2 px-6 pt-4">
-          <span className="rounded-full bg-admin-ink px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-surface">
+          <span className="rounded-full bg-admin-ink px-2.5 py-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-surface">
             Request
           </span>
-          <span className="rounded-full border border-admin-gold-700/30 bg-admin-gold-700/10 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-gold-700">
+          <span className="rounded-full border border-admin-gold-700/30 bg-admin-gold-700/10 px-2.5 py-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">
             Ledger record
           </span>
         </div>
@@ -478,22 +478,22 @@ function ReviewMatchModal({
               className="grid grid-cols-[1fr_20px_1fr] items-start gap-2.5 border-b border-admin-border py-2.5 last:border-b-0"
             >
               <div>
-                <div className="mb-0.5 text-[10.5px] font-semibold uppercase tracking-[0.4px] text-admin-ink-muted">
+                <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                   {label}
                 </div>
-                <div className="text-[13.5px] text-admin-ink">
+                <div className="text-admin-body text-admin-ink">
                   {left || <span className="italic text-admin-ink-muted">—</span>}
                 </div>
               </div>
               <MatchIcon state={states[i]} />
-              <div className="text-[13.5px] text-admin-ink">
+              <div className="text-admin-body text-admin-ink">
                 {right || <span className="italic text-admin-ink-muted">—</span>}
               </div>
             </div>
           ))}
 
           <div
-            className={`mt-4 rounded-[var(--radius)] border px-3.5 py-2.5 text-[12.5px] ${
+            className={`mt-4 rounded-[var(--radius)] border px-3.5 py-2.5 text-admin-support ${
               strongMatch
                 ? "border-admin-green-700/30 bg-admin-green-100 text-admin-green-900"
                 : "border-admin-gold-700/30 bg-admin-gold-700/10 text-admin-gold-700"
@@ -521,20 +521,20 @@ function ReviewMatchModal({
 
           <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-2 border-t border-dashed border-admin-border pt-3.5 sm:grid-cols-2">
             <div>
-              <div className="mb-0.5 text-[10.5px] font-semibold uppercase tracking-[0.4px] text-admin-ink-muted">
+              <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                 Baptismal date
               </div>
-              <div className="text-[13px] text-admin-ink">
+              <div className="text-admin-body text-admin-ink">
                 {formatRecordDate(record.dateOfBaptism)}{" "}
-                <span className="text-[11.5px] text-admin-ink-muted">(not stated in request)</span>
+                <span className="text-admin-label text-admin-ink-muted">(not stated in request)</span>
               </div>
             </div>
             {record.minister && (
               <div>
-                <div className="mb-0.5 text-[10.5px] font-semibold uppercase tracking-[0.4px] text-admin-ink-muted">
+                <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                   Minister
                 </div>
-                <div className="text-[13px] text-admin-ink">{record.minister}</div>
+                <div className="text-admin-body text-admin-ink">{record.minister}</div>
               </div>
             )}
           </div>
@@ -570,7 +570,7 @@ function RejectModal({
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} aria-hidden="true" />
       <div className="relative z-10 flex w-full max-w-[460px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
-          <h3 className="font-serif text-lg font-semibold text-admin-ink">Reject this request</h3>
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Reject this request</h3>
           <button
             type="button"
             onClick={onCancel}
@@ -581,18 +581,18 @@ function RejectModal({
           </button>
         </div>
         <div className="px-6 py-4">
-          <p className="mb-3 text-[13px] text-admin-ink-muted">
+          <p className="mb-3 text-admin-body text-admin-ink-muted">
             Use this when no matching entry can be found in the baptismal ledger. The requester will be
             notified that their certificate could not be issued.
           </p>
-          <label className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+          <label className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
             Note for the record (optional)
           </label>
           <textarea
             value={reason}
             onChange={(e) => onReasonChange(e.target.value)}
             placeholder="e.g. Searched Books 09, 14 and 21 for 1993–1995; no entry matches the details submitted."
-            className="min-h-[80px] w-full resize-y rounded-[var(--radius)] border border-admin-border bg-admin-surface-alt px-2.5 py-2 text-[13px] text-admin-ink"
+            className="min-h-[80px] w-full resize-y rounded-[var(--radius)] border border-admin-border bg-admin-surface-alt px-2.5 py-2 text-admin-body text-admin-ink"
           />
         </div>
         <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">
@@ -621,7 +621,7 @@ function StatusPill({ status }: { status: RequestStatus }) {
   };
   return (
     <span
-      className={`whitespace-nowrap rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.5px] ${styles[status]}`}
+      className={`whitespace-nowrap rounded-full border px-3 py-1 text-admin-label font-semibold uppercase tracking-admin-label ${styles[status]}`}
     >
       {labels[status]}
     </span>
@@ -647,7 +647,7 @@ function ResultBadge({ count }: { count: number }) {
   const hasResults = count > 0;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] font-semibold ${
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-admin-support font-semibold ${
         hasResults
           ? "border-admin-green-700/30 bg-admin-green-100 text-admin-green-900"
           : "border-admin-gold-700/30 bg-admin-gold-700/10 text-admin-gold-700"
@@ -677,7 +677,7 @@ function BackLink() {
     <button
       type="button"
       onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-[13px] text-admin-ink-muted hover:text-admin-green-700"
+      className="mb-3.5 inline-flex items-center gap-1.5 text-admin-body text-admin-ink-muted hover:text-admin-green-700"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
         <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
@@ -708,16 +708,16 @@ function InfoRow({
         last ? "" : "border-b border-admin-border"
       }`}
     >
-      <div className="text-[10px] uppercase tracking-[0.4px] text-admin-ink-muted">{label}</div>
+      <div className="text-admin-label uppercase tracking-admin-label text-admin-ink-muted">{label}</div>
       <div
-        className={`truncate text-[13px] ${
+        className={`truncate text-admin-body ${
           muted ? "italic text-admin-ink-muted" : "font-semibold text-admin-ink"
         }`}
         title={value}
       >
         {value}
       </div>
-      {sub && <div className="truncate text-[11.5px] text-admin-ink-muted">{sub}</div>}
+      {sub && <div className="truncate text-admin-label text-admin-ink-muted">{sub}</div>}
     </div>
   );
 }

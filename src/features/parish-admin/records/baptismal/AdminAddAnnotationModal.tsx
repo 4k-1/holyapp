@@ -13,10 +13,10 @@ const notePlaceholders: Record<AnnotationCategory, string> = {
 };
 
 const selectClass =
-  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 const textareaClass =
-  "min-h-[96px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+  "min-h-[96px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 export type AddAnnotationInput = Omit<RecordAnnotation, "by">;
 
@@ -85,8 +85,8 @@ export function AdminAddAnnotationModal({ subjectName, onClose, onSubmit }: Admi
       <div className="relative z-10 flex w-full max-w-[520px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
           <div>
-            <h3 className="font-serif text-lg font-semibold text-admin-ink">Add annotation</h3>
-            <p className="mt-1 text-[13px] text-admin-ink-muted">
+            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Add annotation</h3>
+            <p className="mt-1 text-admin-body text-admin-ink-muted">
               Record a later sacrament on <span className="font-semibold text-admin-ink">{subjectName}</span>'s
               baptismal entry.
             </p>
@@ -116,7 +116,7 @@ export function AdminAddAnnotationModal({ subjectName, onClose, onSubmit }: Admi
               ))}
             </select>
             <span
-              className={`mt-2 inline-flex rounded-[5px] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-[0.3px] ${annotationTagClass[category]}`}
+              className={`mt-2 inline-flex rounded-[5px] px-2 py-0.5 text-admin-label font-bold uppercase tracking-admin-label ${annotationTagClass[category]}`}
             >
               {category}
             </span>
@@ -145,8 +145,8 @@ export function AdminAddAnnotationModal({ subjectName, onClose, onSubmit }: Admi
                 className="mt-0.5 h-4 w-4 rounded border-admin-border-strong text-admin-green-700 focus:ring-admin-green-600/25"
               />
               <span>
-                <span className="block text-[13px] font-semibold text-admin-ink">Link to register entry</span>
-                <span className="mt-0.5 block text-[12px] leading-relaxed text-admin-ink-muted">
+                <span className="block text-admin-body font-semibold text-admin-ink">Link to register entry</span>
+                <span className="mt-0.5 block text-admin-support leading-relaxed text-admin-ink-muted">
                   Optional. Point to the book, page, and line in another sacramental register.
                 </span>
               </span>

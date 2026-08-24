@@ -38,7 +38,7 @@ export function EditServiceFeeModal({ fee, onClose, onSave }: EditServiceFeeModa
       <div className="absolute inset-0 bg-black/45" onClick={saving ? undefined : onClose} aria-hidden="true" />
       <div className="relative z-10 w-full max-w-[440px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
         <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
-          <h3 className="font-serif text-lg font-semibold text-admin-ink">Edit service fee</h3>
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Edit service fee</h3>
           <button
             onClick={onClose}
             disabled={saving}
@@ -50,7 +50,7 @@ export function EditServiceFeeModal({ fee, onClose, onSave }: EditServiceFeeModa
         </div>
 
         <div className="space-y-3.5 px-6 py-5">
-          <p className="text-[12.5px] text-admin-ink-muted">
+          <p className="text-admin-support text-admin-ink-muted">
             Updating the default fee for <span className="font-semibold text-admin-ink">{fee.label}</span>.
           </p>
 
@@ -71,10 +71,10 @@ export function EditServiceFeeModal({ fee, onClose, onSave }: EditServiceFeeModa
                 }}
               />
             </div>
-            {error && <p className="mt-1.5 text-[11.5px] font-semibold text-red-700">{error}</p>}
+            {error && <p className="mt-1.5 text-admin-label font-semibold text-red-700">{error}</p>}
           </AdminField>
 
-          <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-[12.5px] text-admin-gold-700">
+          <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">
             <p className="font-semibold">
               {hasChanged ? (
                 <>

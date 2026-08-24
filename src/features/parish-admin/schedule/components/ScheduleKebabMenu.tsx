@@ -65,7 +65,7 @@ export function ScheduleKebabMenu({ items }: ScheduleKebabMenuProps) {
                 setOpen(false);
                 it.onClick();
               }}
-              className={`block w-full px-3 py-2 text-left text-[12.5px] font-medium hover:bg-admin-surface-alt ${
+              className={`block w-full px-3 py-2 text-left text-admin-support font-medium hover:bg-admin-surface-alt ${
                 it.primary ? "text-admin-green-700" : "text-admin-ink"
               }`}
             >

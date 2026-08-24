@@ -117,7 +117,7 @@ export function AdminIssueCertificateModal({
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
           <div>
-            <h3 className="font-serif text-lg font-semibold text-admin-ink">
+            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
               {done
                 ? isDigital
                   ? "Certificate issued"
@@ -126,7 +126,7 @@ export function AdminIssueCertificateModal({
                   ? "Issue certificate"
                   : "Mark ready for pickup"}
             </h3>
-            <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">
+            <p className="mt-0.5 text-admin-support text-admin-ink-muted">
               Request {request.id} · {sacramentCertTitles[request.sacramentType]}
             </p>
           </div>
@@ -144,9 +144,9 @@ export function AdminIssueCertificateModal({
 
         <div className="overflow-y-auto px-6 py-5">
           {loading ? (
-            <p className="text-[13.5px] text-admin-ink-muted">Loading record data…</p>
+            <p className="text-admin-body text-admin-ink-muted">Loading record data…</p>
           ) : !linked ? (
-            <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-4 py-3.5 text-[13px] text-admin-gold-700">
+            <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-4 py-3.5 text-admin-body text-admin-gold-700">
               This request has no linked sacramental record. Link a record before issuing a certificate.
             </div>
           ) : (
@@ -154,7 +154,7 @@ export function AdminIssueCertificateModal({
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <AdminDeliveryTag method={request.deliveryMethod} />
                 <AdminBadge tone="green">Paid</AdminBadge>
-                <span className="text-[12px] text-admin-ink-muted">
+                <span className="text-admin-support text-admin-ink-muted">
                   {copies} {copies > 1 ? "copies" : "copy"} · {request.purpose ?? "General purpose"}
                 </span>
               </div>
@@ -163,7 +163,7 @@ export function AdminIssueCertificateModal({
                 {/* Certificate */}
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <h4 className="font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+                    <h4 className="font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                       Certificate preview
                     </h4>
                     {!isDigital && (
@@ -195,7 +195,7 @@ export function AdminIssueCertificateModal({
                     />
                   ) : (
                     <div className="rounded-[10px] border border-admin-border bg-admin-surface-alt p-4">
-                      <h4 className="mb-3 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+                      <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                         Register data
                       </h4>
                       <VerifyRow label="Name" value={previewName} />
@@ -221,7 +221,7 @@ export function AdminIssueCertificateModal({
                       onChange={(e) => setVerified(e.target.checked)}
                       className="mt-0.5 h-4 w-4 rounded border-admin-border-strong accent-admin-green-700"
                     />
-                    <span className="text-[13px] leading-relaxed text-admin-ink">
+                    <span className="text-admin-body leading-relaxed text-admin-ink">
                       {isDigital
                         ? "I have verified that the certificate information matches the parish register. Issue to the parishioner's digital wallet."
                         : "I confirm the certificate information matches the parish register. Mark this request ready for parishioner pickup."}
@@ -229,7 +229,7 @@ export function AdminIssueCertificateModal({
                   </label>
 
                   {!isDigital && (
-                    <p className="mt-2 text-[12px] text-admin-ink-muted">
+                    <p className="mt-2 text-admin-support text-admin-ink-muted">
                       Once marked ready, you can print the certificate above and have it signed and sealed for pickup.
                     </p>
                   )}
@@ -285,8 +285,8 @@ export function AdminIssueCertificateModal({
 function VerifyRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
     <div className={`py-2 ${last ? "" : "border-b border-admin-border"}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-[0.4px] text-admin-ink-faint">{label}</p>
-      <p className="mt-0.5 text-[12.5px] font-medium text-admin-ink">{value}</p>
+      <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-faint">{label}</p>
+      <p className="mt-0.5 text-admin-support font-medium text-admin-ink">{value}</p>
     </div>
   );
 }
@@ -309,10 +309,10 @@ function SuccessPanel({
       <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-admin-green-100 text-admin-green-700">
         <CheckIcon className="h-5 w-5" />
       </div>
-      <h4 className="font-serif text-base font-semibold text-admin-ink">
+      <h4 className="font-serif text-admin-group font-semibold text-admin-ink">
         {isDigital ? "Certificate issued" : "Marked ready for pickup"}
       </h4>
-      <p className="mx-auto mt-2 text-[13px] leading-relaxed text-admin-ink-muted">
+      <p className="mx-auto mt-2 text-admin-body leading-relaxed text-admin-ink-muted">
         {isDigital ? (
           <>
             <span className="font-semibold text-admin-ink">{subjectName}</span>&apos;s certificate
@@ -326,7 +326,7 @@ function SuccessPanel({
         )}
       </p>
       {isDigital && certCode && (
-        <p className="mt-3 font-mono text-[11.5px] text-admin-ink-faint">Verification code: {certCode}</p>
+        <p className="mt-3 font-mono text-admin-label text-admin-ink-faint">Verification code: {certCode}</p>
       )}
       {onPrint && (
         <AdminButton variant="secondary" className="mt-4 w-full justify-center" onClick={onPrint}>

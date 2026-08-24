@@ -17,18 +17,18 @@ interface AdminTableProps<T> {
 export function AdminTable<T>({ columns, rows, getRowKey, emptyMessage = "No records found." }: AdminTableProps<T>) {
   if (rows.length === 0) {
     return (
-      <div className="px-6 py-10 text-center text-sm text-admin-ink-muted">{emptyMessage}</div>
+      <div className="px-6 py-10 text-center text-admin-body text-admin-ink-muted">{emptyMessage}</div>
     );
   }
 
   return (
-    <table className="w-full border-collapse text-[13.5px]">
+    <table className="w-full border-collapse text-admin-body">
       <thead>
         <tr>
           {columns.map((col, i) => (
             <th
               key={col.key}
-              className={`border-b border-admin-border bg-admin-surface-alt px-4 py-[11px] text-left text-[12px] font-semibold uppercase tracking-wide text-admin-ink-muted ${
+              className={`border-b border-admin-border bg-admin-surface-alt px-4 py-[11px] text-left text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted ${
                 i === 0 ? "rounded-tl-[var(--radius)]" : ""
               } ${i === columns.length - 1 ? "rounded-tr-[var(--radius)]" : ""} ${col.className ?? ""}`}
             >

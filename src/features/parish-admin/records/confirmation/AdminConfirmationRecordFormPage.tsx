@@ -70,10 +70,10 @@ const emptyForm = (): FormState => ({
 });
 
 const selectClass =
-  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 const textareaClass =
-  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "edit" }) {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -121,7 +121,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
     return (
       <AdminFormPage>
         <BackLink />
-        <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
+        <p className="text-admin-body text-admin-ink-muted">Loading record…</p>
       </AdminFormPage>
     );
   }
@@ -130,7 +130,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
     return (
       <AdminFormPage>
         <BackLink />
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
       </AdminFormPage>
     );
   }
@@ -183,10 +183,10 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
       <BackLink />
 
       <div className="mb-5">
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">
           {mode === "edit" ? "Edit" : "Add"} Confirmation Record
         </h1>
-        <p className="text-[13.5px] text-admin-ink-muted">
+        <p className="text-admin-body text-admin-ink-muted">
           Enter details exactly as they appear in the parish confirmation register.
         </p>
       </div>
@@ -321,7 +321,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
                 onChange={(e) => setField("isAdult", e.target.checked)}
                 className="h-4 w-4 rounded border-admin-border-strong text-admin-green-700 focus:ring-admin-green-600/25"
               />
-              <span className="text-[13px] text-admin-ink">Adult confirmation (RCIA / OCIA)</span>
+              <span className="text-admin-body text-admin-ink">Adult confirmation (RCIA / OCIA)</span>
             </label>
             <label className="flex cursor-pointer items-center gap-2.5">
               <input
@@ -330,7 +330,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
                 onChange={(e) => setField("isPriorMarriage", e.target.checked)}
                 className="h-4 w-4 rounded border-admin-border-strong text-admin-green-700 focus:ring-admin-green-600/25"
               />
-              <span className="text-[13px] text-admin-ink">Prior marriage on record</span>
+              <span className="text-admin-body text-admin-ink">Prior marriage on record</span>
             </label>
           </div>
         </AdminFormSection>
@@ -395,7 +395,7 @@ function BackLink() {
     <button
       type="button"
       onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-[13px] text-admin-ink-muted hover:text-admin-green-700"
+      className="mb-3.5 inline-flex items-center gap-1.5 text-admin-body text-admin-ink-muted hover:text-admin-green-700"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
         <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />

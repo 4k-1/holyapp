@@ -59,21 +59,21 @@ export function ParishProfileSection() {
   }
 
   if (loading) {
-    return <p className="text-[13.5px] text-admin-ink-muted">Loading…</p>;
+    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
   }
 
   return (
     <AdminCard className="p-5 px-[22px]">
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-serif text-[19px] font-semibold text-admin-ink">Parish Profile</h2>
-          <p className="mt-1 text-[12.5px] text-admin-ink-muted">
+          <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Parish Profile</h2>
+          <p className="mt-1 text-admin-support text-admin-ink-muted">
             Used across certificates, the public verification page, and correspondence.
           </p>
         </div>
         {!editing && (
           <div className="flex shrink-0 items-center gap-3">
-            {justSaved && <span className="text-[12px] text-admin-green-700">Saved</span>}
+            {justSaved && <span className="text-admin-support text-admin-green-700">Saved</span>}
             <AdminButton variant="secondary" size="sm" onClick={startEditing}>
               <EditIcon />
               Edit
@@ -122,7 +122,7 @@ export function ParishProfileSection() {
                     <AdminButton variant="secondary" size="sm" type="button" disabled>
                       Upload new seal
                     </AdminButton>
-                    <p className="mt-1.5 text-[11.5px] text-admin-ink-faint">
+                    <p className="mt-1.5 text-admin-label text-admin-ink-faint">
                       Used on certificate templates and the public verification page. Upload coming soon.
                     </p>
                   </div>
@@ -150,7 +150,7 @@ export function ParishProfileSection() {
           <ReadField label="Diocese / Archdiocese" value={saved.diocese} />
 
           <div className="md:col-span-2">
-            <p className="mb-1.5 text-[11.5px] font-semibold uppercase tracking-[0.5px] text-admin-ink-muted">
+            <p className="mb-1.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
               Parish logo / seal
             </p>
             <div className="flex items-center gap-3">
@@ -161,7 +161,7 @@ export function ParishProfileSection() {
                   {saved.name.charAt(0) || "?"}
                 </div>
               )}
-              <span className="text-[13px] text-admin-ink-faint">{saved.sealUrl ? "Uploaded" : "No seal uploaded yet"}</span>
+              <span className="text-admin-body text-admin-ink-faint">{saved.sealUrl ? "Uploaded" : "No seal uploaded yet"}</span>
             </div>
           </div>
         </div>
@@ -173,8 +173,8 @@ export function ParishProfileSection() {
 function ReadField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="mb-1 text-[11.5px] font-semibold uppercase tracking-[0.5px] text-admin-ink-muted">{label}</p>
-      <p className="text-[14px] text-admin-ink">{value || <span className="text-admin-ink-faint">Not set</span>}</p>
+      <p className="mb-1 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">{label}</p>
+      <p className="text-admin-body text-admin-ink">{value || <span className="text-admin-ink-faint">Not set</span>}</p>
     </div>
   );
 }

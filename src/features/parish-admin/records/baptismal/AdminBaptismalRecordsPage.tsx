@@ -66,8 +66,8 @@ export function AdminBaptismalRecordsPage() {
     <div>
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Baptismal Records</h1>
-          <p className="text-[13.5px] text-admin-ink-muted">
+          <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Baptismal Records</h1>
+          <p className="text-admin-body text-admin-ink-muted">
             Search and manage sacramental records for this parish.
           </p>
         </div>
@@ -80,7 +80,7 @@ export function AdminBaptismalRecordsPage() {
       </div>
 
       <AdminCard className="mb-[18px] p-5 px-[22px]">
-        <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+        <h2 className="mb-3.5 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
           Search criteria
         </h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

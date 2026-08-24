@@ -61,8 +61,8 @@ export function AdminSchedulePage() {
     <div>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-serif text-2xl font-semibold text-admin-ink">Parish Schedule & Events</h1>
-          <p className="mt-1 max-w-xl text-[13px] text-admin-ink-muted">
+          <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Parish Schedule & Events</h1>
+          <p className="mt-1 max-w-xl text-admin-body text-admin-ink-muted">
             Internal tool for parish staff — tracks Masses, devotions, blessings, and interviews so nothing gets
             double-booked. Not visible to parishioners.
           </p>
@@ -70,7 +70,7 @@ export function AdminSchedulePage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setManagerOpen(true)}
-            className="whitespace-nowrap shrink-0 text-[12.5px] font-semibold text-admin-green-700 hover:underline"
+            className="whitespace-nowrap shrink-0 text-admin-support font-semibold text-admin-green-700 hover:underline"
           >
             Manage recurring schedule
           </button>
@@ -82,7 +82,7 @@ export function AdminSchedulePage() {
         <div className="inline-flex rounded-[10px] border border-admin-border bg-admin-surface-alt p-1">
           <button
             onClick={() => setView("calendar")}
-            className={`rounded-[7px] px-3.5 py-1.5 text-[12.5px] font-semibold transition ${
+            className={`rounded-[7px] px-3.5 py-1.5 text-admin-support font-semibold transition ${
               view === "calendar" ? "bg-admin-surface text-admin-ink shadow-sm" : "text-admin-ink-muted"
             }`}
           >
@@ -90,7 +90,7 @@ export function AdminSchedulePage() {
           </button>
           <button
             onClick={() => setView("list")}
-            className={`rounded-[7px] px-3.5 py-1.5 text-[12.5px] font-semibold transition ${
+            className={`rounded-[7px] px-3.5 py-1.5 text-admin-support font-semibold transition ${
               view === "list" ? "bg-admin-surface text-admin-ink shadow-sm" : "text-admin-ink-muted"
             }`}
           >
@@ -107,7 +107,7 @@ export function AdminSchedulePage() {
             >
               ‹
             </button>
-            <span className="min-w-[140px] text-center font-serif text-[14.5px] font-semibold text-admin-ink">
+            <span className="min-w-[140px] text-center font-serif text-admin-group font-semibold text-admin-ink">
               {monthLabel}
             </span>
             <button

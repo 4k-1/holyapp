@@ -51,8 +51,8 @@ export function RecurringCommitmentsManagerModal({ onClose, onChanged }: Recurri
       <div className="relative z-10 flex max-h-[92vh] w-full max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
         <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
           <div>
-            <h3 className="font-serif text-lg font-semibold text-admin-ink">Recurring schedule</h3>
-            <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">Daily Mass, Sunday Mass, novenas — anything that repeats weekly.</p>
+            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Recurring schedule</h3>
+            <p className="mt-0.5 text-admin-support text-admin-ink-muted">Daily Mass, Sunday Mass, novenas — anything that repeats weekly.</p>
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt" aria-label="Close">
             ✕
@@ -61,7 +61,7 @@ export function RecurringCommitmentsManagerModal({ onClose, onChanged }: Recurri
 
         <div className="overflow-y-auto px-6 py-5">
           {loading ? (
-            <p className="text-[13.5px] text-admin-ink-muted">Loading…</p>
+            <p className="text-admin-body text-admin-ink-muted">Loading…</p>
           ) : (
             <div className="space-y-2.5">
               {items.map((rc) =>
@@ -82,24 +82,24 @@ export function RecurringCommitmentsManagerModal({ onClose, onChanged }: Recurri
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-serif text-[14px] font-semibold text-admin-ink">{rc.label}</p>
+                          <p className="font-serif text-admin-body font-semibold text-admin-ink">{rc.label}</p>
                           <AdminBadge tone="green">{EVENT_TYPE_LABELS[rc.type]}</AdminBadge>
                         </div>
-                        <p className="mt-1 text-[12px] text-admin-ink-muted">
+                        <p className="mt-1 text-admin-support text-admin-ink-muted">
                           {rc.days.join(", ")} · {rc.times.join(", ")}
                         </p>
-                        <p className="mt-0.5 text-[12px] text-admin-ink-faint">{rc.assignee || "Unassigned"}</p>
+                        <p className="mt-0.5 text-admin-support text-admin-ink-faint">{rc.assignee || "Unassigned"}</p>
                       </div>
                       <div className="flex shrink-0 gap-1.5">
                         <button
                           onClick={() => setEditingId(rc.id)}
-                          className="rounded-md border border-admin-border px-2.5 py-1 text-[11.5px] font-semibold text-admin-ink-muted hover:bg-admin-surface"
+                          className="rounded-md border border-admin-border px-2.5 py-1 text-admin-label font-semibold text-admin-ink-muted hover:bg-admin-surface"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleRemove(rc.id, rc.label)}
-                          className="rounded-md border border-admin-border px-2.5 py-1 text-[11.5px] font-semibold text-red-700 hover:bg-red-50"
+                          className="rounded-md border border-admin-border px-2.5 py-1 text-admin-label font-semibold text-red-700 hover:bg-red-50"
                         >
                           Remove
                         </button>
@@ -122,7 +122,7 @@ export function RecurringCommitmentsManagerModal({ onClose, onChanged }: Recurri
               ) : (
                 <button
                   onClick={() => setEditingId("new")}
-                  className="w-full rounded-[10px] border border-dashed border-admin-border-strong py-3 text-[13px] font-semibold text-admin-ink-muted hover:border-admin-green-600 hover:bg-admin-green-050 hover:text-admin-green-800"
+                  className="w-full rounded-[10px] border border-dashed border-admin-border-strong py-3 text-admin-body font-semibold text-admin-ink-muted hover:border-admin-green-600 hover:bg-admin-green-050 hover:text-admin-green-800"
                 >
                   + Add recurring commitment
                 </button>
@@ -206,7 +206,7 @@ function RecurringCommitmentForm({
           <select
             value={type}
             onChange={(e) => setType(e.target.value as ScheduleEventType)}
-            className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-[13.5px] text-admin-ink"
+            className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
           >
             {Object.entries(EVENT_TYPE_LABELS).map(([val, l]) => (
               <option key={val} value={val}>
@@ -219,7 +219,7 @@ function RecurringCommitmentForm({
           <select
             value={assignee}
             onChange={(e) => setAssignee(e.target.value)}
-            className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-[13.5px] text-admin-ink"
+            className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
           >
             <option value="">Unassigned</option>
             {staff.map((s) => (
@@ -232,14 +232,14 @@ function RecurringCommitmentForm({
       </div>
 
       <div className="mb-3">
-        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-admin-ink-muted">Days</p>
+        <p className="mb-1.5 text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">Days</p>
         <div className="flex flex-wrap gap-1.5">
           {DAYS.map((d) => (
             <button
               key={d}
               type="button"
               onClick={() => toggleDay(d)}
-              className={`rounded-full border px-3 py-1 text-[12px] font-semibold transition ${
+              className={`rounded-full border px-3 py-1 text-admin-support font-semibold transition ${
                 days.includes(d)
                   ? "border-admin-green-700 bg-admin-green-700 text-white"
                   : "border-admin-border bg-admin-surface text-admin-ink-muted"
@@ -252,7 +252,7 @@ function RecurringCommitmentForm({
       </div>
 
       <div className="mb-3">
-        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-admin-ink-muted">Times</p>
+        <p className="mb-1.5 text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">Times</p>
         <div className="space-y-1.5">
           {times24.map((t, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -260,22 +260,22 @@ function RecurringCommitmentForm({
                 type="time"
                 value={t}
                 onChange={(e) => setTimes24((prev) => prev.map((v, idx) => (idx === i ? e.target.value : v)))}
-                className="rounded-lg border border-admin-border bg-admin-surface px-3 py-1.5 text-[13px] text-admin-ink"
+                className="rounded-lg border border-admin-border bg-admin-surface px-3 py-1.5 text-admin-body text-admin-ink"
               />
               {times24.length > 1 && (
-                <button type="button" onClick={() => removeTimeInput(i)} className="text-[12px] font-semibold text-red-700">
+                <button type="button" onClick={() => removeTimeInput(i)} className="text-admin-support font-semibold text-red-700">
                   Remove
                 </button>
               )}
             </div>
           ))}
-          <button type="button" onClick={addTimeInput} className="text-[12px] font-semibold text-admin-green-700 hover:underline">
+          <button type="button" onClick={addTimeInput} className="text-admin-support font-semibold text-admin-green-700 hover:underline">
             + Add another time
           </button>
         </div>
       </div>
 
-      <label className="mb-4 flex cursor-pointer items-center gap-2 text-[12.5px] text-admin-ink">
+      <label className="mb-4 flex cursor-pointer items-center gap-2 text-admin-support text-admin-ink">
         <input
           type="checkbox"
           checked={showOnOverview}

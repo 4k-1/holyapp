@@ -53,6 +53,22 @@
   --color-admin-red-100: var(--color-admin-red-100);
   --color-admin-amber-700: var(--color-admin-amber-700);
   --color-admin-amber-100: var(--color-admin-amber-100);
+
+  --text-admin-page: 1.5rem;
+  --text-admin-page--line-height: 1.2;
+  --text-admin-section: 1.1875rem;
+  --text-admin-section--line-height: 1.25;
+  --text-admin-group: 0.9375rem;
+  --text-admin-group--line-height: 1.3;
+  --text-admin-metric: 1.75rem;
+  --text-admin-metric--line-height: 1.1;
+  --text-admin-body: 0.84375rem;
+  --text-admin-body--line-height: 1.45;
+  --text-admin-support: 0.78125rem;
+  --text-admin-support--line-height: 1.5;
+  --text-admin-label: 0.71875rem;
+  --text-admin-label--line-height: 1.35;
+  --tracking-admin-label: 0.04em;
 }
 
 body {
@@ -61,7 +77,10 @@ body {
   color: var(--color-ink);
 }
 
-h1, h2, h3, h4 {
+h1:not(.font-sans),
+h2:not(.font-sans),
+h3:not(.font-sans),
+h4:not(.font-sans) {
   font-family: var(--font-serif);
 }
 

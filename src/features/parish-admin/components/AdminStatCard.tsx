@@ -16,8 +16,8 @@ interface AdminStatCardProps {
             : "border-admin-border bg-admin-surface hover:border-admin-green-600"
         }`}
       >
-        <p className="mb-2 text-[12.5px] font-semibold uppercase tracking-wide text-admin-ink-muted">{label}</p>
-        <p className="font-serif text-[28px] font-semibold text-admin-green-900">{value}</p>
+        <p className="mb-2 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">{label}</p>
+        <p className="font-serif text-admin-metric font-semibold tabular-nums text-admin-green-900">{value}</p>
       </button>
     );
   }

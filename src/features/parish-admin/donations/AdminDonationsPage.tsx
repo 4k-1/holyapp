@@ -96,8 +96,8 @@ export function AdminDonationsPage() {
     <div>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-serif text-2xl font-semibold text-admin-ink">Donations</h1>
-          <p className="mt-1 text-[13px] text-admin-ink-muted">
+          <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Donations</h1>
+          <p className="mt-1 text-admin-body text-admin-ink-muted">
             Donations recorded for this parish register.
           </p>
         </div>
@@ -105,7 +105,7 @@ export function AdminDonationsPage() {
       </div>
 
       <AdminCard className="mb-4 p-5 px-[22px]">
-        <h2 className="mb-3.5 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+        <h2 className="mb-3.5 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
           Date range
         </h2>
         <div className="flex flex-wrap items-end gap-4">
@@ -136,23 +136,23 @@ export function AdminDonationsPage() {
           </div>
         </div>
         {filterActive && filterLabel && (
-          <p className="mt-3 text-[12.5px] text-admin-ink-muted">
+          <p className="mt-3 text-admin-support text-admin-ink-muted">
             Showing donations {filterLabel.toLowerCase()}.
           </p>
         )}
       </AdminCard>
 
       {loading ? (
-        <p className="text-[13.5px] text-admin-ink-muted">Loading…</p>
+        <p className="text-admin-body text-admin-ink-muted">Loading…</p>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
             <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-5">
-              <p className="mb-1 text-[14px] font-semibold text-admin-ink">
+              <p className="mb-1 text-admin-body font-semibold text-admin-ink">
                 {filterActive ? "Total in selected range" : "Total donations (all time)"}
               </p>
               <div className="mb-4 flex items-baseline gap-2.5">
-                <p className="font-serif text-[32px] font-semibold text-admin-green-900">
+                <p className="font-serif text-admin-metric font-semibold tabular-nums text-admin-green-900">
                   {formatAmount(stats.totalRecorded)}
                 </p>
               </div>
@@ -170,14 +170,14 @@ export function AdminDonationsPage() {
 
           <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface">
             <div className="flex items-baseline justify-between px-5 pt-4 pb-1">
-              <p className="font-serif text-[16px] font-semibold text-admin-ink">
+              <p className="font-serif text-admin-section font-semibold text-admin-ink">
                 {filterActive ? "Filtered donations" : "All donations"}
               </p>
-              <span className="text-[12px] text-admin-ink-muted">{rows.length} entries</span>
+              <span className="text-admin-support text-admin-ink-muted">{rows.length} entries</span>
             </div>
-            <table className="w-full text-left text-[13px]">
+            <table className="w-full text-left text-admin-body">
               <thead>
-                <tr className="text-[10.5px] font-semibold uppercase tracking-wide text-admin-ink-muted">
+                <tr className="text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">
                   <th className="px-5 py-2.5">Date</th>
                   <th className="px-5 py-2.5">Donor</th>
                   <th className="px-5 py-2.5">Type</th>
@@ -227,7 +227,7 @@ export function AdminDonationsPage() {
               </tbody>
             </table>
             {rows.length === 0 && (
-              <p className="px-5 py-6 text-[13px] text-admin-ink-muted">
+              <p className="px-5 py-6 text-admin-body text-admin-ink-muted">
                 {filterActive
                   ? "No donations match this date range."
                   : "No donations recorded yet."}
@@ -254,8 +254,8 @@ export function AdminDonationsPage() {
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-1 flex-col justify-center rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4">
-      <p className="text-[11.5px] font-semibold uppercase tracking-wide text-admin-ink-muted">{label}</p>
-      <p className="mt-1 font-serif text-[26px] font-semibold text-admin-ink">{value}</p>
+      <p className="text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">{label}</p>
+      <p className="mt-1 font-serif text-admin-metric font-semibold tabular-nums text-admin-ink">{value}</p>
     </div>
   );
 }

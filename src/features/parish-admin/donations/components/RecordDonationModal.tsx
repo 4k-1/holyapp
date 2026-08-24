@@ -69,8 +69,8 @@ export function RecordDonationModal({
       <div className="relative z-10 w-full max-w-[520px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
           <div>
-            <h3 className="font-serif text-lg font-semibold text-admin-ink">Record donation</h3>
-            <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">Log a donation received by the parish</p>
+            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Record donation</h3>
+            <p className="mt-0.5 text-admin-support text-admin-ink-muted">Log a donation received by the parish</p>
           </div>
           <button
             onClick={onClose}
@@ -82,7 +82,7 @@ export function RecordDonationModal({
         </div>
 
         <div className="space-y-3.5 px-6 py-5">
-          <label className="flex cursor-pointer items-center gap-2.5 text-[13px] text-admin-ink">
+          <label className="flex cursor-pointer items-center gap-2.5 text-admin-body text-admin-ink">
             <input
               type="checkbox"
               checked={anonymous}
@@ -110,7 +110,7 @@ export function RecordDonationModal({
               <select
                 value={donationType}
                 onChange={(e) => setDonationType(e.target.value)}
-                className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-[13.5px] text-admin-ink"
+                className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
               >
                 {DONATION_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -148,11 +148,11 @@ export function RecordDonationModal({
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
               placeholder="Additional notes about this donation..."
-              className="w-full min-h-[76px] resize-y rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-[13.5px] text-admin-ink"
+              className="w-full min-h-[76px] resize-y rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
             />
           </AdminField>
 
-          {error && <p className="text-[12.5px] font-semibold text-red-700">{error}</p>}
+          {error && <p className="text-admin-support font-semibold text-red-700">{error}</p>}
         </div>
 
         <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">

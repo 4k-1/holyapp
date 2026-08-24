@@ -25,7 +25,7 @@ export function SignOutAllSessionsModal({ count, onClose, onConfirm }: SignOutAl
       <div className="absolute inset-0 bg-black/45" onClick={saving ? undefined : onClose} aria-hidden="true" />
       <div className="relative z-10 w-full max-w-[420px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
         <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
-          <h3 className="font-serif text-lg font-semibold text-admin-ink">Sign out of other sessions?</h3>
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Sign out of other sessions?</h3>
           <button
             onClick={onClose}
             disabled={saving}
@@ -37,11 +37,11 @@ export function SignOutAllSessionsModal({ count, onClose, onConfirm }: SignOutAl
         </div>
 
         <div className="px-6 py-5">
-          <p className="text-[13.5px] text-admin-ink">
+          <p className="text-admin-body text-admin-ink">
             This immediately signs out <span className="font-semibold">{count}</span> other{" "}
             {count === 1 ? "device" : "devices"} currently logged in to this account. This device stays signed in.
           </p>
-          <p className="mt-2 text-[12.5px] text-admin-ink-muted">
+          <p className="mt-2 text-admin-support text-admin-ink-muted">
             Anyone using those devices will need to sign in again with the password and, if enabled, a
             two-factor code.
           </p>

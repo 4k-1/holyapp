@@ -87,10 +87,10 @@ const emptyForm = (placeOfBaptism = ""): FormState => ({
 });
 
 const textareaClass =
-  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 const selectClass =
-  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-[13.5px] text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit" }) {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -154,7 +154,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
     return (
       <AdminFormPage>
         <BackLink />
-        <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
+        <p className="text-admin-body text-admin-ink-muted">Loading record…</p>
       </AdminFormPage>
     );
   }
@@ -163,7 +163,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
     return (
       <AdminFormPage>
         <BackLink />
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
       </AdminFormPage>
     );
   }
@@ -222,16 +222,16 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       <BackLink />
 
       <div className="mb-5">
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">
           {mode === "edit" ? "Edit" : "Add"} Baptismal Record
         </h1>
-        <p className="text-[13.5px] text-admin-ink-muted">
+        <p className="text-admin-body text-admin-ink-muted">
           {mode === "edit"
             ? "Update the details of this record."
             : "Enter details exactly as they appear in the parish register."}
         </p>
         {prefill && (
-          <p className="mt-2 rounded-[8px] border border-admin-gold-600/30 bg-admin-gold-100/40 px-3 py-2 text-[12.5px] text-admin-gold-700">
+          <p className="mt-2 rounded-[8px] border border-admin-gold-600/30 bg-admin-gold-100/40 px-3 py-2 text-admin-support text-admin-gold-700">
             Linked from schedule: <span className="font-semibold">{prefill.subjectNameHint || "Untitled block"}</span>
             {prefill.date ? ` · ${prefill.date}` : ""}
           </p>
@@ -465,7 +465,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
           title="Supporting documents"
         >
           <div className="flex flex-wrap gap-6">
-            <label className="flex cursor-pointer items-center gap-2 text-[13.5px] text-admin-ink">
+            <label className="flex cursor-pointer items-center gap-2 text-admin-body text-admin-ink">
               <input
                 type="checkbox"
                 checked={form.withMarriageCertificate}
@@ -474,7 +474,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
               />
               Marriage certificate on file
             </label>
-            <label className="flex cursor-pointer items-center gap-2 text-[13.5px] text-admin-ink">
+            <label className="flex cursor-pointer items-center gap-2 text-admin-body text-admin-ink">
               <input
                 type="checkbox"
                 checked={form.withBirthCertificate}
@@ -515,7 +515,7 @@ function BackLink() {
     <button
       type="button"
       onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-[13px] text-admin-ink-muted hover:text-admin-green-700"
+      className="mb-3.5 inline-flex items-center gap-1.5 text-admin-body text-admin-ink-muted hover:text-admin-green-700"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
         <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />

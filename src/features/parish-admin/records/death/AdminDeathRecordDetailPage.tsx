@@ -41,7 +41,7 @@ export function AdminDeathRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <p className="text-[13.5px] text-admin-ink-muted">Loading record…</p>
+        <p className="text-admin-body text-admin-ink-muted">Loading record…</p>
       </div>
     );
   }
@@ -50,8 +50,8 @@ export function AdminDeathRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Record not found</h1>
-        <p className="text-[13.5px] text-admin-ink-muted">
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <p className="text-admin-body text-admin-ink-muted">
           This death record is not available for this parish.
         </p>
       </div>
@@ -77,15 +77,15 @@ export function AdminDeathRecordDetailPage() {
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-surface-alt font-serif text-[17px] font-bold text-admin-ink-muted ring-1 ring-inset ring-admin-border-strong">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-surface-alt font-serif text-admin-group font-bold text-admin-ink-muted ring-1 ring-inset ring-admin-border-strong">
             {initials(name)}
           </div>
           <div>
-            <p className="mb-1 text-[10.5px] font-bold uppercase tracking-[0.6px] text-admin-ink-muted">
+            <p className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-ink-muted">
               Death Record
             </p>
-            <h1 className="mb-1.5 font-serif text-[24px] font-semibold leading-tight text-admin-ink">{name}</h1>
-            <p className="mb-2.5 text-[13px] text-admin-ink-muted">
+            <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
+            <p className="mb-2.5 text-admin-body text-admin-ink-muted">
               Died {formatRecordDate(record.dateOfDeath)} · Buried {formatRecordDate(record.dateOfBurial)} at{" "}
               {record.placeOfBurial}
             </p>
@@ -156,7 +156,7 @@ export function AdminDeathRecordDetailPage() {
               {record.sacramentsReceived.map((s) => (
                 <span
                   key={s.id}
-                  className="inline-flex items-center rounded-full border border-admin-border bg-admin-surface-alt px-3 py-1 text-[12.5px] font-semibold text-admin-ink"
+                  className="inline-flex items-center rounded-full border border-admin-border bg-admin-surface-alt px-3 py-1 text-admin-support font-semibold text-admin-ink"
                 >
                   {DEATH_SACRAMENT_LABELS[s.sacramentName]}
                 </span>
@@ -175,8 +175,8 @@ export function AdminDeathRecordDetailPage() {
                   key={k.id}
                   className="flex items-center justify-between gap-2.5 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5"
                 >
-                  <span className="text-[13.5px] font-semibold text-admin-ink">{kinFullName(k)}</span>
-                  <span className="inline-flex items-center rounded-full bg-[#F8D6E0] px-2.5 py-1 text-[11px] font-semibold text-[#B85A75]">
+                  <span className="text-admin-body font-semibold text-admin-ink">{kinFullName(k)}</span>
+                  <span className="inline-flex items-center rounded-full bg-[#F8D6E0] px-2.5 py-1 text-admin-label font-semibold text-[#B85A75]">
                     {k.relationToDeceased}
                   </span>
                 </div>
@@ -189,7 +189,7 @@ export function AdminDeathRecordDetailPage() {
       {record.remarks && (
         <RecordDetailSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks">
           <div className="p-5 px-[22px]">
-            <p className="text-[13.5px] leading-relaxed text-admin-ink">{record.remarks}</p>
+            <p className="text-admin-body leading-relaxed text-admin-ink">{record.remarks}</p>
           </div>
         </RecordDetailSection>
       )}
@@ -211,7 +211,7 @@ export function AdminDeathRecordDetailPage() {
       >
         <div className="px-[22px]">
           {certs.length === 0 ? (
-            <p className="py-5 text-[11.5px] text-admin-ink-faint">
+            <p className="py-5 text-admin-label text-admin-ink-faint">
               No certificates have been generated from this record yet.
             </p>
           ) : (
@@ -223,7 +223,7 @@ export function AdminDeathRecordDetailPage() {
                 }`}
               >
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold text-admin-ink">
+                  <div className="flex flex-wrap items-center gap-2 text-admin-body font-semibold text-admin-ink">
                     {c.type}
                     <AdminBadge tone={certStatusTone(c.status)}>{c.status}</AdminBadge>
                   </div>

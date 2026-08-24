@@ -88,10 +88,10 @@ export function AdminRequestDetailModal({
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
-              <h3 className="font-serif text-lg font-semibold text-admin-ink">Request {request.id}</h3>
+              <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Request {request.id}</h3>
               <AdminBadge tone={getAdminStatusTone(request)}>{deriveAdminStatusLabel(request)}</AdminBadge>
             </div>
-            <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">
+            <p className="mt-0.5 text-admin-support text-admin-ink-muted">
               {sacramentLabels[request.sacramentType]} certificate · Submitted {submitted}
             </p>
           </div>
@@ -108,12 +108,12 @@ export function AdminRequestDetailModal({
         {/* Body */}
         <div className="overflow-y-auto px-6 py-[18px]">
           <div className="mb-[18px] flex items-center gap-3.5 rounded-[10px] border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
-            <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-admin-green-700 font-serif text-[15px] font-semibold text-white">
+            <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-admin-green-700 font-serif text-admin-group font-semibold text-white">
               {initials(subjectName)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-serif text-[15px] font-bold text-admin-green-900">{subjectName}</p>
-              <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">
+              <p className="font-serif text-admin-group font-bold text-admin-green-900">{subjectName}</p>
+              <p className="mt-0.5 text-admin-support text-admin-ink-muted">
                 {request.purpose ?? "—"} · {copies} {copies > 1 ? "copies" : "copy"}
               </p>
             </div>
@@ -121,7 +121,7 @@ export function AdminRequestDetailModal({
           </div>
 
           <div className="mb-3.5 rounded-[10px] border border-admin-border px-4 py-1">
-            <h4 className="mb-1 mt-3 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+            <h4 className="mb-1 mt-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
               Request details
             </h4>
             <InfoRow label="Full name" value={details?.subjectName || subjectName} />
@@ -135,7 +135,7 @@ export function AdminRequestDetailModal({
 
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="rounded-[10px] border border-admin-border p-4 px-[18px]">
-              <h4 className="mb-3 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+              <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                 Sacramental record
               </h4>
               {linked ? (
@@ -144,8 +144,8 @@ export function AdminRequestDetailModal({
                     <CheckIcon />
                   </span>
                   <div>
-                    <p className="text-[13.5px] font-semibold text-admin-ink">{recordFullName(linked)}</p>
-                    <p className="mt-0.5 text-[11.5px] text-admin-ink-faint">
+                    <p className="text-admin-body font-semibold text-admin-ink">{recordFullName(linked)}</p>
+                    <p className="mt-0.5 text-admin-label text-admin-ink-faint">
                       Baptismal record · Book {linked.bookNumber}, Page {linked.pageNumber}, Entry {linked.entryNumber}
                     </p>
                   </div>
@@ -156,8 +156,8 @@ export function AdminRequestDetailModal({
                     <AlertIcon />
                   </span>
                   <div>
-                    <p className="text-[13.5px] font-semibold text-admin-ink-muted">Not linked yet</p>
-                    <p className="mt-0.5 text-[11.5px] text-admin-ink-faint">
+                    <p className="text-admin-body font-semibold text-admin-ink-muted">Not linked yet</p>
+                    <p className="mt-0.5 text-admin-label text-admin-ink-faint">
                       Use &quot;Find matching record&quot; to search and link one.
                     </p>
                   </div>
@@ -166,21 +166,21 @@ export function AdminRequestDetailModal({
             </div>
 
             <div className="rounded-[10px] border border-admin-border p-4 px-[18px]">
-              <h4 className="mb-3 font-sans text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">
+              <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                 Payment
               </h4>
               <div className="grid grid-cols-2 gap-x-5 gap-y-3.5">
                 <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.4px] text-admin-ink-muted">
+                  <div className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                     Certificate fee (×{copies})
                   </div>
-                  <div className="mt-0.5 text-sm text-admin-ink">₱{fee}.00</div>
+                  <div className="mt-0.5 text-admin-body text-admin-ink">₱{fee}.00</div>
                 </div>
                 <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.4px] text-admin-ink-muted">
+                  <div className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                     Payment method
                   </div>
-                  <div className="mt-0.5 text-sm text-admin-ink">{method}</div>
+                  <div className="mt-0.5 text-admin-body text-admin-ink">{method}</div>
                 </div>
               </div>
             </div>
@@ -199,8 +199,8 @@ export function AdminRequestDetailModal({
                 <AlertIcon />
               </span>
               <div>
-                <p className="mb-0.5 text-[13px] font-semibold text-admin-red-700">Request rejected</p>
-                <p className="text-[13px] text-[#7A3C35]">
+                <p className="mb-0.5 text-admin-body font-semibold text-admin-red-700">Request rejected</p>
+                <p className="text-admin-body text-[#7A3C35]">
                   {request.rejectionReason || "Rejected by staff."}
                 </p>
               </div>
@@ -303,8 +303,8 @@ function InfoRow({ label, value, last }: { label: string; value: string; last?: 
         last ? "" : "border-b border-admin-border"
       }`}
     >
-      <span className="shrink-0 text-xs text-admin-ink-muted">{label}</span>
-      <span className="text-right text-[13.5px] font-semibold text-admin-ink">{value}</span>
+      <span className="shrink-0 text-admin-label text-admin-ink-muted">{label}</span>
+      <span className="text-right text-admin-body font-semibold text-admin-ink">{value}</span>
     </div>
   );
 }

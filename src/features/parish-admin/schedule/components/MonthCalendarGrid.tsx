@@ -36,7 +36,7 @@ export function MonthCalendarGrid({
     <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4 shadow-md">
       <div className="grid grid-cols-7 gap-1.5">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-          <div key={d} className="pb-1.5 text-center text-[13px] font-semibold uppercase tracking-wide text-admin-ink-faint">
+          <div key={d} className="pb-1.5 text-center text-admin-body font-semibold uppercase tracking-wide text-admin-ink-faint">
             {d}
           </div>
         ))}
@@ -45,7 +45,7 @@ export function MonthCalendarGrid({
             return (
               <div
                 key={i}
-                className="min-h-[76px] rounded-lg border border-transparent bg-gray-100/60 p-1.5 text-left text-[11px] font-medium text-gray-400"
+                className="min-h-[76px] rounded-lg border border-transparent bg-gray-100/60 p-1.5 text-left text-admin-label font-medium text-gray-400"
               >
                 {c.num || ""}
               </div>
@@ -75,7 +75,7 @@ export function MonthCalendarGrid({
                     : "border-admin-border hover:border-admin-ink-faint/40 hover:bg-admin-surface-alt"
               }`}
             >
-              <div className={`text-[14px] font-semibold ${isToday ? "text-admin-gold-700" : "text-admin-ink"}`}>
+              <div className={`text-admin-body font-semibold ${isToday ? "text-admin-gold-700" : "text-admin-ink"}`}>
                 {c.num}
               </div>
               {types.length > 0 && (
@@ -86,7 +86,7 @@ export function MonthCalendarGrid({
                 </div>
               )}
               {occurrences.length > 0 && (
-                <div className="mt-1 text-[9.5px] text-admin-ink-muted">
+                <div className="mt-1 text-admin-label text-admin-ink-muted">
                   {occurrences.length} event{occurrences.length > 1 ? "s" : ""}
                 </div>
               )}
@@ -94,7 +94,7 @@ export function MonthCalendarGrid({
           );
         })}
       </div>
-      {loading && <p className="mt-3 text-center text-[11.5px] text-admin-ink-faint">Loading schedule…</p>}
+      {loading && <p className="mt-3 text-center text-admin-label text-admin-ink-faint">Loading schedule…</p>}
     </div>
   );
 }

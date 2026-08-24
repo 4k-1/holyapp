@@ -81,7 +81,7 @@ export function AdminDashboardPage() {
   });
 
   if (loading) {
-    return <p className="text-[13.5px] text-admin-ink-muted">Loading dashboard…</p>;
+    return <p className="text-admin-body text-admin-ink-muted">Loading dashboard…</p>;
   }
 
   return (
@@ -89,11 +89,11 @@ export function AdminDashboardPage() {
       <div className="mb-5">
         <div className="mb-1.5 flex items-center gap-2 text-admin-gold-700">
           <SunIcon className="h-[15px] w-[15px]" />
-          <span className="text-[12px] font-semibold uppercase tracking-[0.3px]">{todayLabel}</span>
+          <span className="text-admin-support font-semibold uppercase tracking-admin-label">{todayLabel}</span>
         </div>
         {/* TODO: swap "there" for the real signed-in staff first name once the current-user hook shape is confirmed */}
-        <h1 className="font-serif text-[26px] font-semibold text-admin-ink">{greeting()}</h1>
-        <p className="mt-1 text-[13.5px] text-admin-ink-muted">Here's what's happening at the parish today.</p>
+        <h1 className="font-serif text-admin-page font-semibold text-admin-ink">{greeting()}</h1>
+        <p className="mt-1 text-admin-body text-admin-ink-muted">Here's what's happening at the parish today.</p>
       </div>
 
       {attention.length > 0 && (
@@ -102,7 +102,7 @@ export function AdminDashboardPage() {
             <AlertIcon className="h-[18px] w-[18px]" />
           </div>
           <div className="flex-1">
-            <p className="mb-2.5 text-[14px] font-bold text-admin-green-900">Needs your attention</p>
+            <p className="mb-2.5 text-admin-body font-bold text-admin-green-900">Needs your attention</p>
             <div>
               {attention.map((item, i) => (
                 <div
@@ -111,13 +111,13 @@ export function AdminDashboardPage() {
                     i < attention.length - 1 ? "border-b border-admin-gold-700/[0.18]" : ""
                   }`}
                 >
-                  <p className="text-[13.5px] leading-normal text-admin-ink-muted">
+                  <p className="text-admin-body leading-normal text-admin-ink-muted">
                     <strong className="text-admin-green-900">{item.boldText}</strong>
                     {item.restText}
                   </p>
                   <Link
                     to={item.ctaHref}
-                    className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-[12.5px] font-semibold ${
+                    className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-admin-support font-semibold ${
                       item.ctaVariant === "primary"
                         ? "bg-admin-green-700 text-white hover:bg-admin-green-900"
                         : "border border-admin-border-strong bg-admin-surface text-admin-ink hover:bg-admin-surface-alt"
@@ -143,10 +143,10 @@ export function AdminDashboardPage() {
               <div className={`flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-lg ${CHIP_TONE_CLASSES[s.chipTone]}`}>
                 <StatIconGlyph icon={s.icon} className="h-[15px] w-[15px]" />
               </div>
-              <p className="text-[11.5px] font-semibold uppercase tracking-[0.4px] text-admin-ink-muted">{s.label}</p>
+              <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">{s.label}</p>
             </div>
-            <p className="mb-1 font-serif text-[27px] font-semibold text-admin-green-900">{s.value}</p>
-            <p className="text-[11.5px] text-admin-ink-faint">{s.delta}</p>
+            <p className="mb-1 font-serif text-admin-metric font-semibold tabular-nums text-admin-green-900">{s.value}</p>
+            <p className="text-admin-label text-admin-ink-faint">{s.delta}</p>
           </div>
         ))}
       </div>
@@ -156,7 +156,7 @@ export function AdminDashboardPage() {
           <Link
             key={qa.id}
             to={qa.href}
-            className="flex items-center gap-2 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5 text-[13px] font-semibold text-admin-green-800 hover:border-admin-green-600 hover:bg-admin-green-050"
+            className="flex items-center gap-2 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5 text-admin-body font-semibold text-admin-green-800 hover:border-admin-green-600 hover:bg-admin-green-050"
           >
             <QuickActionIconGlyph icon={qa.icon} className="h-[15px] w-[15px] text-admin-green-700" />
             {qa.label}
@@ -166,13 +166,13 @@ export function AdminDashboardPage() {
 
       <div className="mb-5 rounded-[var(--radius)] border border-admin-border bg-admin-surface p-5 shadow-[0_2px_8px_rgba(10,40,30,0.06)]">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">Today's Masses</p>
-          <Link to="/schedule" className="text-[13px] font-semibold text-admin-green-700 hover:underline">
+          <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">Today's Masses</p>
+          <Link to="/schedule" className="text-admin-body font-semibold text-admin-green-700 hover:underline">
             Open full schedule
           </Link>
         </div>
         {todayMasses.length === 0 ? (
-          <p className="px-0.5 py-1.5 text-[12.5px] text-admin-ink-faint">No Masses scheduled today.</p>
+          <p className="px-0.5 py-1.5 text-admin-support text-admin-ink-faint">No Masses scheduled today.</p>
         ) : (
           <div className="flex gap-2.5 overflow-x-auto pb-0.5">
             {todayMasses.map((m) => (
@@ -182,8 +182,8 @@ export function AdminDashboardPage() {
                 className="flex min-w-[150px] flex-shrink-0 items-center gap-2.5 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5 hover:border-admin-green-600 hover:bg-admin-green-050"
               >
                 <div>
-                  <p className="whitespace-nowrap font-serif text-[14px] font-semibold text-admin-green-900">{m.time}</p>
-                  <p className="whitespace-nowrap text-[11.5px] text-admin-ink-muted">{m.priest || "Unassigned"}</p>
+                  <p className="whitespace-nowrap font-serif text-admin-body font-semibold text-admin-green-900">{m.time}</p>
+                  <p className="whitespace-nowrap text-admin-label text-admin-ink-muted">{m.priest || "Unassigned"}</p>
                 </div>
               </Link>
             ))}
@@ -194,8 +194,8 @@ export function AdminDashboardPage() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.4fr_1fr]">
         <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-5 shadow-[0_2px_8px_rgba(10,40,30,0.06)]">
           <div className="mb-3.5 flex items-center justify-between">
-            <p className="text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">Recent activity</p>
-            <span className="cursor-pointer text-[13px] font-semibold text-admin-green-700 hover:underline">View all</span>
+            <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">Recent activity</p>
+            <span className="cursor-pointer text-admin-body font-semibold text-admin-green-700 hover:underline">View all</span>
           </div>
           <div>
             {activity.map((item, i) => (
@@ -205,8 +205,8 @@ export function AdminDashboardPage() {
                   {i < activity.length - 1 && <span className="mt-1 w-px flex-1 bg-admin-border-strong" />}
                 </div>
                 <div className="pb-4">
-                  <p className="mb-0.5 text-[13.5px] font-semibold text-admin-ink">{item.title}</p>
-                  <p className="text-[12px] leading-[1.6] text-admin-ink-muted">{item.meta}</p>
+                  <p className="mb-0.5 text-admin-body font-semibold text-admin-ink">{item.title}</p>
+                  <p className="text-admin-support leading-[1.6] text-admin-ink-muted">{item.meta}</p>
                 </div>
               </div>
             ))}
@@ -215,8 +215,8 @@ export function AdminDashboardPage() {
 
         <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-5 shadow-[0_2px_8px_rgba(10,40,30,0.06)]">
           <div className="mb-3.5 flex items-center justify-between">
-            <p className="text-[11.5px] font-semibold uppercase tracking-[0.6px] text-admin-ink-muted">Upcoming events</p>
-            <Link to="/schedule" className="text-[13px] font-semibold text-admin-green-700 hover:underline">
+            <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">Upcoming events</p>
+            <Link to="/schedule" className="text-admin-body font-semibold text-admin-green-700 hover:underline">
               View calendar
             </Link>
           </div>
@@ -228,8 +228,8 @@ export function AdminDashboardPage() {
                   {i < upcoming.length - 1 && <span className="mt-1 w-px flex-1 bg-admin-border-strong" />}
                 </div>
                 <div className="pb-4">
-                  <p className="mb-0.5 text-[13.5px] font-semibold text-admin-ink">{ev.title}</p>
-                  <p className="text-[12px] leading-[1.6] text-admin-ink-muted">
+                  <p className="mb-0.5 text-admin-body font-semibold text-admin-ink">{ev.title}</p>
+                  <p className="text-admin-support leading-[1.6] text-admin-ink-muted">
                     {ev.date} · <span className={`font-semibold ${STATUS_TEXT_CLASSES[ev.dotTone]}`}>{ev.status}</span>
                   </p>
                 </div>

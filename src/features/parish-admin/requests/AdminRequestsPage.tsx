@@ -117,7 +117,7 @@ export function AdminRequestsPage() {
         <span>
           {r.details?.subjectName ?? r.requesterId}
           {r.origin === "walkin" && (
-            <span className="ml-2 inline-flex items-center rounded-full bg-admin-surface-alt px-2 py-0.5 text-[11px] font-semibold text-admin-ink-muted">
+            <span className="ml-2 inline-flex items-center rounded-full bg-admin-surface-alt px-2 py-0.5 text-admin-label font-semibold text-admin-ink-muted">
               Walk-in
             </span>
           )}
@@ -134,7 +134,7 @@ export function AdminRequestsPage() {
       key: "type",
       header: "Type",
       render: (r) => (
-        <span className="inline-flex items-center rounded-full bg-admin-surface-alt px-2.5 py-1 text-[11.5px] font-semibold text-admin-ink-muted">
+        <span className="inline-flex items-center rounded-full bg-admin-surface-alt px-2.5 py-1 text-admin-label font-semibold text-admin-ink-muted">
           {sacramentLabels[r.sacramentType]}
         </span>
       ),
@@ -202,8 +202,8 @@ export function AdminRequestsPage() {
     <div>
       <div className="mb-5 flex items-end justify-between">
         <div>
-          <h1 className="mb-1 text-[26px] font-semibold text-admin-ink">Requests</h1>
-          <p className="text-[13.5px] text-admin-ink-muted">Online certificate requests submitted by parishioners.</p>
+          <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Requests</h1>
+          <p className="text-admin-body text-admin-ink-muted">Online certificate requests submitted by parishioners.</p>
         </div>
       </div>
 
@@ -241,7 +241,7 @@ export function AdminRequestsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-          className="w-full rounded-[7px] border border-admin-border-strong bg-white py-[9px] pl-3 pr-[30px] text-[13.5px] text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25 sm:w-auto"
+          className="w-full rounded-[7px] border border-admin-border-strong bg-white py-[9px] pl-3 pr-[30px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25 sm:w-auto"
         >
           {(["All statuses", "Pending", "Awaiting Payment", "In Progress", "Released", "Rejected"] as StatusFilter[]).map(
             (s) => (
@@ -261,7 +261,7 @@ export function AdminRequestsPage() {
             }
           />
           {dateFilter && (
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-admin-green-100 py-[7px] pl-3 pr-2 text-[12.5px] font-semibold text-admin-green-700">
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-admin-green-100 py-[7px] pl-3 pr-2 text-admin-support font-semibold text-admin-green-700">
               {new Date(dateFilter + "T00:00:00").toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",

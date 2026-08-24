@@ -28,21 +28,21 @@ export function ServiceFeesSection() {
   }
 
   if (loading) {
-    return <p className="text-[13.5px] text-admin-ink-muted">Loading…</p>;
+    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
   }
 
   return (
     <>
       <AdminCard className="p-5 px-[22px]">
-        <h2 className="mb-1 font-serif text-[19px] font-semibold text-admin-ink">Service Fees</h2>
-        <p className="mb-5 text-[12.5px] text-admin-ink-muted">
+        <h2 className="mb-1 font-serif text-admin-section font-semibold text-admin-ink">Service Fees</h2>
+        <p className="mb-5 text-admin-support text-admin-ink-muted">
           These amounts auto-apply to all future requests of that type — changing one here doesn't affect requests already
           submitted.
         </p>
 
-        <table className="w-full text-left text-[13.5px]">
+        <table className="w-full text-left text-admin-body">
           <thead>
-            <tr className="border-b border-admin-border text-[10.5px] font-semibold uppercase tracking-wide text-admin-ink-muted">
+            <tr className="border-b border-admin-border text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">
               <th className="py-2.5">Service</th>
               <th className="py-2.5">Default fee</th>
               <th className="py-2.5">Last updated</th>
@@ -56,13 +56,13 @@ export function ServiceFeesSection() {
                 <td className="py-3">
                   <span className="font-semibold text-admin-ink">₱{fee.amount}</span>
                 </td>
-                <td className="py-3 text-[12px] text-admin-ink-faint">
+                <td className="py-3 text-admin-support text-admin-ink-faint">
                   Last updated by {fee.updatedBy} on {fee.updatedOn}
                 </td>
                 <td className="py-3 text-right">
                   <button
                     onClick={() => setEditingFee(fee)}
-                    className="text-[12.5px] font-semibold text-admin-green-700 hover:underline"
+                    className="text-admin-support font-semibold text-admin-green-700 hover:underline"
                   >
                     Edit
                   </button>

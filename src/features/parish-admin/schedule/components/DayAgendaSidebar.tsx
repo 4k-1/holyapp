@@ -40,10 +40,10 @@ export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssi
     <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4 shadow-md">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
-          <p className="font-serif text-xl font-semibold text-admin-ink">
+          <p className="font-serif text-admin-page font-semibold text-admin-ink">
             {d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
           </p>
-          <p className="mt-0.5 text-[12px] text-admin-ink-muted">
+          <p className="mt-0.5 text-admin-support text-admin-ink-muted">
             {isToday ? "Today · " : ""}
             {occurrences.length} event{occurrences.length !== 1 ? "s" : ""}
           </p>
@@ -59,8 +59,8 @@ export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssi
 
       {occurrences.length === 0 ? (
         <div className="rounded-[10px] border border-dashed border-admin-border-strong px-4 py-8 text-center">
-          <p className="text-[13px] font-semibold text-admin-ink">Nothing scheduled</p>
-          <p className="mt-1 text-[12px] text-admin-ink-muted">Click + to add a Mass, blessing, or event.</p>
+          <p className="text-admin-body font-semibold text-admin-ink">Nothing scheduled</p>
+          <p className="mt-1 text-admin-support text-admin-ink-muted">Click + to add a Mass, blessing, or event.</p>
         </div>
       ) : (
         <div className="space-y-2.5">
@@ -70,10 +70,10 @@ export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssi
               <div key={o.id} className={`rounded-[10px] p-3 ${EVENT_TYPE_STYLES[o.type].card}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-[11.5px] font-semibold text-admin-ink-muted">
+                    <p className="text-admin-label font-semibold text-admin-ink-muted">
                       {o.start} – {o.end}
                     </p>
-                    <p className="mt-0.5 text-[13.5px] font-semibold text-admin-ink">{o.title}</p>
+                    <p className="mt-0.5 text-admin-body font-semibold text-admin-ink">{o.title}</p>
                   </div>
                   <ScheduleKebabMenu
                     items={[
@@ -91,7 +91,7 @@ export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssi
                   />
                 </div>
                 <div className="mt-1.5 flex items-center gap-1.5">
-                  <span className="text-[12px] text-admin-ink-muted">
+                  <span className="text-admin-support text-admin-ink-muted">
                     {sourceLabel}
                     {o.assignee ? ` · ${o.assignee}` : " · Unassigned"}
                   </span>

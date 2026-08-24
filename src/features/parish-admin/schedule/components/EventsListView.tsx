@@ -68,7 +68,7 @@ export function EventsListView({ onViewDay }: EventsListViewProps) {
             <button
               key={t}
               onClick={() => setTimeFilter(t)}
-              className={`rounded-[7px] px-3 py-1.5 text-[12px] font-semibold transition ${
+              className={`rounded-[7px] px-3 py-1.5 text-admin-support font-semibold transition ${
                 timeFilter === t ? "bg-admin-surface text-admin-ink shadow-sm" : "text-admin-ink-muted"
               }`}
             >
@@ -79,9 +79,9 @@ export function EventsListView({ onViewDay }: EventsListViewProps) {
       </div>
 
       <div className="overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface">
-        <table className="w-full text-left text-[12.5px]">
+        <table className="w-full text-left text-admin-support">
           <thead>
-            <tr className="border-b border-admin-border bg-admin-surface-alt text-[10.5px] font-semibold uppercase tracking-wide text-admin-ink-muted">
+            <tr className="border-b border-admin-border bg-admin-surface-alt text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">
               <th className="px-4 py-2.5">Date</th>
               <th className="px-4 py-2.5">Time</th>
               <th className="px-4 py-2.5">Type</th>
@@ -116,7 +116,7 @@ export function EventsListView({ onViewDay }: EventsListViewProps) {
                       {b.start} – {b.end}
                     </td>
                     <td className="px-4 py-2.5">
-                      <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${EVENT_TYPE_STYLES[b.type].tag}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-admin-label font-semibold ${EVENT_TYPE_STYLES[b.type].tag}`}>
                         {EVENT_TYPE_LABELS[b.type]}
                       </span>
                     </td>
@@ -133,14 +133,14 @@ export function EventsListView({ onViewDay }: EventsListViewProps) {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => onViewDay(b.date)}
-                          className="whitespace-nowrap shrink-0 text-[12px] font-semibold text-admin-green-700 hover:underline"
+                          className="whitespace-nowrap shrink-0 text-admin-support font-semibold text-admin-green-700 hover:underline"
                         >
                           View day
                         </button>
                         {b.recordStatus === "Pending" && (
                           <button
                             onClick={() => handleInputRecord(b)}
-                            className="whitespace-nowrap shrink-0 text-[12px] font-semibold text-admin-green-700 hover:underline"
+                            className="whitespace-nowrap shrink-0 text-admin-support font-semibold text-admin-green-700 hover:underline"
                           >
                             Input record
                           </button>
@@ -162,7 +162,7 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   return (
     <button
       onClick={onClick}
-      className={`rounded-full border px-2.5 py-1 text-[11.5px] font-semibold transition ${
+      className={`rounded-full border px-2.5 py-1 text-admin-label font-semibold transition ${
         active
           ? "border-admin-green-700 bg-admin-green-050 text-admin-green-800"
           : "border-admin-border text-admin-ink-muted hover:bg-admin-surface-alt"
