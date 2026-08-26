@@ -1,4 +1,4 @@
-import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
+import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCertificate";
 import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
 import { delay } from "@/services/delay";
 import type { BaptismalRecord, RecordAnnotation } from "@/features/parish-admin/records/types";
@@ -62,30 +62,7 @@ export async function generateBaptismalCertificate(
   await delay(400);
   const record = MOCK_BAPTISMAL_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
   if (!record) throw new Error(`Record ${recordId} not found`);
-
-  const seq = String(record.certificates.length + 1).padStart(2, "0");
-  const code = formatCertificateCode(
-    peekNumberingPrefix("baptism"),
-    `${record.bookNumber}${record.pageNumber}`,
-    seq
-  );
-  const issuedDate = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-
-  record.certificates.forEach((c) => {
-    if (c.status === "Valid") c.status = "Superseded";
-  });
-  record.certificates.push({
-    type: "Certificate of Baptism",
-    date: issuedDate,
-    by: "Admin Immaculada",
-    status: "Valid",
-    code,
-  });
-  record.updatedAt = new Date().toISOString();
+  appendIssuedCertificate(record, "baptism");
   return { ...record };
 }
 

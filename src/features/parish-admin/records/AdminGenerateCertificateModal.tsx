@@ -5,50 +5,54 @@ import {
   CertificateDocument,
   CertificatePreviewStage,
   sacramentCertTitles,
+  type CertificateFields,
 } from "@/features/parish-admin/components/CertificateDocument";
 import { CERT_PREVIEW_STAGE_BG } from "@/features/parish-admin/components/certificate/constants";
 import { printElement } from "@/features/parish-admin/requests/printUtils";
-import { generateBaptismalCertificate } from "@/features/parish-admin/records/api/baptismalRecordsApi";
-import { baptismCertificateFields, recordFullName } from "@/features/parish-admin/records/baptismalHelpers";
 import { getCertificateAppearance } from "@/features/parish-admin/settings/api/certificateConfigApi";
 import { useAsync } from "@/hooks/useAsync";
-import type { BaptismalRecord, IssuedRecordCertificate } from "@/features/parish-admin/records/types";
-import type { Parish } from "@/types";
+import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
+import type { Parish, SacramentType } from "@/types";
 
-interface AdminGenerateBaptismalCertificateModalProps {
+interface AdminGenerateCertificateModalProps {
   parish: Parish;
-  record: BaptismalRecord;
+  sacramentType: SacramentType;
+  subjectName: string;
+  fields: CertificateFields;
   issued?: IssuedRecordCertificate;
   onClose: () => void;
+  onIssue: () => Promise<{ certificates: IssuedRecordCertificate[] }>;
   onIssued?: (cert: IssuedRecordCertificate) => void;
 }
 
-export function AdminGenerateBaptismalCertificateModal({
+export function AdminGenerateCertificateModal({
   parish,
-  record,
+  sacramentType,
+  subjectName,
+  fields,
   issued,
   onClose,
+  onIssue,
   onIssued,
-}: AdminGenerateBaptismalCertificateModalProps) {
+}: AdminGenerateCertificateModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
-  const { data: appearance, loading } = useAsync(() => getCertificateAppearance("baptism"), []);
+  const { data: appearance, loading } = useAsync(() => getCertificateAppearance(sacramentType), [sacramentType]);
   const [issuing, setIssuing] = useState(false);
   const [issuedCert, setIssuedCert] = useState<IssuedRecordCertificate | undefined>(issued);
 
-  const name = recordFullName(record);
-  const title = sacramentCertTitles.baptism;
+  const title = sacramentCertTitles[sacramentType];
   const liveCode = issuedCert?.code;
-  const fields = baptismCertificateFields(record, { certCode: liveCode });
+  const previewFields: CertificateFields = { ...fields, certCode: liveCode ?? fields.certCode };
 
   function handlePrint() {
     if (!printRef.current) return;
-    printElement(printRef.current, `${title} — ${name}`);
+    printElement(printRef.current, `${title} — ${subjectName}`);
   }
 
   async function handleIssue() {
     setIssuing(true);
     try {
-      const next = await generateBaptismalCertificate(parish.id, record.id);
+      const next = await onIssue();
       const newest = next.certificates.find((c) => c.status === "Valid") ?? next.certificates.at(-1);
       if (!newest) return;
       setIssuedCert(newest);
@@ -62,7 +66,7 @@ export function AdminGenerateBaptismalCertificateModal({
     <AdminDialog onClose={onClose} busy={issuing} panelClassName="max-w-[720px]">
       <AdminDialogHeader
         title={title}
-        subtitle={`${name}${liveCode ? ` · ${liveCode}` : " · Preview — not yet recorded as issued"}`}
+        subtitle={`${subjectName}${liveCode ? ` · ${liveCode}` : " · Preview — not yet recorded as issued"}`}
         onClose={onClose}
         busy={issuing}
       />
@@ -75,9 +79,9 @@ export function AdminGenerateBaptismalCertificateModal({
             <CertificateDocument
               ref={printRef}
               parish={parish}
-              sacramentType="baptism"
-              subjectName={name}
-              fields={fields}
+              sacramentType={sacramentType}
+              subjectName={subjectName}
+              fields={previewFields}
               appearance={appearance}
             />
           </CertificatePreviewStage>

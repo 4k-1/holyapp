@@ -1,3 +1,4 @@
+import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type {
   MarriageConsentPerson,
   MarriageParty,
@@ -5,7 +6,7 @@ import type {
   MarriageRecord,
   MarriageSearchCriteria,
 } from "@/features/parish-admin/records/types";
-import { fullName, initials } from "@/features/parish-admin/records/baptismalHelpers";
+import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName, initials } from "@/features/parish-admin/records/baptismalHelpers";
 
 export { initials, certStatusTone } from "@/features/parish-admin/records/baptismalHelpers";
 
@@ -141,3 +142,15 @@ export const emptyMarriageSearchCriteria = (): MarriageSearchCriteria => ({
   place: "",
   witness: "",
 });
+
+export function marriageCertificateFields(
+  rec: MarriageRecord,
+  extras?: { requestId?: string; certCode?: string }
+): CertificateFields {
+  return {
+    requestId: extras?.requestId ?? rec.id,
+    registerRef: certificateRegisterRef(rec),
+    marriageDate: formatSharedDate(rec.dateOfMarriage),
+    certCode: extras?.certCode,
+  };
+}

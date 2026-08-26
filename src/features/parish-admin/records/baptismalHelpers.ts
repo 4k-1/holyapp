@@ -134,10 +134,19 @@ export function linkedRegisterRef(linked: { book: string; page: string; line?: s
     .join(" / ");
 }
 
+export function certificateRegisterRef(rec: {
+  bookNumber: string;
+  pageNumber: string;
+  entryNumber: string;
+}) {
+  return `Book ${rec.bookNumber}, Page ${rec.pageNumber}, Entry ${rec.entryNumber}`;
+}
+
+/** @deprecated Use certificateRegisterRef */
 export function baptismCertificateDisplayRef(
   rec: Pick<BaptismalRecord, "bookNumber" | "pageNumber" | "entryNumber">
 ) {
-  return `Book ${rec.bookNumber}, Page ${rec.pageNumber}, Entry ${rec.entryNumber}`;
+  return certificateRegisterRef(rec);
 }
 
 const CERTIFICATE_NOTATION: Record<LinkableAnnotationCategory, (date: string) => string> = {
@@ -169,7 +178,7 @@ export function baptismCertificateFields(
 ): CertificateFields {
   return {
     requestId: extras?.requestId ?? rec.id,
-    registerRef: baptismCertificateDisplayRef(rec),
+    registerRef: certificateRegisterRef(rec),
     birthdate: formatRecordDate(rec.dateOfBirth),
     birthplace: rec.placeOfBirth ?? "—",
     baptismDate: formatRecordDate(rec.dateOfBaptism),

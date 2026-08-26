@@ -1,7 +1,7 @@
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, NoteIcon, UserIcon } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, FileIcon, NoteIcon, UserIcon } from "@/features/parish-admin/components/AdminForm";
 import {
   RecordDetailBackLink,
   RecordDetailInfoRow,
@@ -9,15 +9,14 @@ import {
 } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { DropletIcon, ShieldIcon } from "@/components/ui/icons/SacramentIcons";
-import {
-  generateConfirmationCertificate,
-  getConfirmationRecord,
-} from "@/features/parish-admin/records/api/confirmationRecordsApi";
+import { generateConfirmationCertificate, getConfirmationRecord } from "@/features/parish-admin/records/api/confirmationRecordsApi";
+import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
+import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
 import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { recordFullName as baptismFullName } from "@/features/parish-admin/records/baptismalHelpers";
 import { useAsync } from "@/hooks/useAsync";
 import {
-  certStatusTone,
+  confirmationCertificateFields,
   confirmationRecordRef,
   encodedByLabel,
   formatDateTime,
@@ -27,6 +26,7 @@ import {
   recordFullName,
   recordMotherName,
 } from "@/features/parish-admin/records/confirmationHelpers";
+import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 
 export function AdminConfirmationRecordDetailPage() {
@@ -36,7 +36,7 @@ export function AdminConfirmationRecordDetailPage() {
   const id = decodeURIComponent(recordId);
 
   const { data: record, loading, refetch } = useAsync(() => getConfirmationRecord(parish.id, id), [parish.id, id]);
-  const [generating, setGenerating] = useState(false);
+  const [certificateModal, setCertificateModal] = useState<IssuedRecordCertificate | "new" | null>(null);
 
   const { data: linkedBaptism } = useAsync(
     () =>
@@ -46,7 +46,7 @@ export function AdminConfirmationRecordDetailPage() {
     [parish.id, record?.baptismalRecordId]
   );
 
-  if (loading) {
+  if (loading && !record) {
     return (
       <div>
         <RecordDetailBackLink />
@@ -73,16 +73,6 @@ export function AdminConfirmationRecordDetailPage() {
     record.isAdult && "Adult confirmation",
     record.isPriorMarriage && "Prior marriage",
   ].filter(Boolean) as string[];
-
-  async function handleGenerateCertificate() {
-    setGenerating(true);
-    try {
-      await generateConfirmationCertificate(parish.id, record!.id);
-      refetch();
-    } finally {
-      setGenerating(false);
-    }
-  }
 
   return (
     <div className="mx-auto max-w-[920px]">
@@ -117,9 +107,9 @@ export function AdminConfirmationRecordDetailPage() {
         </div>
 
         <div className="flex shrink-0 flex-col gap-2">
-          <AdminButton onClick={handleGenerateCertificate} disabled={generating}>
+          <AdminButton onClick={() => setCertificateModal("new")}>
             <FileIcon />
-            {generating ? "Generating…" : "Generate Certificate"}
+            Generate Certificate
           </AdminButton>
           <div className="flex gap-2">
             <AdminButton variant="secondary" className="flex-1" onClick={() => navigate("edit")}>
@@ -215,59 +205,24 @@ export function AdminConfirmationRecordDetailPage() {
         </div>
       </RecordDetailSection>
 
-      <RecordDetailSection
-        tone="green"
-        icon={<FileIcon className="h-4.5 w-4.5" />}
-        title="Issued Certificates"
-        className="mb-0"
-      >
-        <div className="px-[22px]">
-          {certs.length === 0 ? (
-            <p className="py-5 text-admin-label text-admin-ink-faint">
-              No certificates have been generated from this record yet.
-            </p>
-          ) : (
-            certs.map((c, i) => (
-              <div
-                key={c.code}
-                className={`flex flex-wrap items-center justify-between gap-3 py-3 ${
-                  i < certs.length - 1 ? "border-b border-admin-border" : ""
-                }`}
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 text-admin-body font-semibold text-admin-ink">
-                    {c.type}
-                    <AdminBadge tone={certStatusTone(c.status)}>{c.status}</AdminBadge>
-                  </div>
-                  <p className="mt-0.5 text-xs text-admin-ink-muted">
-                    Issued {c.date} by {c.by} · {c.code}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <AdminButton variant="secondary" size="sm" onClick={() => console.info("[mock] verify", c.code)}>
-                    <ScanIcon />
-                    Verify
-                  </AdminButton>
-                  <AdminButton variant="secondary" size="sm" onClick={() => console.info("[mock] download", c.code)}>
-                    <DownloadIcon />
-                    Download
-                  </AdminButton>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </RecordDetailSection>
-    </div>
-  );
-}
+      <IssuedCertificatesSection certificates={certs} onView={(c) => setCertificateModal(c)} />
 
-function FileIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
-      <polyline points="14 3 14 8 19 8" strokeLinejoin="round" />
-    </svg>
+      {certificateModal && (
+        <AdminGenerateCertificateModal
+          parish={parish}
+          sacramentType="confirmation"
+          subjectName={name}
+          fields={confirmationCertificateFields(record)}
+          issued={certificateModal === "new" ? undefined : certificateModal}
+          onClose={() => setCertificateModal(null)}
+          onIssue={() => generateConfirmationCertificate(parish.id, record.id)}
+          onIssued={(cert) => {
+            setCertificateModal(cert);
+            refetch();
+          }}
+        />
+      )}
+    </div>
   );
 }
 
@@ -285,25 +240,6 @@ function TrashIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
       <polyline points="3 6 5 6 21 6" strokeLinecap="round" />
       <path d="M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ScanIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
-      <path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2" strokeLinecap="round" />
-      <line x1="4" y1="12" x2="20" y2="12" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
-      <path d="M12 3v12" strokeLinecap="round" />
-      <polyline points="7 11 12 16 17 11" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 21h14" strokeLinecap="round" />
     </svg>
   );
 }

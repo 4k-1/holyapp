@@ -1,5 +1,6 @@
+import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type { ConfirmationRecord, ConfirmationSearchCriteria } from "@/features/parish-admin/records/types";
-import { fullName, initials, parentName } from "@/features/parish-admin/records/baptismalHelpers";
+import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName, initials, parentName } from "@/features/parish-admin/records/baptismalHelpers";
 
 export { initials, certStatusTone } from "@/features/parish-admin/records/baptismalHelpers";
 
@@ -89,3 +90,20 @@ export const emptyConfirmationSearchCriteria = (): ConfirmationSearchCriteria =>
   minister: "",
   place: "",
 });
+
+export function confirmationCertificateFields(
+  rec: ConfirmationRecord,
+  extras?: { requestId?: string; certCode?: string }
+): CertificateFields {
+  const mother = recordMotherName(rec);
+  const father = recordFatherName(rec);
+  return {
+    requestId: extras?.requestId ?? rec.id,
+    registerRef: certificateRegisterRef(rec),
+    birthdate: rec.dateOfBirth ? formatSharedDate(rec.dateOfBirth) : undefined,
+    confirmationDate: formatSharedDate(rec.dateOfConfirmation),
+    motherName: mother || undefined,
+    fatherName: father || undefined,
+    certCode: extras?.certCode,
+  };
+}

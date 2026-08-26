@@ -1,7 +1,7 @@
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState, type SVGProps } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, NoteIcon } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, FileIcon, NoteIcon } from "@/features/parish-admin/components/AdminForm";
 import {
   RecordDetailBackLink,
   RecordDetailInfoRow,
@@ -10,15 +10,13 @@ import {
 } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { HeartIcon } from "@/components/ui/icons/SacramentIcons";
-import {
-  generateMarriageCertificate,
-  getMarriageRecord,
-} from "@/features/parish-admin/records/api/marriageRecordsApi";
+import { generateMarriageCertificate, getMarriageRecord } from "@/features/parish-admin/records/api/marriageRecordsApi";
+import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
+import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
 import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { recordFullName } from "@/features/parish-admin/records/baptismalHelpers";
 import { useAsync } from "@/hooks/useAsync";
 import {
-  certStatusTone,
   consentPersonName,
   coupleLabel,
   encodedByLabel,
@@ -28,10 +26,11 @@ import {
   getMarriageParty,
   groomFullName,
   initials,
+  marriageCertificateFields,
   parentName,
   partyFullName,
 } from "@/features/parish-admin/records/marriageHelpers";
-import type { MarriageParty, MarriagePartyRole } from "@/features/parish-admin/records/types";
+import type { IssuedRecordCertificate, MarriageParty, MarriagePartyRole } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 
 export function AdminMarriageRecordDetailPage() {
@@ -41,7 +40,7 @@ export function AdminMarriageRecordDetailPage() {
   const id = decodeURIComponent(recordId);
 
   const { data: record, loading, refetch } = useAsync(() => getMarriageRecord(parish.id, id), [parish.id, id]);
-  const [generating, setGenerating] = useState(false);
+  const [certificateModal, setCertificateModal] = useState<IssuedRecordCertificate | "new" | null>(null);
 
   const groom = record ? getMarriageParty(record, "Groom") : undefined;
   const bride = record ? getMarriageParty(record, "Bride") : undefined;
@@ -62,7 +61,7 @@ export function AdminMarriageRecordDetailPage() {
     [parish.id, bride?.baptismalRecordId]
   );
 
-  if (loading) {
+  if (loading && !record) {
     return (
       <div>
         <RecordDetailBackLink />
@@ -85,16 +84,6 @@ export function AdminMarriageRecordDetailPage() {
 
   const couple = coupleLabel(record);
   const certs = record.certificates;
-
-  async function handleGenerateCertificate() {
-    setGenerating(true);
-    try {
-      await generateMarriageCertificate(parish.id, record!.id);
-      refetch();
-    } finally {
-      setGenerating(false);
-    }
-  }
 
   return (
     <div className="mx-auto max-w-[920px]">
@@ -131,9 +120,9 @@ export function AdminMarriageRecordDetailPage() {
         </div>
 
         <div className="flex shrink-0 flex-col gap-2">
-          <AdminButton onClick={handleGenerateCertificate} disabled={generating}>
+          <AdminButton onClick={() => setCertificateModal("new")}>
             <FileIcon />
-            {generating ? "Generating…" : "Generate Certificate"}
+            Generate Certificate
           </AdminButton>
           <div className="flex gap-2">
             <AdminButton variant="secondary" className="flex-1" onClick={() => navigate("edit")}>
@@ -216,55 +205,23 @@ export function AdminMarriageRecordDetailPage() {
         </div>
       </RecordDetailSection>
 
-      <RecordDetailSection
-        tone="green"
-        icon={<FileIcon className="h-4.5 w-4.5" />}
-        title="Issued Certificates"
-        className="mb-0"
-      >
-        <div className="px-[22px]">
-          {certs.length === 0 ? (
-            <p className="py-5 text-admin-label text-admin-ink-faint">
-              No certificates have been generated from this record yet.
-            </p>
-          ) : (
-            certs.map((c, i) => (
-              <div
-                key={c.code}
-                className={`flex flex-wrap items-center justify-between gap-3 py-3 ${
-                  i < certs.length - 1 ? "border-b border-admin-border" : ""
-                }`}
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 text-admin-body font-semibold text-admin-ink">
-                    {c.type}
-                    <AdminBadge tone={certStatusTone(c.status)}>{c.status}</AdminBadge>
-                  </div>
-                  <p className="mt-0.5 text-xs text-admin-ink-muted">
-                    Issued {c.date} by {c.by} · {c.code}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <AdminButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => console.info("[mock] verify", c.code)}
-                  >
-                    Verify
-                  </AdminButton>
-                  <AdminButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => console.info("[mock] download", c.code)}
-                  >
-                    Download
-                  </AdminButton>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </RecordDetailSection>
+      <IssuedCertificatesSection certificates={certs} onView={(c) => setCertificateModal(c)} />
+
+      {certificateModal && (
+        <AdminGenerateCertificateModal
+          parish={parish}
+          sacramentType="marriage"
+          subjectName={couple}
+          fields={marriageCertificateFields(record)}
+          issued={certificateModal === "new" ? undefined : certificateModal}
+          onClose={() => setCertificateModal(null)}
+          onIssue={() => generateMarriageCertificate(parish.id, record.id)}
+          onIssued={(cert) => {
+            setCertificateModal(cert);
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -350,15 +307,6 @@ function EditIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
       <path d="M12 20h9" strokeLinecap="round" />
       <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function FileIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5" {...props}>
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
-      <polyline points="14 3 14 8 19 8" strokeLinejoin="round" />
     </svg>
   );
 }

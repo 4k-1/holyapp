@@ -274,6 +274,22 @@ export function PrintIcon({ className = "h-3.5 w-3.5", ...props }: SVGProps<SVGS
   );
 }
 
+export function FileIcon({ className = "h-3.5 w-3.5", ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      className={className}
+      {...props}
+    >
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
+      <polyline points="14 3 14 8 19 8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function AdminButton({
   variant = "primary",
   size = "md",

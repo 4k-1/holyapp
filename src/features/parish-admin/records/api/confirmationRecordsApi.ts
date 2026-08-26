@@ -1,4 +1,4 @@
-import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
+import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCertificate";
 import { MOCK_CONFIRMATION_RECORDS } from "@/services/mocks/confirmationRecords.mock";
 import { delay } from "@/services/delay";
 import type { ConfirmationRecord } from "@/features/parish-admin/records/types";
@@ -61,29 +61,6 @@ export async function generateConfirmationCertificate(
   await delay(400);
   const record = MOCK_CONFIRMATION_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
   if (!record) throw new Error(`Record ${recordId} not found`);
-
-  const seq = String(record.certificates.length + 1).padStart(2, "0");
-  const code = formatCertificateCode(
-    peekNumberingPrefix("confirmation"),
-    `${record.bookNumber}${record.pageNumber}`,
-    seq
-  );
-  const issuedDate = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-
-  record.certificates.forEach((c) => {
-    if (c.status === "Valid") c.status = "Superseded";
-  });
-  record.certificates.push({
-    type: "Certificate of Confirmation",
-    date: issuedDate,
-    by: "Admin Immaculada",
-    status: "Valid",
-    code,
-  });
-  record.updatedAt = new Date().toISOString();
+  appendIssuedCertificate(record, "confirmation");
   return { ...record };
 }

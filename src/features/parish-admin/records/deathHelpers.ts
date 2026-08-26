@@ -1,9 +1,10 @@
+import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type {
   DeathRecord,
   DeathSacramentName,
   DeathSearchCriteria,
 } from "@/features/parish-admin/records/types";
-import { fullName, initials } from "@/features/parish-admin/records/baptismalHelpers";
+import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName, initials } from "@/features/parish-admin/records/baptismalHelpers";
 
 export { initials, certStatusTone } from "@/features/parish-admin/records/baptismalHelpers";
 
@@ -107,3 +108,15 @@ export const DEATH_SACRAMENT_OPTIONS: DeathSacramentName[] = [
   "confession",
   "communion",
 ];
+
+export function deathCertificateFields(
+  rec: DeathRecord,
+  extras?: { requestId?: string; certCode?: string }
+): CertificateFields {
+  return {
+    requestId: extras?.requestId ?? rec.id,
+    registerRef: certificateRegisterRef(rec),
+    deathDate: formatSharedDate(rec.dateOfDeath),
+    certCode: extras?.certCode,
+  };
+}

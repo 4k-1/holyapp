@@ -1,7 +1,7 @@
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, NoteIcon, PrintIcon, UserIcon } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, FileIcon, NoteIcon, UserIcon } from "@/features/parish-admin/components/AdminForm";
 import {
   RecordDetailBackLink,
   RecordDetailInfoRow,
@@ -9,18 +9,16 @@ import {
 } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { DropletIcon } from "@/components/ui/icons/SacramentIcons";
-import {
-  addBaptismalAnnotation,
-  getBaptismalRecord,
-} from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { AdminAddAnnotationModal } from "@/features/parish-admin/records/baptismal/AdminAddAnnotationModal";
-import { AdminGenerateBaptismalCertificateModal } from "@/features/parish-admin/records/baptismal/AdminGenerateBaptismalCertificateModal";
+import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
+import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
+import { addBaptismalAnnotation, generateBaptismalCertificate, getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { useAsync } from "@/hooks/useAsync";
 import {
   annotationDotClass,
   annotationTagClass,
   annotationTime,
-  certStatusTone,
+  baptismCertificateFields,
   formatRecordDate,
   initials,
   linkedRegisterRef,
@@ -222,40 +220,7 @@ export function AdminBaptismalRecordDetailPage() {
         </div>
       </RecordDetailSection>
 
-      <RecordDetailSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Issued certificates" className="mb-0">
-        <div className="px-[22px]">
-          {certs.length === 0 ? (
-            <p className="py-5 text-admin-label text-admin-ink-faint">
-              No certificates have been generated from this record yet.
-            </p>
-          ) : (
-            certs.map((c, i) => (
-              <div
-                key={c.code}
-                className={`flex flex-wrap items-center justify-between gap-3 py-3 ${
-                  i < certs.length - 1 ? "border-b border-admin-border" : ""
-                }`}
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 text-admin-body font-semibold text-admin-ink">
-                    {c.type}
-                    <AdminBadge tone={certStatusTone(c.status)}>{c.status}</AdminBadge>
-                  </div>
-                  <p className="mt-0.5 text-xs text-admin-ink-muted">
-                    Issued {c.date} by {c.by} · {c.code}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <AdminButton variant="secondary" size="sm" onClick={() => setCertificateModal(c)}>
-                    <PrintIcon />
-                    View & print
-                  </AdminButton>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </RecordDetailSection>
+      <IssuedCertificatesSection certificates={certs} onView={(c) => setCertificateModal(c)} />
 
       {addingAnnotation && (
         <AdminAddAnnotationModal
@@ -271,11 +236,14 @@ export function AdminBaptismalRecordDetailPage() {
       )}
 
       {certificateModal && (
-        <AdminGenerateBaptismalCertificateModal
+        <AdminGenerateCertificateModal
           parish={parish}
-          record={record}
+          sacramentType="baptism"
+          subjectName={name}
+          fields={baptismCertificateFields(record)}
           issued={certificateModal === "new" ? undefined : certificateModal}
           onClose={() => setCertificateModal(null)}
+          onIssue={() => generateBaptismalCertificate(parish.id, record.id)}
           onIssued={(cert) => {
             setCertificateModal(cert);
             refetch();
@@ -332,15 +300,6 @@ function TimelineEvent({
         {by && <p className="mt-0.5 text-admin-label text-admin-ink-faint">Noted by {by}</p>}
       </div>
     </li>
-  );
-}
-
-function FileIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
-      <polyline points="14 3 14 8 19 8" strokeLinejoin="round" />
-    </svg>
   );
 }
 
