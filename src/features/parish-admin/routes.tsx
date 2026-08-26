@@ -18,6 +18,9 @@ import { AdminDeathRecordDetailPage } from "@/features/parish-admin/records/deat
 import { AdminDeathRecordFormPage } from "@/features/parish-admin/records/death/AdminDeathRecordFormPage";
 import { AdminSchedulePage } from "@/features/parish-admin/schedule/AdminSchedulePage";
 import { AdminDonationsPage } from "@/features/parish-admin/donations/AdminDonationsPage";
+import { AdminLedgersPage } from "@/features/parish-admin/ledgers/AdminLedgersPage";
+import { AdminLedgerBookPage } from "@/features/parish-admin/ledgers/AdminLedgerBookPage";
+import { AdminLedgerPageViewer } from "@/features/parish-admin/ledgers/AdminLedgerPageViewer";
 import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSettingsLayout";
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
 import { ServiceFeesSection } from "@/features/parish-admin/settings/components/ServiceFeesSection";
@@ -59,6 +62,9 @@ export const parishAdminRoutes: RouteObject[] = [
         path: "records/death/:recordId/edit",
         element: <AdminDeathRecordFormPage mode="edit" />,
       },
+      { path: "records/ledgers", element: <AdminLedgersPage /> },
+      { path: "records/ledgers/:bookId", element: <AdminLedgerBookPage /> },
+      { path: "records/ledgers/:bookId/pages/:pageNumber", element: <AdminLedgerPageViewer /> },
       {
         path: "schedule",
         element: <AdminSchedulePage />,
@@ -75,7 +81,6 @@ export const parishAdminRoutes: RouteObject[] = [
           { path: "security", element: <AccountSecuritySection /> },
         ],
       },
-      // ledgers, reports go here next
     ],
   },
 ];
