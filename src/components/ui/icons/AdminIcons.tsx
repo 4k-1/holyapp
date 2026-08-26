@@ -85,3 +85,23 @@ export function ChevronDownIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function PanelLeftCloseIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <line x1="9" y1="3" x2="9" y2="21" />
+      <polyline points="16 15 13 12 16 9" />
+    </svg>
+  );
+}
+
+export function PanelLeftOpenIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <line x1="9" y1="3" x2="9" y2="21" />
+      <polyline points="13 9 16 12 13 15" />
+    </svg>
+  );
+}

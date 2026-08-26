@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   GridIcon,
@@ -9,11 +8,11 @@ import {
   ChartIcon,
   GearIcon,
 } from "@/components/ui/icons/AdminIcons";
-import type { Parish, Role } from "@/types";
+import type { Role } from "@/types";
 
 interface AdminSidebarProps {
-  parish: Parish;
   role: Role;
+  collapsed: boolean;
 }
 
 const recordLinks = [
@@ -30,63 +29,20 @@ const requestLinks = [
   { to: "mass-intentions", label: "Mass Intention Requests" },
 ];
 
-export function AdminSidebar({ parish, role }: AdminSidebarProps) {
+export function AdminSidebar({ role, collapsed }: AdminSidebarProps) {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
 
   const requestsActive = requestLinks.some((l) => location.pathname.includes(l.to));
   const recordsActive = recordLinks.some((l) => location.pathname.includes(l.to));
 
   return (
     <aside
-      className={`sticky top-0 relative flex h-screen flex-shrink-0 flex-col bg-admin-surface text-admin-ink border-r border-admin-border transition-[width] duration-200 ${
+      className={`flex h-full flex-shrink-0 flex-col bg-admin-surface text-admin-ink border-r border-admin-border transition-[width] duration-200 ${
         collapsed ? "w-14" : "w-[238px]"
       }`}
     >
-      {/* Collapse toggle — floating circle on the edge */}
-      <button
-        type="button"
-        onClick={() => setCollapsed((prev) => !prev)}
-        className="absolute right-[-13px] top-5 z-30 flex h-[27px] w-[27px] items-center justify-center rounded-full border-[1.5px] border-admin-border-strong bg-admin-surface text-admin-green-700 shadow-[0_1px_5px_rgba(10,40,30,0.18)] transition-all hover:border-admin-green-700 hover:bg-admin-green-700 hover:text-white hover:shadow-[0_2px_7px_rgba(10,40,30,0.28)]"
-        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          className={`h-[13px] w-[13px] transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
-        >
-          <polyline points="17 18 11 12 17 6" />
-          <polyline points="10 18 4 12 10 6" />
-        </svg>
-      </button>
-
-      {/* Brand */}
-      <div
-        className={`flex min-h-16 flex-shrink-0 items-center gap-2.5 border-b border-admin-border ${
-          collapsed ? "justify-center px-0 pb-4 pt-[18px]" : "px-[11px] pb-4 pt-[18px]"
-        }`}
-      >
-        {parish.sealUrl ? (
-          <img src={parish.sealUrl} alt="" className="h-[34px] w-[34px] shrink-0 rounded-full object-contain" />
-        ) : (
-          <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-admin-green-100 font-serif text-sm font-bold text-admin-green-700">
-            {parish.name.charAt(0)}
-          </div>
-        )}
-        {!collapsed && (
-          <div className="min-w-0 overflow-hidden whitespace-nowrap leading-tight">
-            <p className="truncate font-serif text-admin-group font-semibold text-admin-green-900">
-              Parish Admin Portal
-            </p>
-            <p className="mt-0.5 truncate text-admin-label tracking-admin-label text-admin-ink-muted">{parish.name}</p>
-          </div>
-        )}
-      </div>
-
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2.5">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2.5 pt-2.5">
         <SidebarLink to="." end icon={<GridIcon />} label="Dashboard" collapsed={collapsed} />
 
         <SidebarGroup icon={<InboxIcon />} label="Requests" active={requestsActive} collapsed={collapsed}>
