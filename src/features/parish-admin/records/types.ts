@@ -5,6 +5,7 @@ export type RecordStatus = "Active" | "Archived";
 export type IssuedCertificateStatus = "Valid" | "Superseded" | "Invalid";
 
 export interface RecordAnnotation {
+  id: string;
   category: AnnotationCategory;
   date: string;
   note: string;
@@ -60,6 +61,7 @@ export interface BaptismalRecord {
   updatedAt: string;
   status: RecordStatus;
   certificates: IssuedRecordCertificate[];
+  annotations: RecordAnnotation[];
 }
 
 export interface BaptismalSearchCriteria {

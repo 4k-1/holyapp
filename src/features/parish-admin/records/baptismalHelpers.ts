@@ -115,6 +115,17 @@ export function certStatusTone(status: IssuedCertificateStatus): "green" | "ambe
   return "red";
 }
 
+export function annotationTime(date: string) {
+  const parsed = Date.parse(date.includes("T") ? date : `${date}T12:00:00`);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+export function linkedRegisterRef(linked: { book: string; page: string; line?: string }) {
+  return [`Book ${linked.book}`, `Page ${linked.page}`, linked.line ? `Line ${linked.line}` : null]
+    .filter(Boolean)
+    .join(" / ");
+}
+
 export const emptySearchCriteria = (): BaptismalSearchCriteria => ({
   name: "",
   birthdate: "",

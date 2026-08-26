@@ -1,7 +1,7 @@
 import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
 import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
 import { delay } from "@/services/delay";
-import type { BaptismalRecord } from "@/features/parish-admin/records/types";
+import type { BaptismalRecord, RecordAnnotation } from "@/features/parish-admin/records/types";
 
 export async function listBaptismalRecords(parishId: string): Promise<BaptismalRecord[]> {
   await delay(200);
@@ -18,7 +18,7 @@ export async function getBaptismalRecord(
 
 export type BaptismalRecordInput = Omit<
   BaptismalRecord,
-  "id" | "parishId" | "encodedBy" | "createdAt" | "updatedAt" | "status" | "certificates"
+  "id" | "parishId" | "encodedBy" | "createdAt" | "updatedAt" | "status" | "certificates" | "annotations"
 >;
 
 export async function createBaptismalRecord(
@@ -37,6 +37,7 @@ export async function createBaptismalRecord(
     updatedAt: now,
     status: "Active",
     certificates: [],
+    annotations: [],
   };
   MOCK_BAPTISMAL_RECORDS.push(record);
   return record;
@@ -83,6 +84,26 @@ export async function generateBaptismalCertificate(
     by: "Admin Immaculada",
     status: "Valid",
     code,
+  });
+  record.updatedAt = new Date().toISOString();
+  return { ...record };
+}
+
+export async function addBaptismalAnnotation(
+  parishId: string,
+  recordId: string,
+  input: Omit<RecordAnnotation, "id" | "by">,
+  by = "Admin Immaculada"
+): Promise<BaptismalRecord> {
+  await delay(300);
+  const record = MOCK_BAPTISMAL_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
+  if (!record) throw new Error(`Record ${recordId} not found`);
+  if (!record.annotations) record.annotations = [];
+
+  record.annotations.push({
+    ...input,
+    id: `ann-${Date.now()}`,
+    by,
   });
   record.updatedAt = new Date().toISOString();
   return { ...record };

@@ -1,7 +1,7 @@
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, ChecklistIcon, FamilyIcon, NoteIcon, UserIcon } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, NoteIcon, UserIcon } from "@/features/parish-admin/components/AdminForm";
 import {
   RecordDetailBackLink,
   RecordDetailInfoRow,
@@ -10,21 +10,25 @@ import {
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { DropletIcon } from "@/components/ui/icons/SacramentIcons";
 import {
+  addBaptismalAnnotation,
   generateBaptismalCertificate,
   getBaptismalRecord,
 } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { AdminAddAnnotationModal } from "@/features/parish-admin/records/baptismal/AdminAddAnnotationModal";
 import { useAsync } from "@/hooks/useAsync";
 import {
-  baptismRecordRef,
+  annotationDotClass,
+  annotationTagClass,
+  annotationTime,
   certStatusTone,
-  encodedByLabel,
-  formatDateTime,
   formatRecordDate,
   initials,
+  linkedRegisterRef,
   recordFatherName,
   recordFullName,
   recordMotherName,
 } from "@/features/parish-admin/records/baptismalHelpers";
+import type { RecordAnnotation } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 
 export function AdminBaptismalRecordDetailPage() {
@@ -35,6 +39,7 @@ export function AdminBaptismalRecordDetailPage() {
 
   const { data: record, loading, refetch } = useAsync(() => getBaptismalRecord(parish.id, id), [parish.id, id]);
   const [generating, setGenerating] = useState(false);
+  const [addingAnnotation, setAddingAnnotation] = useState(false);
 
   if (loading) {
     return (
@@ -59,6 +64,9 @@ export function AdminBaptismalRecordDetailPage() {
 
   const name = recordFullName(record);
   const certs = record.certificates;
+  const laterAnnotations = [...record.annotations].sort(
+    (a, b) => annotationTime(a.date) - annotationTime(b.date)
+  );
 
   async function handleGenerateCertificate() {
     setGenerating(true);
@@ -74,17 +82,14 @@ export function AdminBaptismalRecordDetailPage() {
     <div className="mx-auto max-w-[920px]">
       <RecordDetailBackLink />
 
-      <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
-        <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-green-100 font-serif text-admin-group font-bold text-admin-green-700 ring-1 ring-inset ring-admin-green-600/20">
+      <AdminCard className="mb-4 flex flex-wrap items-start justify-between gap-4 p-5 px-6">
+        <div className="flex items-start gap-3.5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-admin-green-100 font-serif text-admin-group font-bold text-admin-green-700 ring-1 ring-inset ring-admin-green-600/20">
             {initials(name)}
           </div>
           <div>
-            <p className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-green-700">
-              Baptismal Record
-            </p>
-            <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
-            <p className="mb-2.5 text-admin-body text-admin-ink-muted">
+            <h1 className="mb-1 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
+            <p className="mb-2 text-admin-body text-admin-ink-muted">
               Baptized {formatRecordDate(record.dateOfBaptism)} at {record.placeOfBaptism}
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -124,7 +129,7 @@ export function AdminBaptismalRecordDetailPage() {
       </AdminCard>
 
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <RecordDetailSection tone="blue" icon={<UserIcon className="h-4.5 w-4.5" />} title="Personal Information">
+        <RecordDetailSection tone="blue" icon={<UserIcon className="h-4.5 w-4.5" />} title="Personal Information" className="mb-0">
           <div className="p-5 px-[22px]">
             <RecordDetailInfoRow label="Full name" value={name} />
             <RecordDetailInfoRow label="Sex" value={record.sex ?? "—"} />
@@ -134,7 +139,7 @@ export function AdminBaptismalRecordDetailPage() {
           </div>
         </RecordDetailSection>
 
-        <RecordDetailSection tone="gold" icon={<DropletIcon className="h-4.5 w-4.5" />} title="Baptismal Information">
+        <RecordDetailSection tone="gold" icon={<DropletIcon className="h-4.5 w-4.5" />} title="Baptismal Information" className="mb-0">
           <div className="p-5 px-[22px]">
             <RecordDetailInfoRow label="Date of baptism" value={formatRecordDate(record.dateOfBaptism)} />
             <RecordDetailInfoRow label="Place of baptism" value={record.placeOfBaptism} />
@@ -145,28 +150,35 @@ export function AdminBaptismalRecordDetailPage() {
         </RecordDetailSection>
       </div>
 
-      <RecordDetailSection tone="green" icon={<FamilyIcon className="h-4.5 w-4.5" />} title="Grandparents">
-        <div className="p-5 px-[22px]">
-          <RecordDetailInfoRow label="Paternal grandfather" value={record.paternalGrandfather} />
-          <RecordDetailInfoRow label="Paternal grandmother" value={record.paternalGrandmother} />
-          <RecordDetailInfoRow label="Maternal grandfather" value={record.maternalGrandfather} />
-          <RecordDetailInfoRow label="Maternal grandmother" value={record.maternalGrandmother} last />
-        </div>
-      </RecordDetailSection>
+      {/*
+      <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <RecordDetailSection tone="green" icon={<FamilyIcon className="h-4.5 w-4.5" />} title="Grandparents" className="mb-0">
+          <div className="p-5 px-[22px]">
+            <RecordDetailInfoRow label="Paternal grandfather" value={record.paternalGrandfather} />
+            <RecordDetailInfoRow label="Paternal grandmother" value={record.paternalGrandmother} />
+            <RecordDetailInfoRow label="Maternal grandfather" value={record.maternalGrandfather} />
+            <RecordDetailInfoRow label="Maternal grandmother" value={record.maternalGrandmother} last />
+          </div>
+        </RecordDetailSection>
 
-      <RecordDetailSection tone="neutral" icon={<ChecklistIcon className="h-4.5 w-4.5" />} title="Supporting Documents">
-        <div className="p-5 px-[22px]">
-          <RecordDetailInfoRow
-            label="Marriage certificate"
-            value={record.withMarriageCertificate ? "Present" : "Not on file"}
-          />
-          <RecordDetailInfoRow
-            label="Birth certificate"
-            value={record.withBirthCertificate ? "Present" : "Not on file"}
-            last
-          />
-        </div>
-      </RecordDetailSection>
+        <RecordDetailSection tone="neutral" icon={<ChecklistIcon className="h-4.5 w-4.5" />} title="Supporting Documents" className="mb-0">
+          <div className="p-5 px-[22px]">
+            <RecordDetailInfoRow
+              label="Marriage certificate"
+              value={record.withMarriageCertificate ? "Present" : "Not on file"}
+            />
+            <RecordDetailInfoRow
+              label="Birth certificate"
+              value={record.withBirthCertificate ? "Present" : "Not on file"}
+              last
+            />
+            <p className="pt-3 text-admin-label text-admin-ink-faint">
+              Encoded by {encodedByLabel(record.encodedBy)} · Updated {formatDateTime(record.updatedAt)}
+            </p>
+          </div>
+        </RecordDetailSection>
+      </div>
+      */}
 
       {record.remarks && (
         <RecordDetailSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks">
@@ -176,21 +188,51 @@ export function AdminBaptismalRecordDetailPage() {
         </RecordDetailSection>
       )}
 
-      <RecordDetailSection tone="neutral" icon={<ClockIcon className="h-4.5 w-4.5" />} title="Record Metadata">
-        <div className="p-5 px-[22px]">
-          <RecordDetailInfoRow label="Register reference" value={baptismRecordRef(record)} />
-          <RecordDetailInfoRow label="Encoded by" value={encodedByLabel(record.encodedBy)} />
-          <RecordDetailInfoRow label="Created" value={formatDateTime(record.createdAt)} />
-          <RecordDetailInfoRow label="Last updated" value={formatDateTime(record.updatedAt)} last />
+      <RecordDetailSection
+        tone="green"
+        icon={<DropletIcon className="h-4.5 w-4.5" />}
+        title="Annotation history"
+        right={
+          <AdminButton variant="secondary" size="sm" onClick={() => setAddingAnnotation(true)}>
+            <PlusIcon />
+            Add annotation
+          </AdminButton>
+        }
+      >
+        <div className="px-[22px] py-5">
+          <ol className="relative">
+            <TimelineEvent
+              category="Baptism"
+              tagClass="bg-admin-green-100 text-admin-green-700"
+              dotClass="bg-admin-green-700"
+              date={formatRecordDate(record.dateOfBaptism)}
+              note={`Entered in the baptismal register at ${record.placeOfBaptism}. Minister: ${record.minister}.`}
+              last={laterAnnotations.length === 0}
+            />
+            {laterAnnotations.map((annotation, i) => (
+              <TimelineEvent
+                key={annotation.id}
+                category={annotation.category}
+                tagClass={annotationTagClass[annotation.category]}
+                dotClass={annotationDotClass[annotation.category]}
+                date={annotation.date}
+                note={annotation.note}
+                by={annotation.by}
+                linked={annotation.linked}
+                last={i === laterAnnotations.length - 1}
+              />
+            ))}
+          </ol>
+          {laterAnnotations.length === 0 && (
+            <p className="mt-4 max-w-[58ch] text-admin-support leading-relaxed text-admin-ink-muted">
+              No later sacraments noted yet. Confirmation, marriage, and death are recorded here so a baptismal
+              certificate can carry them.
+            </p>
+          )}
         </div>
       </RecordDetailSection>
 
-      <RecordDetailSection
-        tone="green"
-        icon={<FileIcon className="h-4.5 w-4.5" />}
-        title="Issued Certificates"
-        className="mb-0"
-      >
+      <RecordDetailSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Issued certificates" className="mb-0">
         <div className="px-[22px]">
           {certs.length === 0 ? (
             <p className="py-5 text-admin-label text-admin-ink-faint">
@@ -228,7 +270,67 @@ export function AdminBaptismalRecordDetailPage() {
           )}
         </div>
       </RecordDetailSection>
+
+      {addingAnnotation && (
+        <AdminAddAnnotationModal
+          subjectName={name}
+          onClose={() => setAddingAnnotation(false)}
+          onSubmit={async (input) => {
+            await addBaptismalAnnotation(parish.id, record.id, input);
+            refetch();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function TimelineEvent({
+  category,
+  tagClass,
+  dotClass,
+  date,
+  note,
+  by,
+  linked,
+  last,
+}: {
+  category: string;
+  tagClass: string;
+  dotClass: string;
+  date: string;
+  note: string;
+  by?: string;
+  linked?: RecordAnnotation["linked"];
+  last?: boolean;
+}) {
+  return (
+    <li className="relative pl-6 pb-5 last:pb-0">
+      {!last && (
+        <span
+          className="absolute bottom-0 left-[5px] top-3.5 w-px bg-admin-border-strong"
+          aria-hidden="true"
+        />
+      )}
+      <span className={`absolute left-0 top-1.5 z-[1] h-2.5 w-2.5 rounded-full ring-2 ring-admin-surface ${dotClass}`} />
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span
+            className={`inline-flex rounded-[5px] px-2 py-0.5 text-admin-label font-bold uppercase tracking-admin-label ${tagClass}`}
+          >
+            {category}
+          </span>
+          <time className="text-admin-support text-admin-ink-muted">{date}</time>
+        </div>
+        <p className="mt-1 max-w-[62ch] text-admin-body leading-relaxed text-admin-ink">{note}</p>
+        {linked && (
+          <p className="mt-1 font-mono text-admin-label text-admin-ink-muted">
+            {linked.category} register · {linkedRegisterRef(linked)}
+          </p>
+        )}
+        {by && <p className="mt-0.5 text-admin-label text-admin-ink-faint">Noted by {by}</p>}
+      </div>
+    </li>
   );
 }
 
@@ -278,11 +380,10 @@ function DownloadIcon() {
   );
 }
 
-function ClockIcon() {
+function PlusIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4.5 w-4.5">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3.5 2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
     </svg>
   );
 }

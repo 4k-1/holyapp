@@ -18,7 +18,7 @@ const selectClass =
 const textareaClass =
   "min-h-[96px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
-export type AddAnnotationInput = Omit<RecordAnnotation, "by">;
+export type AddAnnotationInput = Omit<RecordAnnotation, "id" | "by">;
 
 interface AdminAddAnnotationModalProps {
   subjectName: string;
@@ -87,8 +87,8 @@ export function AdminAddAnnotationModal({ subjectName, onClose, onSubmit }: Admi
           <div>
             <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Add annotation</h3>
             <p className="mt-1 text-admin-body text-admin-ink-muted">
-              Record a later sacrament on <span className="font-semibold text-admin-ink">{subjectName}</span>'s
-              baptismal entry.
+              Record a later sacrament on{" "}
+              <span className="font-semibold text-admin-ink">{subjectName}’s</span> baptismal entry.
             </p>
           </div>
           <button

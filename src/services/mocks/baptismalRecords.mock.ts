@@ -30,11 +30,20 @@ export const MOCK_BAPTISMAL_RECORDS: BaptismalRecord[] = [
     bookNumber: "6",
     pageNumber: "21",
     entryNumber: "04",
-    remarks: "Confirmed July 21, 2021.",
     encodedBy: "u-admin",
     createdAt: "2005-02-15T10:00:00",
     updatedAt: "2021-07-20T14:00:00",
     status: "Active",
+    annotations: [
+      {
+        id: "ann-001",
+        category: "Confirmation",
+        date: "July 21, 2021",
+        note: "Confirmed at Sto. Niño de Cebu Parish. Minister: Most Rev. Jose Palma, D.D.",
+        by: "Admin Immaculada",
+        linked: { category: "Confirmation", book: "2", page: "08", line: "14" },
+      },
+    ],
     certificates: [
       {
         type: "Certificate of Baptism",
@@ -83,6 +92,7 @@ export const MOCK_BAPTISMAL_RECORDS: BaptismalRecord[] = [
     createdAt: "1998-04-12T09:00:00",
     updatedAt: "2026-06-22T11:00:00",
     status: "Active",
+    annotations: [],
     certificates: [
       {
         type: "Certificate of Baptism",
@@ -124,6 +134,16 @@ export const MOCK_BAPTISMAL_RECORDS: BaptismalRecord[] = [
     createdAt: "2003-10-19T10:30:00",
     updatedAt: "2026-06-12T08:00:00",
     status: "Active",
+    annotations: [
+      {
+        id: "ann-003",
+        category: "Confirmation",
+        date: "June 12, 2026",
+        note: "Confirmed at Sto. Niño de Cebu Parish. Minister: Rev. Fr. Juan Santos.",
+        by: "Admin Immaculada",
+        linked: { category: "Confirmation", book: "1", page: "15", line: "03" },
+      },
+    ],
     certificates: [
       {
         type: "Certificate of Baptism",
@@ -165,6 +185,7 @@ export const MOCK_BAPTISMAL_RECORDS: BaptismalRecord[] = [
     createdAt: "2001-12-30T11:00:00",
     updatedAt: "2001-12-30T11:00:00",
     status: "Active",
+    annotations: [],
     certificates: [],
   },
   {
@@ -198,6 +219,7 @@ export const MOCK_BAPTISMAL_RECORDS: BaptismalRecord[] = [
     createdAt: "1999-06-14T09:00:00",
     updatedAt: "2026-06-16T10:00:00",
     status: "Active",
+    annotations: [],
     certificates: [
       {
         type: "Certificate of Baptism",
@@ -239,6 +261,7 @@ export const MOCK_BAPTISMAL_RECORDS: BaptismalRecord[] = [
     createdAt: "2000-03-11T10:00:00",
     updatedAt: "2000-03-11T10:00:00",
     status: "Archived",
+    annotations: [],
     certificates: [],
   },
 ];
