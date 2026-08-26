@@ -3,6 +3,7 @@ import type {
   BaptismalRecord,
   BaptismalSearchCriteria,
   IssuedCertificateStatus,
+  RecordAnnotation,
 } from "@/features/parish-admin/records/types";
 
 export function baptismRecordRef(
@@ -124,6 +125,29 @@ export function linkedRegisterRef(linked: { book: string; page: string; line?: s
   return [`Book ${linked.book}`, `Page ${linked.page}`, linked.line ? `Line ${linked.line}` : null]
     .filter(Boolean)
     .join(" / ");
+}
+
+export function baptismCertificateDisplayRef(
+  rec: Pick<BaptismalRecord, "bookNumber" | "pageNumber" | "entryNumber">
+) {
+  return `Book ${rec.bookNumber}, Page ${rec.pageNumber}, Entry ${rec.entryNumber}`;
+}
+
+export function baptismCertificateNotationLine(
+  annotation: Pick<RecordAnnotation, "category" | "date" | "note">
+) {
+  if (annotation.category === "Confirmation") return `Notation: Confirmed on ${annotation.date}.`;
+  if (annotation.category === "Marriage") return `Notation: Married on ${annotation.date}.`;
+  if (annotation.category === "Death") return `Notation: Died on ${annotation.date}.`;
+  const note = annotation.note.trim();
+  return note ? `Notation: ${note}` : "";
+}
+
+export function baptismCertificateNotations(annotations: RecordAnnotation[]) {
+  return [...annotations]
+    .sort((a, b) => annotationTime(a.date) - annotationTime(b.date))
+    .map(baptismCertificateNotationLine)
+    .filter(Boolean);
 }
 
 export const emptySearchCriteria = (): BaptismalSearchCriteria => ({

@@ -11,10 +11,10 @@ import { AdminBadge } from "@/components/ui/AdminBadge";
 import { DropletIcon } from "@/components/ui/icons/SacramentIcons";
 import {
   addBaptismalAnnotation,
-  generateBaptismalCertificate,
   getBaptismalRecord,
 } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { AdminAddAnnotationModal } from "@/features/parish-admin/records/baptismal/AdminAddAnnotationModal";
+import { AdminGenerateBaptismalCertificateModal } from "@/features/parish-admin/records/baptismal/AdminGenerateBaptismalCertificateModal";
 import { useAsync } from "@/hooks/useAsync";
 import {
   annotationDotClass,
@@ -28,7 +28,7 @@ import {
   recordFullName,
   recordMotherName,
 } from "@/features/parish-admin/records/baptismalHelpers";
-import type { RecordAnnotation } from "@/features/parish-admin/records/types";
+import type { IssuedRecordCertificate, RecordAnnotation } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 
 export function AdminBaptismalRecordDetailPage() {
@@ -38,10 +38,10 @@ export function AdminBaptismalRecordDetailPage() {
   const id = decodeURIComponent(recordId);
 
   const { data: record, loading, refetch } = useAsync(() => getBaptismalRecord(parish.id, id), [parish.id, id]);
-  const [generating, setGenerating] = useState(false);
   const [addingAnnotation, setAddingAnnotation] = useState(false);
+  const [certificateModal, setCertificateModal] = useState<IssuedRecordCertificate | "new" | null>(null);
 
-  if (loading) {
+  if (loading && !record) {
     return (
       <div>
         <RecordDetailBackLink />
@@ -67,16 +67,6 @@ export function AdminBaptismalRecordDetailPage() {
   const laterAnnotations = [...record.annotations].sort(
     (a, b) => annotationTime(a.date) - annotationTime(b.date)
   );
-
-  async function handleGenerateCertificate() {
-    setGenerating(true);
-    try {
-      await generateBaptismalCertificate(parish.id, record!.id);
-      refetch();
-    } finally {
-      setGenerating(false);
-    }
-  }
 
   return (
     <div className="mx-auto max-w-[920px]">
@@ -107,9 +97,9 @@ export function AdminBaptismalRecordDetailPage() {
         </div>
 
         <div className="flex shrink-0 flex-col gap-2">
-          <AdminButton onClick={handleGenerateCertificate} disabled={generating}>
+          <AdminButton onClick={() => setCertificateModal("new")}>
             <FileIcon />
-            {generating ? "Generating…" : "Generate Certificate"}
+            Generate Certificate
           </AdminButton>
           <div className="flex gap-2">
             <AdminButton variant="secondary" className="flex-1" onClick={() => navigate("edit")}>
@@ -256,13 +246,9 @@ export function AdminBaptismalRecordDetailPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-1.5">
-                  <AdminButton variant="secondary" size="sm" onClick={() => console.info("[mock] verify", c.code)}>
-                    <ScanIcon />
-                    Verify
-                  </AdminButton>
-                  <AdminButton variant="secondary" size="sm" onClick={() => console.info("[mock] download", c.code)}>
-                    <DownloadIcon />
-                    Download
+                  <AdminButton variant="secondary" size="sm" onClick={() => setCertificateModal(c)}>
+                    <PrintIcon />
+                    View & print
                   </AdminButton>
                 </div>
               </div>
@@ -274,9 +260,24 @@ export function AdminBaptismalRecordDetailPage() {
       {addingAnnotation && (
         <AdminAddAnnotationModal
           subjectName={name}
+          baptismDate={record.dateOfBaptism}
+          existingCategories={record.annotations.map((a) => a.category)}
           onClose={() => setAddingAnnotation(false)}
           onSubmit={async (input) => {
             await addBaptismalAnnotation(parish.id, record.id, input);
+            refetch();
+          }}
+        />
+      )}
+
+      {certificateModal && (
+        <AdminGenerateBaptismalCertificateModal
+          parish={parish}
+          record={record}
+          issued={certificateModal === "new" ? undefined : certificateModal}
+          onClose={() => setCertificateModal(null)}
+          onIssued={(cert) => {
+            setCertificateModal(cert);
             refetch();
           }}
         />
@@ -361,21 +362,12 @@ function TrashIcon() {
   );
 }
 
-function ScanIcon() {
+function PrintIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
-      <path d="M4 7V5a1 1 0 0 1 1-1h2M20 7V5a1 1 0 0 0-1-1h-2M4 17v2a1 1 0 0 0 1 1h2M20 17v2a1 1 0 0 1-1 1h-2" strokeLinecap="round" />
-      <line x1="4" y1="12" x2="20" y2="12" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
-      <path d="M12 3v12" strokeLinecap="round" />
-      <polyline points="7 11 12 16 17 11" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 21h14" strokeLinecap="round" />
+      <path d="M6 9V3h12v6" strokeLinejoin="round" />
+      <rect x="6" y="13" width="12" height="8" rx="1" />
+      <path d="M6 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" strokeLinejoin="round" />
     </svg>
   );
 }
