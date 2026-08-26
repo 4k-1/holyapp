@@ -1,4 +1,4 @@
-// src/features/parish-admin/requests/printUtils.ts
+import { CERT_SERIF, CERT_SERIF_STYLESHEET } from "@/features/parish-admin/components/certificate/constants";
 
 /**
  * Prints an element's HTML. Prefers a popup so staff can see the copy;
@@ -6,24 +6,29 @@
  * Because the print document doesn't inherit the app's stylesheet, only INLINE
  * styles on the element (and its children) will render correctly.
  */
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function printDocumentHtml(el: HTMLElement, docTitle: string) {
   return `<!DOCTYPE html>
 <html>
 <head>
-<title>${docTitle}</title>
+<title>${escapeHtml(docTitle)}</title>
 <meta charset="utf-8" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link
-  href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap"
-  rel="stylesheet"
-/>
+<link href="${CERT_SERIF_STYLESHEET}" rel="stylesheet" />
 <style>
   * { box-sizing: border-box; }
   html, body {
     margin: 0;
     padding: 0;
     background: #ececec;
-    font-family: "Cormorant Garamond", ui-serif, Georgia, "Times New Roman", serif;
+    font-family: ${CERT_SERIF};
   }
   .print-shell { max-width: 660px; margin: 32px auto; }
   @media print {

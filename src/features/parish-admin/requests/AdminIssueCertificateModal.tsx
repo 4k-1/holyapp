@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
-import { AdminButton } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, PrintIcon } from "@/features/parish-admin/components/AdminForm";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
 import {
   CertificateDocument,
@@ -14,12 +14,7 @@ import {
   markReadyForPickup,
 } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
-import {
-  formatRecordDate,
-  recordFatherName,
-  recordFullName,
-  recordMotherName,
-} from "@/features/parish-admin/records/baptismalHelpers";
+import { baptismCertificateFields, recordFullName } from "@/features/parish-admin/records/baptismalHelpers";
 import { getCertificateAppearance } from "@/features/parish-admin/settings/api/certificateConfigApi";
 import { useAsync } from "@/hooks/useAsync";
 import type { CertificateRequest, Parish } from "@/types";
@@ -95,20 +90,18 @@ export function AdminIssueCertificateModal({
   }
 
   const previewName = linked ? recordFullName(linked) : subjectName;
-  const previewRef = linked
-    ? `Book ${linked.bookNumber}, Page ${linked.pageNumber}, Entry ${linked.entryNumber}`
-    : "—";
-
-  const fields: CertificateFields = {
-    requestId: request.id,
-    registerRef: previewRef,
-    birthdate: linked ? formatRecordDate(linked.dateOfBirth) : request.details?.birthdate ?? "—",
-    birthplace: linked?.placeOfBirth ?? request.details?.birthplace ?? "—",
-    baptismDate: linked ? formatRecordDate(linked.dateOfBaptism) : request.details?.baptismDate ?? "—",
-    motherName: linked ? recordMotherName(linked) : request.details?.motherName ?? "—",
-    fatherName: linked ? recordFatherName(linked) : request.details?.fatherName ?? "—",
-    certCode: certCode || undefined,
-  };
+  const fields: CertificateFields = linked
+    ? baptismCertificateFields(linked, { requestId: request.id, certCode: certCode || undefined })
+    : {
+        requestId: request.id,
+        registerRef: "—",
+        birthdate: request.details?.birthdate ?? "—",
+        birthplace: request.details?.birthplace ?? "—",
+        baptismDate: request.details?.baptismDate ?? "—",
+        motherName: request.details?.motherName ?? "—",
+        fatherName: request.details?.fatherName ?? "—",
+        certCode: certCode || undefined,
+      };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 pt-8 sm:pt-12">
@@ -351,16 +344,6 @@ function FileIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
       <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
       <polyline points="14 3 14 8 19 8" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function PrintIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
-      <path d="M6 9V3h12v6" strokeLinejoin="round" />
-      <rect x="6" y="13" width="12" height="8" rx="1" />
-      <path d="M6 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" strokeLinejoin="round" />
     </svg>
   );
 }

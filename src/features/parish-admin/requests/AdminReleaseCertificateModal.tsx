@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
-import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, AdminField, AdminInput, PrintIcon } from "@/features/parish-admin/components/AdminForm";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
 import { sacramentCertTitles } from "@/features/parish-admin/components/CertificateDocument";
 import { getRequestCopyCount } from "@/features/parish-admin/requests/adminRequestHelpers";
@@ -367,16 +367,6 @@ function CheckIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={className}>
       <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function PrintIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
-      <path d="M6 9V3h12v6" strokeLinejoin="round" />
-      <rect x="6" y="13" width="12" height="8" rx="1" />
-      <path d="M6 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" strokeLinejoin="round" />
     </svg>
   );
 }

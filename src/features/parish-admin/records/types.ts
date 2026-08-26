@@ -1,4 +1,11 @@
-export type AnnotationCategory = "Confirmation" | "Marriage" | "Death" | "Other";
+export const ANNOTATION_CATEGORIES = ["Confirmation", "Marriage", "Death", "Other"] as const;
+export type AnnotationCategory = (typeof ANNOTATION_CATEGORIES)[number];
+export type LinkableAnnotationCategory = Exclude<AnnotationCategory, "Other">;
+export const LINKABLE_ANNOTATION_CATEGORIES: LinkableAnnotationCategory[] = [
+  "Confirmation",
+  "Marriage",
+  "Death",
+];
 
 export type RecordStatus = "Active" | "Archived";
 
@@ -11,7 +18,7 @@ export interface RecordAnnotation {
   note: string;
   by: string;
   linked?: {
-    category: string;
+    category: LinkableAnnotationCategory;
     book: string;
     page: string;
     line?: string;

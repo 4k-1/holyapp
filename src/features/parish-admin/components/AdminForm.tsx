@@ -2,6 +2,7 @@ import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
+  SelectHTMLAttributes,
   SVGProps,
   TextareaHTMLAttributes,
 } from "react";
@@ -44,6 +45,13 @@ export function AdminTextarea({
   ...props
 }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className={`${fieldInputClass} min-h-[88px] resize-y ${className}`} {...props} />;
+}
+
+export function AdminSelect({
+  className = "",
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select className={`${fieldInputClass} ${className}`} {...props} />;
 }
 
 export function AdminInput({
@@ -242,6 +250,26 @@ export function NoteIcon(props: SVGProps<SVGSVGElement>) {
       <path d="M15 3v5h5" strokeLinejoin="round" />
       <line x1="8" y1="13" x2="16" y2="13" strokeLinecap="round" />
       <line x1="8" y1="17" x2="13" y2="17" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function PrintIcon({ className = "h-3.5 w-3.5", ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      className={className}
+      {...props}
+    >
+      <path d="M6 9V3h12v6" strokeLinejoin="round" />
+      <rect x="6" y="13" width="12" height="8" rx="1" />
+      <path
+        d="M6 17H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

@@ -1,13 +1,19 @@
-import { forwardRef, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef } from "react";
 import type { CertificateAppearance } from "@/features/parish-admin/settings/types";
 import type { Parish, SacramentType } from "@/types";
+import {
+  CERT_ACCENT,
+  CERT_INK,
+  CERT_INK_FAINT,
+  CERT_INK_MUTED,
+  CERT_PAPER,
+  CERT_PRIMARY,
+  CERT_SERIF,
+  sacramentCertTitles,
+} from "@/features/parish-admin/components/certificate/constants";
 
-export const sacramentCertTitles: Record<SacramentType, string> = {
-  baptism: "Certificate of Baptism",
-  confirmation: "Certificate of Confirmation",
-  marriage: "Certificate of Marriage",
-  death: "Certificate of Death",
-};
+export { CERT_SERIF, sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
+export { CertificatePreviewStage } from "@/features/parish-admin/components/certificate/CertificatePreviewStage";
 
 export interface CertificateFields {
   requestId: string;
@@ -32,24 +38,7 @@ interface CertificateDocumentProps {
   appearance?: CertificateAppearance;
 }
 
-/**
- * A certificate is a fixed printed document — it must read the same regardless of the
- * admin app's own light/dark UI preference. These are the document's own ink colors,
- * not the app theme: a deep chancel green and a muted liturgical gold.
- */
-const PRIMARY = "#1a3d2b";
-const ACCENT = "#a9791f";
-
-const INK = "#211f1a";
-const INK_MUTED = "#5c5646";
-const INK_FAINT = "#8c8471";
-const PAPER = "#fbf7ea";
-
 const FALLBACK_SIGNATORY_TITLE = "Parish Priest / Secretary";
-const SHEET_WIDTH = 580;
-
-/** The certificate's own type voice — a classical book-serif, distinct from the admin app's UI font. */
-export const CERT_SERIF = "'Cormorant Garamond', ui-serif, Georgia, 'Times New Roman', serif";
 
 export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumentProps>(
   function CertificateDocument({ parish, sacramentType, subjectName, fields, appearance }, ref) {
@@ -65,9 +54,9 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
           boxSizing: "border-box",
           position: "relative",
           padding: 15,
-          background: PAPER,
+          background: CERT_PAPER,
           fontFamily: CERT_SERIF,
-          color: INK,
+          color: CERT_INK,
         }}
       >
         <CornerOrnament style={{ top: 5, left: 5 }} />
@@ -75,10 +64,10 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
         <CornerOrnament style={{ bottom: 5, left: 5, transform: "scaleY(-1)" }} />
         <CornerOrnament style={{ bottom: 5, right: 5, transform: "scale(-1, -1)" }} />
 
-        <div style={{ border: `1.5px solid ${PRIMARY}`, padding: 3 }}>
+        <div style={{ border: `1.5px solid ${CERT_PRIMARY}`, padding: 3 }}>
           <div
             style={{
-              border: `1px solid ${ACCENT}`,
+              border: `1px solid ${CERT_ACCENT}`,
               padding: "30px 34px 22px",
               textAlign: "center",
             }}
@@ -93,13 +82,13 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
                 letterSpacing: "0.13em",
                 textTransform: "uppercase",
                 lineHeight: 1.35,
-                color: PRIMARY,
+                color: CERT_PRIMARY,
               }}
             >
               {parish.name}
             </p>
             {parish.address && (
-              <p style={{ margin: "4px 0 0", fontSize: 11, fontStyle: "italic", color: INK_MUTED }}>
+              <p style={{ margin: "4px 0 0", fontSize: 11, fontStyle: "italic", color: CERT_INK_MUTED }}>
                 {parish.address}
               </p>
             )}
@@ -117,13 +106,13 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
                 fontWeight: 700,
                 letterSpacing: "0.15em",
                 textTransform: "uppercase",
-                color: PRIMARY,
+                color: CERT_PRIMARY,
                 lineHeight: 1.3,
               }}
             >
               {sacramentCertTitles[sacramentType]}
             </p>
-            <div style={{ width: 44, height: 2, margin: "10px auto 0", background: ACCENT }} />
+            <div style={{ width: 44, height: 2, margin: "10px auto 0", background: CERT_ACCENT }} />
 
             <p
               style={{
@@ -131,7 +120,7 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
                 fontSize: 11,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                color: INK_MUTED,
+                color: CERT_INK_MUTED,
               }}
             >
               This is to certify that
@@ -142,13 +131,13 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
                 fontSize: 27,
                 fontWeight: 700,
                 lineHeight: 1.25,
-                color: INK,
+                color: CERT_INK,
               }}
             >
               {subjectName}
             </p>
 
-            <div style={{ margin: "14px auto 0", maxWidth: 440, fontSize: 13.5, lineHeight: 1.65, color: INK }}>
+            <div style={{ margin: "14px auto 0", maxWidth: 440, fontSize: 13.5, lineHeight: 1.65, color: CERT_INK }}>
               <CertificateBody sacramentType={sacramentType} fields={fields} />
             </div>
 
@@ -156,12 +145,12 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
               style={{
                 margin: "18px 0 0",
                 paddingTop: 10,
-                borderTop: `1px solid ${ACCENT}55`,
+                borderTop: `1px solid ${CERT_ACCENT}55`,
                 maxWidth: 400,
                 marginLeft: "auto",
                 marginRight: "auto",
                 fontSize: 10.5,
-                color: INK_MUTED,
+                color: CERT_INK_MUTED,
                 lineHeight: 1.55,
               }}
             >
@@ -179,9 +168,9 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
               }}
             >
               <div style={{ textAlign: "left", minWidth: 0 }}>
-                <div style={{ width: 172, height: 30, borderBottom: `1px solid ${INK_FAINT}` }} />
+                <div style={{ width: 172, height: 30, borderBottom: `1px solid ${CERT_INK_FAINT}` }} />
                 {signatoryName && (
-                  <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 700, color: INK }}>{signatoryName}</p>
+                  <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 700, color: CERT_INK }}>{signatoryName}</p>
                 )}
                 <p
                   style={{
@@ -189,7 +178,7 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
                     fontSize: 9.5,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: INK_MUTED,
+                    color: CERT_INK_MUTED,
                   }}
                 >
                   {signatoryTitle}
@@ -198,10 +187,10 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
               <FakeQrCode seed={qrSeed} />
             </div>
 
-            <p style={{ margin: "14px 0 0", fontFamily: "ui-monospace, Consolas, monospace", fontSize: 9, color: INK_FAINT }}>
+            <p style={{ margin: "14px 0 0", fontFamily: "ui-monospace, Consolas, monospace", fontSize: 9, color: CERT_INK_FAINT }}>
               {fields.certCode ? (
                 <>
-                  Certificate No. <span style={{ color: INK_MUTED, fontWeight: 600 }}>{fields.certCode}</span>
+                  Certificate No. <span style={{ color: CERT_INK_MUTED, fontWeight: 600 }}>{fields.certCode}</span>
                 </>
               ) : (
                 <span style={{ fontStyle: "italic" }}>Preview copy · reference {fields.requestId}</span>
@@ -214,82 +203,13 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
   }
 );
 
-/** Scales the certificate sheet to fit the stage so the whole document stays in view. */
-export function CertificatePreviewStage({ children }: { children: ReactNode }) {
-  const stageRef = useRef<HTMLDivElement>(null);
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ scale: 1, width: SHEET_WIDTH, height: 640 });
-
-  useLayoutEffect(() => {
-    const stage = stageRef.current;
-    const sheet = sheetRef.current;
-    if (!stage || !sheet) return;
-
-    const update = () => {
-      const natW = sheet.offsetWidth;
-      const natH = sheet.offsetHeight;
-      const availW = stage.clientWidth;
-      const panel = stage.closest("[data-cert-preview-panel]");
-      const header = panel?.querySelector("[data-cert-preview-header]");
-      const footer = panel?.querySelector("[data-cert-preview-footer]");
-      const panelMax = Math.min(window.innerHeight * 0.92, 840);
-      const chrome =
-        (header instanceof HTMLElement ? header.offsetHeight : 56) +
-        (footer instanceof HTMLElement ? footer.offsetHeight : 56) +
-        24;
-      const availH = Math.max(160, panelMax - chrome);
-      if (natW < 8 || natH < 8 || availW < 8) return;
-      const scale = Math.min(availW / natW, availH / natH);
-      setFit((prev) =>
-        Math.abs(prev.scale - scale) < 0.002 && prev.width === natW && prev.height === natH
-          ? prev
-          : { scale, width: natW, height: natH }
-      );
-    };
-
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(stage);
-    observer.observe(sheet);
-    window.addEventListener("resize", update);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", update);
-    };
-  }, [children]);
-
-  return (
-    <div ref={stageRef} className="flex h-full w-full items-center justify-center overflow-hidden">
-      <div
-        className="shadow-[0_10px_28px_-8px_rgba(40,36,20,0.35)]"
-        style={{
-          width: fit.width * fit.scale,
-          height: fit.height * fit.scale,
-          position: "relative",
-        }}
-      >
-        <div
-          ref={sheetRef}
-          style={{
-            width: SHEET_WIDTH,
-            transform: `scale(${fit.scale})`,
-            transformOrigin: "top left",
-          }}
-        >
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ParishMark({ parish }: { parish: Parish }) {
   const markStyle = {
     height: 58,
     width: 58,
     flexShrink: 0,
     borderRadius: 9999,
-    border: `1.5px solid ${ACCENT}`,
+    border: `1.5px solid ${CERT_ACCENT}`,
     objectFit: "contain" as const,
     background: "white",
   };
@@ -309,7 +229,7 @@ function ParishMark({ parish }: { parish: Parish }) {
         fontSize: 22,
         fontWeight: 700,
         fontFamily: CERT_SERIF,
-        color: PRIMARY,
+        color: CERT_PRIMARY,
       }}
     >
       {parish.name.charAt(0)}
@@ -323,7 +243,7 @@ function Rule() {
       style={{
         flex: 1,
         height: 1,
-        background: `linear-gradient(90deg, transparent, ${ACCENT}99, transparent)`,
+        background: `linear-gradient(90deg, transparent, ${CERT_ACCENT}99, transparent)`,
       }}
     />
   );
@@ -333,8 +253,8 @@ function Rule() {
 function CrossOrnament() {
   return (
     <svg width={12} height={17} viewBox="0 0 12 17" aria-hidden="true" style={{ flexShrink: 0 }}>
-      <rect x={5.1} y={0} width={1.8} height={17} rx={0.9} fill={ACCENT} />
-      <rect x={0} y={4.6} width={12} height={1.8} rx={0.9} fill={ACCENT} />
+      <rect x={5.1} y={0} width={1.8} height={17} rx={0.9} fill={CERT_ACCENT} />
+      <rect x={0} y={4.6} width={12} height={1.8} rx={0.9} fill={CERT_ACCENT} />
     </svg>
   );
 }
@@ -349,9 +269,9 @@ function CornerOrnament({ style }: { style: React.CSSProperties }) {
       aria-hidden="true"
       style={{ position: "absolute", pointerEvents: "none", ...style }}
     >
-      <path d="M1 13 V5 Q1 1 5 1 H13" stroke={ACCENT} strokeWidth={1.3} fill="none" strokeLinecap="round" />
-      <path d="M1 18 V16" stroke={ACCENT} strokeWidth={1.3} strokeLinecap="round" />
-      <path d="M16 1 H18" stroke={ACCENT} strokeWidth={1.3} strokeLinecap="round" />
+      <path d="M1 13 V5 Q1 1 5 1 H13" stroke={CERT_ACCENT} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+      <path d="M1 18 V16" stroke={CERT_ACCENT} strokeWidth={1.3} strokeLinecap="round" />
+      <path d="M16 1 H18" stroke={CERT_ACCENT} strokeWidth={1.3} strokeLinecap="round" />
     </svg>
   );
 }
@@ -366,7 +286,7 @@ function FakeQrCode({ seed }: { seed: string }) {
         style={{
           padding: 5,
           background: "#fff",
-          border: `1px solid ${INK}`,
+          border: `1px solid ${CERT_INK}`,
           lineHeight: 0,
         }}
         aria-hidden="true"
@@ -385,7 +305,7 @@ function FakeQrCode({ seed }: { seed: string }) {
           fontSize: 7,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: INK_FAINT,
+          color: CERT_INK_FAINT,
         }}
       >
         Scan to verify
@@ -495,7 +415,7 @@ function CertificateBody({
         </p>
       )}
       {fields.notations?.map((line) => (
-        <p key={line} style={{ margin: "9px 0 0", fontSize: 12, fontStyle: "italic", color: INK_MUTED }}>
+        <p key={line} style={{ margin: "9px 0 0", fontSize: 12, fontStyle: "italic", color: CERT_INK_MUTED }}>
           {line}
         </p>
       ))}

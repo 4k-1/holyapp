@@ -1,8 +1,10 @@
+import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type {
   AnnotationCategory,
   BaptismalRecord,
   BaptismalSearchCriteria,
   IssuedCertificateStatus,
+  LinkableAnnotationCategory,
   RecordAnnotation,
 } from "@/features/parish-admin/records/types";
 
@@ -46,11 +48,16 @@ export function initials(name: string) {
     .join("");
 }
 
-export function formatRecordDate(iso: string) {
-  if (!iso) return "—";
+export function formatRecordDate(iso: string, empty = "—") {
+  if (!iso) return empty;
   const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+export function todayIsoDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function formatDateTime(iso: string) {
@@ -133,14 +140,20 @@ export function baptismCertificateDisplayRef(
   return `Book ${rec.bookNumber}, Page ${rec.pageNumber}, Entry ${rec.entryNumber}`;
 }
 
+const CERTIFICATE_NOTATION: Record<LinkableAnnotationCategory, (date: string) => string> = {
+  Confirmation: (date) => `Notation: Confirmed on ${date}.`,
+  Marriage: (date) => `Notation: Married on ${date}.`,
+  Death: (date) => `Notation: Died on ${date}.`,
+};
+
 export function baptismCertificateNotationLine(
   annotation: Pick<RecordAnnotation, "category" | "date" | "note">
 ) {
-  if (annotation.category === "Confirmation") return `Notation: Confirmed on ${annotation.date}.`;
-  if (annotation.category === "Marriage") return `Notation: Married on ${annotation.date}.`;
-  if (annotation.category === "Death") return `Notation: Died on ${annotation.date}.`;
-  const note = annotation.note.trim();
-  return note ? `Notation: ${note}` : "";
+  if (annotation.category === "Other") {
+    const note = annotation.note.trim();
+    return note ? `Notation: ${note}` : "";
+  }
+  return CERTIFICATE_NOTATION[annotation.category](annotation.date);
 }
 
 export function baptismCertificateNotations(annotations: RecordAnnotation[]) {
@@ -148,6 +161,23 @@ export function baptismCertificateNotations(annotations: RecordAnnotation[]) {
     .sort((a, b) => annotationTime(a.date) - annotationTime(b.date))
     .map(baptismCertificateNotationLine)
     .filter(Boolean);
+}
+
+export function baptismCertificateFields(
+  rec: BaptismalRecord,
+  extras?: { requestId?: string; certCode?: string }
+): CertificateFields {
+  return {
+    requestId: extras?.requestId ?? rec.id,
+    registerRef: baptismCertificateDisplayRef(rec),
+    birthdate: formatRecordDate(rec.dateOfBirth),
+    birthplace: rec.placeOfBirth ?? "—",
+    baptismDate: formatRecordDate(rec.dateOfBaptism),
+    motherName: recordMotherName(rec),
+    fatherName: recordFatherName(rec),
+    certCode: extras?.certCode,
+    notations: baptismCertificateNotations(rec.annotations ?? []),
+  };
 }
 
 export const emptySearchCriteria = (): BaptismalSearchCriteria => ({
