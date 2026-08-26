@@ -48,10 +48,10 @@ import type {
   ];
   
   export const RECENT_ACTIVITY: ActivityItem[] = [
-    { id: "ra1", title: "Baptismal certificate issued to Jenicha Niña Sayaang", meta: "Request R21 · 10 minutes ago" },
+    { id: "ra1", title: "Baptismal certificate issued to Jenna Mae Marbella", meta: "Request R21 · 10 minutes ago" },
     { id: "ra2", title: "New request submitted by Alexandria Santos", meta: "Request R24 · 2 hours ago" },
-    { id: "ra3", title: "Confirmation annotation added to Jenicha Niña Sayaang", meta: "Baptismal Book 6, Page 21, Line 04 · Yesterday" },
-    { id: "ra4", title: "Marriage record created for the Delpy–Cruz union", meta: "Book 4, Page 09, Line 09 · Yesterday" },
+    { id: "ra3", title: "Confirmation annotation added to Jenna Mae Marbella", meta: "Baptismal Book 6, Page 21, Line 04 · Yesterday" },
+    { id: "ra4", title: "Marriage record created for the Escaño–Cruz union", meta: "Book 4, Page 09, Line 09 · Yesterday" },
   ];
   
   export const UPCOMING_EVENTS: UpcomingEvent[] = [

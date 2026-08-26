@@ -100,7 +100,7 @@ export function RecordDonationModal({
               <AdminInput
                 value={donorName}
                 onChange={(e) => setDonorName(e.target.value)}
-                placeholder="e.g. Lolita Sayaang"
+                placeholder="e.g. Norma Marbella"
               />
             </AdminField>
           )}

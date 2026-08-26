@@ -103,7 +103,7 @@ export const MOCK_LEDGER_PAGES: LedgerPage[] = [
     ["L1  Santos, Maria Teresa  b. 12 Apr 1998  bapt. 26 Apr 1998", "Mother Ana Marie Santos  Father Roberto Santos", "Minister Rev. Fr. Juan Santos  Sponsors Paula Bracho, Miguel Cruz"],
     ["L8  Torres, Miguel Angel  b. 3 Aug 2009  bapt. 22 Aug 2009", "Mother Lourdes Torres  Father Paolo Torres", "Place Sto. Niño de Cebu Parish"],
     ["L12  Bautista, Carla Mae  b. 19 Jan 2004  bapt. 8 Feb 2004", "Mother Rosario Bautista  Father Emilio Bautista"],
-    ["L14  Sayaang, Jenicha Niña  b. 18 Jan 2005  Alegria, Cebu", "bapt. 15 Feb 2005  Minister Rev. Fr. Juan Santos", "Mother Lolita Sayaang  Father Felix Sayaang  Entry 04"],
+    ["L14  Marbella, Jenna Mae  b. 18 Jan 2005  Alegria, Cebu", "bapt. 15 Feb 2005  Minister Rev. Fr. Juan Santos", "Mother Norma Marbella  Father Felipe Marbella  Entry 04"],
     ["L18  Cruz, Roberto  b. 2 Mar 1996  bapt. 30 Mar 1996", "Mother Elena Cruz  Father Antonio Cruz"],
     ["L21  Lopez, Ana Marie  b. 14 Jun 1997  bapt. 6 Jul 1997", "Mother Carmen Lopez  Father Jose Lopez"],
   ]),
@@ -114,8 +114,8 @@ export const MOCK_LEDGER_PAGES: LedgerPage[] = [
     ["L22  Garcia, Lourdes  b. 3 Dec 1997  bapt. 28 Dec 1997", "Mother Teresa Garcia  Father Andres Garcia"],
   ]),
   ...pagesFor("parish-1", "led-cfm-02", "confirmation", "Liber Confirmatorum", "Book 2", "2025-01-14", [
-    ["L3  Torres, Miguel Angel  conf. 18 May 2024", "Minister Most Rev. Jose Palma, D.D.", "Sponsor Paula Bracho"],
-    ["L8  Sayaang, Jenicha Niña  conf. 21 Jul 2021  Line 14", "Minister Most Rev. Jose Palma, D.D.", "Confirmed at Sto. Niño de Cebu Parish"],
+    ["L3  Torres, Miguel Angel  conf. 18 May 2024", "Minister Most Rev. Ramon Alcantara, D.D.", "Sponsor Paula Bracho"],
+    ["L8  Marbella, Jenna Mae  conf. 21 Jul 2021  Line 14", "Minister Most Rev. Ramon Alcantara, D.D.", "Confirmed at Sto. Niño de Cebu Parish"],
     ["L11  Cruz, Roberto  conf. 12 May 2019", "Sponsor Juan Miguel Cruz"],
     ["L16  Lopez, Ana Marie  conf. 12 May 2019", "Sponsor Maria Teresa Santos"],
   ]),
@@ -127,7 +127,7 @@ export const MOCK_LEDGER_PAGES: LedgerPage[] = [
   ]),
   ...pagesFor("parish-1", "led-dth-01", "death", "Liber Defunctorum", "Book 1", "2026-03-12", [
     ["L2  Bautista, Rosario Elena  d. 2 Mar 2026  age 79", "Burial 5 Mar 2026  Carreta Cemetery", "Minister Rev. Fr. Juan Santos"],
-    ["L3  Hawke, Ethan  d. 2 Mar 2026  age 26  Single", "Burial 5 Mar 2026  Carreta Cemetery  Niche B-142", "Cause cardiac arrest  Minister Rev. Fr. Juan Santos"],
+    ["L3  Aranda, Marcus  d. 2 Mar 2026  age 26  Single", "Burial 5 Mar 2026  Carreta Cemetery  Niche B-142", "Cause cardiac arrest  Minister Rev. Fr. Juan Santos"],
     ["L8  Reyes, Ramon  d. 18 Jan 2025  age 81", "Burial 21 Jan 2025  Carreta Cemetery"],
   ]),
 ];

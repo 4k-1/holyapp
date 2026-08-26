@@ -6,7 +6,7 @@ export const DONATIONS_LIST: Donation[] = [
   {
     id: "don-001",
     parishId: parish,
-    donorName: "Lolita Sayaang",
+    donorName: "Norma Marbella",
     donationType: "Cash",
     amount: 5000,
     donationDate: "2026-06-20",

@@ -12,7 +12,7 @@ export const RECURRING_OVERRIDES: Record<string, string> = {};
 
 export const SCHEDULE_BLOCKS: ScheduleBlock[] = [
   { id: "sb1", date: "2026-06-23", start: "3:00 PM", end: "4:00 PM", title: "House Blessing — Cruz Residence", type: "blessing", source: "Blessing Service", assignee: "Fr. Juan Santos" },
-  { id: "sb2", date: "2026-06-24", start: "10:00 AM", end: "11:00 AM", title: "Canonical Interview — Delpy & Santos", type: "interview", source: "Marriage Process", assignee: "Fr. Emilio Santos" },
+  { id: "sb2", date: "2026-06-24", start: "10:00 AM", end: "11:00 AM", title: "Canonical Interview — Escaño & Santos", type: "interview", source: "Marriage Process", assignee: "Fr. Emilio Santos" },
   { id: "sb3", date: "2026-06-25", start: "2:00 PM", end: "3:00 PM", title: "Diocesan Clergy Meeting", type: "manual", source: "Manual", assignee: "Fr. Juan Santos" },
   { id: "sb4", date: "2026-06-24", start: "9:00 AM", end: "10:00 AM", title: "Baptism — Baby Flores", type: "baptism", source: "Sacrament", assignee: "Fr. Juan Santos", recordStatus: "Pending" },
   { id: "sb5", date: "2026-06-24", start: "1:00 PM", end: "2:00 PM", title: "Wedding — Reyes / Cruz", type: "wedding", source: "Sacrament", assignee: "Fr. Emilio Santos", recordStatus: "Recorded" },

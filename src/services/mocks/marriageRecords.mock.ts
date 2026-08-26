@@ -204,8 +204,8 @@ export const MOCK_MARRIAGE_RECORDS: MarriageRecord[] = [
     status: "Archived",
     parties: [
       party("mrg-004-groom", "Groom", {
-        lastName: "Hawke",
-        firstName: "Peter",
+        lastName: "Aranda",
+        firstName: "Patricio",
         dateOfBirth: "1970-06-15",
         sex: "Male",
         citizenship: "Filipino",
@@ -215,7 +215,7 @@ export const MOCK_MARRIAGE_RECORDS: MarriageRecord[] = [
       }),
       party("mrg-004-bride", "Bride", {
         lastName: "Morales",
-        firstName: "Diana",
+        firstName: "Divina",
         dateOfBirth: "1972-09-22",
         sex: "Female",
         citizenship: "Filipino",
@@ -230,8 +230,8 @@ export const MOCK_MARRIAGE_RECORDS: MarriageRecord[] = [
     parishId: "parish-1",
     placeOfMarriage: "Talisay, Cebu",
     dateOfMarriage: "1975-06-12",
-    witnessOne: "Felix Sayaang",
-    witnessTwo: "Lolita Sayaang",
+    witnessOne: "Felipe Marbella",
+    witnessTwo: "Norma Marbella",
     bookNumber: "2",
     pageNumber: "33",
     entryNumber: "09",
