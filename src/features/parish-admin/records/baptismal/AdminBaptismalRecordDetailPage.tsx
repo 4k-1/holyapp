@@ -5,6 +5,7 @@ import { AdminButton, FileIcon, NoteIcon, UserIcon } from "@/features/parish-adm
 import {
   RecordDetailBackLink,
   RecordDetailInfoRow,
+  RecordDetailMeta,
   RecordDetailSection,
 } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
@@ -19,6 +20,8 @@ import {
   annotationTagClass,
   annotationTime,
   baptismCertificateFields,
+  encodedByLabel,
+  formatDateTime,
   formatRecordDate,
   initials,
   linkedRegisterRef,
@@ -221,6 +224,12 @@ export function AdminBaptismalRecordDetailPage() {
       </RecordDetailSection>
 
       <IssuedCertificatesSection certificates={certs} onView={(c) => setCertificateModal(c)} />
+
+      <RecordDetailMeta
+        encodedBy={encodedByLabel(record.encodedBy)}
+        created={formatDateTime(record.createdAt)}
+        updated={formatDateTime(record.updatedAt)}
+      />
 
       {addingAnnotation && (
         <AdminAddAnnotationModal

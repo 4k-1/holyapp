@@ -5,6 +5,7 @@ import { AdminButton, FileIcon, NoteIcon, UserIcon } from "@/features/parish-adm
 import {
   RecordDetailBackLink,
   RecordDetailInfoRow,
+  RecordDetailMeta,
   RecordDetailSection,
 } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
@@ -17,7 +18,6 @@ import { recordFullName as baptismFullName } from "@/features/parish-admin/recor
 import { useAsync } from "@/hooks/useAsync";
 import {
   confirmationCertificateFields,
-  confirmationRecordRef,
   encodedByLabel,
   formatDateTime,
   formatRecordDate,
@@ -196,16 +196,13 @@ export function AdminConfirmationRecordDetailPage() {
         </RecordDetailSection>
       )}
 
-      <RecordDetailSection tone="neutral" icon={<ClockIcon className="h-4.5 w-4.5" />} title="Record Metadata">
-        <div className="p-5 px-[22px]">
-          <RecordDetailInfoRow label="Register reference" value={confirmationRecordRef(record)} />
-          <RecordDetailInfoRow label="Encoded by" value={encodedByLabel(record.encodedBy)} />
-          <RecordDetailInfoRow label="Created" value={formatDateTime(record.createdAt)} />
-          <RecordDetailInfoRow label="Last updated" value={formatDateTime(record.updatedAt)} last />
-        </div>
-      </RecordDetailSection>
-
       <IssuedCertificatesSection certificates={certs} onView={(c) => setCertificateModal(c)} />
+
+      <RecordDetailMeta
+        encodedBy={encodedByLabel(record.encodedBy)}
+        created={formatDateTime(record.createdAt)}
+        updated={formatDateTime(record.updatedAt)}
+      />
 
       {certificateModal && (
         <AdminGenerateCertificateModal
@@ -240,15 +237,6 @@ function TrashIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
       <polyline points="3 6 5 6 21 6" strokeLinecap="round" />
       <path d="M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4.5 w-4.5">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3.5 2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

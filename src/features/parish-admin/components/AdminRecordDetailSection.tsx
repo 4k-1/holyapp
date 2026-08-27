@@ -110,3 +110,21 @@ export function RecordDetailBackLink() {
     </button>
   );
 }
+
+export function RecordDetailMeta({
+  encodedBy,
+  created,
+  updated,
+}: {
+  encodedBy: string;
+  created: string;
+  updated: string;
+}) {
+  const same = created === updated;
+  return (
+    <p className="mt-4 text-admin-label leading-relaxed text-admin-ink-faint">
+      Encoded by {encodedBy}
+      {same ? ` · ${created}` : ` · Created ${created} · Updated ${updated}`}
+    </p>
+  );
+}
