@@ -30,6 +30,26 @@ export interface CertificateAppearance {
 
 export type CertificateConfigBySacrament = Record<SacramentType, CertificateAppearance>;
 
+export type StaffRole = "Priest" | "Parish Secretary" | "Admin Staff";
+
+export const STAFF_ROLES: StaffRole[] = ["Priest", "Parish Secretary", "Admin Staff"];
+
+/** "admin" also grants Settings, Service Fees, and Staff Accounts — same split as CurrentUser["role"]. */
+export type StaffAccessRole = "staff" | "admin";
+
+export type StaffStatus = "Active" | "Inactive";
+
+export interface StaffAccount {
+  id: string;
+  name: string;
+  role: StaffRole;
+  email: string;
+  status: StaffStatus;
+  accessRole: StaffAccessRole;
+}
+
+export type NewStaffInput = Pick<StaffAccount, "name" | "email" | "role" | "accessRole">;
+
 export interface LoginSession {
   id: string;
   device: string;
@@ -71,7 +91,7 @@ export interface SettingsSectionMeta {
 export const SETTINGS_SECTIONS: SettingsSectionMeta[] = [
   { id: "profile", label: "Parish Profile", path: "parish-profile", enabled: true },
   { id: "fees", label: "Service Fees", path: "fees", enabled: true },
-  { id: "staff", label: "Staff Accounts", path: "staff", enabled: false },
+  { id: "staff", label: "Staff Accounts", path: "staff", enabled: true },
   { id: "certificates", label: "Certificate Configuration", path: "certificates", enabled: true },
   { id: "mass-rules", label: "Mass Intention Rules", path: "mass-rules", enabled: false },
   { id: "marriage-reqs", label: "Marriage Application Requirements", path: "marriage-requirements", enabled: false },

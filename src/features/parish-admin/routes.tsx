@@ -25,6 +25,7 @@ import { AdminMassIntentionsPage } from "@/features/parish-admin/intentions/Admi
 import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSettingsLayout";
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
 import { ServiceFeesSection } from "@/features/parish-admin/settings/components/ServiceFeesSection";
+import { StaffAccountsSection } from "@/features/parish-admin/settings/components/StaffAccountsSection";
 import { CertificateConfigSection } from "@/features/parish-admin/settings/components/CertificateConfigSection";
 import { AccountSecuritySection } from "@/features/parish-admin/settings/components/AccountSecuritySection";
 
@@ -79,6 +80,7 @@ export const parishAdminRoutes: RouteObject[] = [
           { index: true, element: <Navigate to="parish-profile" replace /> },
           { path: "parish-profile", element: <ParishProfileSection /> },
           { path: "fees", element: <ServiceFeesSection /> },
+          { path: "staff", element: <StaffAccountsSection /> },
           { path: "certificates", element: <CertificateConfigSection /> },
           { path: "security", element: <AccountSecuritySection /> },
         ],
