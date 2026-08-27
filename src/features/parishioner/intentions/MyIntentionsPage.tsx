@@ -1,4 +1,5 @@
 import { Link, useOutletContext } from "react-router-dom";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { listMassIntentions } from "@/features/parishioner/intentions/intentionsApi";
 import { useAsync } from "@/hooks/useAsync";
 import { IntentionCard } from "@/features/parishioner/intentions/components/IntentionCard";
@@ -6,7 +7,11 @@ import type { Parish } from "@/types";
 
 export function MyIntentionsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
-  const { data: intentions = [], loading } = useAsync(() => listMassIntentions(parish.id), [parish.id]);
+  const user = useCurrentUser();
+  const { data: intentions = [], loading } = useAsync(
+    () => (user ? listMassIntentions(parish.id, user.id) : Promise.resolve([])),
+    [parish.id, user?.id]
+  );
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">

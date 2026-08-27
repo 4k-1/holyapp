@@ -16,7 +16,7 @@ export function IntentionCard({ intention }: IntentionCardProps) {
             <p className="font-serif text-lg font-bold text-ink">{intention.intentionType}</p>
             <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#dbe6ee] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-[#33607e]">
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              Scheduled
+              {intention.status === "said" ? "Said" : intention.status === "confirmed" ? "Scheduled" : "Requested"}
             </span>
           </div>
 

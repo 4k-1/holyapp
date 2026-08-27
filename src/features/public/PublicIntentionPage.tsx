@@ -48,8 +48,8 @@ export function PublicIntentionPage() {
             </div>
             <h2 className="font-serif text-xl font-bold text-ink">Intention submitted</h2>
             <p className="mt-1.5 text-sm text-ink-muted">
-              The parish office has received your request. No account needed — your intention is confirmed for the
-              scheduled Mass.
+              The parish office has received your request. Staff will confirm it against the Mass schedule —
+              this is not a confirmed booking yet.
             </p>
           </div>
         ) : (

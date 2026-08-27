@@ -26,7 +26,7 @@ const recordLinks = [
 const requestLinks = [
   { to: "requests", label: "Certificate Requests" },
   { to: "marriage-applications", label: "Marriage Applications" },
-  { to: "mass-intentions", label: "Mass Intention Requests" },
+  { to: "mass-intentions", label: "Mass Intentions" },
 ];
 
 export function AdminSidebar({ role, collapsed }: AdminSidebarProps) {

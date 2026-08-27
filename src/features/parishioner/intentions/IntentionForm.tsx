@@ -5,9 +5,7 @@ import { listMassSchedule } from "@/features/parishioner/intentions/api/massSche
 import { useAsync } from "@/hooks/useAsync";
 import { getAvailableTimes, getScheduleLabel } from "@/features/parishioner/intentions/massScheduleUtils";
 import { submitMassIntention } from "@/features/parishioner/intentions/intentionsApi";
-import type { Parish } from "@/types";
-
-const intentionTypes = ["Thanksgiving", "Healing", "In memory of the deceased", "Birthday blessing", "Other"];
+import { MASS_INTENTION_TYPES, type Parish } from "@/types";
 
 interface IntentionFormProps {
   parish: Parish;
@@ -17,7 +15,7 @@ interface IntentionFormProps {
 }
 
 export function IntentionForm({ parish, requesterId, defaultRequestedBy = "", onSubmitted }: IntentionFormProps) {
-  const [intentionType, setIntentionType] = useState(intentionTypes[0]);
+  const [intentionType, setIntentionType] = useState<string>(MASS_INTENTION_TYPES[0]);
   const [massDate, setMassDate] = useState("");
   const [massTime, setMassTime] = useState("");
   const [intentionFor, setIntentionFor] = useState("");
@@ -38,6 +36,8 @@ export function IntentionForm({ parish, requesterId, defaultRequestedBy = "", on
     if (!canSubmit) return;
     setSubmitting(true);
     try {
+      // TODO: parishioner/public submit a pending request only — office confirms the slot.
+      // TODO: surface remaining capacity here; do not let this form confirm a full Mass.
       await submitMassIntention({
         parishId: parish.id,
         requesterId,
@@ -60,7 +60,7 @@ export function IntentionForm({ parish, requesterId, defaultRequestedBy = "", on
         <div>
           <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">Intention type</label>
           <select value={intentionType} onChange={(e) => setIntentionType(e.target.value)} className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/25">
-            {intentionTypes.map((type) => <option key={type}>{type}</option>)}
+            {MASS_INTENTION_TYPES.map((type) => <option key={type}>{type}</option>)}
           </select>
         </div>
         <div>

@@ -89,17 +89,60 @@ export interface MassScheduleEntry {
   times: string[];
 }
 
+export const MASS_INTENTION_TYPES = [
+  "Thanksgiving",
+  "Healing",
+  "In memory of the deceased",
+  "Birthday blessing",
+  "Other",
+] as const;
+
+export type MassIntentionTypeName = (typeof MASS_INTENTION_TYPES)[number];
+
+/** Online origin for now. `said` = already offered at Mass. */
+export type MassIntentionStatus = "pending" | "confirmed" | "said";
+
+export type MassIntentionPayment = "paid" | "unpaid";
+
+export type MassSlotCapacityState = "open" | "nearly_full" | "full";
+
+/**
+ * Hard cap of announced intentions per Mass (Canon 948 / local parish limit).
+ * TODO: replace with parish settings once Mass intention rules exist.
+ */
+export const MASS_INTENTION_MAX_PER_SLOT = 5;
+
 export interface MassIntentionRequest {
   id: string;
   parishId: string;
-  requesterId: string | null; // null if ever opened to guests later; for now always the logged-in parishioner
+  /** Portal user id, or `"online"` for public / office-recorded online requests. */
+  requesterId: string | null;
   intentionType: string;
   intentionFor: string;
   requestedBy: string;
+  contact?: string;
+  status: MassIntentionStatus;
+  offering: number;
+  payment: MassIntentionPayment;
   scheduleDate: string;   // ISO date, e.g. "2026-07-05"
   scheduleTime: string;   // snapshotted display string, e.g. "8:00 AM" — NOT a live reference to MassScheduleEntry
   scheduleLabel: string;  // snapshotted day-type label, e.g. "Sunday" — also frozen at submission time
   createdAt: string;
+}
+
+/** Derived Mass slot: schedule occurrence + booked count vs max. Not persisted. */
+export interface MassSlotView {
+  id: string;
+  parishId: string;
+  date: string;
+  time: string;
+  scheduleLabel: string;
+  location: string;
+  maxIntentions: number;
+  bookedCount: number;
+  remaining: number;
+  capacityState: MassSlotCapacityState;
+  intentions: MassIntentionRequest[];
 }
 
 interface EventTypeStyle {
