@@ -2,7 +2,7 @@ import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-ad
 import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
 import { MOCK_CERTIFICATES } from "@/services/mocks/certificates.mock";
 import { delay } from "@/services/delay";
-import type { CertificateRequest, SacramentType } from "@/types";
+import type { CertificateRequest, IssuedCertificateFields, SacramentType } from "@/types";
 
 /**
  * Only this file is allowed to import MOCK_REQUESTS. Pages call these
@@ -82,6 +82,17 @@ export async function issueCertificate(requestId: string): Promise<IssueCertific
   const certificateCode = generateCertCode(request.sacramentType);
   request.status = "released";
 
+  const details = request.details;
+  const fields: IssuedCertificateFields = {
+    requestId: request.id,
+    registerRef: "—",
+    birthdate: details?.birthdate,
+    birthplace: details?.birthplace,
+    baptismDate: details?.baptismDate,
+    motherName: details?.motherName,
+    fatherName: details?.fatherName,
+  };
+
   MOCK_CERTIFICATES.push({
     id: `cert-${Date.now()}`,
     requestId: request.id,
@@ -91,6 +102,8 @@ export async function issueCertificate(requestId: string): Promise<IssueCertific
     holderName: request.details?.subjectName ?? request.requesterId,
     issuedAt: new Date().toISOString().slice(0, 10),
     state: "valid",
+    certCode: certificateCode,
+    fields,
   });
 
   return { request: { ...request }, certificateCode };

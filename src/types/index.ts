@@ -70,6 +70,26 @@ export interface CertificateRequest {
   pickupReady?: boolean;
 }
 
+/**
+ * Snapshot of register data captured at issuance, so a wallet certificate always
+ * renders the same way it did the day it was released — independent of later
+ * edits to the underlying sacramental record. Field-for-field compatible with
+ * the admin side's CertificateFields (see parish-admin/components/CertificateDocument).
+ */
+export interface IssuedCertificateFields {
+  requestId: string;
+  registerRef: string;
+  birthdate?: string;
+  birthplace?: string;
+  baptismDate?: string;
+  confirmationDate?: string;
+  marriageDate?: string;
+  deathDate?: string;
+  motherName?: string;
+  fatherName?: string;
+  notations?: string[];
+}
+
 export interface IssuedCertificate {
   id: string;
   requestId: string;
@@ -79,6 +99,8 @@ export interface IssuedCertificate {
   holderName: string;
   issuedAt: string;
   state: CertificateState;
+  certCode: string;
+  fields: IssuedCertificateFields;
 }
 
 export type MassDayType = "weekday" | "saturday" | "sunday" | "firstFriday";

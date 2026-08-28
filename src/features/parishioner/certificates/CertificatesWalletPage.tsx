@@ -1,16 +1,18 @@
+import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { listCertificates } from "@/features/parishioner/certificates/api/certificatesApi";
 import { useAsync } from "@/hooks/useAsync";
 import { CertificateCard } from "@/features/parishioner/certificates/CertificateCard";
+import { CertificateViewerModal } from "@/features/parishioner/certificates/CertificateViewerModal";
 import type { IssuedCertificate, Parish } from "@/types";
 
 export function CertificatesWalletPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { data: certificates = [], loading } = useAsync(() => listCertificates(parish.id), [parish.id]);
+  const [viewing, setViewing] = useState<IssuedCertificate | null>(null);
 
   function handleView(certificate: IssuedCertificate) {
-    console.info("View certificate", certificate.id);
-    // TODO: open certificate viewer / PDF preview
+    setViewing(certificate);
   }
 
   function handleDownload(certificate: IssuedCertificate) {
@@ -42,6 +44,10 @@ export function CertificatesWalletPage() {
             />
           ))}
         </div>
+      )}
+
+      {viewing && (
+        <CertificateViewerModal certificate={viewing} parish={parish} onClose={() => setViewing(null)} />
       )}
     </div>
   );
