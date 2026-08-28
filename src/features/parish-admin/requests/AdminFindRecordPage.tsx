@@ -18,14 +18,7 @@ import {
   recordMotherName,
 } from "@/features/parish-admin/records/baptismalHelpers";
 import type { BaptismalRecord } from "@/features/parish-admin/records/types";
-import type { Parish, SacramentType } from "@/types";
-
-const sacramentLabels: Record<SacramentType, string> = {
-  baptism: "Baptismal",
-  confirmation: "Confirmation",
-  marriage: "Marriage",
-  death: "Death",
-};
+import type { Parish } from "@/types";
 
 interface MatchFilters {
   name: string;
@@ -280,35 +273,19 @@ export function AdminFindRecordPage() {
             className="mb-0 flex h-full flex-col"
           >
             <div className="flex flex-1 flex-col p-4 px-5">
-              <div className="grid grid-cols-2 gap-x-4">
-                <InfoRow label="Requester's name" value={currentRequest.requesterId || "—"} compact />
-                <InfoRow
-                  label="Certificate type &amp; purpose"
-                  value={`${sacramentLabels[request.sacramentType]} Certificate`}
-                  sub={request.purpose}
-                  compact
-                  last
-                />
-              </div>
-
-              <div className="mt-2.5 border-t-2 border-admin-gold-700/40 pt-1.5 font-serif text-admin-support italic text-admin-gold-700">
-                Person to be certified
-              </div>
-
-              <div className="grid grid-cols-2 gap-x-4">
-                <InfoRow label="Name of baptized" value={details?.subjectName || "—"} compact />
-                <InfoRow
+              <div className="grid grid-cols-2 gap-x-2.5 gap-y-0">
+                <ReadOnlyField label="Name of baptized" value={details?.subjectName || "—"} />
+                <ReadOnlyField
                   label="Baptismal date"
                   value={details?.baptismDate || "Not stated"}
                   muted={!details?.baptismDate}
-                  compact
                 />
-                <InfoRow label="Birthdate" value={details?.birthdate || "—"} compact />
-                <InfoRow label="Birthplace" value={details?.birthplace || "—"} compact />
-                <InfoRow label="Mother's name" value={details?.motherName || "—"} compact />
-                <InfoRow label="Father's name" value={details?.fatherName || "—"} compact />
-                <InfoRow label="Sponsor 1" value={details?.sponsor1 || "—"} compact />
-                <InfoRow label="Sponsor 2" value={details?.sponsor2 || "—"} compact last />
+                <ReadOnlyField label="Birthdate" value={details?.birthdate || "—"} />
+                <ReadOnlyField label="Place of birth" value={details?.birthplace || "—"} />
+                <ReadOnlyField label="Mother's name" value={details?.motherName || "—"} />
+                <ReadOnlyField label="Father's name" value={details?.fatherName || "—"} />
+                <ReadOnlyField label="Sponsor 1" value={details?.sponsor1 || "—"} />
+                <ReadOnlyField label="Sponsor 2" value={details?.sponsor2 || "—"} />
               </div>
 
               <div className="mt-auto pt-2.5">
@@ -365,6 +342,24 @@ export function AdminFindRecordPage() {
                 <AdminField label="Father's name">
                   <AdminInput value={filters.father} onChange={(e) => setFilter("father", e.target.value)} />
                 </AdminField>
+                <AdminField label="Sponsor 1">
+                  <AdminInput
+                    value=""
+                    disabled
+                    placeholder="Not tracked in ledger"
+                    title="Baptismal ledger entries don't record sponsors — shown here only to line up with the request card."
+                    className="!cursor-not-allowed !bg-admin-surface-alt !text-admin-ink-faint"
+                  />
+                </AdminField>
+                <AdminField label="Sponsor 2">
+                  <AdminInput
+                    value=""
+                    disabled
+                    placeholder="Not tracked in ledger"
+                    title="Baptismal ledger entries don't record sponsors — shown here only to line up with the request card."
+                    className="!cursor-not-allowed !bg-admin-surface-alt !text-admin-ink-faint"
+                  />
+                </AdminField>
               </div>
 
               <div className="mt-auto flex items-center gap-3 border-t border-admin-border pt-2.5">
@@ -398,11 +393,11 @@ export function AdminFindRecordPage() {
 
       {reviewRecord && (
         <ReviewMatchModal
-          requestName={subjectName}
-          requestBirthdate={details?.birthdate}
-          requestBirthplace={details?.birthplace}
-          requestMother={details?.motherName}
-          requestFather={details?.fatherName}
+          requestName={filters.name}
+          requestBirthdate={filters.birthdate}
+          requestBirthplace={filters.placeOfBirth}
+          requestMother={filters.mother}
+          requestFather={filters.father}
           record={reviewRecord}
           onClose={() => setReviewRecord(null)}
           onLink={() => handleLink(reviewRecord)}
@@ -698,37 +693,23 @@ function BackLink() {
   );
 }
 
-function InfoRow({
-  label,
-  value,
-  sub,
-  last,
-  muted,
-  compact,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  last?: boolean;
-  muted?: boolean;
-  compact?: boolean;
-}) {
+// Same label + box dimensions as AdminField/AdminInput on the search card,
+// so each row on this read-only side lines up exactly with its counterpart
+// on the right — same height, same vertical position, easy to eyeball across.
+function ReadOnlyField({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
-    <div
-      className={`${compact ? "py-[7px]" : "py-[10.5px]"} ${
-        last ? "" : "border-b border-admin-border"
-      }`}
-    >
-      <div className="text-admin-label uppercase tracking-admin-label text-admin-ink-muted">{label}</div>
+    <div className="mb-4">
+      <label className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+        {label}
+      </label>
       <div
-        className={`truncate text-admin-body ${
+        className={`w-full truncate rounded-[7px] border border-admin-border bg-admin-surface-alt px-[11px] py-[9px] text-admin-body ${
           muted ? "italic text-admin-ink-muted" : "font-semibold text-admin-ink"
         }`}
         title={value}
       >
         {value}
       </div>
-      {sub && <div className="truncate text-admin-label text-admin-ink-muted">{sub}</div>}
     </div>
   );
 }
