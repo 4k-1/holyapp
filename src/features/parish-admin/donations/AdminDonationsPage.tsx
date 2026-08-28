@@ -120,6 +120,7 @@ export function AdminDonationsPage() {
             <AdminInput
               type="date"
               value={draftFilter.to}
+              min={draftFilter.from || undefined}
               onChange={(e) => setDraftField("to", e.target.value)}
             />
           </AdminField>
