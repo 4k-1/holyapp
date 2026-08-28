@@ -35,6 +35,34 @@ export interface IssuedRecordCertificate {
 
 export type LegitimacyStatus = "Legitimate" | "Illegitimate" | "Natural";
 
+/** Sacraments that record sponsors/godparents — matches the DB's sacrament_sponsor_assignment.sacrament_type. */
+export type SponsorSacramentType = "baptism" | "confirmation" | "marriage";
+
+/** Mirrors the `sponsor` table — a person, reusable across sacraments (a ninong can sponsor many baptisms). */
+export interface Sponsor {
+  id: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  sex?: string;
+  dateOfBirth?: string;
+  contactNumber?: string;
+  address?: string;
+}
+
+/** Mirrors `sacrament_sponsor_assignment` — links one sponsor to one sacrament record. */
+export interface SacramentSponsorAssignment {
+  id: string;
+  sponsorId: string;
+  sacramentType: SponsorSacramentType;
+  sacramentRecordId: string;
+  /** e.g. Ninong, Ninang, Principal Sponsor */
+  role?: string;
+  relationshipToRecipient?: string;
+  isPrimary: boolean;
+  isSigned: boolean;
+}
+
 export interface BaptismalRecord {
   id: string;
   parishId: string;

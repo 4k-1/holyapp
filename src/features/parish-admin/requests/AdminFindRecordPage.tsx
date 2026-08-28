@@ -9,6 +9,11 @@ import {
   rejectAdminRequest,
 } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import { listBaptismalRecords } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import {
+  listSponsorsBySacrament,
+  sponsorFullName,
+  type RecordSponsor,
+} from "@/features/parish-admin/records/api/sponsorsApi";
 import { useAsync } from "@/hooks/useAsync";
 import {
   baptismRecordRef,
@@ -27,6 +32,8 @@ interface MatchFilters {
   placeOfBirth: string;
   mother: string;
   father: string;
+  sponsor1: string;
+  sponsor2: string;
 }
 
 type MatchState = "match" | "partial" | "miss" | "none";
@@ -47,17 +54,33 @@ function dateFieldMatches(filterValue: string, isoDate: string) {
   return norm(isoDate).includes(target) || norm(formatRecordDate(isoDate)).includes(target);
 }
 
-function searchRecords(records: BaptismalRecord[], f: MatchFilters) {
+// A record's sponsors aren't strictly "Sponsor 1" / "Sponsor 2" on the ledger
+// side (assignment order isn't guaranteed) — so each filled search field just
+// needs to match *some* sponsor on the record, not a fixed positional slot.
+function sponsorFieldMatches(filterValue: string, sponsorNames: string[]) {
+  const target = norm(filterValue);
+  if (!target) return true;
+  return sponsorNames.some((name) => norm(name).includes(target));
+}
+
+function searchRecords(
+  records: BaptismalRecord[],
+  f: MatchFilters,
+  sponsorsByRecordId: Record<string, RecordSponsor[]>
+) {
   return records.filter((rec) => {
     const full = recordFullName(rec);
     const mother = recordMotherName(rec);
     const father = recordFatherName(rec);
+    const sponsorNames = (sponsorsByRecordId[rec.id] ?? []).map(sponsorFullName);
     if (norm(f.name) && !norm(full).includes(norm(f.name))) return false;
     if (norm(f.placeOfBirth) && !norm(rec.placeOfBirth).includes(norm(f.placeOfBirth))) return false;
     if (norm(f.mother) && !norm(mother).includes(norm(f.mother))) return false;
     if (norm(f.father) && !norm(father).includes(norm(f.father))) return false;
     if (!dateFieldMatches(f.birthdate, rec.dateOfBirth)) return false;
     if (!dateFieldMatches(f.baptismDate, rec.dateOfBaptism)) return false;
+    if (!sponsorFieldMatches(f.sponsor1, sponsorNames)) return false;
+    if (!sponsorFieldMatches(f.sponsor2, sponsorNames)) return false;
     return true;
   });
 }
@@ -90,6 +113,8 @@ const emptyFilters: MatchFilters = {
   placeOfBirth: "",
   mother: "",
   father: "",
+  sponsor1: "",
+  sponsor2: "",
 };
 
 export function AdminFindRecordPage() {
@@ -105,6 +130,10 @@ export function AdminFindRecordPage() {
     () => listBaptismalRecords(parish.id),
     [parish.id]
   );
+  const { data: sponsorsByRecordId = {}, loading: sponsorsLoading } = useAsync(
+    () => listSponsorsBySacrament("baptism"),
+    []
+  );
 
   const [filters, setFilters] = useState<MatchFilters>(emptyFilters);
   const [results, setResults] = useState<BaptismalRecord[]>([]);
@@ -117,12 +146,11 @@ export function AdminFindRecordPage() {
   const [confirmedRecord, setConfirmedRecord] = useState<BaptismalRecord | null>(null);
   const [rejectedNote, setRejectedNote] = useState("");
 
-  // Wait until BOTH request and records are loaded before the first search.
-  // Otherwise we search an empty list, set seeded=true, and never retry.
-  // Sponsors are left blank on purpose — parishioner-submitted names often
-  // don't match the register exactly (e.g. "Carmela" vs "Carmen").
+  // Wait until request, records, AND sponsor assignments are loaded before
+  // the first search. Otherwise we search an incomplete list, set
+  // seeded=true, and never retry.
   useEffect(() => {
-    if (!request || recordsLoading || seeded) return;
+    if (!request || recordsLoading || sponsorsLoading || seeded) return;
     const details = request.details;
     const initial: MatchFilters = {
       name: details?.subjectName ?? "",
@@ -131,13 +159,15 @@ export function AdminFindRecordPage() {
       placeOfBirth: details?.birthplace ?? "",
       mother: details?.motherName ?? "",
       father: details?.fatherName ?? "",
+      sponsor1: details?.sponsor1 ?? "",
+      sponsor2: details?.sponsor2 ?? "",
     };
     setFilters(initial);
-    setResults(searchRecords(parishRecords, initial));
+    setResults(searchRecords(parishRecords, initial, sponsorsByRecordId));
     setSeeded(true);
-  }, [request, parishRecords, recordsLoading, seeded]);
+  }, [request, parishRecords, recordsLoading, sponsorsByRecordId, sponsorsLoading, seeded]);
 
-  if (requestLoading || (request && recordsLoading && !seeded)) {
+  if (requestLoading || (request && (recordsLoading || sponsorsLoading) && !seeded)) {
     return (
       <div>
         <BackLink />
@@ -165,7 +195,7 @@ export function AdminFindRecordPage() {
   }
 
   function runSearch() {
-    setResults(searchRecords(parishRecords, filters));
+    setResults(searchRecords(parishRecords, filters, sponsorsByRecordId));
   }
 
   async function handleLink(record: BaptismalRecord) {
@@ -205,6 +235,11 @@ export function AdminFindRecordPage() {
     },
     { key: "mother", header: "Mother", render: (r) => recordMotherName(r) },
     { key: "father", header: "Father", render: (r) => recordFatherName(r) },
+    {
+      key: "sponsors",
+      header: "Sponsors",
+      render: (r) => (sponsorsByRecordId[r.id] ?? []).map(sponsorFullName).join(", ") || "—",
+    },
     {
       key: "actions",
       header: "Actions",
@@ -344,20 +379,14 @@ export function AdminFindRecordPage() {
                 </AdminField>
                 <AdminField label="Sponsor 1">
                   <AdminInput
-                    value=""
-                    disabled
-                    placeholder="Not tracked in ledger"
-                    title="Baptismal ledger entries don't record sponsors — shown here only to line up with the request card."
-                    className="!cursor-not-allowed !bg-admin-surface-alt !text-admin-ink-faint"
+                    value={filters.sponsor1}
+                    onChange={(e) => setFilter("sponsor1", e.target.value)}
                   />
                 </AdminField>
                 <AdminField label="Sponsor 2">
                   <AdminInput
-                    value=""
-                    disabled
-                    placeholder="Not tracked in ledger"
-                    title="Baptismal ledger entries don't record sponsors — shown here only to line up with the request card."
-                    className="!cursor-not-allowed !bg-admin-surface-alt !text-admin-ink-faint"
+                    value={filters.sponsor2}
+                    onChange={(e) => setFilter("sponsor2", e.target.value)}
                   />
                 </AdminField>
               </div>
@@ -398,7 +427,10 @@ export function AdminFindRecordPage() {
           requestBirthplace={filters.placeOfBirth}
           requestMother={filters.mother}
           requestFather={filters.father}
+          requestSponsor1={filters.sponsor1}
+          requestSponsor2={filters.sponsor2}
           record={reviewRecord}
+          recordSponsors={sponsorsByRecordId[reviewRecord.id] ?? []}
           onClose={() => setReviewRecord(null)}
           onLink={() => handleLink(reviewRecord)}
         />
@@ -422,7 +454,10 @@ function ReviewMatchModal({
   requestBirthplace,
   requestMother,
   requestFather,
+  requestSponsor1,
+  requestSponsor2,
   record,
+  recordSponsors,
   onClose,
   onLink,
 }: {
@@ -431,16 +466,24 @@ function ReviewMatchModal({
   requestBirthplace?: string;
   requestMother?: string;
   requestFather?: string;
+  requestSponsor1?: string;
+  requestSponsor2?: string;
   record: BaptismalRecord;
+  recordSponsors: RecordSponsor[];
   onClose: () => void;
   onLink: () => void;
 }) {
+  // Ledger sponsors aren't stored as "Sponsor 1" / "Sponsor 2" slots — the
+  // primary assignment (e.g. Ninang) sorts first, so pair it against
+  // whichever request field is filled first for a sensible side-by-side.
   const fields: [string, string | undefined, string][] = [
     ["Name of baptized", requestName, recordFullName(record)],
     ["Birthdate", requestBirthdate, formatRecordDate(record.dateOfBirth)],
     ["Place of birth", requestBirthplace, record.placeOfBirth ?? ""],
     ["Mother's name", requestMother, recordMotherName(record)],
     ["Father's name", requestFather, recordFatherName(record)],
+    ["Sponsor 1", requestSponsor1, recordSponsors[0] ? sponsorFullName(recordSponsors[0]) : ""],
+    ["Sponsor 2", requestSponsor2, recordSponsors[1] ? sponsorFullName(recordSponsors[1]) : ""],
   ];
   const states = fields.map(([, left, right]) => matchState(left, right));
   const matches = states.filter((s) => s === "match").length;
