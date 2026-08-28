@@ -43,6 +43,17 @@ function norm(s: string | undefined) {
   return (s || "").toLowerCase().trim().replace(/[.,]/g, "");
 }
 
+// Requests store dates as human-readable text (e.g. "January 18, 2005", copied
+// from the parishioner's submitted details) while ledger records store ISO
+// dates (e.g. "2005-01-18"). Compare a search field against both the raw
+// ISO value and its formatted display so a search doesn't miss an otherwise
+// exact match just because the two sides spell the date differently.
+function dateFieldMatches(filterValue: string, isoDate: string) {
+  const target = norm(filterValue);
+  if (!target) return true;
+  return norm(isoDate).includes(target) || norm(formatRecordDate(isoDate)).includes(target);
+}
+
 function searchRecords(records: BaptismalRecord[], f: MatchFilters) {
   return records.filter((rec) => {
     const full = recordFullName(rec);
@@ -52,8 +63,8 @@ function searchRecords(records: BaptismalRecord[], f: MatchFilters) {
     if (norm(f.placeOfBirth) && !norm(rec.placeOfBirth).includes(norm(f.placeOfBirth))) return false;
     if (norm(f.mother) && !norm(mother).includes(norm(f.mother))) return false;
     if (norm(f.father) && !norm(father).includes(norm(f.father))) return false;
-    if (norm(f.birthdate) && !norm(rec.dateOfBirth).includes(norm(f.birthdate))) return false;
-    if (norm(f.baptismDate) && !norm(rec.dateOfBaptism).includes(norm(f.baptismDate))) return false;
+    if (!dateFieldMatches(f.birthdate, rec.dateOfBirth)) return false;
+    if (!dateFieldMatches(f.baptismDate, rec.dateOfBaptism)) return false;
     return true;
   });
 }
