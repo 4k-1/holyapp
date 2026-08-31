@@ -13,7 +13,9 @@ import {
   setAccountStatus,
   setParishCertTheme,
   updateParish,
+  updateParishAccount,
   type CreateParishAccountInput,
+  type UpdateParishAccountInput,
   type DashboardSnapshot,
   type OnboardParishInput,
   type PlatformAccount,
@@ -24,7 +26,15 @@ import {
 } from "@/services/mocks/superAdmin.mock";
 import type { AuditLogEntry, Parish, UserStatus } from "@/types";
 
-export type { CreateParishAccountInput, DashboardSnapshot, OnboardParishInput, PlatformAccount, PlatformAdmin, SuperAdminParishOverview };
+export type {
+  CreateParishAccountInput,
+  DashboardSnapshot,
+  OnboardParishInput,
+  PlatformAccount,
+  PlatformAdmin,
+  SuperAdminParishOverview,
+  UpdateParishAccountInput,
+};
 export { CERT_THEMES, getCertTheme };
 
 export async function getPlatformDashboard(): Promise<DashboardSnapshot> {
@@ -73,6 +83,11 @@ export async function setPlatformAccountStatus(userId: string, status: UserStatu
 export async function resetPlatformAccountPassword(userId: string) {
   await delay(180);
   return resetAccountPassword(userId);
+}
+
+export async function updatePlatformAccount(userId: string, patch: UpdateParishAccountInput) {
+  await delay(200);
+  return updateParishAccount(userId, patch);
 }
 
 export async function setPlatformAccountCanEdit(userId: string, canEditRecords: boolean) {

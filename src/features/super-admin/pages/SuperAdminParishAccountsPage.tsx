@@ -8,26 +8,34 @@ import {
   listPlatformParishes,
   removePlatformAccount,
   resetPlatformAccountPassword,
-  setPlatformAccountCanEdit,
   setPlatformAccountStatus,
   setPlatformParishCertTheme,
 } from "@/features/super-admin/api/superAdminApi";
 import { ArrowLeftIcon, PlusIcon, SearchIcon } from "@/components/ui/icons/AdminIcons";
+import { AccountDetailsModal } from "@/features/super-admin/components/AccountDetailsModal";
 import { AddAccountModal, ResetPasswordModal } from "@/features/super-admin/components/AddAccountModal";
+import { EditAccountModal } from "@/features/super-admin/components/EditAccountModal";
 import { CredentialsModal } from "@/features/super-admin/components/OnboardParishModal";
+import { SuperAdminKebabMenu } from "@/features/super-admin/components/SuperAdminKebabMenu";
 import {
   SuperAdminModal,
   SuperAdminToast,
-  saBtnDanger,
   saBtnLink,
   saBtnPrimary,
   saBtnSecondary,
 } from "@/features/super-admin/components/SuperAdminModal";
 import { useSuperAdminPageHeading } from "@/features/super-admin/SuperAdminChrome";
 import type { CurrentUser } from "@/types";
-import type { PlatformAdmin } from "@/features/super-admin/api/superAdminApi";
+
+type OfficeAccount = CurrentUser & { canEditRecords?: boolean };
 
 type Tab = "admins" | "parishioners" | "style";
+
+function roleLabel(role: CurrentUser["role"]) {
+  if (role === "parish_admin") return "Parish Admin";
+  if (role === "parish_staff") return "Parish Staff";
+  return role;
+}
 
 const TABS: [Tab, string][] = [
   ["admins", "Admins"],
@@ -47,12 +55,6 @@ function tabFromSearch(value: string | null): Tab {
   return "admins";
 }
 
-function headingFor(tab: Tab, parishName: string) {
-  if (tab === "parishioners") return { title: parishName, sub: "Parishioner accounts for this parish" };
-  if (tab === "style") return { title: parishName, sub: "Certificate style for this parish" };
-  return { title: parishName, sub: "Admin accounts for this parish" };
-}
-
 export function SuperAdminParishAccountsPage() {
   const { parishId = "" } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -63,6 +65,8 @@ export function SuperAdminParishAccountsPage() {
 
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
+  const [viewing, setViewing] = useState<(CurrentUser & { canEditRecords?: boolean }) | null>(null);
+  const [editing, setEditing] = useState<OfficeAccount | null>(null);
   const [resetting, setResetting] = useState<CurrentUser | null>(null);
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
   const [toast, setToast] = useState("");
@@ -70,8 +74,7 @@ export function SuperAdminParishAccountsPage() {
   const [pickedTheme, setPickedTheme] = useState<string | null>(null);
   const [savingTheme, setSavingTheme] = useState(false);
 
-  const heading = headingFor(tab, row?.parish.name ?? "");
-  useSuperAdminPageHeading(heading.title, heading.sub);
+  useSuperAdminPageHeading("", "");
 
   useEffect(() => {
     setQuery("");
@@ -91,7 +94,12 @@ export function SuperAdminParishAccountsPage() {
     setSearchParams(nextParams, { replace: true });
   }
 
-  const people = tab === "admins" ? (row?.admins ?? []) : tab === "parishioners" ? (row?.parishioners ?? []) : [];
+  const officeAccounts = useMemo<OfficeAccount[]>(() => {
+    if (!row) return [];
+    return [...row.admins, ...row.staff];
+  }, [row]);
+
+  const people = tab === "admins" ? officeAccounts : tab === "parishioners" ? (row?.parishioners ?? []) : [];
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return people;
@@ -120,12 +128,6 @@ export function SuperAdminParishAccountsPage() {
     await setPlatformAccountStatus(user.id, next);
     refetch();
     setToast(`${user.fullName} ${next === "active" ? "reactivated" : "suspended"}`);
-  }
-
-  async function handleToggleCanEdit(user: PlatformAdmin, canEditRecords: boolean) {
-    await setPlatformAccountCanEdit(user.id, canEditRecords);
-    refetch();
-    setToast(`${user.fullName} can ${canEditRecords ? "now edit" : "no longer edit"} records`);
   }
 
   async function handleSaveTheme() {
@@ -215,7 +217,7 @@ export function SuperAdminParishAccountsPage() {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={tab === "admins" ? "Search admin name" : "Search parishioner name or email"}
+                  placeholder={tab === "admins" ? "Search name or email" : "Search parishioner name or email"}
                   aria-label="Search accounts"
                   className="w-full bg-transparent font-sans text-[12.5px] text-admin-ink outline-none placeholder:text-admin-ink-faint"
                 />
@@ -228,9 +230,11 @@ export function SuperAdminParishAccountsPage() {
                   loading={loading}
                   empty={people.length === 0}
                   noMatch={filtered.length === 0}
-                  rows={filtered as PlatformAdmin[]}
-                  onToggleCanEdit={handleToggleCanEdit}
+                  rows={filtered as OfficeAccount[]}
+                  onView={setViewing}
+                  onEdit={setEditing}
                   onReset={setResetting}
+                  onToggleStatus={handleToggleStatus}
                   onRemove={handleRemove}
                 />
               ) : (
@@ -239,6 +243,8 @@ export function SuperAdminParishAccountsPage() {
                   empty={people.length === 0}
                   noMatch={filtered.length === 0}
                   rows={filtered}
+                  onView={setViewing}
+                  onEdit={setEditing}
                   onReset={setResetting}
                   onToggleStatus={handleToggleStatus}
                   onRemove={handleRemove}
@@ -259,6 +265,26 @@ export function SuperAdminParishAccountsPage() {
             setAdding(false);
             refetch();
             setCredentials(creds);
+          }}
+        />
+      ) : null}
+
+      {viewing && row ? (
+        <AccountDetailsModal
+          user={viewing}
+          parishName={row.parish.name}
+          onClose={() => setViewing(null)}
+        />
+      ) : null}
+
+      {editing ? (
+        <EditAccountModal
+          user={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(name) => {
+            setEditing(null);
+            refetch();
+            setToast(`${name} updated`);
           }}
         />
       ) : null}
@@ -299,23 +325,27 @@ function AdminTable({
   empty,
   noMatch,
   rows,
-  onToggleCanEdit,
+  onView,
+  onEdit,
   onReset,
+  onToggleStatus,
   onRemove,
 }: {
   loading: boolean;
   empty: boolean;
   noMatch: boolean;
-  rows: PlatformAdmin[];
-  onToggleCanEdit: (user: PlatformAdmin, canEdit: boolean) => void;
+  rows: OfficeAccount[];
+  onView: (user: OfficeAccount) => void;
+  onEdit: (user: OfficeAccount) => void;
   onReset: (user: CurrentUser) => void;
+  onToggleStatus: (user: CurrentUser) => void;
   onRemove: (user: CurrentUser) => void;
 }) {
   return (
     <table className="mt-3 w-full border-collapse">
       <thead>
         <tr className="bg-admin-surface-alt">
-          {["Name", "Can Edit Records", "Actions"].map((h) => (
+          {["Name", "Email", "Role", "Status"].map((h) => (
             <th
               key={h}
               className="border-b border-admin-border px-[18px] py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.04em] text-admin-ink-muted"
@@ -323,39 +353,45 @@ function AdminTable({
               {h}
             </th>
           ))}
+          <th className="border-b border-admin-border px-[18px] py-2.5 text-right text-[11px] font-bold uppercase tracking-[0.04em] text-admin-ink-muted">
+            <span className="sr-only">Actions</span>
+          </th>
         </tr>
       </thead>
       <tbody>
         {loading ? (
-          <EmptyRow cols={3} text="Loading accounts…" />
+          <EmptyRow cols={5} text="Loading accounts…" />
         ) : empty ? (
-          <EmptyRow cols={3} text="No admin accounts yet." />
+          <EmptyRow cols={5} text="No admin accounts yet." />
         ) : noMatch ? (
-          <EmptyRow cols={3} text="No admins match your search." />
+          <EmptyRow cols={5} text="No accounts match your search." />
         ) : (
           rows.map((user) => (
             <tr key={user.id} className="hover:bg-admin-green-100 last:[&>td]:border-b-0">
               <td className="border-b border-admin-border px-[18px] py-3 text-[13px] font-bold text-admin-ink">
                 {user.fullName}
               </td>
-              <td className="border-b border-admin-border px-[18px] py-3">
-                <label className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-[11.5px] text-admin-ink-muted">
-                  <input
-                    type="checkbox"
-                    checked={user.canEditRecords}
-                    onChange={(e) => onToggleCanEdit(user, e.target.checked)}
-                    className="h-3.5 w-3.5 accent-admin-green-700"
-                  />
-                  {user.canEditRecords ? "Can edit" : "View only"}
-                </label>
+              <td className="border-b border-admin-border px-[18px] py-3 text-[13px] text-admin-ink">{user.email}</td>
+              <td className="border-b border-admin-border px-[18px] py-3 text-[13px] text-admin-ink">
+                {roleLabel(user.role)}
               </td>
               <td className="border-b border-admin-border px-[18px] py-3">
-                <button type="button" className={`${saBtnLink} mr-3`} onClick={() => onReset(user)}>
-                  Reset
-                </button>
-                <button type="button" className={saBtnDanger} onClick={() => onRemove(user)}>
-                  Remove
-                </button>
+                <StatusPill status={user.status} />
+              </td>
+              <td className="border-b border-admin-border px-[18px] py-3">
+                <SuperAdminKebabMenu
+                  labelledBy={user.fullName}
+                  items={[
+                    { label: "View", onClick: () => onView(user) },
+                    { label: "Edit", onClick: () => onEdit(user) },
+                    { label: "Reset password", onClick: () => onReset(user) },
+                    {
+                      label: user.status === "active" ? "Suspend" : "Activate",
+                      onClick: () => onToggleStatus(user),
+                    },
+                    { label: "Remove", onClick: () => onRemove(user), danger: true },
+                  ]}
+                />
               </td>
             </tr>
           ))
@@ -365,11 +401,25 @@ function AdminTable({
   );
 }
 
+function StatusPill({ status }: { status: CurrentUser["status"] }) {
+  return (
+    <span
+      className={`inline-block rounded-full px-2.5 py-[3px] text-[11px] font-bold ${
+        status === "active" ? "bg-admin-green-100 text-admin-green-900" : "bg-admin-red-100 text-admin-red-700"
+      }`}
+    >
+      {status === "active" ? "Active" : "Suspended"}
+    </span>
+  );
+}
+
 function ParishionerTable({
   loading,
   empty,
   noMatch,
   rows,
+  onView,
+  onEdit,
   onReset,
   onToggleStatus,
   onRemove,
@@ -378,6 +428,8 @@ function ParishionerTable({
   empty: boolean;
   noMatch: boolean;
   rows: CurrentUser[];
+  onView: (user: CurrentUser) => void;
+  onEdit: (user: CurrentUser) => void;
   onReset: (user: CurrentUser) => void;
   onToggleStatus: (user: CurrentUser) => void;
   onRemove: (user: CurrentUser) => void;
@@ -386,7 +438,7 @@ function ParishionerTable({
     <table className="mt-3 w-full border-collapse">
       <thead>
         <tr className="bg-admin-surface-alt">
-          {["Name", "Email", "Joined", "Status", "Actions"].map((h) => (
+          {["Name", "Email", "Joined", "Status"].map((h) => (
             <th
               key={h}
               className="border-b border-admin-border px-[18px] py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.04em] text-admin-ink-muted"
@@ -394,6 +446,9 @@ function ParishionerTable({
               {h}
             </th>
           ))}
+          <th className="border-b border-admin-border px-[18px] py-2.5 text-right text-[11px] font-bold uppercase tracking-[0.04em] text-admin-ink-muted">
+            <span className="sr-only">Actions</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -414,26 +469,22 @@ function ParishionerTable({
                 {formatJoined(user.createdAt)}
               </td>
               <td className="border-b border-admin-border px-[18px] py-3">
-                <span
-                  className={`inline-block rounded-full px-2.5 py-[3px] text-[11px] font-bold ${
-                    user.status === "active"
-                      ? "bg-admin-green-100 text-admin-green-900"
-                      : "bg-admin-red-100 text-admin-red-700"
-                  }`}
-                >
-                  {user.status === "active" ? "Active" : "Suspended"}
-                </span>
+                <StatusPill status={user.status} />
               </td>
               <td className="border-b border-admin-border px-[18px] py-3">
-                <button type="button" className={`${saBtnLink} mr-3`} onClick={() => onReset(user)}>
-                  Reset
-                </button>
-                <button type="button" className={`${saBtnLink} mr-3`} onClick={() => onToggleStatus(user)}>
-                  {user.status === "active" ? "Suspend" : "Activate"}
-                </button>
-                <button type="button" className={saBtnDanger} onClick={() => onRemove(user)}>
-                  Remove
-                </button>
+                <SuperAdminKebabMenu
+                  labelledBy={user.fullName}
+                  items={[
+                    { label: "View", onClick: () => onView(user) },
+                    { label: "Edit", onClick: () => onEdit(user) },
+                    { label: "Reset password", onClick: () => onReset(user) },
+                    {
+                      label: user.status === "active" ? "Suspend" : "Activate",
+                      onClick: () => onToggleStatus(user),
+                    },
+                    { label: "Remove", onClick: () => onRemove(user), danger: true },
+                  ]}
+                />
               </td>
             </tr>
           ))

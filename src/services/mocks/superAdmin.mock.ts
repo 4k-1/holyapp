@@ -479,6 +479,74 @@ export function resetAccountPassword(userId: string) {
   return { name: user.fullName, email: user.email, password };
 }
 
+export interface UpdateParishAccountInput {
+  name?: string;
+  email?: string;
+  contactNumber?: string;
+  gender?: string;
+  birthday?: string;
+  address?: string;
+  role?: "parish_admin" | "parish_staff";
+  canEditRecords?: boolean;
+}
+
+export function updateParishAccount(userId: string, patch: UpdateParishAccountInput) {
+  const user = MOCK_USERS.find((u) => u.id === userId);
+  if (!user || user.role === "super_admin") throw new Error("Account not found.");
+
+  if (patch.email !== undefined) {
+    const email = patch.email.trim().toLowerCase();
+    if (!email) throw new Error("Email is required.");
+    if (MOCK_USERS.some((other) => other.id !== userId && other.email.toLowerCase() === email)) {
+      throw new Error("That email already has an account.");
+    }
+    user.email = email;
+  }
+
+  if (patch.name !== undefined) {
+    const name = patch.name.trim();
+    if (!name) throw new Error("Name is required.");
+    const names = splitPersonName(name);
+    user.firstName = names.firstName;
+    user.lastName = names.lastName;
+    user.fullName = name;
+  }
+
+  if (patch.contactNumber !== undefined) user.contactNumber = patch.contactNumber.trim();
+  if (patch.gender !== undefined) user.gender = patch.gender.trim() || undefined;
+  if (patch.birthday !== undefined) user.birthday = patch.birthday.trim() || undefined;
+  if (patch.address !== undefined) user.address = patch.address.trim() || undefined;
+
+  const office = user.role === "parish_admin" || user.role === "parish_staff";
+  if (office && patch.role && patch.role !== user.role) {
+    user.role = patch.role;
+  }
+
+  if (user.role === "parish_admin" && patch.canEditRecords !== undefined) {
+    canEditByUserId[user.id] = patch.canEditRecords;
+  }
+
+  MOCK_AUDIT_LOG.unshift({
+    id: nextId(
+      "aud",
+      MOCK_AUDIT_LOG.map((a) => a.id)
+    ),
+    parishId: user.parishId,
+    actorId: "u-super",
+    action: "app_user.updated",
+    entityType: "app_user",
+    entityId: user.id,
+    metadata: { email: user.email, role: user.role },
+    createdAt: new Date().toISOString(),
+  });
+
+  const { password: _password, ...safe } = user;
+  return {
+    ...safe,
+    canEditRecords: user.role === "parish_admin" ? canEditByUserId[user.id] !== false : undefined,
+  };
+}
+
 export function setAccountCanEdit(userId: string, canEditRecords: boolean) {
   const user = MOCK_USERS.find((u) => u.id === userId);
   if (!user || user.role !== "parish_admin") throw new Error("Account not found.");

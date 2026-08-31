@@ -17,7 +17,7 @@ const navActive = "bg-admin-green-100 font-bold text-admin-green-900";
 
 function headingFromPath(pathname: string) {
   if (pathname.startsWith("/super-admin/parishes")) {
-    return { title: "Parishes", sub: "Create, edit, and deactivate parish accounts" };
+    return { title: "Parishes", sub: "Every parish on HolyApp." };
   }
   if (pathname.startsWith("/super-admin/templates")) {
     return { title: "Certificate Templates", sub: "Manage certificate layouts platform-wide, and check parish branding" };
@@ -30,6 +30,9 @@ function headingFromPath(pathname: string) {
   }
   if (pathname.startsWith("/super-admin/settings")) {
     return { title: "Settings", sub: "Super Admin preferences" };
+  }
+  if (/^\/super-admin\/accounts\/[^/]+/.test(pathname)) {
+    return { title: "", sub: "" };
   }
   if (pathname.startsWith("/super-admin/accounts")) {
     return { title: "Parish Admins", sub: "Create and manage Parish Admin accounts" };
@@ -156,20 +159,24 @@ function SuperAdminShell() {
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="min-h-0 flex-1 overflow-y-auto px-8 py-[26px]">
-          <header className="mb-[22px] flex items-center justify-between">
-            <div className="min-w-0">
-              <h1 className="font-sans text-[21px] font-extrabold leading-tight text-admin-ink">
-                {heading.title}
-              </h1>
-              <p className="mt-[3px] text-[12.8px] text-admin-ink-muted">{heading.sub}</p>
-            </div>
+          <header className={`flex items-center ${heading.title ? "mb-[22px] justify-between" : "mb-3 justify-end"}`}>
+            {heading.title ? (
+              <div className="min-w-0">
+                <h1 className="font-sans text-[21px] font-extrabold leading-tight text-admin-ink">
+                  {heading.title}
+                </h1>
+                {heading.sub ? (
+                  <p className="mt-[3px] text-[12.8px] text-admin-ink-muted">{heading.sub}</p>
+                ) : null}
+              </div>
+            ) : null}
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-admin-green-100 text-xs font-bold text-admin-green-900">
                 {initials}
               </div>
               <div className="hidden leading-tight sm:block">
                 <p className="text-[12.5px] font-semibold text-admin-ink">{user.fullName}</p>
-                <p className="text-[10.5px] text-admin-ink-faint">Diocesan Office</p>
+                <p className="text-[10.5px] text-admin-ink-faint">Super Admin</p>
               </div>
             </div>
           </header>

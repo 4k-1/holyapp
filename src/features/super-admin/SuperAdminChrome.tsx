@@ -16,7 +16,6 @@ export function SuperAdminChromeProvider({ children }: { children: ReactNode }) 
 export function useSuperAdminPageHeading(title: string, sub: string) {
   const { setHeading } = useContext(SuperAdminChromeContext);
   useLayoutEffect(() => {
-    if (!title) return;
     setHeading({ title, sub });
     return () => setHeading(null);
   }, [title, sub, setHeading]);
