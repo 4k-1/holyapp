@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   SuperAdminModal,
   SuperAdminToast,
@@ -6,9 +6,23 @@ import {
   saBtnSecondary,
   saInputClass,
 } from "@/features/super-admin/components/SuperAdminModal";
+import { AdminDialog, AdminDialogFooter, AdminDialogHeader } from "@/features/parish-admin/components/AdminDialog";
+import {
+  CertificateDocument,
+  CertificatePreviewStage,
+  sacramentCertTitles,
+} from "@/features/parish-admin/components/CertificateDocument";
+import { CERT_PREVIEW_STAGE_BG } from "@/features/parish-admin/components/certificate/constants";
+import { SAMPLE_CERTIFICATE } from "@/features/parish-admin/components/certificate/sampleCertificate";
+import { printElement } from "@/features/parish-admin/requests/printUtils";
+import { getCertificateAppearance } from "@/features/parish-admin/settings/api/certificateConfigApi";
+import { useAsync } from "@/hooks/useAsync";
+import { MOCK_PARISHES } from "@/services/mocks/parishes.mock";
+import type { SacramentType } from "@/types";
 
 interface CertTemplate {
   id: string;
+  sacramentType: SacramentType;
   label: string;
   version: string;
   updated: string;
@@ -25,6 +39,7 @@ const COVER = [
 const INITIAL: CertTemplate[] = [
   {
     id: "baptismal",
+    sacramentType: "baptism",
     label: "Baptismal Certificate",
     version: "v3",
     updated: "May 12, 2026",
@@ -37,6 +52,7 @@ const INITIAL: CertTemplate[] = [
   },
   {
     id: "confirmation",
+    sacramentType: "confirmation",
     label: "Confirmation Certificate",
     version: "v2",
     updated: "Apr 30, 2026",
@@ -49,6 +65,7 @@ const INITIAL: CertTemplate[] = [
   },
   {
     id: "marriage",
+    sacramentType: "marriage",
     label: "Marriage Certificate",
     version: "v2",
     updated: "Apr 30, 2026",
@@ -61,6 +78,7 @@ const INITIAL: CertTemplate[] = [
   },
   {
     id: "death",
+    sacramentType: "death",
     label: "Death Certificate",
     version: "v1",
     updated: "Jan 5, 2026",
@@ -204,37 +222,66 @@ export function SuperAdminTemplatesPage() {
       ) : null}
 
       {previewing ? (
-        <SuperAdminModal
-          title="Certificate Preview"
-          onClose={() => setPreviewing(null)}
-          widthClass="max-w-[460px]"
-          footer={
-            <button type="button" className={saBtnSecondary} onClick={() => setPreviewing(null)}>
-              Close
-            </button>
-          }
-        >
-          <p className="m-0 text-[12px] leading-relaxed text-admin-ink-faint">
-            This merges the parish's own branding into the locked master layout — for spot-checking only.
-          </p>
-          <div
-            className="rounded-[10px] px-[22px] py-[26px] text-center"
-            style={{ background: "#FDFCF8", border: "3px double #1B5940" }}
-          >
-            <p className="font-serif text-[15px] font-bold text-[#1B5940]">Master layout</p>
-            <p className="mt-0.5 text-[11px] text-admin-ink-faint">Platform default · {previewing.version}</p>
-            <div className="my-3.5 h-px bg-[#1B5940]" />
-            <p className="text-[11.5px] font-bold uppercase tracking-[0.03em] text-admin-ink-muted">
-              {previewing.label}
-            </p>
-            <p className="mt-2.5 text-[12.5px] leading-relaxed text-admin-ink-muted">
-              Field positions stay locked so every parish fills the same zones.
-            </p>
-          </div>
-        </SuperAdminModal>
+        <TemplatePreviewModal template={previewing} onClose={() => setPreviewing(null)} />
       ) : null}
 
       <SuperAdminToast message={toast} />
     </div>
+  );
+}
+
+function TemplatePreviewModal({
+  template,
+  onClose,
+}: {
+  template: CertTemplate;
+  onClose: () => void;
+}) {
+  const printRef = useRef<HTMLDivElement>(null);
+  const parish = MOCK_PARISHES[0];
+  const sample = SAMPLE_CERTIFICATE[template.sacramentType];
+  const { data: appearance, loading } = useAsync(
+    () => getCertificateAppearance(template.sacramentType),
+    [template.sacramentType]
+  );
+  const title = sacramentCertTitles[template.sacramentType];
+
+  function handlePrint() {
+    if (!printRef.current) return;
+    printElement(printRef.current, `${title} — ${sample.name}`);
+  }
+
+  return (
+    <AdminDialog onClose={onClose} panelClassName="max-w-[720px]">
+      <AdminDialogHeader
+        title={title}
+        subtitle={`${template.version} master layout · sample names only`}
+        onClose={onClose}
+      />
+      <div className="overflow-hidden px-4 py-3" style={{ background: CERT_PREVIEW_STAGE_BG }}>
+        {loading || !parish ? (
+          <p className="py-10 text-center text-[12.5px] text-admin-ink-muted">Loading certificate…</p>
+        ) : (
+          <CertificatePreviewStage>
+            <CertificateDocument
+              ref={printRef}
+              parish={parish}
+              sacramentType={template.sacramentType}
+              subjectName={sample.name}
+              fields={sample.fields}
+              appearance={appearance}
+            />
+          </CertificatePreviewStage>
+        )}
+      </div>
+      <AdminDialogFooter>
+        <button type="button" className={saBtnSecondary} onClick={onClose}>
+          Close
+        </button>
+        <button type="button" className={saBtnPrimary} onClick={handlePrint} disabled={loading}>
+          Print
+        </button>
+      </AdminDialogFooter>
+    </AdminDialog>
   );
 }
