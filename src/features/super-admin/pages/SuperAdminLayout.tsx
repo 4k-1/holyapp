@@ -19,7 +19,7 @@ export function SuperAdminLayout() {
   const location = useLocation();
 
   const heading = location.pathname.startsWith("/super-admin/parishes")
-    ? { title: "Parishes", sub: "Every parish on HolyApp" }
+    ? { title: "Parishes", sub: "Create and edit parish accounts" }
     : location.pathname.startsWith("/super-admin/accounts")
       ? { title: "Accounts", sub: "Every parish admin, staff, and parishioner" }
       : { title: "System Overview", sub: "Cross-parish oversight — Archdiocese of Cebu" };

@@ -2,7 +2,7 @@ import type { CurrentUser } from "@/types";
 
 type MockUser = CurrentUser & { password: string };
 
-function mockUser(
+export function mockUser(
   input: Omit<MockUser, "fullName" | "status" | "password"> &
     Partial<Pick<MockUser, "fullName" | "status" | "password">>
 ): MockUser {
