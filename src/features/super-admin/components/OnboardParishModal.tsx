@@ -136,10 +136,12 @@ export function CredentialsModal({
   email,
   password,
   onClose,
+  audience = "the Parish Admin",
 }: {
   email: string;
   password: string;
   onClose: () => void;
+  audience?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -168,7 +170,7 @@ export function CredentialsModal({
       }
     >
       <p className="text-[12.5px] text-admin-ink-muted">
-        Share these sign-in details with the Parish Admin. They will use the parish portal, not this
+        Share these sign-in details with {audience}. They will use the parish portal, not this
         platform sign-in.
       </p>
       <SaField label="Email">

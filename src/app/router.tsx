@@ -16,7 +16,12 @@ import { SuperAdminLoginPage } from "@/features/super-admin/pages/SuperAdminLogi
 import { SuperAdminLayout } from "@/features/super-admin/pages/SuperAdminLayout";
 import { SuperAdminDashboardPage } from "@/features/super-admin/pages/SuperAdminDashboardPage";
 import { SuperAdminAccountsPage } from "@/features/super-admin/pages/SuperAdminAccountsPage";
+import { SuperAdminParishAccountsPage } from "@/features/super-admin/pages/SuperAdminParishAccountsPage";
 import { SuperAdminParishesPage } from "@/features/super-admin/pages/SuperAdminParishesPage";
+import { SuperAdminTemplatesPage } from "@/features/super-admin/pages/SuperAdminTemplatesPage";
+import { SuperAdminAuditPage } from "@/features/super-admin/pages/SuperAdminAuditPage";
+import { SuperAdminReportsPage } from "@/features/super-admin/pages/SuperAdminReportsPage";
+import { SuperAdminSettingsPage } from "@/features/super-admin/pages/SuperAdminSettingsPage";
 
 
 // inside createBrowserRouter([...]) array:
@@ -63,7 +68,12 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <SuperAdminDashboardPage /> },
       { path: "parishes", element: <SuperAdminParishesPage /> },
+      { path: "templates", element: <SuperAdminTemplatesPage /> },
       { path: "accounts", element: <SuperAdminAccountsPage /> },
+      { path: "accounts/:parishId", element: <SuperAdminParishAccountsPage /> },
+      { path: "audit", element: <SuperAdminAuditPage /> },
+      { path: "reports", element: <SuperAdminReportsPage /> },
+      { path: "settings", element: <SuperAdminSettingsPage /> },
     ],
   },
   {

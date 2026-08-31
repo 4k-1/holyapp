@@ -1,0 +1,573 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useAsync } from "@/hooks/useAsync";
+import {
+  CERT_THEMES,
+  getCertTheme,
+  getPlatformParish,
+  listPlatformParishes,
+  removePlatformAccount,
+  resetPlatformAccountPassword,
+  setPlatformAccountCanEdit,
+  setPlatformAccountStatus,
+  setPlatformParishCertTheme,
+} from "@/features/super-admin/api/superAdminApi";
+import { ArrowLeftIcon, PlusIcon, SearchIcon } from "@/components/ui/icons/AdminIcons";
+import { AddAccountModal, ResetPasswordModal } from "@/features/super-admin/components/AddAccountModal";
+import { CredentialsModal } from "@/features/super-admin/components/OnboardParishModal";
+import {
+  SuperAdminModal,
+  SuperAdminToast,
+  saBtnDanger,
+  saBtnLink,
+  saBtnPrimary,
+  saBtnSecondary,
+} from "@/features/super-admin/components/SuperAdminModal";
+import { useSuperAdminPageHeading } from "@/features/super-admin/SuperAdminChrome";
+import type { CurrentUser } from "@/types";
+import type { PlatformAdmin } from "@/features/super-admin/api/superAdminApi";
+
+type Tab = "admins" | "parishioners" | "style";
+
+const TABS: [Tab, string][] = [
+  ["admins", "Admins"],
+  ["parishioners", "Parishioners"],
+  ["style", "Certificate Style"],
+];
+
+function formatJoined(iso?: string) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function tabFromSearch(value: string | null): Tab {
+  if (value === "parishioners" || value === "style") return value;
+  return "admins";
+}
+
+function headingFor(tab: Tab, parishName: string) {
+  if (tab === "parishioners") return { title: parishName, sub: "Parishioner accounts for this parish" };
+  if (tab === "style") return { title: parishName, sub: "Certificate style for this parish" };
+  return { title: parishName, sub: "Admin accounts for this parish" };
+}
+
+export function SuperAdminParishAccountsPage() {
+  const { parishId = "" } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = tabFromSearch(searchParams.get("tab"));
+
+  const { data: row, loading, refetch } = useAsync(() => getPlatformParish(parishId), [parishId]);
+  const { data: parishes = [] } = useAsync(() => listPlatformParishes(), []);
+
+  const [query, setQuery] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [resetting, setResetting] = useState<CurrentUser | null>(null);
+  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [toast, setToast] = useState("");
+  const [previewing, setPreviewing] = useState(false);
+  const [pickedTheme, setPickedTheme] = useState<string | null>(null);
+  const [savingTheme, setSavingTheme] = useState(false);
+
+  const heading = headingFor(tab, row?.parish.name ?? "");
+  useSuperAdminPageHeading(heading.title, heading.sub);
+
+  useEffect(() => {
+    setQuery("");
+    setPickedTheme(null);
+  }, [tab, parishId]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(""), 2600);
+    return () => window.clearTimeout(t);
+  }, [toast]);
+
+  function setTab(next: Tab) {
+    const nextParams = new URLSearchParams(searchParams);
+    if (next === "admins") nextParams.delete("tab");
+    else nextParams.set("tab", next);
+    setSearchParams(nextParams, { replace: true });
+  }
+
+  const people = tab === "admins" ? (row?.admins ?? []) : tab === "parishioners" ? (row?.parishioners ?? []) : [];
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return people;
+    return people.filter(
+      (user) => user.fullName.toLowerCase().includes(q) || user.email.toLowerCase().includes(q)
+    );
+  }, [people, query]);
+
+  const activeThemeId = pickedTheme ?? row?.certTheme ?? "classic";
+
+  async function handleReset() {
+    if (!resetting) return;
+    await resetPlatformAccountPassword(resetting.id);
+    setToast(`Reset link recorded for ${resetting.fullName}`);
+    setResetting(null);
+  }
+
+  async function handleRemove(user: CurrentUser) {
+    await removePlatformAccount(user.id);
+    refetch();
+    setToast(`${user.fullName} removed`);
+  }
+
+  async function handleToggleStatus(user: CurrentUser) {
+    const next = user.status === "active" ? "suspended" : "active";
+    await setPlatformAccountStatus(user.id, next);
+    refetch();
+    setToast(`${user.fullName} ${next === "active" ? "reactivated" : "suspended"}`);
+  }
+
+  async function handleToggleCanEdit(user: PlatformAdmin, canEditRecords: boolean) {
+    await setPlatformAccountCanEdit(user.id, canEditRecords);
+    refetch();
+    setToast(`${user.fullName} can ${canEditRecords ? "now edit" : "no longer edit"} records`);
+  }
+
+  async function handleSaveTheme() {
+    if (!row) return;
+    setSavingTheme(true);
+    try {
+      const result = await setPlatformParishCertTheme(row.parish.id, activeThemeId);
+      refetch();
+      setToast(`${row.parish.name} now uses the ${result.theme.name} certificate style`);
+    } finally {
+      setSavingTheme(false);
+    }
+  }
+
+  if (!loading && !row) {
+    return (
+      <div className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface px-[18px] py-10 text-center">
+        <p className="text-[12.5px] text-admin-ink-muted">That parish was not found.</p>
+        <Link to="/super-admin/parishes" className={`${saBtnLink} mt-3 inline-block`}>
+          Back to Parishes
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Link
+        to="/super-admin/parishes"
+        className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-bold text-admin-green-700 hover:text-admin-green-900"
+      >
+        <ArrowLeftIcon className="h-[13px] w-[13px]" />
+        Back to Parishes
+      </Link>
+
+      <div className="mb-3.5 flex flex-wrap gap-1.5">
+        {TABS.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`rounded-lg border px-3.5 py-2 text-[12.5px] font-bold ${
+              tab === id
+                ? "border-admin-green-700 bg-admin-green-700 text-white"
+                : "border-admin-border bg-white text-admin-ink-muted hover:border-admin-green-600"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-admin-border px-[18px] py-4">
+          <div className="min-w-0">
+            <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">{row?.parish.name ?? "Parish"}</h2>
+            <p className="mt-0.5 text-[11.5px] text-admin-ink-faint">{row?.parish.address}</p>
+          </div>
+          {tab === "style" ? (
+            <button type="button" onClick={() => setPreviewing(true)} className={saBtnSecondary}>
+              Preview Certificate
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-admin-green-700 px-3.5 py-2 text-[12.5px] font-bold text-white hover:bg-admin-green-900"
+            >
+              <PlusIcon className="h-[13px] w-[13px] stroke-white" />
+              {tab === "admins" ? "Add Admin Account" : "Add Parishioner Account"}
+            </button>
+          )}
+        </div>
+
+        {tab === "style" ? (
+          <CertificateStylePanel
+            activeThemeId={activeThemeId}
+            saving={savingTheme}
+            onPick={setPickedTheme}
+            onSave={handleSaveTheme}
+          />
+        ) : (
+          <>
+            <div className="px-[18px] pt-3.5">
+              <label className="flex items-center gap-2 rounded-lg border border-admin-border px-2.5 py-[7px] text-admin-ink-faint">
+                <SearchIcon className="h-3.5 w-3.5 shrink-0" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={tab === "admins" ? "Search admin name" : "Search parishioner name or email"}
+                  aria-label="Search accounts"
+                  className="w-full bg-transparent font-sans text-[12.5px] text-admin-ink outline-none placeholder:text-admin-ink-faint"
+                />
+              </label>
+            </div>
+
+            <div className="overflow-x-auto">
+              {tab === "admins" ? (
+                <AdminTable
+                  loading={loading}
+                  empty={people.length === 0}
+                  noMatch={filtered.length === 0}
+                  rows={filtered as PlatformAdmin[]}
+                  onToggleCanEdit={handleToggleCanEdit}
+                  onReset={setResetting}
+                  onRemove={handleRemove}
+                />
+              ) : (
+                <ParishionerTable
+                  loading={loading}
+                  empty={people.length === 0}
+                  noMatch={filtered.length === 0}
+                  rows={filtered}
+                  onReset={setResetting}
+                  onToggleStatus={handleToggleStatus}
+                  onRemove={handleRemove}
+                />
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {adding && row ? (
+        <AddAccountModal
+          role={tab === "admins" ? "parish_admin" : "parishioner"}
+          parishes={parishes.length ? parishes : [row]}
+          lockedParishId={row.parish.id}
+          onClose={() => setAdding(false)}
+          onCreated={({ credentials: creds }) => {
+            setAdding(false);
+            refetch();
+            setCredentials(creds);
+          }}
+        />
+      ) : null}
+
+      {resetting ? (
+        <ResetPasswordModal
+          name={resetting.fullName}
+          onClose={() => setResetting(null)}
+          onConfirm={handleReset}
+        />
+      ) : null}
+
+      {credentials ? (
+        <CredentialsModal
+          email={credentials.email}
+          password={credentials.password}
+          audience={tab === "admins" ? "the Parish Admin" : "the parishioner"}
+          onClose={() => setCredentials(null)}
+        />
+      ) : null}
+
+      {previewing && row ? (
+        <CertificatePreviewModal
+          parishName={row.parish.name}
+          parishAddress={row.parish.address}
+          themeId={activeThemeId}
+          onClose={() => setPreviewing(false)}
+        />
+      ) : null}
+
+      <SuperAdminToast message={toast} />
+    </div>
+  );
+}
+
+function AdminTable({
+  loading,
+  empty,
+  noMatch,
+  rows,
+  onToggleCanEdit,
+  onReset,
+  onRemove,
+}: {
+  loading: boolean;
+  empty: boolean;
+  noMatch: boolean;
+  rows: PlatformAdmin[];
+  onToggleCanEdit: (user: PlatformAdmin, canEdit: boolean) => void;
+  onReset: (user: CurrentUser) => void;
+  onRemove: (user: CurrentUser) => void;
+}) {
+  return (
+    <table className="mt-3 w-full border-collapse">
+      <thead>
+        <tr className="bg-admin-surface-alt">
+          {["Name", "Can Edit Records", "Actions"].map((h) => (
+            <th
+              key={h}
+              className="border-b border-admin-border px-[18px] py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.04em] text-admin-ink-muted"
+            >
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {loading ? (
+          <EmptyRow cols={3} text="Loading accounts…" />
+        ) : empty ? (
+          <EmptyRow cols={3} text="No admin accounts yet." />
+        ) : noMatch ? (
+          <EmptyRow cols={3} text="No admins match your search." />
+        ) : (
+          rows.map((user) => (
+            <tr key={user.id} className="hover:bg-admin-green-100 last:[&>td]:border-b-0">
+              <td className="border-b border-admin-border px-[18px] py-3 text-[13px] font-bold text-admin-ink">
+                {user.fullName}
+              </td>
+              <td className="border-b border-admin-border px-[18px] py-3">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-[11.5px] text-admin-ink-muted">
+                  <input
+                    type="checkbox"
+                    checked={user.canEditRecords}
+                    onChange={(e) => onToggleCanEdit(user, e.target.checked)}
+                    className="h-3.5 w-3.5 accent-admin-green-700"
+                  />
+                  {user.canEditRecords ? "Can edit" : "View only"}
+                </label>
+              </td>
+              <td className="border-b border-admin-border px-[18px] py-3">
+                <button type="button" className={`${saBtnLink} mr-3`} onClick={() => onReset(user)}>
+                  Reset
+                </button>
+                <button type="button" className={saBtnDanger} onClick={() => onRemove(user)}>
+                  Remove
+                </button>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  );
+}
+
+function ParishionerTable({
+  loading,
+  empty,
+  noMatch,
+  rows,
+  onReset,
+  onToggleStatus,
+  onRemove,
+}: {
+  loading: boolean;
+  empty: boolean;
+  noMatch: boolean;
+  rows: CurrentUser[];
+  onReset: (user: CurrentUser) => void;
+  onToggleStatus: (user: CurrentUser) => void;
+  onRemove: (user: CurrentUser) => void;
+}) {
+  return (
+    <table className="mt-3 w-full border-collapse">
+      <thead>
+        <tr className="bg-admin-surface-alt">
+          {["Name", "Email", "Joined", "Status", "Actions"].map((h) => (
+            <th
+              key={h}
+              className="border-b border-admin-border px-[18px] py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.04em] text-admin-ink-muted"
+            >
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {loading ? (
+          <EmptyRow cols={5} text="Loading accounts…" />
+        ) : empty ? (
+          <EmptyRow cols={5} text="No parishioner accounts yet." />
+        ) : noMatch ? (
+          <EmptyRow cols={5} text="No accounts match your search." />
+        ) : (
+          rows.map((user) => (
+            <tr key={user.id} className="hover:bg-admin-green-100 last:[&>td]:border-b-0">
+              <td className="border-b border-admin-border px-[18px] py-3 text-[13px] font-bold text-admin-ink">
+                {user.fullName}
+              </td>
+              <td className="border-b border-admin-border px-[18px] py-3 text-[13px] text-admin-ink">{user.email}</td>
+              <td className="border-b border-admin-border px-[18px] py-3 text-[13px] text-admin-ink">
+                {formatJoined(user.createdAt)}
+              </td>
+              <td className="border-b border-admin-border px-[18px] py-3">
+                <span
+                  className={`inline-block rounded-full px-2.5 py-[3px] text-[11px] font-bold ${
+                    user.status === "active"
+                      ? "bg-admin-green-100 text-admin-green-900"
+                      : "bg-admin-red-100 text-admin-red-700"
+                  }`}
+                >
+                  {user.status === "active" ? "Active" : "Suspended"}
+                </span>
+              </td>
+              <td className="border-b border-admin-border px-[18px] py-3">
+                <button type="button" className={`${saBtnLink} mr-3`} onClick={() => onReset(user)}>
+                  Reset
+                </button>
+                <button type="button" className={`${saBtnLink} mr-3`} onClick={() => onToggleStatus(user)}>
+                  {user.status === "active" ? "Suspend" : "Activate"}
+                </button>
+                <button type="button" className={saBtnDanger} onClick={() => onRemove(user)}>
+                  Remove
+                </button>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  );
+}
+
+function CertificateStylePanel({
+  activeThemeId,
+  saving,
+  onPick,
+  onSave,
+}: {
+  activeThemeId: string;
+  saving: boolean;
+  onPick: (id: string) => void;
+  onSave: () => void;
+}) {
+  return (
+    <div>
+      <p className="m-0 px-[18px] pt-3.5 text-[12px] leading-relaxed text-admin-ink-faint">
+        Pick a curated certificate style for this parish. Field positions stay locked platform-wide — this only
+        changes the visual theme.
+      </p>
+      <div className="grid grid-cols-1 gap-3.5 p-[18px] sm:grid-cols-3">
+        {CERT_THEMES.map((theme) => {
+          const active = activeThemeId === theme.id;
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              onClick={() => onPick(theme.id)}
+              className={`rounded-[10px] border p-3 text-left ${
+                active
+                  ? "border-admin-green-700 bg-admin-green-100 shadow-[inset_0_0_0_1px_var(--color-admin-green-700)]"
+                  : "border-admin-border bg-white hover:border-admin-green-600"
+              }`}
+            >
+              <div
+                className="mb-2.5 rounded-md px-2.5 py-3.5 text-center"
+                style={{
+                  background: "#FDFCF8",
+                  borderColor: theme.accent,
+                  borderWidth: theme.borderWidth,
+                  borderStyle: theme.borderStyle,
+                }}
+              >
+                <div className="mx-auto mb-2 h-0.5 w-[70%]" style={{ background: theme.accent }} />
+                <div className="font-serif text-[15px] font-bold text-admin-ink">Aa</div>
+                <div className="mx-auto mt-2 h-0.5 w-[70%]" style={{ background: theme.accent }} />
+              </div>
+              <p className="text-[12.8px] font-bold text-admin-ink">{theme.name}</p>
+              <p className="mt-[3px] text-[11.3px] leading-snug text-admin-ink-faint">{theme.desc}</p>
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex justify-end px-[18px] pb-[18px]">
+        <button type="button" className={saBtnPrimary} onClick={onSave} disabled={saving}>
+          {saving ? "Saving…" : "Save Certificate Style"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CertificatePreviewModal({
+  parishName,
+  parishAddress,
+  themeId,
+  onClose,
+}: {
+  parishName: string;
+  parishAddress: string;
+  themeId: string;
+  onClose: () => void;
+}) {
+  const theme = getCertTheme(themeId);
+  return (
+    <SuperAdminModal
+      title="Certificate Preview"
+      onClose={onClose}
+      widthClass="max-w-[460px]"
+      footer={
+        <button type="button" className={saBtnSecondary} onClick={onClose}>
+          Close
+        </button>
+      }
+    >
+      <p className="m-0 text-[12px] leading-relaxed text-admin-ink-faint">
+        This merges the parish's own branding into the locked master layout — for spot-checking only. Edit the
+        parish's name, crest, or verification message from that Parish Admin's own Settings.
+      </p>
+      <div
+        className="rounded-[10px] px-[22px] py-[26px] text-center"
+        style={{
+          background: "#FDFCF8",
+          borderColor: theme.accent,
+          borderWidth: theme.borderWidth,
+          borderStyle: theme.borderStyle,
+        }}
+      >
+        <p className="font-serif text-[15px] font-bold" style={{ color: theme.accent }}>
+          {parishName}
+        </p>
+        <p className="mt-0.5 text-[11px] text-admin-ink-faint">{parishAddress}</p>
+        <div className="my-3.5 h-px" style={{ background: theme.accent }} />
+        <p className="text-[11.5px] font-bold uppercase tracking-[0.03em] text-admin-ink-muted">
+          Certificate of Baptism
+        </p>
+        <p className="mt-2.5 text-[12.5px] leading-relaxed text-admin-ink-muted">
+          This is to certify that the sacrament of baptism was duly administered and recorded per the parish
+          register.
+          <br />
+          <br />
+          Book ___ · Page ___ · Entry ___
+        </p>
+        <div className="my-3.5 h-px" style={{ background: theme.accent }} />
+        <p className="text-[10.5px] text-admin-ink-faint">
+          Verified via SHA-256 hash · {theme.name} style · v3 template
+        </p>
+      </div>
+    </SuperAdminModal>
+  );
+}
+
+function EmptyRow({ cols, text }: { cols: number; text: string }) {
+  return (
+    <tr>
+      <td colSpan={cols} className="px-[18px] py-[26px] text-center text-[12.5px] text-admin-ink-faint">
+        {text}
+      </td>
+    </tr>
+  );
+}

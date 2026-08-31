@@ -9,8 +9,7 @@ import {
   UserIcon,
   UsersIcon,
 } from "@/components/ui/icons/AdminIcons";
-import { MOCK_USERS } from "@/services/mocks/users.mock";
-import type { AuditLogEntry } from "@/types";
+import { auditCopy, auditTone, formatAuditWhen } from "@/features/super-admin/auditCopy";
 
 const HONORIFICS = new Set(["fr.", "fr", "rev.", "rec.", "staff", "dr.", "dr", "sr.", "sr"]);
 
@@ -21,48 +20,6 @@ function initials(name: string) {
   if (clean.length === 0) return "?";
   if (clean.length === 1) return clean[0][0].toUpperCase();
   return (clean[0][0] + clean[clean.length - 1][0]).toUpperCase();
-}
-
-function actorName(id: string) {
-  return MOCK_USERS.find((u) => u.id === id)?.fullName ?? "Someone";
-}
-
-function auditCopy(entry: AuditLogEntry) {
-  const who = actorName(entry.actorId);
-  switch (entry.action) {
-    case "certificate.issued":
-      return `${who} issued a certificate`;
-    case "baptism.updated":
-      return `${who} updated a baptismal record`;
-    case "marriage.updated":
-      return `${who} updated a marriage record`;
-    case "app_user.suspended":
-      return `${who} suspended an account`;
-    case "app_user.created":
-      return `${who} created an account`;
-    case "auth.login_failed":
-      return `Failed sign-in on ${actorName(entry.entityId)}`;
-    case "parish.created":
-      return `${who} onboarded a parish`;
-    default:
-      return `${who} · ${entry.action}`;
-  }
-}
-
-function auditTone(action: string): "green" | "amber" | "red" {
-  if (action.includes("failed") || action.includes("suspended")) return action.includes("failed") ? "red" : "amber";
-  return "green";
-}
-
-function formatWhen(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function doughnutStyle(shares: DashboardSnapshot["requestsBySacrament"]) {
@@ -222,10 +179,19 @@ export function SuperAdminDashboardPage() {
                       <p className="mt-px text-[11.3px] text-admin-ink-faint">{row.parish.address}</p>
                     </td>
                     <td className="border-b border-admin-border px-[18px] py-3 text-admin-ink">
-                      {row.admins[0]?.fullName ?? "— unassigned —"}
-                      {row.admins.length > 1 ? (
-                        <span className="text-admin-ink-faint"> +{row.admins.length - 1} more</span>
-                      ) : null}
+                      {row.admins[0] ? (
+                        <>
+                          {row.admins[0].fullName}
+                          {row.admins[0].canEditRecords ? null : (
+                            <span className="font-semibold text-admin-ink-faint"> (view only)</span>
+                          )}
+                          {row.admins.length > 1 ? (
+                            <span className="text-admin-ink-faint"> +{row.admins.length - 1} more</span>
+                          ) : null}
+                        </>
+                      ) : (
+                        <span className="text-admin-ink-faint">— unassigned —</span>
+                      )}
                     </td>
                     <td className="border-b border-admin-border px-[18px] py-3 tabular-nums text-admin-ink">
                       {row.records.total}
@@ -241,7 +207,7 @@ export function SuperAdminDashboardPage() {
           <Panel>
             <div className="flex items-center justify-between border-b border-admin-border px-[18px] py-4">
               <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">Parish Admins</h2>
-              <Link to="/super-admin/accounts?role=parish_admin" className="text-xs font-bold text-admin-green-700 hover:text-admin-green-900">
+              <Link to="/super-admin/accounts" className="text-xs font-bold text-admin-green-700 hover:text-admin-green-900">
                 Manage all
               </Link>
             </div>
@@ -252,18 +218,20 @@ export function SuperAdminDashboardPage() {
                     {initials(row.user.fullName)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12.8px] font-bold text-admin-ink">{row.user.fullName}</p>
+                    <p className="truncate text-[12.8px] font-bold text-admin-ink">
+                      {row.user.fullName}{" "}
+                      <span
+                        className={`ml-1.5 inline-block rounded-full px-2 py-0.5 align-middle text-[10.5px] font-bold ${
+                          row.canEditRecords
+                            ? "bg-admin-green-100 text-admin-green-900"
+                            : "bg-admin-gold-100 text-admin-gold-700"
+                        }`}
+                      >
+                        {row.canEditRecords ? "Can edit" : "View only"}
+                      </span>
+                    </p>
                     <p className="truncate text-[11.3px] text-admin-ink-faint">{row.parish.name}</p>
                   </div>
-                  <span
-                    className={`inline-block rounded-full px-2.5 py-[3px] text-[11px] font-bold ${
-                      row.user.status === "active"
-                        ? "bg-admin-green-100 text-admin-green-900"
-                        : "bg-admin-red-100 text-admin-red-700"
-                    }`}
-                  >
-                    {row.user.status === "active" ? "Active" : "Suspended"}
-                  </span>
                 </li>
               ))}
             </ul>
@@ -272,6 +240,9 @@ export function SuperAdminDashboardPage() {
           <Panel>
             <div className="flex items-center justify-between border-b border-admin-border px-[18px] py-4">
               <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">System Audit Log</h2>
+              <Link to="/super-admin/audit" className="text-xs font-bold text-admin-green-700 hover:text-admin-green-900">
+                View all
+              </Link>
             </div>
             <ul>
               {data.audit.slice(0, 5).map((entry) => {
@@ -279,7 +250,7 @@ export function SuperAdminDashboardPage() {
                 const dot =
                   tone === "red"
                     ? "bg-admin-red-700"
-                    : tone === "amber"
+                    : tone === "yellow"
                       ? "bg-admin-gold-600"
                       : "bg-admin-green-700";
                 return (
@@ -287,7 +258,7 @@ export function SuperAdminDashboardPage() {
                     <span className={`mt-[5px] h-2 w-2 shrink-0 rounded-full ${dot}`} />
                     <div className="min-w-0">
                       <p className="text-[12.3px] leading-snug text-admin-ink">{auditCopy(entry)}</p>
-                      <p className="mt-0.5 text-[10.8px] text-admin-ink-faint">{formatWhen(entry.createdAt)}</p>
+                      <p className="mt-0.5 text-[10.8px] text-admin-ink-faint">{formatAuditWhen(entry.createdAt)}</p>
                     </div>
                   </li>
                 );

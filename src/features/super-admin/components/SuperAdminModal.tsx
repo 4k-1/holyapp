@@ -75,3 +75,22 @@ export const saBtnPrimary =
 
 export const saBtnSecondary =
   "rounded-lg border border-admin-border bg-white px-3.5 py-2 text-[12.5px] font-bold text-admin-ink-muted hover:bg-admin-surface-alt disabled:cursor-not-allowed disabled:opacity-45";
+
+export const saBtnDanger =
+  "text-[12px] font-bold text-admin-red-700 hover:text-admin-red-700/80";
+
+export const saBtnLink =
+  "text-[12px] font-bold text-admin-green-700 hover:text-admin-green-900";
+
+export function SuperAdminToast({ message }: { message: string }) {
+  if (!message) return null;
+  return (
+    <div
+      role="status"
+      className="fixed bottom-6 left-1/2 z-[200] flex -translate-x-1/2 items-center gap-2 rounded-[9px] bg-admin-ink px-[18px] py-[11px] text-[12.8px] font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+    >
+      <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-admin-gold-600" />
+      {message}
+    </div>
+  );
+}

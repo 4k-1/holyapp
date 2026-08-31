@@ -102,7 +102,7 @@ export function ManageParishModal({
           </div>
         )}
         <Link
-          to={`/super-admin/accounts?parish=${row.parish.id}`}
+          to={`/super-admin/accounts/${row.parish.id}`}
           onClick={onClose}
           className="mt-2 inline-block text-[12px] font-bold text-admin-green-700 hover:text-admin-green-900"
         >

@@ -17,20 +17,75 @@ export interface ParishRecordCounts {
   total: number;
 }
 
+export interface PlatformAdmin extends CurrentUser {
+  canEditRecords: boolean;
+}
+
+export interface CertTheme {
+  id: string;
+  name: string;
+  desc: string;
+  accent: string;
+  borderWidth: string;
+  borderStyle: string;
+}
+
+export const CERT_THEMES: CertTheme[] = [
+  {
+    id: "classic",
+    name: "Classic Green Border",
+    desc: "Forest green double-rule border, serif heading — the platform default.",
+    accent: "#1B5940",
+    borderWidth: "3px",
+    borderStyle: "double",
+  },
+  {
+    id: "modern",
+    name: "Modern Minimal",
+    desc: "Thin single-rule border, understated and clean.",
+    accent: "#3B4E8A",
+    borderWidth: "1.5px",
+    borderStyle: "solid",
+  },
+  {
+    id: "ornate",
+    name: "Ornate Gold Seal",
+    desc: "Bold gold border for a more traditional, formal look.",
+    accent: "#AD8A2C",
+    borderWidth: "3px",
+    borderStyle: "double",
+  },
+];
+
+const canEditByUserId: Record<string, boolean> = {
+  "u-admin-carla": false,
+};
+
+const certThemeByParishId: Record<string, string> = {};
+
 export interface SuperAdminParishOverview {
   parish: Parish;
-  admins: CurrentUser[];
+  admins: PlatformAdmin[];
   staff: CurrentUser[];
   parishioners: CurrentUser[];
   records: ParishRecordCounts;
   certificateCount: number;
   requestCount: number;
+  certTheme: string;
 }
 
 function usersOf(parishId: string, role: CurrentUser["role"]) {
   return MOCK_USERS.filter((u) => u.parishId === parishId && u.role === role).map(
     ({ password: _password, ...user }) => user
   );
+}
+
+function withCanEdit(user: CurrentUser): PlatformAdmin {
+  return { ...user, canEditRecords: canEditByUserId[user.id] !== false };
+}
+
+export function getCertTheme(id?: string) {
+  return CERT_THEMES.find((theme) => theme.id === id) ?? CERT_THEMES[0];
 }
 
 function recordCounts(parishId: string): ParishRecordCounts {
@@ -44,12 +99,13 @@ function recordCounts(parishId: string): ParishRecordCounts {
 export function getSuperAdminParishOverviews(): SuperAdminParishOverview[] {
   return MOCK_PARISHES.map((parish) => ({
     parish,
-    admins: usersOf(parish.id, "parish_admin"),
+    admins: usersOf(parish.id, "parish_admin").map(withCanEdit),
     staff: usersOf(parish.id, "parish_staff"),
     parishioners: usersOf(parish.id, "parishioner"),
     records: recordCounts(parish.id),
     certificateCount: MOCK_CERTIFICATES.filter((c) => c.parishId === parish.id).length,
     requestCount: MOCK_REQUESTS.filter((r) => r.parishId === parish.id).length,
+    certTheme: certThemeByParishId[parish.id] ?? "classic",
   }));
 }
 
@@ -66,6 +122,7 @@ export function getSuperAdmins() {
 export interface PlatformAccount {
   user: CurrentUser;
   parish: Parish;
+  canEditRecords: boolean;
 }
 
 /** Every parish-scoped account on the platform. Super admins are excluded. */
@@ -75,7 +132,7 @@ export function getPlatformAccounts(): PlatformAccount[] {
     if (user.role === "super_admin" || !user.parishId) continue;
     const parish = MOCK_PARISHES.find((p) => p.id === user.parishId);
     if (!parish) continue;
-    accounts.push({ user, parish });
+    accounts.push({ user, parish, canEditRecords: canEditByUserId[user.id] !== false });
   }
   return accounts;
 }
@@ -293,4 +350,172 @@ export function updateParish(
   if (patch.email !== undefined) parish.email = patch.email.trim();
   parish.updatedAt = new Date().toISOString();
   return parish;
+}
+
+export function getParishOverview(id: string) {
+  return getSuperAdminParishOverviews().find((row) => row.parish.id === id) ?? null;
+}
+
+export interface CreateParishAccountInput {
+  parishId: string;
+  role: "parish_admin" | "parishioner";
+  name: string;
+  email: string;
+  password?: string;
+  canEditRecords?: boolean;
+}
+
+export function createParishAccount(input: CreateParishAccountInput) {
+  const parish = MOCK_PARISHES.find((p) => p.id === input.parishId);
+  if (!parish) throw new Error("Parish not found.");
+  const email = input.email.trim().toLowerCase();
+  const name = input.name.trim();
+  if (MOCK_USERS.some((u) => u.email.toLowerCase() === email)) {
+    throw new Error("That email already has an account.");
+  }
+  const now = new Date().toISOString();
+  const password = input.password?.trim() || generateTempPassword();
+  const names = splitPersonName(name);
+  const prefix = input.role === "parish_admin" ? "u-admin" : "u-parishioner";
+  const user = mockUser({
+    id: nextId(
+      prefix,
+      MOCK_USERS.map((u) => u.id)
+    ),
+    parishId: parish.id,
+    role: input.role,
+    firstName: names.firstName,
+    lastName: names.lastName,
+    fullName: name,
+    email,
+    password,
+    emailVerifiedAt: now,
+    createdAt: now,
+  });
+  MOCK_USERS.push(user);
+  if (input.role === "parish_admin") {
+    canEditByUserId[user.id] = input.canEditRecords !== false;
+  }
+  MOCK_AUDIT_LOG.unshift({
+    id: nextId(
+      "aud",
+      MOCK_AUDIT_LOG.map((a) => a.id)
+    ),
+    parishId: parish.id,
+    actorId: "u-super",
+    action: "app_user.created",
+    entityType: "app_user",
+    entityId: user.id,
+    metadata: {
+      role: input.role,
+      email,
+      ...(input.role === "parish_admin" && input.canEditRecords === false ? { canEditRecords: false } : {}),
+    },
+    createdAt: now,
+  });
+  return { user, parish, credentials: { email, password } };
+}
+
+export function removeParishAccount(userId: string) {
+  const index = MOCK_USERS.findIndex((u) => u.id === userId);
+  if (index < 0) throw new Error("Account not found.");
+  const user = MOCK_USERS[index];
+  if (user.role === "super_admin") throw new Error("Cannot remove a platform admin.");
+  MOCK_USERS.splice(index, 1);
+  MOCK_AUDIT_LOG.unshift({
+    id: nextId(
+      "aud",
+      MOCK_AUDIT_LOG.map((a) => a.id)
+    ),
+    parishId: user.parishId,
+    actorId: "u-super",
+    action: "app_user.removed",
+    entityType: "app_user",
+    entityId: user.id,
+    metadata: { role: user.role, email: user.email },
+    createdAt: new Date().toISOString(),
+  });
+  return user;
+}
+
+export function setAccountStatus(userId: string, status: "active" | "suspended") {
+  const user = MOCK_USERS.find((u) => u.id === userId);
+  if (!user || user.role === "super_admin") throw new Error("Account not found.");
+  user.status = status;
+  MOCK_AUDIT_LOG.unshift({
+    id: nextId(
+      "aud",
+      MOCK_AUDIT_LOG.map((a) => a.id)
+    ),
+    parishId: user.parishId,
+    actorId: "u-super",
+    action: status === "suspended" ? "app_user.suspended" : "app_user.reactivated",
+    entityType: "app_user",
+    entityId: user.id,
+    metadata: { email: user.email },
+    createdAt: new Date().toISOString(),
+  });
+  return user;
+}
+
+export function resetAccountPassword(userId: string) {
+  const user = MOCK_USERS.find((u) => u.id === userId);
+  if (!user || user.role === "super_admin") throw new Error("Account not found.");
+  const password = generateTempPassword();
+  user.password = password;
+  MOCK_AUDIT_LOG.unshift({
+    id: nextId(
+      "aud",
+      MOCK_AUDIT_LOG.map((a) => a.id)
+    ),
+    parishId: user.parishId,
+    actorId: "u-super",
+    action: "app_user.password_reset",
+    entityType: "app_user",
+    entityId: user.id,
+    metadata: { email: user.email },
+    createdAt: new Date().toISOString(),
+  });
+  return { name: user.fullName, email: user.email, password };
+}
+
+export function setAccountCanEdit(userId: string, canEditRecords: boolean) {
+  const user = MOCK_USERS.find((u) => u.id === userId);
+  if (!user || user.role !== "parish_admin") throw new Error("Account not found.");
+  canEditByUserId[user.id] = canEditRecords;
+  MOCK_AUDIT_LOG.unshift({
+    id: nextId(
+      "aud",
+      MOCK_AUDIT_LOG.map((a) => a.id)
+    ),
+    parishId: user.parishId,
+    actorId: "u-super",
+    action: canEditRecords ? "app_user.granted_edit" : "app_user.revoked_edit",
+    entityType: "app_user",
+    entityId: user.id,
+    metadata: { email: user.email, canEditRecords },
+    createdAt: new Date().toISOString(),
+  });
+  return { ...user, canEditRecords };
+}
+
+export function setParishCertTheme(parishId: string, themeId: string) {
+  const parish = MOCK_PARISHES.find((p) => p.id === parishId);
+  if (!parish) throw new Error("Parish not found.");
+  const theme = getCertTheme(themeId);
+  certThemeByParishId[parishId] = theme.id;
+  MOCK_AUDIT_LOG.unshift({
+    id: nextId(
+      "aud",
+      MOCK_AUDIT_LOG.map((a) => a.id)
+    ),
+    parishId,
+    actorId: "u-super",
+    action: "parish.cert_theme_updated",
+    entityType: "parish",
+    entityId: parishId,
+    metadata: { theme: theme.name },
+    createdAt: new Date().toISOString(),
+  });
+  return { parish, theme };
 }

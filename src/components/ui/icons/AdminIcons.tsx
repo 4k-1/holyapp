@@ -147,6 +147,15 @@ export function ClipboardIcon(props: IconProps) {
   );
 }
 
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <line x1="19" y1="12" x2="5" y2="12" strokeLinecap="round" />
+      <polyline points="12 19 5 12 12 5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function SearchIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
@@ -170,6 +179,16 @@ export function SealIcon(props: IconProps) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
       <circle cx="12" cy="11" r="6" />
       <path d="M9.5 16.5 8 21l4-1.5L16 21l-1.5-4.5" />
+    </svg>
+  );
+}
+
+export function ReportIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M5 3h9l5 5v13H5z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h6M9 17h6" />
     </svg>
   );
 }
