@@ -26,7 +26,9 @@ export function getCurrentUser(): CurrentUser | null {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as CurrentUser;
+    const user = JSON.parse(raw) as CurrentUser;
+    if (!user.status) user.status = "active";
+    return user;
   } catch {
     return null;
   }
@@ -41,15 +43,49 @@ export function setCurrentUser(user: CurrentUser | null) {
 }
 
 
+function toPublicUser(match: (typeof MOCK_USERS)[number]): CurrentUser {
+  const { password: _password, ...user } = match;
+  return user;
+}
+
+function findByCredentials(email: string, password: string) {
+  return MOCK_USERS.find((u) => u.email === email && u.password === password);
+}
+
 export async function login(email: string, password: string): Promise<CurrentUser> {
   await new Promise((r) => setTimeout(r, 300)); // simulate network
 
-  const match = MOCK_USERS.find((u) => u.email === email && u.password === password);
+  const match = findByCredentials(email, password);
   if (!match) {
     throw new Error("Invalid email or password.");
   }
+  if (match.role === "super_admin") {
+    throw new Error("This account uses the platform sign-in, not the parish portal.");
+  }
+  if (match.status === "suspended") {
+    throw new Error("This account has been suspended. Contact the parish office.");
+  }
 
-  const { password: _password, ...user } = match;
+  const user = toPublicUser(match);
+  setCurrentUser(user);
+  return user;
+}
+
+export async function loginSuperAdmin(email: string, password: string): Promise<CurrentUser> {
+  await new Promise((r) => setTimeout(r, 300));
+
+  const match = findByCredentials(email, password);
+  if (!match) {
+    throw new Error("Invalid email or password.");
+  }
+  if (match.role !== "super_admin") {
+    throw new Error("This account belongs to a parish. Sign in through your parish portal.");
+  }
+  if (match.status === "suspended") {
+    throw new Error("This platform account has been suspended.");
+  }
+
+  const user = toPublicUser(match);
   setCurrentUser(user);
   return user;
 }
@@ -105,6 +141,7 @@ export async function verifyRegistrationCode(code: string): Promise<CurrentUser>
     id: `u-${Date.now()}`,
     parishId: input.parishId,
     role: "parishioner",
+    status: "active",
     fullName,
     email: input.email,
     firstName: input.firstName,
@@ -113,6 +150,8 @@ export async function verifyRegistrationCode(code: string): Promise<CurrentUser>
     gender: input.gender,
     birthday: input.birthday,
     address: input.address,
+    emailVerifiedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
   };
 
   MOCK_USERS.push({ ...newUser, password: input.password });

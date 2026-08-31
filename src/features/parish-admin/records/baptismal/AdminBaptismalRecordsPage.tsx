@@ -86,7 +86,7 @@ export function AdminBaptismalRecordsPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <AdminField label="Name of baptized" className="mb-0">
             <AdminInput
-              placeholder="Last, First"
+              placeholder="Juan Dela Cruz"
               value={draft.name}
               onChange={(e) => setField("name", e.target.value)}
             />
@@ -100,35 +100,35 @@ export function AdminBaptismalRecordsPage() {
           </AdminField>
           <AdminField label="Place of birth" className="mb-0">
             <AdminInput
-              placeholder="City / Province"
+              placeholder="Manila, Metro Manila"
               value={draft.placeOfBirth}
               onChange={(e) => setField("placeOfBirth", e.target.value)}
             />
           </AdminField>
           <AdminField label="Mother's name" className="mb-0">
             <AdminInput
-              placeholder="Last, First"
+              placeholder="Maria Santos"
               value={draft.mother}
               onChange={(e) => setField("mother", e.target.value)}
             />
           </AdminField>
           <AdminField label="Father's name" className="mb-0">
             <AdminInput
-              placeholder="Last, First"
+              placeholder="Jose Reyes"
               value={draft.father}
               onChange={(e) => setField("father", e.target.value)}
             />
           </AdminField>
           <AdminField label="Minister" className="mb-0">
             <AdminInput
-              placeholder="Officiating minister"
+              placeholder="Fr. Juan Santos"
               value={draft.minister}
               onChange={(e) => setField("minister", e.target.value)}
             />
           </AdminField>
           <AdminField label="Place of baptism" className="mb-0 md:col-span-2">
             <AdminInput
-              placeholder="Parish or chapel"
+              placeholder="St. Joseph Parish Church"
               value={draft.placeOfBaptism}
               onChange={(e) => setField("placeOfBaptism", e.target.value)}
             />

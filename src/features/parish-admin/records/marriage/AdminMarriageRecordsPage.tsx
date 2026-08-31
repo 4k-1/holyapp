@@ -80,14 +80,14 @@ export function AdminMarriageRecordsPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <AdminField label="Groom's name" className="mb-0">
             <AdminInput
-              placeholder="Last, First"
+              placeholder="Jose Reyes"
               value={draft.groom}
               onChange={(e) => setField("groom", e.target.value)}
             />
           </AdminField>
           <AdminField label="Bride's name" className="mb-0">
             <AdminInput
-              placeholder="Last, First"
+              placeholder="Maria Santos"
               value={draft.bride}
               onChange={(e) => setField("bride", e.target.value)}
             />
@@ -101,14 +101,14 @@ export function AdminMarriageRecordsPage() {
           </AdminField>
           <AdminField label="Place of marriage" className="mb-0">
             <AdminInput
-              placeholder="Church / location"
+              placeholder="St. Joseph Parish Church"
               value={draft.place}
               onChange={(e) => setField("place", e.target.value)}
             />
           </AdminField>
           <AdminField label="Witness" className="mb-0 md:col-span-2">
             <AdminInput
-              placeholder="Witness name"
+              placeholder="Ramon Lim"
               value={draft.witness}
               onChange={(e) => setField("witness", e.target.value)}
             />

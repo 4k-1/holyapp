@@ -2,7 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { ParishLayout } from "@/features/parish/ParishLayout";
 import { parishLayoutLoader } from "@/features/parish/parish-loader";
 import { parishionerRoutes } from "@/features/parishioner/routes";
-import { requireRole } from "@/features/auth/guards";
+import { requireRole, requireSuperAdmin } from "@/features/auth/guards";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { UnauthorizedPage } from "@/features/auth/pages/UnauthorizedPage";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
@@ -12,6 +12,11 @@ import { PublicIntentionPage } from "@/features/public/PublicIntentionPage";
 import { ParishLoginPage } from "@/features/auth/pages/ParishLoginPage";
 import { ParishRegisterPage } from "@/features/auth/pages/ParishRegisterPage";
 import { parishAdminRoutes } from "@/features/parish-admin/routes";
+import { SuperAdminLoginPage } from "@/features/super-admin/pages/SuperAdminLoginPage";
+import { SuperAdminLayout } from "@/features/super-admin/pages/SuperAdminLayout";
+import { SuperAdminDashboardPage } from "@/features/super-admin/pages/SuperAdminDashboardPage";
+import { SuperAdminAccountsPage } from "@/features/super-admin/pages/SuperAdminAccountsPage";
+import { SuperAdminParishesPage } from "@/features/super-admin/pages/SuperAdminParishesPage";
 
 
 // inside createBrowserRouter([...]) array:
@@ -48,10 +53,17 @@ export const router = createBrowserRouter([
     element: <div className="p-8">Verify page (placeholder)</div>,
   },
   {
+    path: "/super-admin/login",
+    element: <SuperAdminLoginPage />,
+  },
+  {
     path: "/super-admin",
-    loader: requireRole(["super_admin"]),
+    element: <SuperAdminLayout />,
+    loader: requireSuperAdmin,
     children: [
-      // super-admin routes go here later
+      { index: true, element: <SuperAdminDashboardPage /> },
+      { path: "parishes", element: <SuperAdminParishesPage /> },
+      { path: "accounts", element: <SuperAdminAccountsPage /> },
     ],
   },
   {

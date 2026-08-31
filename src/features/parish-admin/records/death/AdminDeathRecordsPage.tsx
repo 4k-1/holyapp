@@ -85,7 +85,7 @@ export function AdminDeathRecordsPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <AdminField label="Name of deceased" className="mb-0">
             <AdminInput
-              placeholder="Last, First"
+              placeholder="Juan Dela Cruz"
               value={draft.name}
               onChange={(e) => setField("name", e.target.value)}
             />
@@ -106,21 +106,21 @@ export function AdminDeathRecordsPage() {
           </AdminField>
           <AdminField label="Place of burial" className="mb-0">
             <AdminInput
-              placeholder="Cemetery / columbarium"
+              placeholder="Manila Memorial Park"
               value={draft.placeOfBurial}
               onChange={(e) => setField("placeOfBurial", e.target.value)}
             />
           </AdminField>
           <AdminField label="Residence" className="mb-0">
             <AdminInput
-              placeholder="Last known address"
+              placeholder="123 Rizal St., Quezon City"
               value={draft.residence}
               onChange={(e) => setField("residence", e.target.value)}
             />
           </AdminField>
           <AdminField label="Minister" className="mb-0">
             <AdminInput
-              placeholder="Officiating minister"
+              placeholder="Fr. Juan Santos"
               value={draft.minister}
               onChange={(e) => setField("minister", e.target.value)}
             />

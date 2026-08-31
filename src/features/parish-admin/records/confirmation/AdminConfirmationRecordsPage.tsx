@@ -79,7 +79,7 @@ export function AdminConfirmationRecordsPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <AdminField label="Name of confirmed" className="mb-0">
             <AdminInput
-              placeholder="Last, First"
+              placeholder="Juan Dela Cruz"
               value={draft.name}
               onChange={(e) => setField("name", e.target.value)}
             />
@@ -93,35 +93,35 @@ export function AdminConfirmationRecordsPage() {
           </AdminField>
           <AdminField label="Address" className="mb-0">
             <AdminInput
-              placeholder="City / barangay"
+              placeholder="Brgy. San Isidro, Quezon City"
               value={draft.address}
               onChange={(e) => setField("address", e.target.value)}
             />
           </AdminField>
           <AdminField label="Mother's name" className="mb-0">
             <AdminInput
-              placeholder="Last, First"
+              placeholder="Maria Santos"
               value={draft.mother}
               onChange={(e) => setField("mother", e.target.value)}
             />
           </AdminField>
           <AdminField label="Father's name" className="mb-0">
             <AdminInput
-              placeholder="Last, First"
+              placeholder="Jose Reyes"
               value={draft.father}
               onChange={(e) => setField("father", e.target.value)}
             />
           </AdminField>
           <AdminField label="Place of confirmation" className="mb-0">
             <AdminInput
-              placeholder="Church / parish"
+              placeholder="St. Joseph Parish Church"
               value={draft.place}
               onChange={(e) => setField("place", e.target.value)}
             />
           </AdminField>
           <AdminField label="Minister" className="mb-0">
             <AdminInput
-              placeholder="Officiating minister"
+              placeholder="Most Rev. Pedro Cruz"
               value={draft.minister}
               onChange={(e) => setField("minister", e.target.value)}
             />

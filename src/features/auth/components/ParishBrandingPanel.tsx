@@ -34,11 +34,9 @@ export function ParishBrandingPanel({ parish }: ParishBrandingPanelProps) {
       />
 
       <div className="relative z-10">
-        {parish && (
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-white/70">
-            {parish.name}
-          </p>
-        )}
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-white/70">
+          {parish?.name ?? "HolyApp"}
+        </p>
         <h2 className="max-w-md font-serif text-3xl font-semibold leading-tight text-white">
           Your sacramental records, kept with care and always within reach.
         </h2>

@@ -41,3 +41,43 @@
     background: var(--color-admin-green-100);
     color: var(--color-admin-green-900);
   }
+
+  /* Super-admin HTML: forest green + gold, Inter 800. Parish admin keeps the teal set above. */
+  [data-portal="admin"][data-surface="platform"] {
+    --color-admin-bg: #f6f8f6;
+    --color-admin-surface: #ffffff;
+    --color-admin-surface-alt: #f4f6f4;
+    --color-admin-border: #e6ebe6;
+    --color-admin-border-strong: #cfd6cf;
+    --color-admin-ink: #1c2621;
+    --color-admin-ink-muted: #5b6b63;
+    --color-admin-ink-faint: #8a988f;
+    --color-admin-green-900: #1f4d33;
+    --color-admin-green-700: #2f6b45;
+    --color-admin-green-600: #3a7d52;
+    --color-admin-green-100: #e7f2ea;
+    --color-admin-green-050: #e7f2ea;
+    --color-admin-gold-700: #8a5f00;
+    --color-admin-gold-600: #f2b632;
+    --color-admin-gold-100: #fdf1d6;
+    --color-admin-red-700: #c0392f;
+    --color-admin-red-100: #fbe4e2;
+    --color-admin-amber-700: #b8860b;
+    --color-admin-amber-100: #fdf1d6;
+    font-size: 14px;
+    line-height: 1.45;
+    caret-color: var(--color-admin-green-700);
+  }
+
+  [data-portal="admin"][data-surface="platform"] :is(h1, h2, h3, h4) {
+    font-family: var(--font-sans);
+  }
+
+  [data-portal="admin"][data-surface="platform"] ::selection {
+    background: var(--color-admin-green-100);
+    color: var(--color-admin-green-900);
+  }
+
+  [data-portal="admin"][data-surface="platform"] * {
+    scrollbar-color: var(--color-admin-border-strong) transparent;
+  }

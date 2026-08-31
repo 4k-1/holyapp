@@ -13,7 +13,7 @@ Two primary audiences, treated equally as two surfaces of one product:
 - **Parishioners** of a Philippine Catholic parish, in the situation of needing a sacramental certificate (for school, civil, or family use), keeping certificates they already received, giving to the parish, or offering a Mass intention. They find their parish, sign in or register, and act in that parish’s portal.
 - **Parish office** — parish admin and staff (priest, parish secretary, admin staff) running daily operations: searching and maintaining sacramental registers, fulfilling certificate requests (online and walk-in), scheduling, recording donations, and managing staff accounts and fees.
 
-Public visitors can donate or request a Mass intention without an account via the give flow. A platform **super_admin** role is planned for multi-parish operation but is out of scope until it is built; do not design as if it already exists.
+Public visitors can donate or request a Mass intention without an account via the give flow. A platform **super_admin** is the head of the installation: they sign in separately (`/super-admin/login`) and can see every parish’s accounts (admin, staff, and parishioner) across HolyApp. Audit, reports, and parish onboarding from the HTML prototype are not built yet.
 
 ## Product Purpose
 
@@ -42,18 +42,20 @@ The physical parish register remains the canonical source of truth. The app is t
 
 Confirmed in the current frontend prototype:
 
-- Roles: `parishioner`, `parish_admin`, `parish_staff`; `super_admin` routed but not built.
-- Auth: find parish, login, register, OTP verification (mock).
+- Roles: `parishioner`, `parish_admin`, `parish_staff`, `super_admin`.
+- Auth: find parish, parish login, parishioner register, OTP verification (mock). Super admin has a separate login and is rejected on the parish portal.
 - Parishioner: certificate request wizard, request list/tracker, certificate wallet, donations, Mass intentions, account.
 - Admin: baptism, confirmation, marriage, and death registers (search, create, edit, detail, annotations); request queue with find-record, issue, and release; schedule; donations; parish profile; service fees; staff accounts; certificate configuration (per-sacrament signatory, footer, numbering); account security.
 - Settings stubs not yet built: Mass intention rules, marriage application requirements, payment configuration, data & privacy.
 - Certificate verify route (`/verify/:hash`) is a placeholder.
+- Super admin: separate login; HTML-style dashboard (parishes, admins, audit, register/request counts from current mocks); parish list and cross-parish accounts directory. Audit page, reports, certificate templates, and parish onboarding are not built.
 
 Constraints:
 
 - Built for Philippine Catholic parishes, not a generic global church product.
 - This repository is a frontend prototype on mock APIs. There is no live backend, live payments, or real certificate PDF generation yet. Do not treat mock fulfillment as production-ready issuance.
-- Do not design unbuilt surfaces (super_admin, live payments, PDF certificates, disabled settings) as if they exist.
+- Do not design unbuilt surfaces (super admin audit/reports/onboarding, live payments, PDF certificates, disabled settings) as if they exist.
+- Identity follows the current database: `app_user` has first/middle/last name and `active`/`suspended`; the `parishioner` table was dropped; parishioners are users with that role. Parish has no subscription/status column. Certificate configuration is per-parish, not a platform template library.
 
 Undecided: production accessibility standard; diocesan rollout scope beyond a single parish; real payment and certificate-file pipelines.
 

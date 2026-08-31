@@ -350,7 +350,11 @@ export function AdminFindRecordPage() {
             <div className="flex flex-1 flex-col p-4 px-5">
               <div className="grid grid-cols-2 gap-x-2.5 gap-y-0">
                 <AdminField label="Name of baptized">
-                  <AdminInput value={filters.name} onChange={(e) => setFilter("name", e.target.value)} />
+                  <AdminInput
+                    placeholder="Juan Dela Cruz"
+                    value={filters.name}
+                    onChange={(e) => setFilter("name", e.target.value)}
+                  />
                 </AdminField>
                 <AdminField label="Baptismal date">
                   <AdminInput
@@ -361,30 +365,42 @@ export function AdminFindRecordPage() {
                 </AdminField>
                 <AdminField label="Birthdate">
                   <AdminInput
+                    placeholder="January 18, 2005"
                     value={filters.birthdate}
                     onChange={(e) => setFilter("birthdate", e.target.value)}
                   />
                 </AdminField>
                 <AdminField label="Place of birth">
                   <AdminInput
+                    placeholder="Manila, Metro Manila"
                     value={filters.placeOfBirth}
                     onChange={(e) => setFilter("placeOfBirth", e.target.value)}
                   />
                 </AdminField>
                 <AdminField label="Mother's name">
-                  <AdminInput value={filters.mother} onChange={(e) => setFilter("mother", e.target.value)} />
+                  <AdminInput
+                    placeholder="Maria Santos"
+                    value={filters.mother}
+                    onChange={(e) => setFilter("mother", e.target.value)}
+                  />
                 </AdminField>
                 <AdminField label="Father's name">
-                  <AdminInput value={filters.father} onChange={(e) => setFilter("father", e.target.value)} />
+                  <AdminInput
+                    placeholder="Jose Reyes"
+                    value={filters.father}
+                    onChange={(e) => setFilter("father", e.target.value)}
+                  />
                 </AdminField>
                 <AdminField label="Sponsor 1">
                   <AdminInput
+                    placeholder="Juanita Alfonso"
                     value={filters.sponsor1}
                     onChange={(e) => setFilter("sponsor1", e.target.value)}
                   />
                 </AdminField>
                 <AdminField label="Sponsor 2">
                   <AdminInput
+                    placeholder="Emilio Javier"
                     value={filters.sponsor2}
                     onChange={(e) => setFilter("sponsor2", e.target.value)}
                   />

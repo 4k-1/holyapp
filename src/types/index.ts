@@ -1,5 +1,8 @@
 export type Role = "super_admin" | "parish_admin" | "parish_staff" | "parishioner";
 
+/** Mirrors `user_status` in the identity schema. */
+export type UserStatus = "active" | "suspended";
+
 export type SacramentType = "baptism" | "confirmation" | "marriage" | "death";
 
 export type RequestType = "online" | "walkin";
@@ -12,26 +15,48 @@ export type CertificateState = "valid" | "superseded" | "invalid";
 
 export interface Parish {
   id: string;
+  /** Frontend routing key — not a DB column. */
   slug: string;
   name: string;
   address: string;
+  contact: string;
+  email: string;
   sealUrl?: string;
   backgroundImageUrl?: string;
   tagline?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CurrentUser {
   id: string;
   parishId: string | null;
   role: Role;
+  status: UserStatus;
+  /** Display convenience — DB stores first/middle/last only (migration 009). */
   fullName: string;
   email: string;
   firstName?: string;
   lastName?: string;
   middleName?: string;
+  contactNumber?: string;
+  emailVerifiedAt?: string;
+  createdAt?: string;
   gender?: string;
   birthday?: string; // ISO date string, e.g. "1998-04-12"
   address?: string;
+}
+
+/** Mirrors `audit_log`. `parishId` is null for platform-level actions. */
+export interface AuditLogEntry {
+  id: string;
+  parishId: string | null;
+  actorId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
 }
 
 export interface Payment {

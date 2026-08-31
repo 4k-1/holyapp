@@ -29,9 +29,7 @@ export function LoginForm({ parish, onBack }: LoginFormProps) {
         navigate(from);
         return;
       }
-      if (user.role === "super_admin") {
-        navigate("/super-admin");
-      } else if (user.role === "parish_admin" || user.role === "parish_staff") {
+      if (user.role === "parish_admin" || user.role === "parish_staff") {
         navigate(`/${parish.slug}/admin`);
       } else {
         navigate(`/${parish.slug}/portal`);

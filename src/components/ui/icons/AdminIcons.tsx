@@ -105,3 +105,53 @@ export function PanelLeftOpenIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function ChurchIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3v4" />
+      <path d="M10 5h4" />
+      <path d="M4 21V10l8-5 8 5v11" />
+      <path d="M9 21v-6h6v6" />
+    </svg>
+  );
+}
+
+export function UsersIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3.5 19c.6-2.6 2.8-4 5.5-4s4.9 1.4 5.5 4" />
+      <circle cx="17" cy="9" r="2.4" />
+      <path d="M20.5 19c-.5-2-2-3.3-4-3.6" />
+    </svg>
+  );
+}
+
+export function UserIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="8" r="3.2" />
+      <path d="M5 19c.8-3.2 3.4-5 7-5s6.2 1.8 7 5" />
+    </svg>
+  );
+}
+
+export function ClipboardIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="6" y="5" width="12" height="16" rx="2" />
+      <path d="M9 5V4h6v1" />
+      <path d="M9 11h6M9 15h4" />
+    </svg>
+  );
+}
+
+export function SealIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="11" r="6" />
+      <path d="M9.5 16.5 8 21l4-1.5L16 21l-1.5-4.5" />
+    </svg>
+  );
+}
