@@ -22,6 +22,7 @@ import { AdminLedgersPage } from "@/features/parish-admin/ledgers/AdminLedgersPa
 import { AdminLedgerBookPage } from "@/features/parish-admin/ledgers/AdminLedgerBookPage";
 import { AdminLedgerPageViewer } from "@/features/parish-admin/ledgers/AdminLedgerPageViewer";
 import { AdminMassIntentionsPage } from "@/features/parish-admin/intentions/AdminMassIntentionsPage";
+import { AdminNotificationsPage } from "@/features/parish-admin/notifications/AdminNotificationsPage";
 import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSettingsLayout";
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
 import { ServiceFeesSection } from "@/features/parish-admin/settings/components/ServiceFeesSection";
@@ -34,6 +35,7 @@ export const parishAdminRoutes: RouteObject[] = [
     element: <AdminLayout />,
     children: [
       { index: true, element: <AdminDashboardPage /> },
+      { path: "notifications", element: <AdminNotificationsPage /> },
       { path: "requests", element: <AdminRequestsPage /> },
       { path: "requests/:requestId/find-record", element: <AdminFindRecordPage /> },
       { path: "records/baptismal", element: <AdminBaptismalRecordsPage /> },

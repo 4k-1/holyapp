@@ -7,12 +7,14 @@ import {
   HeartIcon,
   ChartIcon,
   GearIcon,
+  BellIcon,
 } from "@/components/ui/icons/AdminIcons";
 import type { Role } from "@/types";
 
 interface AdminSidebarProps {
   role: Role;
   collapsed: boolean;
+  unreadCount?: number;
 }
 
 const recordLinks = [
@@ -29,7 +31,7 @@ const requestLinks = [
   { to: "mass-intentions", label: "Mass Intentions" },
 ];
 
-export function AdminSidebar({ role, collapsed }: AdminSidebarProps) {
+export function AdminSidebar({ role, collapsed, unreadCount = 0 }: AdminSidebarProps) {
   const location = useLocation();
 
   const requestsActive = requestLinks.some((l) => location.pathname.includes(l.to));
@@ -44,6 +46,13 @@ export function AdminSidebar({ role, collapsed }: AdminSidebarProps) {
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2.5 pt-2.5">
         <SidebarLink to="." end icon={<GridIcon />} label="Dashboard" collapsed={collapsed} />
+        <SidebarLink
+          to="notifications"
+          icon={<BellIcon />}
+          label="Notifications"
+          collapsed={collapsed}
+          badge={unreadCount}
+        />
 
         <SidebarGroup icon={<InboxIcon />} label="Requests" active={requestsActive} collapsed={collapsed}>
           {requestLinks.map((l) => (
@@ -81,12 +90,14 @@ function SidebarLink({
   label,
   collapsed,
   end,
+  badge,
 }: {
   to: string;
   icon: React.ReactNode;
   label: string;
   collapsed: boolean;
   end?: boolean;
+  badge?: number;
 }) {
   return (
     <NavLink
@@ -105,12 +116,19 @@ function SidebarLink({
     >
       {({ isActive }) => (
         <>
-          <span className={`flex h-[17px] w-[17px] shrink-0 [&>svg]:h-full [&>svg]:w-full ${isActive ? "opacity-100" : "opacity-75"}`}>
+          <span className={`relative flex h-[17px] w-[17px] shrink-0 [&>svg]:h-full [&>svg]:w-full ${isActive ? "opacity-100" : "opacity-75"}`}>
             {icon}
+            {collapsed && badge != null && badge > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-admin-red-700" />
+            )}
           </span>
-          {!collapsed && <span className="overflow-hidden">{label}</span>}
+          {!collapsed && <span className="min-w-0 flex-1 overflow-hidden">{label}</span>}
+          {!collapsed && badge != null && badge > 0 && (
+            <span className="rounded-full bg-admin-red-100 px-1.5 py-px font-mono text-admin-label font-semibold text-admin-red-700">
+              {badge}
+            </span>
+          )}
 
-          {/* Tooltip when collapsed */}
           {collapsed && (
             <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[100] -translate-y-1/2 whitespace-nowrap rounded-[7px] bg-admin-ink px-2.5 py-[5px] text-xs font-semibold text-white opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-opacity duration-100 group-hover:opacity-100">
               {label}

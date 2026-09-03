@@ -1,4 +1,5 @@
-import { BellIcon, ChevronDownIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "@/components/ui/icons/AdminIcons";
+import { ChevronDownIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "@/components/ui/icons/AdminIcons";
+import { AdminNotificationBell } from "@/features/parish-admin/notifications/AdminNotificationBell";
 import type { CurrentUser, Parish } from "@/types";
 
 interface AdminTopbarProps {
@@ -6,9 +7,18 @@ interface AdminTopbarProps {
   parish: Parish;
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
+  unreadCount?: number;
+  onUnreadChange?: () => void;
 }
 
-export function AdminTopbar({ user, parish, sidebarCollapsed, onToggleSidebar }: AdminTopbarProps) {
+export function AdminTopbar({
+  user,
+  parish,
+  sidebarCollapsed,
+  onToggleSidebar,
+  unreadCount = 0,
+  onUnreadChange,
+}: AdminTopbarProps) {
   const initials = user.fullName
     .split(" ")
     .map((n) => n[0])
@@ -53,13 +63,11 @@ export function AdminTopbar({ user, parish, sidebarCollapsed, onToggleSidebar }:
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-3">
-          <button
-            type="button"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full text-admin-ink-muted hover:bg-admin-surface-alt"
-          >
-            <BellIcon className="h-[18px] w-[18px]" />
-            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-admin-red-700" />
-          </button>
+          <AdminNotificationBell
+            parish={parish}
+            unreadCount={unreadCount}
+            onUnreadChange={onUnreadChange}
+          />
 
           <div className="flex cursor-pointer items-center gap-2.5 rounded-full py-1 pl-1 pr-2 hover:bg-admin-surface-alt">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-admin-green-100 text-xs font-bold text-admin-green-700">
