@@ -5,7 +5,7 @@ import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { RecordDetailBackLink } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import { getLedgerBook, listLedgerPages, uploadLedgerPage } from "@/features/parish-admin/ledgers/api/ledgersApi";
+import { getLedgerBook, listLedgerPages, uploadLedgerPages } from "@/features/parish-admin/ledgers/api/ledgersApi";
 import { LedgerStateMessage } from "@/features/parish-admin/ledgers/LedgerCards";
 import { ledgerPageAlt, ledgerSacramentLabel, ledgerYearRange } from "@/features/parish-admin/ledgers/ledgersHelpers";
 import { ledgerSacramentBadgeTone } from "@/features/parish-admin/ledgers/ledgerVisuals";
@@ -74,7 +74,7 @@ export function AdminLedgerBookPage() {
         </div>
         {canUpload && (
           <AdminButton onClick={() => setUploadOpen(true)}>
-            Upload / scan page
+            Upload pages
           </AdminButton>
         )}
       </div>
@@ -84,7 +84,7 @@ export function AdminLedgerBookPage() {
       ) : pages.length === 0 ? (
         <LedgerStateMessage>
           This register has no scanned pages yet.
-          {canUpload ? " Attach a scan to start the book." : " Ask a parish admin to upload scans."}
+          {canUpload ? " Upload photos of the book to start." : " Ask a parish admin to upload scans."}
         </LedgerStateMessage>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
@@ -112,11 +112,12 @@ export function AdminLedgerBookPage() {
 
       {uploadOpen && canUpload && (
         <UploadLedgerPageModal
+          parishId={parish.id}
           books={[book]}
           defaultBookId={book.id}
           onClose={() => setUploadOpen(false)}
-          onSubmit={async (input) => {
-            await uploadLedgerPage(parish.id, input);
+          onSubmit={async (pages) => {
+            await uploadLedgerPages(parish.id, pages);
             refetchPages();
             refetchBook();
           }}

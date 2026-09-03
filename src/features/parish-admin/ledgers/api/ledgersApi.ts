@@ -74,40 +74,69 @@ export async function createLedgerBook(parishId: string, input: LedgerBookCreate
 }
 
 /**
- * Stub for attaching a newly scanned page to a book.
- * TODO: POST /parishes/:parishId/ledgers/:bookId/pages with multipart scan file.
+ * Stub for attaching newly scanned pages to a book.
+ * TODO: POST /parishes/:parishId/ledgers/:bookId/pages with multipart scan files.
  */
+export async function uploadLedgerPages(
+  parishId: string,
+  inputs: LedgerPageUploadInput[]
+): Promise<LedgerPage[]> {
+  await delay(450);
+  if (inputs.length === 0) throw new Error("Add at least one photo.");
+
+  const bookId = inputs[0].bookId;
+  const book = MOCK_LEDGER_BOOKS.find((b) => b.id === bookId && b.parishId === parishId);
+  if (!book) throw new Error(`Book ${bookId} not found`);
+  if (inputs.some((input) => input.bookId !== bookId)) {
+    throw new Error("All photos must go into the same book.");
+  }
+
+  const numbers = inputs.map((input) => input.pageNumber);
+  const duplicate = numbers.find((n, i) => numbers.indexOf(n) !== i);
+  if (duplicate != null) throw new Error(`Page ${duplicate} is used more than once.`);
+
+  for (const input of inputs) {
+    if (!Number.isInteger(input.pageNumber) || input.pageNumber < 1) {
+      throw new Error("Page numbers start at 1.");
+    }
+    const existing = MOCK_LEDGER_PAGES.find(
+      (p) => p.bookId === bookId && p.pageNumber === input.pageNumber
+    );
+    if (existing) throw new Error(`Page ${input.pageNumber} is already in this book`);
+  }
+
+  const heading = `Liber ${LEDGER_SACRAMENT_LABELS[book.sacramentType]}`;
+  const scannedAt = new Date().toISOString().slice(0, 10);
+  const pages = inputs.map((input, i) => {
+    const page: LedgerPage = {
+      id: `${book.id}-p${String(input.pageNumber).padStart(2, "0")}-${Date.now()}-${i}`,
+      parishId,
+      bookId: book.id,
+      pageNumber: input.pageNumber,
+      scannedAt,
+      ocrText: `Uploaded scan ${input.fileName} — OCR pending`,
+      imageUrl:
+        input.imageUrl ??
+        makeLedgerScanDataUrl({
+          heading,
+          volume: book.volumeLabel,
+          pageNumber: input.pageNumber,
+          lines: [`Scan file: ${input.fileName}`, "OCR text will appear here after backend processing."],
+        }),
+    };
+    return page;
+  });
+
+  MOCK_LEDGER_PAGES.push(...pages);
+  book.pageCount = MOCK_LEDGER_PAGES.filter((p) => p.bookId === book.id).length;
+  book.status = "ready";
+  return pages;
+}
+
 export async function uploadLedgerPage(
   parishId: string,
   input: LedgerPageUploadInput
 ): Promise<LedgerPage> {
-  await delay(400);
-  const book = MOCK_LEDGER_BOOKS.find((b) => b.id === input.bookId && b.parishId === parishId);
-  if (!book) throw new Error(`Book ${input.bookId} not found`);
-
-  const existing = MOCK_LEDGER_PAGES.find(
-    (p) => p.bookId === input.bookId && p.pageNumber === input.pageNumber
-  );
-  if (existing) throw new Error(`Page ${input.pageNumber} is already in this book`);
-
-  const heading = `Liber ${LEDGER_SACRAMENT_LABELS[book.sacramentType]}`;
-  const page: LedgerPage = {
-    id: `${book.id}-p${String(input.pageNumber).padStart(2, "0")}-${Date.now()}`,
-    parishId,
-    bookId: book.id,
-    pageNumber: input.pageNumber,
-    scannedAt: new Date().toISOString().slice(0, 10),
-    ocrText: `Uploaded scan ${input.fileName} — OCR pending`,
-    imageUrl: makeLedgerScanDataUrl({
-      heading,
-      volume: book.volumeLabel,
-      pageNumber: input.pageNumber,
-      lines: [`Scan file: ${input.fileName}`, "OCR text will appear here after backend processing."],
-    }),
-  };
-
-  MOCK_LEDGER_PAGES.push(page);
-  book.pageCount = Math.max(book.pageCount, input.pageNumber);
-  book.status = "ready";
+  const [page] = await uploadLedgerPages(parishId, [input]);
   return page;
 }

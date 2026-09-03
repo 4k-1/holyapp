@@ -42,6 +42,8 @@ export interface LedgerPageUploadInput {
   pageNumber: number;
   /** Filename only in the mock; a real upload would send the scan. */
   fileName: string;
+  /** Preview of the photo in the prototype; a real upload would store the file. */
+  imageUrl?: string;
 }
 
 export interface LedgerBookCreateInput {

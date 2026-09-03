@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { AdminButton, AdminField, AdminInput, AdminSelect } from "@/features/parish-admin/components/AdminForm";
+import { AdminField, AdminInput, AdminSelect } from "@/features/parish-admin/components/AdminForm";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import {
   createLedgerBook,
   listLedgerBooks,
   searchLedgers,
-  uploadLedgerPage,
 } from "@/features/parish-admin/ledgers/api/ledgersApi";
 import { CreateLedgerBookModal } from "@/features/parish-admin/ledgers/CreateLedgerBookModal";
 import { LedgerBookCard, LedgerSearchHitCard, LedgerStateMessage, NewLedgerBookCard } from "@/features/parish-admin/ledgers/LedgerCards";
-import { UploadLedgerPageModal } from "@/features/parish-admin/ledgers/UploadLedgerPageModal";
 import { bookOverlapsYears } from "@/features/parish-admin/ledgers/ledgersHelpers";
 import {
   LEDGER_SACRAMENT_LABELS,
@@ -38,8 +36,6 @@ export function AdminLedgersPage() {
   const [bookFilter, setBookFilter] = useState("all");
   const [yearFrom, setYearFrom] = useState("");
   const [yearTo, setYearTo] = useState("");
-  const [searchAll, setSearchAll] = useState(false);
-  const [uploadOpen, setUploadOpen] = useState(false);
   const [newBookOpen, setNewBookOpen] = useState(false);
 
   const { data: books = [], loading: booksLoading, refetch: refetchBooks } = useAsync(
@@ -48,8 +44,7 @@ export function AdminLedgersPage() {
   );
 
   const tabBooks = books.filter((b) => b.sacramentType === activeTab);
-  const scopeSacrament: SacramentType | "all" = searchAll ? "all" : activeTab;
-  const bookFilterOptions = searchAll ? books : tabBooks;
+  const bookFilterOptions = tabBooks;
 
   const parsedYearFrom = parseYear(yearFrom);
   const parsedYearTo = parseYear(yearTo);
@@ -67,24 +62,23 @@ export function AdminLedgersPage() {
       const hits = await searchLedgers(parish.id, trimmedQuery, {
         field,
         bookId: bookFilter,
-        sacrament: scopeSacrament,
+        sacrament: activeTab,
       });
       return { query: trimmedQuery, hits };
     },
-    [parish.id, trimmedQuery, field, bookFilter, scopeSacrament]
+    [parish.id, trimmedQuery, field, bookFilter, activeTab]
   );
   const hits = searchResult?.hits ?? [];
   const searchSettled = searchResult?.query === trimmedQuery;
   const filteredHits = hits.filter((hit) => bookOverlapsYears(hit, parsedYearFrom, parsedYearTo));
 
   const filtersActive = Boolean(
-    trimmedQuery || field !== "all" || bookFilter !== "all" || parsedYearFrom != null || parsedYearTo != null || searchAll
+    trimmedQuery || field !== "all" || bookFilter !== "all" || parsedYearFrom != null || parsedYearTo != null
   );
 
   function selectTab(tab: SacramentType) {
     setActiveTab(tab);
     setBookFilter("all");
-    setSearchAll(false);
   }
 
   function clearFilters() {
@@ -93,37 +87,16 @@ export function AdminLedgersPage() {
     setBookFilter("all");
     setYearFrom("");
     setYearTo("");
-    setSearchAll(false);
   }
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Digitized Ledger</h1>
-          <p className="mt-1 text-admin-body text-admin-ink-muted">
-            Browse register books or search across all pages. Pages are viewed as scanned — no data is
-            auto-extracted into records.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {canUpload && (
-            <AdminButton onClick={() => setUploadOpen(true)}>
-              <PlusIcon />
-              Add Page to Book
-            </AdminButton>
-          )}
-          <AdminButton
-            variant="secondary"
-            onClick={() => {
-              setSearchAll(true);
-              setBookFilter("all");
-            }}
-          >
-            <SearchIcon />
-            Search all registers
-          </AdminButton>
-        </div>
+      <div className="mb-5">
+        <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Digitized Ledger</h1>
+        <p className="mt-1 text-admin-body text-admin-ink-muted">
+          Browse register books or search across all pages. Pages are viewed as scanned — no data is
+          auto-extracted into records.
+        </p>
       </div>
 
       <div className="mb-5 border-b border-admin-border">
@@ -209,19 +182,6 @@ export function AdminLedgersPage() {
         )}
       </div>
 
-      {searchAll && (
-        <p className="mb-4 text-admin-support text-admin-ink-muted">
-          Searching across all registers.{" "}
-          <button
-            type="button"
-            className="font-semibold text-admin-green-700 hover:underline"
-            onClick={() => setSearchAll(false)}
-          >
-            Back to {LEDGER_SACRAMENT_LABELS[activeTab]} Register
-          </button>
-        </p>
-      )}
-
       {searching ? (
         searchLoading || !searchSettled ? (
           <LedgerStateMessage>Searching the digitized registers…</LedgerStateMessage>
@@ -267,17 +227,6 @@ export function AdminLedgersPage() {
         </div>
       )}
 
-      {uploadOpen && canUpload && (
-        <UploadLedgerPageModal
-          books={books}
-          onClose={() => setUploadOpen(false)}
-          onSubmit={async (input) => {
-            await uploadLedgerPage(parish.id, input);
-            refetchBooks();
-          }}
-        />
-      )}
-
       {newBookOpen && canUpload && (
         <CreateLedgerBookModal
           sacramentType={activeTab}
@@ -297,15 +246,6 @@ function SearchIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
       <circle cx="11" cy="11" r="7" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-      <line x1="12" y1="5" x2="12" y2="19" strokeLinecap="round" />
-      <line x1="5" y1="12" x2="19" y2="12" strokeLinecap="round" />
     </svg>
   );
 }
