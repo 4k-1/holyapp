@@ -16,6 +16,7 @@ import {
   initials,
   recordFullName,
 } from "@/features/parish-admin/records/baptismalHelpers";
+import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import { AdminIssueCertificateModal } from "@/features/parish-admin/requests/AdminIssueCertificateModal";
 import { AdminReleaseCertificateModal } from "@/features/parish-admin/requests/AdminReleaseCertificateModal";
 import type { CertificateRequest, Parish, SacramentType } from "@/types";
@@ -139,17 +140,23 @@ export function AdminRequestDetailModal({
                 Sacramental record
               </h4>
               {linked ? (
-                <div className="flex items-start gap-2.5">
+                <Link
+                  to={recordDetailPath(parish.slug, "baptismal", linked.id)}
+                  onClick={onClose}
+                  className="flex items-start gap-2.5 rounded-[8px] outline-none hover:bg-admin-green-050 focus-visible:ring-2 focus-visible:ring-admin-green-600/30"
+                >
                   <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-admin-green-100 text-admin-green-700">
                     <CheckIcon />
                   </span>
                   <div>
-                    <p className="text-admin-body font-semibold text-admin-ink">{recordFullName(linked)}</p>
+                    <p className="text-admin-body font-semibold text-admin-green-700 hover:underline">
+                      {recordFullName(linked)}
+                    </p>
                     <p className="mt-0.5 text-admin-label text-admin-ink-faint">
                       Baptismal record · Book {linked.bookNumber}, Page {linked.pageNumber}, Entry {linked.entryNumber}
                     </p>
                   </div>
-                </div>
+                </Link>
               ) : (
                 <div className="flex items-start gap-2.5">
                   <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-admin-surface-alt text-admin-ink-faint">

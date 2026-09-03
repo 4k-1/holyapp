@@ -1,4 +1,4 @@
-import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState, type SVGProps } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, FileIcon, NoteIcon } from "@/features/parish-admin/components/AdminForm";
@@ -15,7 +15,9 @@ import { generateMarriageCertificate, getMarriageRecord } from "@/features/paris
 import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
 import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
 import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
-import { recordFullName } from "@/features/parish-admin/records/baptismalHelpers";
+import { baptismRecordRef, recordFullName } from "@/features/parish-admin/records/baptismalHelpers";
+import { LinkedRecordLink } from "@/features/parish-admin/records/LinkedRecordLink";
+import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import { useAsync } from "@/hooks/useAsync";
 import {
   consentPersonName,
@@ -158,6 +160,7 @@ export function AdminMarriageRecordDetailPage() {
         {groom && (
           <PartyDetailCard
             party={groom}
+            parishSlug={parish.slug}
             linkedBaptism={groomBaptism}
             baptismRecordId={groom.baptismalRecordId}
             tone="blue"
@@ -166,6 +169,7 @@ export function AdminMarriageRecordDetailPage() {
         {bride && (
           <PartyDetailCard
             party={bride}
+            parishSlug={parish.slug}
             linkedBaptism={brideBaptism}
             baptismRecordId={bride.baptismalRecordId}
             tone="rose"
@@ -228,11 +232,13 @@ export function AdminMarriageRecordDetailPage() {
 
 function PartyDetailCard({
   party,
+  parishSlug,
   linkedBaptism,
   baptismRecordId,
   tone,
 }: {
   party: MarriageParty;
+  parishSlug: string;
   linkedBaptism?: { bookNumber: string; pageNumber: string; entryNumber: string; firstName: string; middleName: string; lastName: string };
   baptismRecordId?: string;
   tone: RecordDetailTone;
@@ -269,14 +275,15 @@ function PartyDetailCard({
         {baptismRecordId ? (
           <div className="flex items-baseline justify-between gap-4 border-t border-admin-border py-[10.5px]">
             <span className="shrink-0 text-xs text-admin-ink-muted">Baptismal record</span>
-            <Link
-              to={`../../baptismal/${encodeURIComponent(baptismRecordId)}`}
-              className="text-right text-admin-body font-semibold text-admin-green-700 hover:underline"
-            >
-              {linkedBaptism ? recordFullName(linkedBaptism) : baptismRecordId} — Bk{" "}
-              {linkedBaptism?.bookNumber ?? "?"}:{linkedBaptism?.pageNumber ?? "?"}:
-              {linkedBaptism?.entryNumber ?? "?"}
-            </Link>
+            <LinkedRecordLink
+              to={recordDetailPath(parishSlug, "baptismal", baptismRecordId)}
+              name={linkedBaptism ? recordFullName(linkedBaptism) : baptismRecordId}
+              registerRef={
+                linkedBaptism
+                  ? baptismRecordRef(linkedBaptism)
+                  : "?:?:?"
+              }
+            />
           </div>
         ) : null}
         {party.consentPersons.length > 0 && (

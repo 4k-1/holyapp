@@ -104,7 +104,7 @@ export function AdminMarriageRecordsPage() {
               onChange={(e) => setField("minister", e.target.value)}
             />
           </AdminField>
-          <AdminField label="Witness" className="mb-0 md:col-span-2">
+          <AdminField label="Witness" className="mb-0">
             <AdminInput
               placeholder="Ramon Lim"
               value={draft.witness}

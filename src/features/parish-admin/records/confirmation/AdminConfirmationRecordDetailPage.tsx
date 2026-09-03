@@ -1,4 +1,4 @@
-import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, FileIcon, NoteIcon, UserIcon } from "@/features/parish-admin/components/AdminForm";
@@ -14,7 +14,9 @@ import { generateConfirmationCertificate, getConfirmationRecord } from "@/featur
 import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
 import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
 import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
-import { recordFullName as baptismFullName } from "@/features/parish-admin/records/baptismalHelpers";
+import { baptismRecordRef, recordFullName as baptismFullName } from "@/features/parish-admin/records/baptismalHelpers";
+import { LinkedRecordLink } from "@/features/parish-admin/records/LinkedRecordLink";
+import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import { useAsync } from "@/hooks/useAsync";
 import {
   confirmationCertificateFields,
@@ -174,14 +176,15 @@ export function AdminConfirmationRecordDetailPage() {
             {record.baptismalRecordId && (
               <div className="flex items-baseline justify-between gap-4 py-[10.5px]">
                 <span className="shrink-0 text-xs text-admin-ink-muted">Linked baptismal record</span>
-                <Link
-                  to={`../../baptismal/${encodeURIComponent(record.baptismalRecordId)}`}
-                  className="text-right text-admin-body font-semibold text-admin-green-700 hover:underline"
-                >
-                  {linkedBaptism ? baptismFullName(linkedBaptism) : record.baptismalRecordId} — Bk{" "}
-                  {linkedBaptism?.bookNumber ?? "?"}:{linkedBaptism?.pageNumber ?? "?"}:
-                  {linkedBaptism?.entryNumber ?? "?"}
-                </Link>
+                <LinkedRecordLink
+                  to={recordDetailPath(parish.slug, "baptismal", record.baptismalRecordId)}
+                  name={linkedBaptism ? baptismFullName(linkedBaptism) : record.baptismalRecordId}
+                  registerRef={
+                    linkedBaptism
+                      ? baptismRecordRef(linkedBaptism)
+                      : "?:?:?"
+                  }
+                />
               </div>
             )}
           </div>

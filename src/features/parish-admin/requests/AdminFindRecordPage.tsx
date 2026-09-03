@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { AdminButton, AdminField, AdminInput, BookIcon } from "@/features/parish-admin/components/AdminForm";
 import { RecordDetailSection } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
@@ -22,6 +22,7 @@ import {
   recordFullName,
   recordMotherName,
 } from "@/features/parish-admin/records/baptismalHelpers";
+import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import type { BaptismalRecord } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 
@@ -282,7 +283,13 @@ export function AdminFindRecordPage() {
           </b>
           <div className="mt-0.5 text-admin-support opacity-90">
             {recordFullName(confirmedRecord)} matched to this request. The certificate can now be
-            issued from the confirmed ledger entry.
+            issued from the confirmed ledger entry.{" "}
+            <Link
+              to={recordDetailPath(parish.slug, "baptismal", confirmedRecord.id)}
+              className="font-semibold underline decoration-admin-green-700/40 underline-offset-2 hover:decoration-admin-green-700"
+            >
+              View record
+            </Link>
           </div>
         </StatusBanner>
       )}
