@@ -66,7 +66,6 @@ export function filterConfirmationRecords(
   const mother = criteria.mother.trim().toLowerCase();
   const father = criteria.father.trim().toLowerCase();
   const minister = criteria.minister.trim().toLowerCase();
-  const place = criteria.place.trim().toLowerCase();
   const birthdate = criteria.birthdate.trim();
 
   return records.filter((r) => {
@@ -75,7 +74,6 @@ export function filterConfirmationRecords(
     if (mother && !recordMotherName(r).toLowerCase().includes(mother)) return false;
     if (father && !recordFatherName(r).toLowerCase().includes(father)) return false;
     if (minister && !r.minister.toLowerCase().includes(minister)) return false;
-    if (place && !r.placeOfConfirmation.toLowerCase().includes(place)) return false;
     if (birthdate && r.dateOfBirth !== birthdate) return false;
     return true;
   });
@@ -88,7 +86,6 @@ export const emptyConfirmationSearchCriteria = (): ConfirmationSearchCriteria =>
   mother: "",
   father: "",
   minister: "",
-  place: "",
 });
 
 export function confirmationCertificateFields(

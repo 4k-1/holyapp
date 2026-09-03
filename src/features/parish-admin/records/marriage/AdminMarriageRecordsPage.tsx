@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { SearchCriteriaCard } from "@/features/parish-admin/records/SearchCriteriaCard";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { listMarriageRecords } from "@/features/parish-admin/records/api/marriageRecordsApi";
 import { useAsync } from "@/hooks/useAsync";
@@ -73,10 +74,7 @@ export function AdminMarriageRecordsPage() {
         </Link>
       </div>
 
-      <AdminCard className="mb-[18px] p-5 px-[22px]">
-        <h2 className="mb-3.5 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-          Search criteria
-        </h2>
+      <SearchCriteriaCard>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <AdminField label="Groom's name" className="mb-0">
             <AdminInput
@@ -99,11 +97,11 @@ export function AdminMarriageRecordsPage() {
               onChange={(e) => setField("marriageDate", e.target.value)}
             />
           </AdminField>
-          <AdminField label="Place of marriage" className="mb-0">
+          <AdminField label="Minister" className="mb-0">
             <AdminInput
-              placeholder="St. Joseph Parish Church"
-              value={draft.place}
-              onChange={(e) => setField("place", e.target.value)}
+              placeholder="Fr. Juan Santos"
+              value={draft.minister}
+              onChange={(e) => setField("minister", e.target.value)}
             />
           </AdminField>
           <AdminField label="Witness" className="mb-0 md:col-span-2">
@@ -120,7 +118,7 @@ export function AdminMarriageRecordsPage() {
             Search
           </AdminButton>
         </div>
-      </AdminCard>
+      </SearchCriteriaCard>
 
       <AdminCard>
         <AdminTable

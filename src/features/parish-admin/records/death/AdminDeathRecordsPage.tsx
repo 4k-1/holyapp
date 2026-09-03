@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { SearchCriteriaCard } from "@/features/parish-admin/records/SearchCriteriaCard";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { listDeathRecords } from "@/features/parish-admin/records/api/deathRecordsApi";
 import { useAsync } from "@/hooks/useAsync";
@@ -78,10 +79,7 @@ export function AdminDeathRecordsPage() {
         </Link>
       </div>
 
-      <AdminCard className="mb-[18px] p-5 px-[22px]">
-        <h2 className="mb-3.5 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-          Search criteria
-        </h2>
+      <SearchCriteriaCard>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <AdminField label="Name of deceased" className="mb-0">
             <AdminInput
@@ -102,13 +100,6 @@ export function AdminDeathRecordsPage() {
               type="date"
               value={draft.dateOfBurial}
               onChange={(e) => setField("dateOfBurial", e.target.value)}
-            />
-          </AdminField>
-          <AdminField label="Place of burial" className="mb-0">
-            <AdminInput
-              placeholder="Manila Memorial Park"
-              value={draft.placeOfBurial}
-              onChange={(e) => setField("placeOfBurial", e.target.value)}
             />
           </AdminField>
           <AdminField label="Residence" className="mb-0">
@@ -132,7 +123,7 @@ export function AdminDeathRecordsPage() {
             Search
           </AdminButton>
         </div>
-      </AdminCard>
+      </SearchCriteriaCard>
 
       <AdminCard>
         <AdminTable

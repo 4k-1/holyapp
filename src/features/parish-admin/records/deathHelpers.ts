@@ -76,7 +76,6 @@ export function encodedByLabel(userId: string) {
 
 export function filterDeathRecords(records: DeathRecord[], criteria: DeathSearchCriteria) {
   const name = criteria.name.trim().toLowerCase();
-  const placeOfBurial = criteria.placeOfBurial.trim().toLowerCase();
   const minister = criteria.minister.trim().toLowerCase();
   const residence = criteria.residence.trim().toLowerCase();
   const dateOfDeath = criteria.dateOfDeath.trim();
@@ -84,7 +83,6 @@ export function filterDeathRecords(records: DeathRecord[], criteria: DeathSearch
 
   return records.filter((r) => {
     if (name && !recordFullName(r).toLowerCase().includes(name)) return false;
-    if (placeOfBurial && !r.placeOfBurial.toLowerCase().includes(placeOfBurial)) return false;
     if (minister && !r.minister.toLowerCase().includes(minister)) return false;
     if (residence && !(r.residence ?? "").toLowerCase().includes(residence)) return false;
     if (dateOfDeath && r.dateOfDeath !== dateOfDeath) return false;
@@ -97,7 +95,6 @@ export const emptyDeathSearchCriteria = (): DeathSearchCriteria => ({
   name: "",
   dateOfDeath: "",
   dateOfBurial: "",
-  placeOfBurial: "",
   minister: "",
   residence: "",
 });

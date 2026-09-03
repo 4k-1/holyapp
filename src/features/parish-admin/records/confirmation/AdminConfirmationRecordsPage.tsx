@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { SearchCriteriaCard } from "@/features/parish-admin/records/SearchCriteriaCard";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { listConfirmationRecords } from "@/features/parish-admin/records/api/confirmationRecordsApi";
 import { useAsync } from "@/hooks/useAsync";
@@ -72,10 +73,7 @@ export function AdminConfirmationRecordsPage() {
         </Link>
       </div>
 
-      <AdminCard className="mb-[18px] p-5 px-[22px]">
-        <h2 className="mb-3.5 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-          Search criteria
-        </h2>
+      <SearchCriteriaCard>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <AdminField label="Name of confirmed" className="mb-0">
             <AdminInput
@@ -112,13 +110,6 @@ export function AdminConfirmationRecordsPage() {
               onChange={(e) => setField("father", e.target.value)}
             />
           </AdminField>
-          <AdminField label="Place of confirmation" className="mb-0">
-            <AdminInput
-              placeholder="St. Joseph Parish Church"
-              value={draft.place}
-              onChange={(e) => setField("place", e.target.value)}
-            />
-          </AdminField>
           <AdminField label="Minister" className="mb-0">
             <AdminInput
               placeholder="Most Rev. Pedro Cruz"
@@ -133,7 +124,7 @@ export function AdminConfirmationRecordsPage() {
             Search
           </AdminButton>
         </div>
-      </AdminCard>
+      </SearchCriteriaCard>
 
       <AdminCard>
         <AdminTable

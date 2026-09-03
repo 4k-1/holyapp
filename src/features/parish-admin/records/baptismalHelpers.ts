@@ -88,7 +88,6 @@ export function filterBaptismalRecords(records: BaptismalRecord[], criteria: Bap
   const mother = criteria.mother.trim().toLowerCase();
   const father = criteria.father.trim().toLowerCase();
   const minister = criteria.minister.trim().toLowerCase();
-  const placeOfBaptism = criteria.placeOfBaptism.trim().toLowerCase();
   const birthdate = criteria.birthdate.trim();
 
   return records.filter((r) => {
@@ -97,7 +96,6 @@ export function filterBaptismalRecords(records: BaptismalRecord[], criteria: Bap
     if (mother && !recordMotherName(r).toLowerCase().includes(mother)) return false;
     if (father && !recordFatherName(r).toLowerCase().includes(father)) return false;
     if (minister && !r.minister.toLowerCase().includes(minister)) return false;
-    if (placeOfBaptism && !r.placeOfBaptism.toLowerCase().includes(placeOfBaptism)) return false;
     if (birthdate && r.dateOfBirth !== birthdate) return false;
     return true;
   });
@@ -196,5 +194,4 @@ export const emptySearchCriteria = (): BaptismalSearchCriteria => ({
   mother: "",
   father: "",
   minister: "",
-  placeOfBaptism: "",
 });

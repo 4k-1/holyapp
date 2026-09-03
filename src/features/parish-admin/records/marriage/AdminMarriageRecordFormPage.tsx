@@ -60,6 +60,7 @@ interface FormState {
   marriageAddress: string;
   dateOfMarriage: string;
   timeOfMarriage: string;
+  minister: string;
   witnessOne: string;
   witnessTwo: string;
   bookNumber: string;
@@ -106,6 +107,7 @@ const emptyForm = (placeOfMarriage = ""): FormState => ({
   marriageAddress: "",
   dateOfMarriage: "",
   timeOfMarriage: "",
+  minister: "",
   witnessOne: "",
   witnessTwo: "",
   bookNumber: "",
@@ -209,6 +211,7 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
       marriageAddress: existing.marriageAddress ?? "",
       dateOfMarriage: existing.dateOfMarriage,
       timeOfMarriage: existing.timeOfMarriage ?? "",
+      minister: existing.minister,
       witnessOne: existing.witnessOne,
       witnessTwo: existing.witnessTwo,
       bookNumber: existing.bookNumber,
@@ -260,6 +263,7 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
       marriageAddress: form.marriageAddress || undefined,
       dateOfMarriage: form.dateOfMarriage,
       timeOfMarriage: form.timeOfMarriage || undefined,
+      minister: form.minister,
       witnessOne: form.witnessOne,
       witnessTwo: form.witnessTwo,
       bookNumber: form.bookNumber,
@@ -298,7 +302,7 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
           tone="gold"
           icon={<HeartIcon className="h-4.5 w-4.5" />}
           title="Marriage details"
-          description="Where and when the marriage took place."
+          description="Where and when the marriage took place, and the officiating minister."
         >
           <AdminField label="Place of marriage">
             <AdminInput
@@ -331,6 +335,14 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
               />
             </AdminField>
           </AdminFieldGroup>
+          <AdminField label="Minister">
+            <AdminInput
+              placeholder="Rev. Fr."
+              value={form.minister}
+              onChange={(e) => setMarriageField("minister", e.target.value)}
+              required
+            />
+          </AdminField>
         </AdminFormSection>
 
         <AdminFormSection

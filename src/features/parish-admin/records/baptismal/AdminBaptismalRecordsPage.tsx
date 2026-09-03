@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { SearchCriteriaCard } from "@/features/parish-admin/records/SearchCriteriaCard";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { listBaptismalRecords } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { useAsync } from "@/hooks/useAsync";
@@ -79,10 +80,7 @@ export function AdminBaptismalRecordsPage() {
         </Link>
       </div>
 
-      <AdminCard className="mb-[18px] p-5 px-[22px]">
-        <h2 className="mb-3.5 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-          Search criteria
-        </h2>
+      <SearchCriteriaCard>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <AdminField label="Name of baptized" className="mb-0">
             <AdminInput
@@ -126,13 +124,6 @@ export function AdminBaptismalRecordsPage() {
               onChange={(e) => setField("minister", e.target.value)}
             />
           </AdminField>
-          <AdminField label="Place of baptism" className="mb-0 md:col-span-2">
-            <AdminInput
-              placeholder="St. Joseph Parish Church"
-              value={draft.placeOfBaptism}
-              onChange={(e) => setField("placeOfBaptism", e.target.value)}
-            />
-          </AdminField>
         </div>
         <div className="mt-3.5 flex justify-end">
           <AdminButton onClick={() => setApplied({ ...draft })}>
@@ -140,7 +131,7 @@ export function AdminBaptismalRecordsPage() {
             Search
           </AdminButton>
         </div>
-      </AdminCard>
+      </SearchCriteriaCard>
 
       <AdminCard>
         <AdminTable

@@ -149,7 +149,8 @@ export function AdminMarriageRecordDetailPage() {
             <RecordDetailInfoRow label="Time of marriage" value={formatRecordTime(record.timeOfMarriage)} />
           )}
           <RecordDetailInfoRow label="Place of marriage" value={record.placeOfMarriage} />
-          <RecordDetailInfoRow label="Marriage address" value={record.marriageAddress || "—"} last />
+          <RecordDetailInfoRow label="Marriage address" value={record.marriageAddress || "—"} />
+          <RecordDetailInfoRow label="Minister" value={record.minister} last />
         </div>
       </RecordDetailSection>
 

@@ -106,7 +106,6 @@ export interface BaptismalSearchCriteria {
   mother: string;
   father: string;
   minister: string;
-  placeOfBaptism: string;
 }
 
 export interface ConfirmationRecord {
@@ -148,7 +147,6 @@ export interface ConfirmationSearchCriteria {
   mother: string;
   father: string;
   minister: string;
-  place: string;
 }
 
 export type MarriagePartyRole = "Groom" | "Bride";
@@ -196,6 +194,7 @@ export interface MarriageRecord {
   marriageAddress?: string;
   dateOfMarriage: string;
   timeOfMarriage?: string;
+  minister: string;
   witnessOne: string;
   witnessTwo: string;
   bookNumber: string;
@@ -214,7 +213,7 @@ export interface MarriageSearchCriteria {
   groom: string;
   bride: string;
   marriageDate: string;
-  place: string;
+  minister: string;
   witness: string;
 }
 
@@ -267,7 +266,6 @@ export interface DeathSearchCriteria {
   name: string;
   dateOfDeath: string;
   dateOfBurial: string;
-  placeOfBurial: string;
   minister: string;
   residence: string;
 }
