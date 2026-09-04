@@ -94,7 +94,6 @@ export interface RegisterInput {
   firstName: string;
   lastName: string;
   middleName?: string;
-  gender: string;
   birthday: string;
   address: string;
   email: string;
@@ -147,7 +146,6 @@ export async function verifyRegistrationCode(code: string): Promise<CurrentUser>
     firstName: input.firstName,
     lastName: input.lastName,
     middleName: input.middleName,
-    gender: input.gender,
     birthday: input.birthday,
     address: input.address,
     emailVerifiedAt: new Date().toISOString(),

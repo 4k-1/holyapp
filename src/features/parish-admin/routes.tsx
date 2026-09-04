@@ -23,6 +23,11 @@ import { AdminLedgerBookPage } from "@/features/parish-admin/ledgers/AdminLedger
 import { AdminLedgerPageViewer } from "@/features/parish-admin/ledgers/AdminLedgerPageViewer";
 import { AdminMassIntentionsPage } from "@/features/parish-admin/intentions/AdminMassIntentionsPage";
 import { AdminNotificationsPage } from "@/features/parish-admin/notifications/AdminNotificationsPage";
+import { AdminReportsLayout } from "@/features/parish-admin/reports/AdminReportsLayout";
+import { AdminSacramentsReportPage } from "@/features/parish-admin/reports/AdminSacramentsReportPage";
+import { AdminCertificatesReportPage } from "@/features/parish-admin/reports/AdminCertificatesReportPage";
+import { AdminDonationsReportPage } from "@/features/parish-admin/reports/AdminDonationsReportPage";
+import { AdminIntentionsReportPage } from "@/features/parish-admin/reports/AdminIntentionsReportPage";
 import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSettingsLayout";
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
 import { ServiceFeesSection } from "@/features/parish-admin/settings/components/ServiceFeesSection";
@@ -75,6 +80,17 @@ export const parishAdminRoutes: RouteObject[] = [
         element: <AdminSchedulePage />,
       },
       { path: "donations", element: <AdminDonationsPage /> },
+      {
+        path: "reports",
+        element: <AdminReportsLayout />,
+        children: [
+          { index: true, element: <Navigate to="sacraments" replace /> },
+          { path: "sacraments", element: <AdminSacramentsReportPage /> },
+          { path: "certificates", element: <AdminCertificatesReportPage /> },
+          { path: "donations", element: <AdminDonationsReportPage /> },
+          { path: "intentions", element: <AdminIntentionsReportPage /> },
+        ],
+      },
       {
         path: "settings",
         element: <AdminSettingsLayout />,

@@ -94,6 +94,17 @@ export async function markIntentionSaid(intentionId: string): Promise<MassIntent
   return intention;
 }
 
+/**
+ * All Mass intentions recorded for a parish, newest Mass date first.
+ * TODO: GET /parishes/:parishId/mass-intentions
+ */
+export async function listAdminIntentions(parishId: string): Promise<MassIntentionRequest[]> {
+  await delay(180);
+  return MOCK_MASS_INTENTIONS.filter((intention) => intention.parishId === parishId).sort((a, b) =>
+    a.scheduleDate < b.scheduleDate ? 1 : -1
+  );
+}
+
 /** Parish-wide intention slots per Mass. Same cap applies to every Mass. */
 export async function getMassIntentionCapacity(): Promise<number> {
   await delay(80);

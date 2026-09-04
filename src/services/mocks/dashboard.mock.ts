@@ -37,7 +37,7 @@ import type {
   export const QUICK_ACTIONS: QuickAction[] = [
     { id: "qa1", icon: "plus", label: "Add a record", href: "/records/baptismal" },
     { id: "qa2", icon: "file", label: "Generate a certificate", href: "/records/baptismal" },
-    { id: "qa3", icon: "chart", label: "View reports", href: "/reports" },
+    { id: "qa3", icon: "chart", label: "View reports", href: "reports/sacraments" },
     { id: "qa4", icon: "scan", label: "Browse digitized ledgers", href: "/records/ledgers" },
   ];
   

@@ -199,7 +199,7 @@ export function AdminIssueCertificateModal({
                       )}
                       <VerifyRow label="Mother" value={fields.motherName ?? "—"} />
                       <VerifyRow label="Father" value={fields.fatherName ?? "—"} />
-                      <VerifyRow label="Register ref" value={previewRef} last />
+                      <VerifyRow label="Register ref" value={fields.registerRef ?? "—"} last />
                     </div>
                   )}
                 </div>

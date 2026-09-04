@@ -14,7 +14,6 @@ export function RegisterForm({ parish, onBack, onSubmit }: RegisterFormProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [middleName, setMiddleName] = useState("");
-  const [gender, setGender] = useState("");
   const [birthday, setBirthday] = useState("");
   const [address, setAddress] = useState("");
   const [email, setEmail] = useState("");
@@ -38,7 +37,6 @@ export function RegisterForm({ parish, onBack, onSubmit }: RegisterFormProps) {
         firstName,
         lastName,
         middleName: middleName || undefined,
-        gender,
         birthday,
         address,
         email,
@@ -94,16 +92,13 @@ export function RegisterForm({ parish, onBack, onSubmit }: RegisterFormProps) {
         onChange={(e) => setMiddleName(e.target.value)}
       />
 
-      <div className="grid grid-cols-2 gap-3">
-        <Input label="Gender" value={gender} onChange={(e) => setGender(e.target.value)} required />
-        <Input
-          label="Birthday"
-          type="date"
-          value={birthday}
-          onChange={(e) => setBirthday(e.target.value)}
-          required
-        />
-      </div>
+      <Input
+        label="Birthday"
+        type="date"
+        value={birthday}
+        onChange={(e) => setBirthday(e.target.value)}
+        required
+      />
 
       <Input label="Address" value={address} onChange={(e) => setAddress(e.target.value)} required />
       <Input type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />

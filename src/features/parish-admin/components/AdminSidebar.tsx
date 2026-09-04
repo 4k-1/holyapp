@@ -1,3 +1,4 @@
+import { useEffect, useId, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   GridIcon,
@@ -8,6 +9,7 @@ import {
   ChartIcon,
   GearIcon,
   BellIcon,
+  ChevronDownIcon,
 } from "@/components/ui/icons/AdminIcons";
 import type { Role } from "@/types";
 
@@ -31,11 +33,19 @@ const requestLinks = [
   { to: "mass-intentions", label: "Mass Intentions" },
 ];
 
+const reportLinks = [
+  { to: "reports/sacraments", label: "Sacraments" },
+  { to: "reports/certificates", label: "Certificates" },
+  { to: "reports/donations", label: "Donations" },
+  { to: "reports/intentions", label: "Mass Intentions" },
+];
+
 export function AdminSidebar({ role, collapsed, unreadCount = 0 }: AdminSidebarProps) {
   const location = useLocation();
 
   const requestsActive = requestLinks.some((l) => location.pathname.includes(l.to));
   const recordsActive = recordLinks.some((l) => location.pathname.includes(l.to));
+  const reportsActive = reportLinks.some((l) => location.pathname.includes(l.to));
 
   return (
     <aside
@@ -68,7 +78,11 @@ export function AdminSidebar({ role, collapsed, unreadCount = 0 }: AdminSidebarP
 
         <SidebarLink to="schedule" icon={<CalendarIcon />} label="Schedule" collapsed={collapsed} />
         <SidebarLink to="donations" icon={<HeartIcon />} label="Donations" collapsed={collapsed} />
-        <SidebarLink to="reports" icon={<ChartIcon />} label="Reports" collapsed={collapsed} />
+        <SidebarGroup icon={<ChartIcon />} label="Reports" active={reportsActive} collapsed={collapsed}>
+          {reportLinks.map((l) => (
+            <SidebarSubLink key={l.to} to={l.to} label={l.label} />
+          ))}
+        </SidebarGroup>
       </nav>
 
       {/* Foot */}
@@ -153,26 +167,50 @@ function SidebarGroup({
   collapsed: boolean;
   children: React.ReactNode;
 }) {
+  const panelId = useId();
+  const [open, setOpen] = useState(active);
+
+  useEffect(() => {
+    if (active) setOpen(true);
+  }, [active]);
+
+  const headerClass = `group relative mb-0.5 flex w-full items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-admin-body transition-colors duration-100 ${
+    collapsed ? "justify-center px-0 py-2.5" : "px-2.5 py-[9px]"
+  } ${active ? "font-semibold text-admin-green-700" : "text-admin-ink-muted"}`;
+
   return (
     <div>
-      <div
-        data-label={label}
-        className={`group relative mb-0.5 flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-admin-body ${
-          collapsed ? "justify-center px-0 py-2.5" : "px-2.5 py-[9px]"
-        } ${active ? "font-semibold text-admin-green-700" : "text-admin-ink-muted"}`}
-      >
-        <span className={`flex h-[17px] w-[17px] shrink-0 [&>svg]:h-full [&>svg]:w-full ${active ? "opacity-100" : "opacity-75"}`}>
-          {icon}
-        </span>
-        {!collapsed && <span>{label}</span>}
-        {collapsed && (
+      {collapsed ? (
+        <div data-label={label} className={headerClass}>
+          <span className={`flex h-[17px] w-[17px] shrink-0 [&>svg]:h-full [&>svg]:w-full ${active ? "opacity-100" : "opacity-75"}`}>
+            {icon}
+          </span>
           <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[100] -translate-y-1/2 whitespace-nowrap rounded-[7px] bg-admin-ink px-2.5 py-[5px] text-xs font-semibold text-white opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-opacity duration-100 group-hover:opacity-100">
             {label}
           </span>
-        )}
-      </div>
-      {!collapsed && (
-        <div className="ml-4 border-l border-admin-border pl-2.5">{children}</div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          data-label={label}
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((prev) => !prev)}
+          className={`${headerClass} hover:bg-admin-surface-alt hover:text-admin-ink`}
+        >
+          <span className={`flex h-[17px] w-[17px] shrink-0 [&>svg]:h-full [&>svg]:w-full ${active ? "opacity-100" : "opacity-75"}`}>
+            {icon}
+          </span>
+          <span className="min-w-0 flex-1 text-left">{label}</span>
+          <ChevronDownIcon
+            className={`h-3.5 w-3.5 shrink-0 opacity-70 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+      )}
+      {!collapsed && open && (
+        <div id={panelId} className="ml-4 border-l border-admin-border pl-2.5">
+          {children}
+        </div>
       )}
     </div>
   );
