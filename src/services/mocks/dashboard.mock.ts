@@ -14,7 +14,7 @@ import type {
       boldText: "15 certificate requests",
       restText: " are waiting for review, 4 of them already paid and ready to issue.",
       ctaLabel: "Review requests",
-      ctaHref: "/requests",
+      ctaHref: "requests",
       ctaVariant: "primary",
     },
     {
@@ -22,7 +22,7 @@ import type {
       boldText: "1 baptism",
       restText: " from June 24 hasn't been recorded yet — the event has already passed.",
       ctaLabel: "Open calendar",
-      ctaHref: "/schedule",
+      ctaHref: "schedule",
       ctaVariant: "secondary",
     },
   ];
@@ -35,10 +35,10 @@ import type {
   ];
   
   export const QUICK_ACTIONS: QuickAction[] = [
-    { id: "qa1", icon: "plus", label: "Add a record", href: "/records/baptismal" },
-    { id: "qa2", icon: "file", label: "Generate a certificate", href: "/records/baptismal" },
+    { id: "qa1", icon: "plus", label: "Add a record", href: "records/baptismal" },
+    { id: "qa2", icon: "file", label: "Generate a certificate", href: "records/baptismal" },
     { id: "qa3", icon: "chart", label: "View reports", href: "reports/sacraments" },
-    { id: "qa4", icon: "scan", label: "Browse digitized ledgers", href: "/records/ledgers" },
+    { id: "qa4", icon: "scan", label: "Browse digitized ledgers", href: "records/ledgers" },
   ];
   
   // Daily Mass (rc1) has assignee: '' in the recurring schedule mock — both slots show as Unassigned.

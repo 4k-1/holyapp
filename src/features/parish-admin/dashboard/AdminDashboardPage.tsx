@@ -167,7 +167,7 @@ export function AdminDashboardPage() {
       <div className="mb-5 rounded-[var(--radius)] border border-admin-border bg-admin-surface p-5 shadow-[0_2px_8px_rgba(10,40,30,0.06)]">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">Today's Masses</p>
-          <Link to="/schedule" className="text-admin-body font-semibold text-admin-green-700 hover:underline">
+          <Link to="schedule" className="text-admin-body font-semibold text-admin-green-700 hover:underline">
             Open full schedule
           </Link>
         </div>
@@ -178,7 +178,7 @@ export function AdminDashboardPage() {
             {todayMasses.map((m) => (
               <Link
                 key={m.id}
-                to="/schedule"
+                to="schedule"
                 className="flex min-w-[150px] flex-shrink-0 items-center gap-2.5 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5 hover:border-admin-green-600 hover:bg-admin-green-050"
               >
                 <div>
@@ -216,7 +216,7 @@ export function AdminDashboardPage() {
         <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-5 shadow-[0_2px_8px_rgba(10,40,30,0.06)]">
           <div className="mb-3.5 flex items-center justify-between">
             <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">Upcoming events</p>
-            <Link to="/schedule" className="text-admin-body font-semibold text-admin-green-700 hover:underline">
+            <Link to="schedule" className="text-admin-body font-semibold text-admin-green-700 hover:underline">
               View calendar
             </Link>
           </div>

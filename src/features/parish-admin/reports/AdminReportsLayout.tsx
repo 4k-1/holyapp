@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useLocation, useOutletContext } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminReportPrintModal } from "@/features/parish-admin/reports/AdminReportPrintModal";
 import {
   emptyReportDateRange,
   normalizeReportRange,
@@ -24,6 +25,7 @@ export function AdminReportsLayout() {
     REPORT_SECTIONS.find((item) => pathname.includes(`/reports/${item.path}`)) ?? REPORT_SECTIONS[0];
   const [draftRange, setDraftRange] = useState<ReportDateRange>(emptyReportDateRange);
   const [appliedRange, setAppliedRange] = useState<ReportDateRange>(emptyReportDateRange);
+  const [printOpen, setPrintOpen] = useState(false);
   const period = reportPeriodLabel(appliedRange);
   const rangeActive = Boolean(appliedRange.from || appliedRange.to);
 
@@ -34,7 +36,7 @@ export function AdminReportsLayout() {
           <h1 className="font-serif text-admin-page font-semibold text-admin-ink">{section.label}</h1>
           <p className="mt-1 text-admin-body text-admin-ink-muted">{section.blurb}</p>
         </div>
-        <AdminButton variant="secondary" onClick={() => window.print()}>
+        <AdminButton variant="secondary" onClick={() => setPrintOpen(true)}>
           Print
         </AdminButton>
       </div>
@@ -81,6 +83,16 @@ export function AdminReportsLayout() {
       </AdminCard>
 
       <Outlet context={{ parish, range: appliedRange, period } satisfies ReportsOutletContext} />
+
+      {printOpen && (
+        <AdminReportPrintModal
+          parish={parish}
+          kind={section.id}
+          range={appliedRange}
+          period={period}
+          onClose={() => setPrintOpen(false)}
+        />
+      )}
     </div>
   );
 }

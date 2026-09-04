@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
+import { AdminBadge } from "@/components/ui/AdminBadge";
+import { EyeIcon } from "@/components/ui/icons/AdminIcons";
+import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
 import { AdminInput } from "@/features/parish-admin/components/AdminForm";
-import { AdminBadge } from "@/components/ui/AdminBadge";
-import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
+import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { AdminIssueCertificateModal } from "@/features/parish-admin/requests/AdminIssueCertificateModal";
 import { AdminReleaseCertificateModal } from "@/features/parish-admin/requests/AdminReleaseCertificateModal";
 import { AdminRequestDetailModal } from "@/features/parish-admin/requests/AdminRequestDetailModal";
@@ -155,9 +156,11 @@ export function AdminRequestsPage() {
             <button
               type="button"
               onClick={() => setDetailRequestId(r.id)}
-              className="font-semibold text-admin-green-700 hover:underline"
+              className="inline-flex items-center justify-center rounded-md p-1 text-admin-green-700 hover:bg-admin-green-050"
+              aria-label="View request"
+              title="View"
             >
-              View
+              <EyeIcon className="h-4 w-4" />
             </button>
             {primary !== "View" &&
               (primary === "Find record" ? (
