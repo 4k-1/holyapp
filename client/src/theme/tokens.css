@@ -1,0 +1,33 @@
+:root {
+  --color-primary: initial;
+  --color-accent: initial;
+  --color-role-accent: initial;
+  --color-surface: initial;
+  --color-surface-alt: initial;
+  --color-ink: initial;
+  --color-ink-muted: initial;
+  --color-border: initial;
+  --color-danger: initial;
+
+  /* Admin/staff portal — richer shade system, only meaningful under [data-portal="admin"] */
+  --color-admin-bg: initial;
+  --color-admin-surface: initial;
+  --color-admin-surface-alt: initial;
+  --color-admin-border: initial;
+  --color-admin-border-strong: initial;
+  --color-admin-ink: initial;
+  --color-admin-ink-muted: initial;
+  --color-admin-ink-faint: initial;
+  --color-admin-green-900: initial;
+  --color-admin-green-700: initial;
+  --color-admin-green-600: initial;
+  --color-admin-green-100: initial;
+  --color-admin-green-050: initial;
+  --color-admin-gold-700: initial;
+  --color-admin-gold-600: initial;
+  --color-admin-gold-100: initial;
+  --color-admin-red-700: initial;
+  --color-admin-red-100: initial;
+  --color-admin-amber-700: initial;
+  --color-admin-amber-100: initial;
+}
