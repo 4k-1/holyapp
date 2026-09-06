@@ -2,9 +2,39 @@
 import type { RecurringCommitment, ScheduleBlock } from "@/features/parish-admin/schedule/types";
 
 export const RECURRING_COMMITMENTS: RecurringCommitment[] = [
-  { id: "rc1", label: "Daily Mass", type: "mass", days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], times: ["6:00 AM", "6:00 PM"], assignee: "", showOnOverview: false },
-  { id: "rc2", label: "Sunday Mass", type: "mass", days: ["Sun"], times: ["6:00 AM", "8:00 AM", "10:00 AM", "5:00 PM"], assignee: "" },
-  { id: "rc3", label: "Novena to Our Lady of Perpetual Help", type: "novena", days: ["Wed"], times: ["6:00 PM"], assignee: "Fr. Emilio Santos" },
+  {
+    id: "rc1",
+    label: "Daily Mass",
+    type: "mass",
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    slots: [
+      { start: "6:00 AM", end: "7:00 AM" },
+      { start: "6:00 PM", end: "7:00 PM" },
+    ],
+    assignee: "",
+    showOnOverview: false,
+  },
+  {
+    id: "rc2",
+    label: "Sunday Mass",
+    type: "mass",
+    days: ["Sun"],
+    slots: [
+      { start: "6:00 AM", end: "7:00 AM" },
+      { start: "8:00 AM", end: "9:00 AM" },
+      { start: "10:00 AM", end: "11:00 AM" },
+      { start: "5:00 PM", end: "6:00 PM" },
+    ],
+    assignee: "",
+  },
+  {
+    id: "rc3",
+    label: "Novena to Our Lady of Perpetual Help",
+    type: "novena",
+    days: ["Wed"],
+    slots: [{ start: "6:00 PM", end: "7:00 PM" }],
+    assignee: "Fr. Emilio Santos",
+  },
 ];
 
 /** occurrenceId -> assignee override for a single date/time instance of a recurring commitment */

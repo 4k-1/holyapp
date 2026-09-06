@@ -1,16 +1,15 @@
 import { useState, type FormEvent } from "react";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import { ParishIdentityLockup } from "@/features/auth/components/ParishIdentityLockup";
 import type { Parish } from "@/types";
 import type { RegisterInput } from "@/features/auth/api/authApi";
+import "@/features/auth/styles/authDesk.css";
 
 interface RegisterFormProps {
   parish: Parish;
-  onBack: () => void;
   onSubmit: (data: RegisterInput) => Promise<void>;
 }
 
-export function RegisterForm({ parish, onBack, onSubmit }: RegisterFormProps) {
+export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [middleName, setMiddleName] = useState("");
@@ -51,84 +50,161 @@ export function RegisterForm({ parish, onBack, onSubmit }: RegisterFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4 p-2 h-full">
-      <button
-        type="button"
-        onClick={onBack}
-        className="w-fit text-sm text-ink-muted hover:text-ink"
-      >
-        ← Change parish
+    <form onSubmit={handleSubmit} className="auth-desk flex w-full flex-col gap-6 text-left">
+      <ParishIdentityLockup parish={parish} eyebrow="Registering with" />
+
+      <div>
+        <h1 className="auth-desk__title">Create account</h1>
+        <p className="auth-desk__subtitle">Register as a parishioner of this parish.</p>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="reg-first-name" className="auth-desk__label">
+              First name
+            </label>
+            <input
+              id="reg-first-name"
+              className="auth-desk__input"
+              placeholder="First name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+              disabled={loading}
+              autoComplete="given-name"
+            />
+          </div>
+          <div>
+            <label htmlFor="reg-last-name" className="auth-desk__label">
+              Last name
+            </label>
+            <input
+              id="reg-last-name"
+              className="auth-desk__input"
+              placeholder="Last name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+              disabled={loading}
+              autoComplete="family-name"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="reg-middle-name" className="auth-desk__label">
+            Middle name <span className="font-normal text-[var(--auth-ink-faint)]">(optional)</span>
+          </label>
+          <input
+            id="reg-middle-name"
+            className="auth-desk__input"
+            placeholder="Middle name"
+            value={middleName}
+            onChange={(e) => setMiddleName(e.target.value)}
+            disabled={loading}
+            autoComplete="additional-name"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="reg-birthday" className="auth-desk__label">
+            Birthday
+          </label>
+          <input
+            id="reg-birthday"
+            type="date"
+            className="auth-desk__input"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            required
+            disabled={loading}
+            autoComplete="bday"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="reg-address" className="auth-desk__label">
+            Address
+          </label>
+          <input
+            id="reg-address"
+            className="auth-desk__input"
+            placeholder="Home address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            required
+            disabled={loading}
+            autoComplete="street-address"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="reg-email" className="auth-desk__label">
+            Email
+          </label>
+          <input
+            id="reg-email"
+            type="email"
+            className="auth-desk__input"
+            placeholder="Enter email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={loading}
+            autoComplete="email"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="reg-password" className="auth-desk__label">
+              Password
+            </label>
+            <input
+              id="reg-password"
+              type="password"
+              className="auth-desk__input"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              autoComplete="new-password"
+            />
+          </div>
+          <div>
+            <label htmlFor="reg-confirm-password" className="auth-desk__label">
+              Confirm
+            </label>
+            <input
+              id="reg-confirm-password"
+              type="password"
+              className="auth-desk__input"
+              placeholder="Confirm"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              disabled={loading}
+              autoComplete="new-password"
+            />
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <p role="alert" className="auth-desk__error">
+          {error}
+        </p>
+      )}
+
+      <button type="submit" className="auth-desk__cta" disabled={loading}>
+        {loading ? "Sending code…" : "Continue"}
       </button>
 
-    {/* Seal + name header — now shown on all breakpoints */}
-    <div className="flex flex-col items-center gap-2.5 text-center">
-        {parish.sealUrl ? (
-            <img
-            src={parish.sealUrl}
-            alt={`${parish.name} seal`}
-            className="h-16 w-16 shrink-0 rounded-full bg-white object-contain p-1.5 shadow-lg ring-2 ring-white/50"
-            />
-        ) : (
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white font-serif text-xl font-semibold text-primary shadow-lg ring-2 ring-white/50">
-            {parish.name.charAt(0)}
-            </div>
-        )}
-        <p className="font-serif text-sm font-semibold uppercase leading-snug tracking-wide text-ink">
-            {parish.name}
-        </p>
-        <div className="h-px w-10" style={{ background: "#d4a017" }} aria-hidden />
-    </div>
-
-      <h1 className="font-serif text-2xl font-semibold text-ink">Register</h1>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Input label="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
-        <Input label="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
-      </div>
-
-      <Input
-        label="Middle name (optional)"
-        value={middleName}
-        onChange={(e) => setMiddleName(e.target.value)}
-      />
-
-      <Input
-        label="Birthday"
-        type="date"
-        value={birthday}
-        onChange={(e) => setBirthday(e.target.value)}
-        required
-      />
-
-      <Input label="Address" value={address} onChange={(e) => setAddress(e.target.value)} required />
-      <Input type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-
-      <div className="grid grid-cols-2 gap-3">
-        <Input
-          type="password"
-          label="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <Input
-          type="password"
-          label="Confirm password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
-      </div>
-
-      {error && <p className="text-sm text-danger">{error}</p>}
-
-      <Button type="submit" disabled={loading}>
-        {loading ? "Sending code..." : "Register"}
-      </Button>
-
-      <p className="text-center text-sm text-ink-muted">
+      <p className="border-t border-[var(--auth-border)] pt-5 text-center text-[0.84375rem] text-[var(--auth-ink-soft)]">
         Already have an account?{" "}
-        <a href={`/${parish.slug}/login`} className="font-medium text-primary hover:underline">
+        <a href={`/${parish.slug}/login`} className="auth-desk__link">
           Sign in
         </a>
       </p>

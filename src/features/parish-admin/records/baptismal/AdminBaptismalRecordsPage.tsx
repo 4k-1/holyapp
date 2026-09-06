@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { SearchCriteriaCard } from "@/features/parish-admin/records/SearchCriteriaCard";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
@@ -17,6 +16,7 @@ import {
 } from "@/features/parish-admin/records/baptismalHelpers";
 import type { BaptismalRecord, BaptismalSearchCriteria } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import "@/features/parish-admin/styles/adminDesk.css";
 
 export function AdminBaptismalRecordsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -30,7 +30,7 @@ export function AdminBaptismalRecordsPage() {
     {
       key: "ref",
       header: "Bk:Page:Entry",
-      render: (r) => <span className="font-medium text-admin-ink">{baptismRecordRef(r)}</span>,
+      render: (r) => <span className="admin-table__primary">{baptismRecordRef(r)}</span>,
     },
     { key: "name", header: "Name", render: (r) => recordFullName(r) },
     {
@@ -47,13 +47,10 @@ export function AdminBaptismalRecordsPage() {
     { key: "father", header: "Father", render: (r) => recordFatherName(r) },
     {
       key: "actions",
-      header: "Actions",
+      header: "",
       render: (r) => (
-        <Link
-          to={encodeURIComponent(r.id)}
-          className="font-semibold text-admin-green-700 hover:underline"
-        >
-          View details
+        <Link to={encodeURIComponent(r.id)} className="admin-table__action">
+          View
         </Link>
       ),
     },
@@ -64,21 +61,21 @@ export function AdminBaptismalRecordsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-5 flex items-end justify-between gap-4">
+    <div className="admin-dash mx-auto max-w-[1180px]">
+      <header className="mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Baptismal Records</h1>
-          <p className="text-admin-body text-admin-ink-muted">
+          <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)] sm:text-[1.5rem]">
+            Baptismal Records
+          </h1>
+          <p className="admin-dash__muted mt-1.5 text-admin-body">
             Search and manage sacramental records for this parish.
           </p>
         </div>
-        <Link to="new">
-          <AdminButton>
-            <PlusIcon />
-            Add record
-          </AdminButton>
+        <Link to="new" className="admin-dash__cta-primary shrink-0">
+          <PlusIcon />
+          Add record
         </Link>
-      </div>
+      </header>
 
       <SearchCriteriaCard>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -126,21 +123,21 @@ export function AdminBaptismalRecordsPage() {
           </AdminField>
         </div>
         <div className="mt-3.5 flex justify-end">
-          <AdminButton onClick={() => setApplied({ ...draft })}>
+          <AdminButton onClick={() => setApplied({ ...draft })} className="!rounded-full">
             <SearchIcon />
             Search
           </AdminButton>
         </div>
       </SearchCriteriaCard>
 
-      <AdminCard>
-        <AdminTable
-          columns={columns}
-          rows={filtered}
-          getRowKey={(r) => r.id}
-          emptyMessage="No matching baptismal records. Try different search criteria."
-        />
-      </AdminCard>
+      <AdminTable
+        title="Records"
+        subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
+        columns={columns}
+        rows={filtered}
+        getRowKey={(r) => r.id}
+        emptyMessage="No matching baptismal records. Try different search criteria."
+      />
     </div>
   );
 }

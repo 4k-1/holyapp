@@ -72,14 +72,14 @@ export function getOccurrencesForDate(
 
   recurring.forEach((rc) => {
     if (!rc.days.includes(day)) return;
-    rc.times.forEach((t) => {
-      const occId = `${rc.id}-${dateStr}-${t}`;
+    rc.slots.forEach((slot) => {
+      const occId = `${rc.id}-${dateStr}-${slot.start}`;
       const assignee = overrides[occId] || rc.assignee;
       occurrences.push({
         id: occId,
         date: dateStr,
-        start: t,
-        end: minutesToTime(parseTimeToMinutes(t) + 30),
+        start: slot.start,
+        end: slot.end,
         title: rc.label,
         type: rc.type,
         source: "recurring",

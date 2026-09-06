@@ -7,28 +7,31 @@ import {
   AdminFormPage,
   AdminFormSection,
   AdminInput,
+  AdminTextarea,
   BookIcon,
   FamilyIcon,
   NoteIcon,
   UserIcon,
 } from "@/features/parish-admin/components/AdminForm";
-import { CandleIcon, ShieldIcon } from "@/components/ui/icons/SacramentIcons";
+import { CandleIcon, DropletIcon, ShieldIcon } from "@/components/ui/icons/SacramentIcons";
 import {
   createDeathRecord,
   getDeathRecord,
   updateDeathRecord,
 } from "@/features/parish-admin/records/api/deathRecordsApi";
+import { BaptismalRecordLinkField } from "@/features/parish-admin/records/BaptismalRecordLinkField";
 import {
   DEATH_SACRAMENT_LABELS,
   DEATH_SACRAMENT_OPTIONS,
 } from "@/features/parish-admin/records/deathHelpers";
 import { useAsync } from "@/hooks/useAsync";
-import type { DeathSacramentName } from "@/features/parish-admin/records/types";
+import type { BaptismalRecord, DeathSacramentName } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 
 interface KinFormState {
   relationToDeceased: string;
   firstName: string;
+  middleName: string;
   lastName: string;
 }
 
@@ -52,6 +55,7 @@ interface FormState {
   pageNumber: string;
   entryNumber: string;
   remarks: string;
+  baptismalRecordId: string;
   kin: KinFormState[];
   sacramentsReceived: DeathSacramentName[];
 }
@@ -59,6 +63,7 @@ interface FormState {
 const emptyKin = (): KinFormState => ({
   relationToDeceased: "",
   firstName: "",
+  middleName: "",
   lastName: "",
 });
 
@@ -82,12 +87,10 @@ const emptyForm = (): FormState => ({
   pageNumber: "",
   entryNumber: "",
   remarks: "",
+  baptismalRecordId: "",
   kin: [],
   sacramentsReceived: [],
 });
-
-const textareaClass =
-  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 function parseOptionalInt(value: string): number | undefined {
   const trimmed = value.trim();
@@ -132,9 +135,11 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
       pageNumber: existing.pageNumber,
       entryNumber: existing.entryNumber,
       remarks: existing.remarks ?? "",
+      baptismalRecordId: existing.baptismalRecordId ?? "",
       kin: existing.kin.map((k) => ({
         relationToDeceased: k.relationToDeceased,
         firstName: k.firstName ?? "",
+        middleName: k.middleName ?? "",
         lastName: k.lastName ?? "",
       })),
       sacramentsReceived: existing.sacramentsReceived.map((s) => s.sacramentName),
@@ -161,6 +166,17 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function applyBaptismalLink(recordId: string, rec: BaptismalRecord | null) {
+    setForm((prev) => ({
+      ...prev,
+      baptismalRecordId: recordId,
+      firstName: prev.firstName || rec?.firstName || "",
+      middleName: prev.middleName || rec?.middleName || "",
+      lastName: prev.lastName || rec?.lastName || "",
+      residence: prev.residence || rec?.address || "",
+    }));
   }
 
   function toggleSacrament(name: DeathSacramentName) {
@@ -210,11 +226,13 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
       pageNumber: form.pageNumber,
       entryNumber: form.entryNumber,
       remarks: form.remarks || undefined,
+      baptismalRecordId: form.baptismalRecordId || undefined,
       kin: form.kin
         .filter((k) => k.relationToDeceased.trim())
         .map((k) => ({
           relationToDeceased: k.relationToDeceased,
           firstName: k.firstName || undefined,
+          middleName: k.middleName || undefined,
           lastName: k.lastName || undefined,
         })),
       sacramentsReceived: form.sacramentsReceived.map((sacramentName) => ({ sacramentName })),
@@ -251,18 +269,18 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
           title="Personal information"
           description="Who the deceased was, and their standing."
         >
-          <AdminFieldGroup title="Full name">
-            <AdminField label="First" className="mb-0 w-[130px]">
+          <AdminFieldGroup cols={3}>
+            <AdminField label="First name" className="mb-0">
               <AdminInput
                 value={form.firstName}
                 onChange={(e) => setField("firstName", e.target.value)}
                 required
               />
             </AdminField>
-            <AdminField label="Middle" className="mb-0 w-[130px]">
+            <AdminField label="Middle name" className="mb-0">
               <AdminInput value={form.middleName} onChange={(e) => setField("middleName", e.target.value)} />
             </AdminField>
-            <AdminField label="Last" className="mb-0 w-[150px]">
+            <AdminField label="Last name" className="mb-0">
               <AdminInput
                 value={form.lastName}
                 onChange={(e) => setField("lastName", e.target.value)}
@@ -271,12 +289,21 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
             </AdminField>
           </AdminFieldGroup>
 
-          <AdminField label="Residence">
-            <AdminInput value={form.residence} onChange={(e) => setField("residence", e.target.value)} />
-          </AdminField>
+          <AdminFieldGroup cols={2}>
+            <AdminField label="Residence" className="mb-0 sm:col-span-2">
+              <AdminInput value={form.residence} onChange={(e) => setField("residence", e.target.value)} />
+            </AdminField>
+            <AdminField label="Status" className="mb-0">
+              <AdminInput
+                placeholder="e.g. Single, Married, Widowed"
+                value={form.deceasedStatus}
+                onChange={(e) => setField("deceasedStatus", e.target.value)}
+              />
+            </AdminField>
+          </AdminFieldGroup>
 
-          <AdminFieldGroup title="Age at death">
-            <AdminField label="Years" className="mb-0 w-[100px]">
+          <AdminFieldGroup cols={3} title="Age at death" className="mb-0">
+            <AdminField label="Years" className="mb-0">
               <AdminInput
                 type="number"
                 min={0}
@@ -284,7 +311,7 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
                 onChange={(e) => setField("age", e.target.value)}
               />
             </AdminField>
-            <AdminField label="Months" className="mb-0 w-[90px]">
+            <AdminField label="Months" className="mb-0">
               <AdminInput
                 type="number"
                 min={0}
@@ -293,7 +320,7 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
                 onChange={(e) => setField("ageMonths", e.target.value)}
               />
             </AdminField>
-            <AdminField label="Days" className="mb-0 w-[90px]">
+            <AdminField label="Days" className="mb-0">
               <AdminInput
                 type="number"
                 min={0}
@@ -303,14 +330,6 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
               />
             </AdminField>
           </AdminFieldGroup>
-
-          <AdminField label="Status" className="mb-0">
-            <AdminInput
-              placeholder="e.g. Single, Married, Widowed"
-              value={form.deceasedStatus}
-              onChange={(e) => setField("deceasedStatus", e.target.value)}
-            />
-          </AdminField>
         </AdminFormSection>
 
         <AdminFormSection
@@ -319,52 +338,67 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
           title="Death & burial"
           description="Dates, place of burial, and officiating minister."
         >
-          <AdminField label="Date of death">
-            <AdminInput
-              type="date"
-              value={form.dateOfDeath}
-              onChange={(e) => setField("dateOfDeath", e.target.value)}
-              required
-            />
-          </AdminField>
-          <AdminField label="Date of burial">
-            <AdminInput
-              type="date"
-              value={form.dateOfBurial}
-              onChange={(e) => setField("dateOfBurial", e.target.value)}
-              required
-            />
-          </AdminField>
-          <AdminField label="Place of burial">
-            <AdminInput
-              value={form.placeOfBurial}
-              onChange={(e) => setField("placeOfBurial", e.target.value)}
-              required
-            />
-          </AdminField>
-          <AdminFieldGroup title="Niche">
-            <AdminField label="Niche no." className="mb-0 w-[120px]">
+          <AdminFieldGroup cols={2}>
+            <AdminField label="Date of death" className="mb-0">
+              <AdminInput
+                type="date"
+                value={form.dateOfDeath}
+                onChange={(e) => setField("dateOfDeath", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Date of burial" className="mb-0">
+              <AdminInput
+                type="date"
+                value={form.dateOfBurial}
+                onChange={(e) => setField("dateOfBurial", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Place of burial" className="mb-0 sm:col-span-2">
+              <AdminInput
+                value={form.placeOfBurial}
+                onChange={(e) => setField("placeOfBurial", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Niche no." className="mb-0">
               <AdminInput value={form.nicheNumber} onChange={(e) => setField("nicheNumber", e.target.value)} />
             </AdminField>
-            <AdminField label="Niche type" className="mb-0 flex-1">
+            <AdminField label="Niche type" className="mb-0">
               <AdminInput
                 placeholder="e.g. Columbarium, Lawn"
                 value={form.nicheType}
                 onChange={(e) => setField("nicheType", e.target.value)}
               />
             </AdminField>
+            <AdminField label="Minister" className="mb-0">
+              <AdminInput
+                placeholder="Rev. Fr."
+                value={form.minister}
+                onChange={(e) => setField("minister", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Cause of death" className="mb-0">
+              <AdminInput value={form.causeOfDeath} onChange={(e) => setField("causeOfDeath", e.target.value)} />
+            </AdminField>
           </AdminFieldGroup>
-          <AdminField label="Minister">
-            <AdminInput
-              placeholder="Rev. Fr."
-              value={form.minister}
-              onChange={(e) => setField("minister", e.target.value)}
-              required
-            />
-          </AdminField>
-          <AdminField label="Cause of death" className="mb-0">
-            <AdminInput value={form.causeOfDeath} onChange={(e) => setField("causeOfDeath", e.target.value)} />
-          </AdminField>
+        </AdminFormSection>
+
+        <AdminFormSection
+          tone="green"
+          icon={<DropletIcon className="h-4.5 w-4.5" />}
+          title="Baptism reference"
+          description="Optional — search and link the baptismal register entry."
+        >
+          <BaptismalRecordLinkField
+            parishId={parish.id}
+            value={form.baptismalRecordId}
+            initialQuery={[form.firstName, form.middleName, form.lastName].filter(Boolean).join(" ")}
+            onChange={applyBaptismalLink}
+            className="mb-0"
+          />
         </AdminFormSection>
 
         <AdminFormSection
@@ -372,30 +406,29 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
           icon={<BookIcon className="h-4.5 w-4.5" />}
           title="Register reference"
         >
-          <AdminField label="Book no." className="mb-0">
-            <AdminInput
-              value={form.bookNumber}
-              onChange={(e) => setField("bookNumber", e.target.value)}
-              className="max-w-[72px]"
-              required
-            />
-          </AdminField>
-          <AdminField label="Page no." className="mb-0">
-            <AdminInput
-              value={form.pageNumber}
-              onChange={(e) => setField("pageNumber", e.target.value)}
-              className="max-w-[72px]"
-              required
-            />
-          </AdminField>
-          <AdminField label="Entry no." className="mb-0">
-            <AdminInput
-              value={form.entryNumber}
-              onChange={(e) => setField("entryNumber", e.target.value)}
-              className="max-w-[72px]"
-              required
-            />
-          </AdminField>
+          <AdminFieldGroup cols={3} className="mb-0">
+            <AdminField label="Book no." className="mb-0">
+              <AdminInput
+                value={form.bookNumber}
+                onChange={(e) => setField("bookNumber", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Page no." className="mb-0">
+              <AdminInput
+                value={form.pageNumber}
+                onChange={(e) => setField("pageNumber", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Entry no." className="mb-0">
+              <AdminInput
+                value={form.entryNumber}
+                onChange={(e) => setField("entryNumber", e.target.value)}
+                required
+              />
+            </AdminField>
+          </AdminFieldGroup>
         </AdminFormSection>
 
         <AdminFormSection
@@ -429,15 +462,15 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
           }
         >
           {form.kin.length === 0 ? (
-            <p className="text-admin-label text-admin-ink-faint">No next of kin recorded.</p>
+            <p className="text-admin-support text-admin-ink-faint">No next of kin recorded.</p>
           ) : (
             form.kin.map((k, i) => (
               <div
                 key={i}
-                className="mb-3 rounded-[8px] border border-admin-border bg-admin-surface-alt p-3 last:mb-0"
+                className="mb-3 rounded-[8px] border border-admin-border bg-admin-surface-alt p-4 last:mb-0"
               >
-                <div className="mb-2 flex flex-wrap gap-2">
-                  <AdminField label="Relation" className="mb-0 w-[140px]">
+                <AdminFieldGroup cols={2} className="mb-3">
+                  <AdminField label="Relation" className="mb-0">
                     <AdminInput
                       placeholder="e.g. Spouse, Father"
                       value={k.relationToDeceased}
@@ -445,13 +478,16 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
                       required
                     />
                   </AdminField>
-                  <AdminField label="First" className="mb-0 w-[120px]">
+                  <AdminField label="First name" className="mb-0">
                     <AdminInput value={k.firstName} onChange={(e) => updateKin(i, "firstName", e.target.value)} />
                   </AdminField>
-                  <AdminField label="Last" className="mb-0 w-[130px]">
+                  <AdminField label="Middle name" className="mb-0">
+                    <AdminInput value={k.middleName} onChange={(e) => updateKin(i, "middleName", e.target.value)} />
+                  </AdminField>
+                  <AdminField label="Last name" className="mb-0">
                     <AdminInput value={k.lastName} onChange={(e) => updateKin(i, "lastName", e.target.value)} />
                   </AdminField>
-                </div>
+                </AdminFieldGroup>
                 <AdminButton variant="ghost" size="sm" type="button" onClick={() => removeKin(i)}>
                   Remove
                 </AdminButton>
@@ -461,11 +497,10 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
         </AdminFormSection>
 
         <AdminFormSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks" className="mb-0">
-          <textarea
+          <AdminTextarea
             value={form.remarks}
             onChange={(e) => setField("remarks", e.target.value)}
             placeholder="Additional notes about this entry"
-            className={textareaClass}
           />
         </AdminFormSection>
 

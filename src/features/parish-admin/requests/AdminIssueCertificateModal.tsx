@@ -4,9 +4,11 @@ import { AdminButton, PrintIcon } from "@/features/parish-admin/components/Admin
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
 import {
   CertificateDocument,
+  CertificatePreviewStage,
   sacramentCertTitles,
   type CertificateFields,
 } from "@/features/parish-admin/components/CertificateDocument";
+import { CERT_PREVIEW_STAGE_BG } from "@/features/parish-admin/components/certificate/constants";
 import { getRequestCopyCount } from "@/features/parish-admin/requests/adminRequestHelpers";
 import { printElement } from "@/features/parish-admin/requests/printUtils";
 import {
@@ -166,14 +168,21 @@ export function AdminIssueCertificateModal({
                       </AdminButton>
                     )}
                   </div>
-                  <CertificateDocument
-                    ref={printRef}
-                    parish={parish}
-                    sacramentType={request.sacramentType}
-                    subjectName={previewName}
-                    fields={fields}
-                    appearance={appearance}
-                  />
+                  <div
+                    className="relative h-[min(70vh,560px)] overflow-hidden rounded-[10px]"
+                    style={{ background: CERT_PREVIEW_STAGE_BG }}
+                  >
+                    <CertificatePreviewStage>
+                      <CertificateDocument
+                        ref={printRef}
+                        parish={parish}
+                        sacramentType={request.sacramentType}
+                        subjectName={previewName}
+                        fields={fields}
+                        appearance={appearance}
+                      />
+                    </CertificatePreviewStage>
+                  </div>
                 </div>
 
                 {/* Right column: checklist (pre-done) or success state */}

@@ -1,6 +1,7 @@
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
+  KeyboardEvent,
   ReactNode,
   SelectHTMLAttributes,
   SVGProps,
@@ -9,7 +10,54 @@ import type {
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 
 const fieldInputClass =
-  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+  "w-full rounded-[10px] border border-admin-border-strong bg-white px-3.5 py-[11px] text-[0.84375rem] leading-normal text-admin-ink placeholder:text-admin-ink-faint transition-[border-color,box-shadow] focus:border-admin-green-700 focus:outline-none focus:ring-2 focus:ring-admin-green-700/15";
+
+const fieldSelectClass = `${fieldInputClass} appearance-none bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-9`;
+
+const SELECT_CHEVRON =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%238a9a9e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")";
+
+const FIELD_SELECTOR =
+  'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
+
+function isVisibleField(el: HTMLElement) {
+  return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+}
+
+/** Enter moves focus to the next nearest field in the same form (does not submit). */
+function focusNextFormField(current: HTMLElement) {
+  const form = current.closest("form");
+  if (!form) return;
+
+  const fields = Array.from(form.querySelectorAll<HTMLElement>(FIELD_SELECTOR)).filter(isVisibleField);
+  const index = fields.indexOf(current);
+  if (index === -1) return;
+
+  const next = fields[index + 1];
+  if (!next) return;
+
+  next.focus();
+  if (next instanceof HTMLInputElement || next instanceof HTMLTextAreaElement) {
+    const valueLength = next.value.length;
+    try {
+      next.setSelectionRange(0, valueLength);
+    } catch {
+      // date/number/etc. may not support selection
+    }
+  }
+}
+
+function handleEnterToNextField(
+  event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
+  onKeyDown?: (event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => void
+) {
+  onKeyDown?.(event);
+  if (event.defaultPrevented) return;
+  if (event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
+
+  event.preventDefault();
+  focusNextFormField(event.currentTarget);
+}
 
 export function AdminFormPage({
   children,
@@ -18,7 +66,7 @@ export function AdminFormPage({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={`mx-auto w-full max-w-[720px] ${className}`}>{children}</div>;
+  return <div className={`mx-auto w-full max-w-[760px] ${className}`}>{children}</div>;
 }
 
 export function AdminField({
@@ -32,7 +80,7 @@ export function AdminField({
 }) {
   return (
     <div className={`mb-4 ${className}`}>
-      <label className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+      <label className="mb-1.5 block text-[0.8125rem] font-semibold leading-snug text-admin-ink">
         {label}
       </label>
       {children}
@@ -44,14 +92,23 @@ export function AdminTextarea({
   className = "",
   ...props
 }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={`${fieldInputClass} min-h-[88px] resize-y ${className}`} {...props} />;
+  return <textarea className={`${fieldInputClass} min-h-[100px] resize-y ${className}`} {...props} />;
 }
 
 export function AdminSelect({
   className = "",
+  style,
+  onKeyDown,
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={`${fieldInputClass} ${className}`} {...props} />;
+  return (
+    <select
+      className={`${fieldSelectClass} ${className}`}
+      style={{ backgroundImage: SELECT_CHEVRON, ...style }}
+      onKeyDown={(e) => handleEnterToNextField(e, onKeyDown)}
+      {...props}
+    />
+  );
 }
 
 export function AdminInput({
@@ -59,6 +116,7 @@ export function AdminInput({
   type,
   max,
   onChange,
+  onKeyDown,
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
   const isDate = type === "date";
@@ -75,6 +133,7 @@ export function AdminInput({
         }
         onChange?.(e);
       }}
+      onKeyDown={(e) => handleEnterToNextField(e, onKeyDown)}
       {...props}
     />
   );
@@ -83,7 +142,7 @@ export function AdminInput({
 type AdminBtnVariant = "primary" | "secondary" | "danger" | "ghost";
 
 const btnVariants: Record<AdminBtnVariant, string> = {
-  primary: "border-transparent bg-admin-green-700 text-white hover:bg-admin-green-900",
+  primary: "border-transparent bg-admin-green-700 text-white hover:bg-admin-green-600",
   secondary: "border-admin-border-strong bg-admin-surface text-admin-ink hover:bg-admin-surface-alt",
   danger: "border-[#E3C3BC] bg-admin-surface text-admin-red-700 hover:bg-admin-red-100",
   ghost: "border-transparent bg-transparent px-1.5 text-admin-green-700 hover:underline",
@@ -173,31 +232,41 @@ export function AdminFormSection({
 }
 
 /**
- * A boxed sub-grouping of closely related fields inside an AdminFormSection
- * (e.g. "Father" first/last name, or a repeatable "Witness" entry).
+ * A labeled sub-grouping of closely related fields inside an AdminFormSection
+ * (e.g. "Father" first/last name). Uses a responsive grid — no fixed-width chips.
  */
 export function AdminFieldGroup({
   title,
   right,
   children,
   className = "",
+  cols = 2,
 }: {
   title?: ReactNode;
   right?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Column count from `sm` breakpoint up. */
+  cols?: 1 | 2 | 3;
 }) {
+  const gridCols =
+    cols === 1
+      ? "grid-cols-1"
+      : cols === 3
+        ? "grid-cols-1 sm:grid-cols-3"
+        : "grid-cols-1 sm:grid-cols-2";
+
   return (
-    <div className={`mb-4 rounded-[10px] border border-admin-border bg-admin-surface-alt/60 p-3.5 last:mb-0 ${className}`}>
+    <div className={`mb-5 last:mb-0 ${className}`}>
       {(title || right) && (
-        <div className="mb-2.5 flex items-center justify-between gap-2">
+        <div className="mb-3 flex items-center justify-between gap-2">
           {title && (
-            <p className="text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">{title}</p>
+            <p className="text-[0.75rem] font-medium tracking-[0.01em] text-admin-ink-muted">{title}</p>
           )}
           {right}
         </div>
       )}
-      <div className="flex flex-wrap gap-2.5">{children}</div>
+      <div className={`grid items-start ${gridCols} gap-x-4 gap-y-4`}>{children}</div>
     </div>
   );
 }

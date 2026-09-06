@@ -29,7 +29,7 @@ export function SuperAdminSidebar({
         collapsed ? "w-14" : "w-[230px]"
       }`}
     >
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2.5 pt-2.5">
+      <nav className="admin-sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2.5 pt-2.5">
         <NavSection label="Overview" collapsed={collapsed} first>
           <SidebarLink to="/super-admin" end icon={<GridIcon />} label="Dashboard" collapsed={collapsed} />
         </NavSection>

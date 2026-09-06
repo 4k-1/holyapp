@@ -19,8 +19,8 @@ export interface RecurringCommitment {
   label: string;
   type: ScheduleEventType;
   days: DayAbbrev[];
-  /** e.g. "6:00 AM" — one commitment can have multiple times on its active days */
-  times: string[];
+  /** One or more start–end windows on each active day */
+  slots: { start: string; end: string }[];
   assignee: string;
   /** Hide from the month-view dots / week overview (still shows in day agenda) */
   showOnOverview?: boolean;

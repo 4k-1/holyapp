@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AdminButton, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { getCurrentUser, loginSuperAdmin } from "@/features/auth/api/authApi";
 
 export function SuperAdminLoginForm() {
@@ -33,20 +33,16 @@ export function SuperAdminLoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-10 flex w-full flex-col text-left">
-      <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Sign in</h1>
-      <p className="mt-2 text-admin-body text-admin-ink-muted">
+    <form onSubmit={handleSubmit} className="mt-8 flex w-full flex-col text-left">
+      <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-admin-ink sm:text-[1.5rem]">
+        Sign in
+      </h1>
+      <p className="mt-1.5 text-admin-body text-admin-ink-muted">
         For platform operators. Parish staff sign in through their parish.
       </p>
 
-      <div className="mt-8 flex flex-col gap-4">
-        <div>
-          <label
-            htmlFor="super-admin-email"
-            className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted"
-          >
-            Email
-          </label>
+      <div className="mt-7 flex flex-col gap-4">
+        <AdminField label="Email" className="mb-0">
           <AdminInput
             id="super-admin-email"
             type="email"
@@ -59,14 +55,8 @@ export function SuperAdminLoginForm() {
             autoFocus
             className="disabled:bg-admin-surface-alt disabled:opacity-60"
           />
-        </div>
-        <div>
-          <label
-            htmlFor="super-admin-password"
-            className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted"
-          >
-            Password
-          </label>
+        </AdminField>
+        <AdminField label="Password" className="mb-0">
           <AdminInput
             id="super-admin-password"
             type="password"
@@ -78,27 +68,27 @@ export function SuperAdminLoginForm() {
             autoComplete="current-password"
             className="disabled:bg-admin-surface-alt disabled:opacity-60"
           />
-        </div>
+        </AdminField>
       </div>
 
       {error && (
         <p
           role="alert"
-          className="mt-4 rounded-[7px] bg-admin-red-100 px-3 py-2 text-admin-body text-admin-red-700"
+          className="mt-4 rounded-[10px] bg-admin-red-100 px-3 py-2 text-admin-body text-admin-red-700"
         >
           {error}
         </p>
       )}
 
-      <AdminButton type="submit" variant="primary" disabled={loading} className="mt-6 w-full py-2.5">
-        {loading ? "Signing in..." : "Sign in"}
+      <AdminButton type="submit" variant="primary" disabled={loading} className="mt-6 w-full !rounded-[10px] py-2.5">
+        {loading ? "Signing in…" : "Sign in"}
       </AdminButton>
 
       <p className="mt-8 border-t border-admin-border pt-5 text-center text-admin-support text-admin-ink-muted">
         Looking for your parish?{" "}
         <Link
           to="/login"
-          className="font-semibold text-admin-green-700 underline decoration-admin-green-100 underline-offset-2 hover:text-admin-green-900"
+          className="font-semibold text-admin-green-700 underline decoration-admin-green-100 underline-offset-2 hover:text-admin-green-600"
         >
           Find it here
         </Link>

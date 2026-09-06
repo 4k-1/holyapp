@@ -20,6 +20,7 @@ export function AdminSchedulePage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [monthData, setMonthData] = useState<Record<string, ScheduleOccurrence[]>>({});
   const [loading, setLoading] = useState(true);
+  const [listSearch, setListSearch] = useState("");
 
   const [addModalDate, setAddModalDate] = useState<string | null>(null);
   const [assignTarget, setAssignTarget] = useState<ScheduleOccurrence | null>(null);
@@ -53,6 +54,11 @@ export function AdminSchedulePage() {
   function jumpToDay(dateStr: string) {
     setSelectedDate(dateStr);
     setView("calendar");
+  }
+
+  function viewAssigneeSchedule(assignee: string) {
+    setListSearch(assignee);
+    setView("list");
   }
 
   const monthLabel = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -128,7 +134,11 @@ export function AdminSchedulePage() {
       </div>
 
       {view === "list" ? (
-        <EventsListView onViewDay={jumpToDay} />
+        <EventsListView
+          onViewDay={jumpToDay}
+          searchQuery={listSearch}
+          onSearchQueryChange={setListSearch}
+        />
       ) : (
         <div className={`grid grid-cols-1 gap-4 ${sidebarCollapsed ? "" : "lg:grid-cols-[1fr_400px]"}`}>
           <MonthCalendarGrid
@@ -147,6 +157,7 @@ export function AdminSchedulePage() {
               onAdd={() => setAddModalDate(selectedDate)}
               onAssign={setAssignTarget}
               onChanged={reload}
+              onViewAssignee={viewAssigneeSchedule}
             />
           )}
         </div>

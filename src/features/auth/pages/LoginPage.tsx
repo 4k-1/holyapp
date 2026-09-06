@@ -1,30 +1,38 @@
 import { useState } from "react";
 import { ParishBrandingPanel } from "@/features/auth/components/ParishBrandingPanel";
 import { ParishSearchStep } from "@/features/auth/components/ParishSearchStep";
-// import { MobileParishHeader } from "@/features/auth/components/MobileParishHeader";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import type { Parish } from "@/types";
+import "@/features/auth/styles/authDesk.css";
 
 export function LoginPage() {
   const [selectedParish, setSelectedParish] = useState<Parish | null>(null);
 
   return (
-    <div className="grid min-h-screen grid-cols-1 md:grid-cols-2 h-screen">
+    <div
+      data-portal="admin"
+      className="auth-desk grid min-h-dvh grid-cols-1 md:grid-cols-2"
+    >
       <ParishBrandingPanel parish={selectedParish} />
-      {/* <MobileParishHeader parish={selectedParish} /> */}
-      <div className="relative flex items-center justify-center overflow-hidden bg-canvas p-6 md:p-8 ">
-        {/* ambient glow, subject-appropriate: soft, not decorative-for-its-own-sake */}
-        {/* <div
-          className="pointer-events-none absolute -top-40 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full opacity-[0.07] blur-3xl"
-          style={{ background: "#1a3d2b" }}
-          aria-hidden
-        /> */}
-        <div className="relative w-full lg:w-md max-w-[90%]">
-          {selectedParish ? (
-            <LoginForm parish={selectedParish} onBack={() => setSelectedParish(null)} />
-          ) : (
-            <ParishSearchStep onSelect={setSelectedParish} />
-          )}
+      <div className="relative flex min-h-dvh flex-col bg-[var(--auth-bg)]">
+        {selectedParish && (
+          <button
+            type="button"
+            onClick={() => setSelectedParish(null)}
+            className="auth-desk__ghost absolute top-5 left-5 z-10 sm:top-6 sm:left-6"
+          >
+            <span aria-hidden>←</span>
+            Change parish
+          </button>
+        )}
+        <div className="flex flex-1 items-center justify-center px-6 py-16 sm:px-10">
+          <div className="w-full max-w-[28rem]">
+            {selectedParish ? (
+              <LoginForm parish={selectedParish} />
+            ) : (
+              <ParishSearchStep onSelect={setSelectedParish} />
+            )}
+          </div>
         </div>
       </div>
     </div>

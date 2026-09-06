@@ -18,8 +18,8 @@ export function recordFullName(rec: Pick<DeathRecord, "firstName" | "middleName"
   return fullName(rec);
 }
 
-export function kinFullName(kin: { firstName?: string; lastName?: string }) {
-  return [kin.firstName, kin.lastName].filter(Boolean).join(" ") || "—";
+export function kinFullName(kin: { firstName?: string; middleName?: string; lastName?: string }) {
+  return [kin.firstName, kin.middleName, kin.lastName].filter(Boolean).join(" ") || "—";
 }
 
 export const DEATH_SACRAMENT_LABELS: Record<DeathSacramentName, string> = {
