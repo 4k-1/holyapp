@@ -1,0 +1,8 @@
+node_modules
+dist
+.agent
+.cursor
+.gemini
+.impeccable
+*.md
+.git

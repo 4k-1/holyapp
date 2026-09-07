@@ -34,9 +34,29 @@ function generateRefreshToken() {
   };
 }
 
+function generateOtpCode() {
+  const code = String(crypto.randomInt(0, 10000)).padStart(4, '0');
+  return {
+    code,
+    codeHash: hashRefreshToken(code),
+  };
+}
+
+function generateResetToken() {
+  const token = crypto.randomBytes(32).toString('hex');
+  return {
+    token,
+    tokenHash: hashRefreshToken(token),
+  };
+}
+
 function refreshTokenExpiryDate() {
   const days = Number(process.env.JWT_REFRESH_EXPIRES_DAYS) || 7;
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+}
+
+function minutesFromNow(minutes) {
+  return new Date(Date.now() + minutes * 60 * 1000);
 }
 
 module.exports = {
@@ -44,5 +64,8 @@ module.exports = {
   accessTokenExpiresInSeconds,
   hashRefreshToken,
   generateRefreshToken,
+  generateOtpCode,
+  generateResetToken,
   refreshTokenExpiryDate,
+  minutesFromNow,
 };
