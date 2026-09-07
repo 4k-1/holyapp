@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ParishBrandingPanel } from "@/features/auth/components/ParishBrandingPanel";
 // import { MobileParishHeader } from "@/features/auth/components/MobileParishHeader";
@@ -12,7 +12,7 @@ import {
   resendVerificationCode,
   type RegisterInput,
 } from "@/features/auth/api/authApi";
-import { getParishBySlug } from "@/features/parish/parishApi";
+import { ensureParishes, getParishBySlug } from "@/features/parish/parishApi";
 import type { Parish } from "@/types";
 
 type Step = "search" | "register" | "otp" | "success";
@@ -29,6 +29,18 @@ export function RegisterPage() {
   const [selectedParish, setSelectedParish] = useState<Parish | null>(initialParish);
   const [pendingEmail, setPendingEmail] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const slug = searchParams.get("parish");
+    if (!slug || selectedParish) return;
+    void ensureParishes().then(() => {
+      const parish = getParishBySlug(slug);
+      if (parish) {
+        setSelectedParish(parish);
+        setStep("register");
+      }
+    });
+  }, [searchParams, selectedParish]);
 
   async function handleRegisterSubmit(data: RegisterInput) {
     await startRegistration(data);

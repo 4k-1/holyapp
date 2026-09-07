@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
-import { getParishBySlug } from "@/features/parish/parishApi";
+import { getParishBySlug, ensureParishes } from "@/features/parish/parishApi";
 import type { Parish } from "@/types";
 
 export interface ParishLoaderData {
@@ -9,6 +9,12 @@ export interface ParishLoaderData {
 export async function parishLayoutLoader({ params }: LoaderFunctionArgs) {
   const slug = params.parishSlug;
   if (!slug) {
+    throw new Response("Not Found", { status: 404 });
+  }
+
+  try {
+    await ensureParishes();
+  } catch {
     throw new Response("Not Found", { status: 404 });
   }
 

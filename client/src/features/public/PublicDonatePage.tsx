@@ -1,10 +1,19 @@
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getParishBySlug } from "@/features/parish/parishApi";
+import { ensureParishes, getParishBySlug } from "@/features/parish/parishApi";
 import { DonationForm } from "@/features/parishioner/donations/DonationForm";
+import type { Parish } from "@/types";
 
 export function PublicDonatePage() {
   const { parishSlug } = useParams();
-  const parish = parishSlug ? getParishBySlug(parishSlug) : undefined;
+  const [parish, setParish] = useState<Parish | undefined>(() =>
+    parishSlug ? getParishBySlug(parishSlug) : undefined
+  );
+
+  useEffect(() => {
+    if (!parishSlug) return;
+    void ensureParishes().then(() => setParish(getParishBySlug(parishSlug)));
+  }, [parishSlug]);
 
   if (!parish) {
     return (

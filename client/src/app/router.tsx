@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ParishLayout } from "@/features/parish/ParishLayout";
 import { parishLayoutLoader } from "@/features/parish/parish-loader";
 import { parishionerRoutes } from "@/features/parishioner/routes";
@@ -22,12 +22,17 @@ import { SuperAdminTemplatesPage } from "@/features/super-admin/pages/SuperAdmin
 import { SuperAdminAuditPage } from "@/features/super-admin/pages/SuperAdminAuditPage";
 import { SuperAdminReportsPage } from "@/features/super-admin/pages/SuperAdminReportsPage";
 import { SuperAdminSettingsPage } from "@/features/super-admin/pages/SuperAdminSettingsPage";
+import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 
 
 // inside createBrowserRouter([...]) array:
 
 
 export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Navigate to="/login" replace />,
+  },
   {
     path: "/give",
     element: <GivePage />,
@@ -51,6 +56,14 @@ export const router = createBrowserRouter([
   {
     path: "/register",
     element: <RegisterPage />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+  },
+  {
+    path: "/reset-password/:token",
+    element: <ResetPasswordPage />,
   },
   {
     path: "/verify/:hash",

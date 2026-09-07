@@ -1,30 +1,84 @@
 import type { CurrentUser } from "@/types";
-import { MOCK_USERS } from "@/services/mocks/users.mock";
+import { apiFetch } from "@/services/http";
 
+const USER_KEY = "holyapp-user";
+const ACCESS_KEY = "holyapp-access-token";
+const REFRESH_KEY = "holyapp-refresh-token";
+const LEGACY_MOCK_KEY = "holyapp-mock-user";
 
-/**
- * TODO(auth): This is a MOCK implementation using a raw user object in
- * localStorage. It is NOT real authentication — anyone can edit
- * localStorage in devtools and grant themselves any role.
- *
- * Before this touches anything real, replace with token-based auth:
- *   1. Store only a JWT/session token in localStorage (or better,
- *      an httpOnly cookie set by the backend).
- *   2. getCurrentUser() should become async — call `/api/me` with the
- *      token attached, let the backend validate + return the user.
- *   3. Every protected backend endpoint must independently re-check
- *      the role server-side. Guards in this app are UX only (avoid
- *      flashing protected content) — they are NOT a security boundary.
- *
- * guards.ts / ParishLayout's loader won't need structural changes when
- * this becomes async — React Router loaders already support async fns.
- */
+type AuthUserPayload = {
+  id: string;
+  parish_id: string | null;
+  role: CurrentUser["role"];
+  status: CurrentUser["status"];
+  full_name?: string;
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  middle_name?: string | null;
+  contact_number?: string | null;
+  email_verified_at?: string | null;
+  created_at?: string | null;
+  birthday?: string | null;
+  address?: string | null;
+};
 
-const STORAGE_KEY = "holyapp-mock-user";
+type SessionResponse = {
+  token: string;
+  refresh_token: string;
+  user: AuthUserPayload;
+};
+
+let pendingEmail: string | null = null;
+
+function toCurrentUser(user: AuthUserPayload): CurrentUser {
+  const firstName = user.first_name || undefined;
+  const lastName = user.last_name || undefined;
+  const middleName = user.middle_name || undefined;
+  const fullName =
+    user.full_name ||
+    [firstName, middleName, lastName].filter(Boolean).join(" ");
+
+  return {
+    id: user.id,
+    parishId: user.parish_id,
+    role: user.role,
+    status: user.status || "active",
+    fullName,
+    email: user.email,
+    firstName,
+    lastName,
+    middleName,
+    contactNumber: user.contact_number || undefined,
+    emailVerifiedAt: user.email_verified_at || undefined,
+    createdAt: user.created_at || undefined,
+    birthday: user.birthday || undefined,
+    address: user.address || undefined,
+  };
+}
+
+function persistSession(payload: SessionResponse): CurrentUser {
+  const user = toCurrentUser(payload.user);
+  localStorage.setItem(ACCESS_KEY, payload.token);
+  localStorage.setItem(REFRESH_KEY, payload.refresh_token);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  localStorage.removeItem(LEGACY_MOCK_KEY);
+  return user;
+}
+
+function clearSession() {
+  localStorage.removeItem(ACCESS_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(LEGACY_MOCK_KEY);
+}
 
 export function getCurrentUser(): CurrentUser | null {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return null;
+  const token = localStorage.getItem(ACCESS_KEY);
+  const raw = localStorage.getItem(USER_KEY);
+  if (!token || !raw) {
+    return null;
+  }
   try {
     const user = JSON.parse(raw) as CurrentUser;
     if (!user.status) user.status = "active";
@@ -36,58 +90,26 @@ export function getCurrentUser(): CurrentUser | null {
 
 export function setCurrentUser(user: CurrentUser | null) {
   if (user) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
   } else {
-    localStorage.removeItem(STORAGE_KEY);
+    clearSession();
   }
-}
-
-
-function toPublicUser(match: (typeof MOCK_USERS)[number]): CurrentUser {
-  const { password: _password, ...user } = match;
-  return user;
-}
-
-function findByCredentials(email: string, password: string) {
-  return MOCK_USERS.find((u) => u.email === email && u.password === password);
 }
 
 export async function login(email: string, password: string): Promise<CurrentUser> {
-  await new Promise((r) => setTimeout(r, 300)); // simulate network
-
-  const match = findByCredentials(email, password);
-  if (!match) {
-    throw new Error("Invalid email or password.");
-  }
-  if (match.role === "super_admin") {
-    throw new Error("This account uses the platform sign-in, not the parish portal.");
-  }
-  if (match.status === "suspended") {
-    throw new Error("This account has been suspended. Contact the parish office.");
-  }
-
-  const user = toPublicUser(match);
-  setCurrentUser(user);
-  return user;
+  const payload = await apiFetch<SessionResponse>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  return persistSession(payload);
 }
 
 export async function loginSuperAdmin(email: string, password: string): Promise<CurrentUser> {
-  await new Promise((r) => setTimeout(r, 300));
-
-  const match = findByCredentials(email, password);
-  if (!match) {
-    throw new Error("Invalid email or password.");
-  }
-  if (match.role !== "super_admin") {
-    throw new Error("This account belongs to a parish. Sign in through your parish portal.");
-  }
-  if (match.status === "suspended") {
-    throw new Error("This platform account has been suspended.");
-  }
-
-  const user = toPublicUser(match);
-  setCurrentUser(user);
-  return user;
+  const payload = await apiFetch<SessionResponse>("/auth/login/super-admin", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  return persistSession(payload);
 }
 
 export interface RegisterInput {
@@ -101,69 +123,43 @@ export interface RegisterInput {
   parishId: string;
 }
 
-// Holds a not-yet-verified registration between "submit form" and "verify OTP"
-let pendingRegistration: RegisterInput | null = null;
-
 export async function startRegistration(input: RegisterInput): Promise<void> {
-  await new Promise((r) => setTimeout(r, 300));
-
-  const exists = MOCK_USERS.some((u) => u.email === input.email);
-  if (exists) {
-    throw new Error("An account with this email already exists.");
-  }
-
-  pendingRegistration = input;
-  // In real life: backend sends an actual email here.
-  console.info(`[mock] Verification code sent to ${input.email}: 1234`);
+  await apiFetch("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  pendingEmail = input.email;
 }
 
 export async function verifyRegistrationCode(code: string): Promise<CurrentUser> {
-  await new Promise((r) => setTimeout(r, 300));
-
-  if (!pendingRegistration) {
+  if (!pendingEmail) {
     throw new Error("No pending registration found. Please register again.");
   }
 
-  // Mock: any code "1234" succeeds. Real implementation checks server-issued code.
-  if (code !== "1234") {
-    throw new Error("Invalid verification code.");
-  }
-
-  const input = pendingRegistration;
-  pendingRegistration = null;
-
-  const fullName = [input.firstName, input.middleName, input.lastName]
-    .filter(Boolean)
-    .join(" ");
-
-  const newUser: CurrentUser = {
-    id: `u-${Date.now()}`,
-    parishId: input.parishId,
-    role: "parishioner",
-    status: "active",
-    fullName,
-    email: input.email,
-    firstName: input.firstName,
-    lastName: input.lastName,
-    middleName: input.middleName,
-    birthday: input.birthday,
-    address: input.address,
-    emailVerifiedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-  };
-
-  MOCK_USERS.push({ ...newUser, password: input.password });
-  setCurrentUser(newUser);
-  return newUser;
+  const payload = await apiFetch<SessionResponse>("/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({ email: pendingEmail, code }),
+  });
+  pendingEmail = null;
+  return persistSession(payload);
 }
 
 export function resendVerificationCode(): void {
-  if (!pendingRegistration) return;
-  console.info(`[mock] Resent code to ${pendingRegistration.email}: 1234`);
+  if (!pendingEmail) return;
+  void apiFetch("/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify({ email: pendingEmail }),
+  }).catch(() => {});
 }
 
 export function logout() {
-  setCurrentUser(null);
+  const refreshToken = localStorage.getItem(REFRESH_KEY);
+  clearSession();
+  if (!refreshToken) return;
+  void apiFetch("/auth/logout", {
+    method: "POST",
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  }).catch(() => {});
 }
 
 export interface UpdateProfileInput {
@@ -176,13 +172,10 @@ export interface UpdateProfileInput {
 }
 
 export async function updateProfile(input: UpdateProfileInput): Promise<CurrentUser> {
-  await new Promise((r) => setTimeout(r, 400));
-
   const current = getCurrentUser();
   if (!current) throw new Error("Not logged in.");
 
   const fullName = [input.firstName, input.middleName, input.lastName].filter(Boolean).join(" ");
-
   const updated: CurrentUser = {
     ...current,
     firstName: input.firstName,
@@ -199,12 +192,23 @@ export async function updateProfile(input: UpdateProfileInput): Promise<CurrentU
 }
 
 export async function sendPasswordResetEmail(): Promise<void> {
-  await new Promise((r) => setTimeout(r, 500));
   const current = getCurrentUser();
-  console.info(`[mock] Password reset link sent to ${current?.email}`);
+  const email = current?.email;
+  if (!email) throw new Error("Not logged in.");
+
+  await apiFetch("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(token: string, password: string): Promise<void> {
+  await apiFetch("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
 }
 
 export async function deleteAccount(): Promise<void> {
-  await new Promise((r) => setTimeout(r, 500));
-  setCurrentUser(null);
+  clearSession();
 }
