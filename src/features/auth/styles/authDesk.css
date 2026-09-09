@@ -83,6 +83,42 @@
   background: var(--auth-bg);
 }
 
+.auth-desk__password {
+  position: relative;
+}
+
+.auth-desk__input--password {
+  padding-right: 2.75rem;
+}
+
+.auth-desk__password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--auth-ink-faint);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.auth-desk__password-toggle:hover:not(:disabled) {
+  color: var(--auth-ink);
+  background: var(--auth-bg);
+}
+
+.auth-desk__password-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .auth-desk__cta {
   display: inline-flex;
   width: 100%;

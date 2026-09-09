@@ -48,33 +48,40 @@ export function ParishRegisterPage() {
   }
 
   return (
-    <div data-portal="admin" className="auth-desk flex min-h-dvh flex-col md:grid md:grid-cols-2">
-      <ParishBrandingPanel parish={parish} />
+    <div
+      data-portal="admin"
+      className="auth-desk flex h-dvh flex-col overflow-hidden md:grid md:grid-cols-2"
+    >
+      <div className="hidden min-h-0 md:block">
+        <ParishBrandingPanel parish={parish} />
+      </div>
       <MobileParishHeader parish={parish} />
-      <div className="relative flex flex-1 flex-col bg-[var(--auth-bg)]">
+      <div className="relative flex min-h-0 flex-1 flex-col bg-[var(--auth-bg)]">
         {showBack && (
           <button
             type="button"
             onClick={handleBack}
-            className="auth-desk__ghost absolute top-5 left-5 z-10 sm:top-6 sm:left-6"
+            className="auth-desk__ghost absolute top-5 left-5 z-20 sm:top-6 sm:left-6"
           >
             <span aria-hidden>←</span>
             {backLabel}
           </button>
         )}
-        <div className="flex flex-1 items-center justify-center overflow-y-auto px-5 py-16 sm:px-10">
-          <div className="w-full max-w-[28rem]">
-            {step === "register" && (
-              <RegisterForm parish={parish} onSubmit={handleRegisterSubmit} />
-            )}
-            {step === "otp" && (
-              <OtpStep
-                email={pendingEmail}
-                onVerify={handleVerify}
-                onResend={resendVerificationCode}
-              />
-            )}
-            {step === "success" && <VerificationSuccessStep />}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="flex min-h-full flex-col justify-center px-5 py-16 sm:px-10">
+            <div className="mx-auto w-full max-w-[28rem]">
+              {step === "register" && (
+                <RegisterForm parish={parish} onSubmit={handleRegisterSubmit} />
+              )}
+              {step === "otp" && (
+                <OtpStep
+                  email={pendingEmail}
+                  onVerify={handleVerify}
+                  onResend={resendVerificationCode}
+                />
+              )}
+              {step === "success" && <VerificationSuccessStep />}
+            </div>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { AuthPasswordField } from "@/features/auth/components/AuthPasswordField";
 import { ParishIdentityLockup } from "@/features/auth/components/ParishIdentityLockup";
 import type { Parish } from "@/types";
 import type { RegisterInput } from "@/features/auth/api/authApi";
@@ -157,38 +158,26 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="reg-password" className="auth-desk__label">
-              Password
-            </label>
-            <input
-              id="reg-password"
-              type="password"
-              className="auth-desk__input"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-              autoComplete="new-password"
-            />
-          </div>
-          <div>
-            <label htmlFor="reg-confirm-password" className="auth-desk__label">
-              Confirm
-            </label>
-            <input
-              id="reg-confirm-password"
-              type="password"
-              className="auth-desk__input"
-              placeholder="Confirm"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              disabled={loading}
-              autoComplete="new-password"
-            />
-          </div>
+          <AuthPasswordField
+            id="reg-password"
+            label="Password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={loading}
+            autoComplete="new-password"
+          />
+          <AuthPasswordField
+            id="reg-confirm-password"
+            label="Confirm"
+            placeholder="Confirm"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            disabled={loading}
+            autoComplete="new-password"
+          />
         </div>
       </div>
 

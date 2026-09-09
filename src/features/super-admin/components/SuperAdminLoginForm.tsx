@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { EyeIcon, EyeOffIcon } from "@/components/ui/icons/AdminIcons";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { getCurrentUser, loginSuperAdmin } from "@/features/auth/api/authApi";
 
 export function SuperAdminLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -57,17 +59,33 @@ export function SuperAdminLoginForm() {
           />
         </AdminField>
         <AdminField label="Password" className="mb-0">
-          <AdminInput
-            id="super-admin-password"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={loading}
-            autoComplete="current-password"
-            className="disabled:bg-admin-surface-alt disabled:opacity-60"
-          />
+          <div className="relative">
+            <AdminInput
+              id="super-admin-password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              autoComplete="current-password"
+              className="pr-11 disabled:bg-admin-surface-alt disabled:opacity-60"
+            />
+            <button
+              type="button"
+              className="absolute top-1/2 right-2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-admin-ink-faint hover:bg-admin-bg hover:text-admin-ink disabled:opacity-50"
+              onClick={() => setShowPassword((v) => !v)}
+              disabled={loading}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? (
+                <EyeOffIcon className="h-4 w-4" aria-hidden />
+              ) : (
+                <EyeIcon className="h-4 w-4" aria-hidden />
+              )}
+            </button>
+          </div>
         </AdminField>
       </div>
 

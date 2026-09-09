@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { login } from "@/features/auth/api/authApi";
+import { AuthPasswordField } from "@/features/auth/components/AuthPasswordField";
 import { ParishIdentityLockup } from "@/features/auth/components/ParishIdentityLockup";
 import type { Parish } from "@/types";
 import "@/features/auth/styles/authDesk.css";
@@ -67,13 +68,22 @@ export function LoginForm({ parish }: LoginFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="login-password" className="auth-desk__label">
-            Password
-          </label>
-          <input
+          <div className="mb-1.5 flex items-center justify-between gap-3">
+            <label htmlFor="login-password" className="auth-desk__label mb-0">
+              Password
+            </label>
+            <button
+              type="button"
+              className="auth-desk__ghost shrink-0 text-[0.75rem]"
+              onClick={() => {
+                /* TODO: forgot password flow */
+              }}
+            >
+              Forgot password?
+            </button>
+          </div>
+          <AuthPasswordField
             id="login-password"
-            type="password"
-            className="auth-desk__input"
             placeholder="Enter password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
