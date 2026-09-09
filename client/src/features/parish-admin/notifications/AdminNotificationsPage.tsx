@@ -1,8 +1,5 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useOutletContext } from "react-router-dom";
-import { AdminBadge } from "@/components/ui/AdminBadge";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import {
   listNotifications,
   markAllNotificationsRead,
@@ -16,16 +13,11 @@ import {
 import type { NotificationKind, ParishNotification } from "@/features/parish-admin/notifications/types";
 import { useAsync } from "@/hooks/useAsync";
 import type { Parish } from "@/types";
+import "@/features/parish-admin/styles/adminDesk.css";
+import "./AdminNotificationsPage.css";
 
-type Filter = "all" | "unread";
-
-const KIND_TONE: Record<NotificationKind, "amber" | "green" | "gold" | "muted"> = {
-  request: "amber",
-  payment: "green",
-  schedule: "gold",
-  intention: "muted",
-  donation: "green",
-};
+type Tab = "unread" | "read";
+type Sort = "newest" | "oldest";
 
 export function AdminNotificationsPage() {
   const { parish, refetchUnreadNotifications } = useOutletContext<{
@@ -33,7 +25,9 @@ export function AdminNotificationsPage() {
     refetchUnreadNotifications?: () => void;
   }>();
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<Filter>("unread");
+  const [tab, setTab] = useState<Tab>("unread");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<Sort>("newest");
   const [markingAll, setMarkingAll] = useState(false);
 
   const { data: notifications = [], loading, refetch } = useAsync(
@@ -42,10 +36,29 @@ export function AdminNotificationsPage() {
   );
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-  const visible = useMemo(
-    () => (filter === "unread" ? notifications.filter((n) => !n.read) : notifications),
-    [filter, notifications]
-  );
+  const readCount = notifications.length - unreadCount;
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let rows =
+      tab === "unread" ? notifications.filter((n) => !n.read) : notifications.filter((n) => n.read);
+
+    if (q) {
+      rows = rows.filter(
+        (n) =>
+          n.title.toLowerCase().includes(q) ||
+          n.body.toLowerCase().includes(q) ||
+          NOTIFICATION_KIND_LABEL[n.kind].toLowerCase().includes(q)
+      );
+    }
+
+    rows = [...rows].sort((a, b) => {
+      const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return sort === "newest" ? -diff : diff;
+    });
+
+    return rows;
+  }, [notifications, tab, query, sort]);
 
   async function openNotification(notification: ParishNotification) {
     if (!notification.read) {
@@ -69,165 +82,159 @@ export function AdminNotificationsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-5 flex items-end justify-between gap-4">
-        <div>
-          <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Notifications</h1>
-          <p className="text-admin-body text-admin-ink-muted">
-            Requests, schedule, and parish activity that need the office’s eye.
-          </p>
-        </div>
-        <AdminButton variant="secondary" onClick={markAllRead} disabled={unreadCount === 0 || markingAll}>
-          {markingAll ? "Marking…" : "Mark all as read"}
-        </AdminButton>
-      </div>
-
-      <div className="mb-4 flex gap-1.5">
-        <FilterTab
-          label="Unread"
-          count={unreadCount}
-          active={filter === "unread"}
-          onClick={() => setFilter("unread")}
-        />
-        <FilterTab
-          label="All"
-          count={notifications.length}
-          active={filter === "all"}
-          onClick={() => setFilter("all")}
-        />
-      </div>
-
-      <AdminCard className="overflow-hidden">
-        {loading && notifications.length === 0 ? (
-          <p className="px-5 py-8 text-admin-body text-admin-ink-muted">Loading notifications…</p>
-        ) : visible.length === 0 ? (
-          <p className="px-5 py-8 text-admin-body text-admin-ink-muted">
-            {filter === "unread"
-              ? "Nothing unread. New requests and schedule reminders will appear here."
-              : "No notifications yet for this parish."}
-          </p>
-        ) : filter === "unread" ? (
-          <NotificationList notifications={visible} onOpen={openNotification} />
-        ) : (
-          <NotificationGroups notifications={visible} onOpen={openNotification} />
-        )}
-      </AdminCard>
-    </div>
-  );
-}
-
-function NotificationGroups({
-  notifications,
-  onOpen,
-}: {
-  notifications: ParishNotification[];
-  onOpen: (notification: ParishNotification) => void;
-}) {
-  const unread = notifications.filter((n) => !n.read);
-  const earlier = notifications.filter((n) => n.read);
-
-  return (
-    <div>
-      {unread.length > 0 && (
-        <section>
-          <p className="px-5 pb-1 pt-3 text-admin-label font-semibold uppercase tracking-admin-label text-admin-green-700">
-            New
-          </p>
-          <NotificationList
-            notifications={unread}
-            onOpen={onOpen}
-            bordered={earlier.length > 0}
-          />
-        </section>
-      )}
-      {earlier.length > 0 && (
-        <section>
-          <p className="px-5 pb-1 pt-3 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-            Earlier
-          </p>
-          <NotificationList notifications={earlier} onOpen={onOpen} />
-        </section>
-      )}
-    </div>
-  );
-}
-
-function NotificationList({
-  notifications,
-  onOpen,
-  bordered = false,
-}: {
-  notifications: ParishNotification[];
-  onOpen: (notification: ParishNotification) => void;
-  bordered?: boolean;
-}) {
-  return (
-    <ul className={bordered ? "border-b border-admin-border" : undefined}>
-      {notifications.map((notification, i) => (
-        <li key={notification.id}>
+    <div className="admin-dash admin-notif mx-auto max-w-[1180px]">
+      <header className="admin-notif__page-header">
+        <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)] sm:text-[1.5rem]">
+          Notifications
+        </h1>
+        <div className="admin-notif__tabs" role="tablist" aria-label="Notification filters">
           <button
             type="button"
-            onClick={() => onOpen(notification)}
-            className={`flex w-full items-start gap-3.5 px-5 py-4 text-left transition-colors hover:bg-admin-green-050/60 ${
-              i < notifications.length - 1 ? "border-b border-admin-border" : ""
-            } ${notification.read ? "bg-admin-surface" : "bg-admin-green-050/40"}`}
+            role="tab"
+            aria-selected={tab === "unread"}
+            className={`admin-notif__tab ${tab === "unread" ? "admin-notif__tab--active" : ""}`}
+            onClick={() => setTab("unread")}
           >
-            <span
-              className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                notification.read ? "bg-admin-border-strong" : "bg-admin-green-700"
-              }`}
-              aria-hidden="true"
-            />
-            <span className="min-w-0 flex-1">
-              <span className="mb-1 flex flex-wrap items-center gap-2">
-                <AdminBadge tone={KIND_TONE[notification.kind]}>
-                  {NOTIFICATION_KIND_LABEL[notification.kind]}
-                </AdminBadge>
-                <time className="text-admin-label text-admin-ink-muted">
-                  {formatNotificationTime(notification.createdAt)}
-                </time>
-              </span>
-              <span
-                className={`block text-admin-body ${
-                  notification.read ? "font-medium text-admin-ink" : "font-semibold text-admin-ink"
-                }`}
-              >
-                {notification.title}
-              </span>
-              <span className="mt-0.5 block text-admin-support leading-relaxed text-admin-ink-muted">
-                {notification.body}
-              </span>
-            </span>
+            Unread
+            {unreadCount > 0 ? <span className="admin-notif__tab-count">{unreadCount}</span> : null}
           </button>
-        </li>
-      ))}
-    </ul>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "read"}
+            className={`admin-notif__tab ${tab === "read" ? "admin-notif__tab--active" : ""}`}
+            onClick={() => setTab("read")}
+          >
+            Read
+            {readCount > 0 ? <span className="admin-notif__tab-count">{readCount}</span> : null}
+          </button>
+        </div>
+      </header>
+
+      <div className="admin-notif__toolbar">
+        <label className="admin-notif__search">
+          <SearchIcon />
+          <input
+            type="search"
+            placeholder="Search for notification"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <div className="admin-notif__toolbar-end">
+          <label className="admin-notif__select">
+            <span className="sr-only">Sort by</span>
+            <select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
+              <option value="newest">Date and time</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+            <ChevronIcon />
+          </label>
+          <button
+            type="button"
+            className="admin-notif__ghost-btn"
+            onClick={markAllRead}
+            disabled={unreadCount === 0 || markingAll}
+          >
+            {markingAll ? "Marking…" : "Mark all as read"}
+          </button>
+        </div>
+      </div>
+
+      <section className="admin-dash__card admin-notif__card overflow-hidden">
+        {loading && notifications.length === 0 ? (
+          <p className="admin-notif__empty">Loading notifications…</p>
+        ) : visible.length === 0 ? (
+          <p className="admin-notif__empty">
+            {query.trim()
+              ? "No notifications match your search."
+              : tab === "unread"
+                ? "Nothing unread. New requests and schedule reminders will appear here."
+                : "No read notifications yet."}
+          </p>
+        ) : (
+          <ul className="admin-notif__list">
+            {visible.map((notification) => (
+              <li key={notification.id}>
+                <button
+                  type="button"
+                  className="admin-notif__row"
+                  onClick={() => openNotification(notification)}
+                >
+                  <span
+                    className={`admin-notif__dot ${notification.read ? "" : "admin-notif__dot--unread"}`}
+                    aria-hidden="true"
+                  />
+                  <span className="admin-notif__copy">
+                    <span className="admin-notif__row-title">{notification.title}</span>
+                    <span className="admin-notif__row-body">{notification.body}</span>
+                  </span>
+                  <span className="admin-notif__kind">
+                    <KindIcon kind={notification.kind} />
+                    {NOTIFICATION_KIND_LABEL[notification.kind]}
+                  </span>
+                  <time className="admin-notif__time" dateTime={notification.createdAt}>
+                    {formatNotificationTime(notification.createdAt)}
+                  </time>
+                  <span className="admin-notif__more" aria-hidden="true">
+                    <MoreIcon />
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }
 
-function FilterTab({
-  label,
-  count,
-  active,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  active: boolean;
-  onClick: () => void;
-}) {
+function KindIcon({ kind }: { kind: NotificationKind }) {
+  if (kind === "request" || kind === "schedule") {
+    return (
+      <svg viewBox="0 0 16 16" fill="none" className="admin-notif__kind-icon" aria-hidden="true">
+        <path
+          d="M8 1.5 14.5 13h-13L8 1.5Z"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+        <path d="M8 6v3.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        <circle cx="8" cy="11.2" r="0.7" fill="currentColor" />
+      </svg>
+    );
+  }
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full border px-3.5 py-1.5 text-admin-support font-semibold transition-colors ${
-        active
-          ? "border-admin-green-700/30 bg-admin-green-100 text-admin-green-900"
-          : "border-admin-border bg-admin-surface text-admin-ink-muted hover:bg-admin-surface-alt hover:text-admin-ink"
-      }`}
-    >
-      {label}
-      <span className="ml-1.5 font-mono">{count}</span>
-    </button>
+    <svg viewBox="0 0 16 16" fill="none" className="admin-notif__kind-icon" aria-hidden="true">
+      <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M8 5v3.2l2 1.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0">
+      <circle cx="11" cy="11" r="7" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className="admin-notif__chevron" aria-hidden="true">
+      <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+      <circle cx="4" cy="10" r="1.5" />
+      <circle cx="10" cy="10" r="1.5" />
+      <circle cx="16" cy="10" r="1.5" />
+    </svg>
   );
 }

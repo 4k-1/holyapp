@@ -234,7 +234,21 @@ export function AdminBaptismalRecordDetailPage() {
       {addingAnnotation && (
         <AdminAddAnnotationModal
           subjectName={name}
-          baptismDate={record.dateOfBaptism}
+          baptismal={{
+            id: record.id,
+            firstName: record.firstName,
+            middleName: record.middleName,
+            lastName: record.lastName,
+            sex: record.sex,
+            dateOfBirth: record.dateOfBirth,
+            address: record.address,
+            fatherFirstName: record.fatherFirstName,
+            fatherLastName: record.fatherLastName,
+            motherFirstName: record.motherFirstName,
+            motherLastName: record.motherLastName,
+            dateOfBaptism: record.dateOfBaptism,
+            placeOfBaptism: record.placeOfBaptism,
+          }}
           existingCategories={record.annotations.map((a) => a.category)}
           onClose={() => setAddingAnnotation(false)}
           onSubmit={async (input) => {

@@ -222,8 +222,9 @@ export type DeathSacramentName = "last_rites" | "burial_mass" | "confession" | "
 export interface DeathKin {
   id: string;
   relationToDeceased: string;
-  lastName?: string;
   firstName?: string;
+  middleName?: string;
+  lastName?: string;
 }
 
 export interface DeathSacramentReceived {
@@ -253,6 +254,8 @@ export interface DeathRecord {
   pageNumber: string;
   entryNumber: string;
   remarks?: string;
+  /** Optional link back to the parish baptismal register */
+  baptismalRecordId?: string;
   encodedBy: string;
   createdAt: string;
   updatedAt: string;

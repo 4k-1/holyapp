@@ -56,9 +56,9 @@ export function AdminTopbar({
     };
   }, [menuOpen]);
 
-  function handleSignOut() {
+  async function handleSignOut() {
     setMenuOpen(false);
-    logout();
+    await logout();
     navigate(`/${parish.slug}/login`, { replace: true });
   }
 

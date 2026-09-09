@@ -20,8 +20,8 @@ export function AccountPage() {
     .join("")
     .toUpperCase();
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate("/login");
   }
 

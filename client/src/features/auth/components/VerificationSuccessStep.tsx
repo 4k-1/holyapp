@@ -1,11 +1,17 @@
+import "@/features/auth/styles/authDesk.css";
+
 export function VerificationSuccessStep() {
   return (
-    <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-3xl text-primary">
+    <div className="auth-desk flex w-full flex-col items-center gap-4 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--auth-green-soft)] text-2xl font-semibold text-[var(--auth-green)]">
         ✓
       </div>
-      <h1 className="font-serif text-2xl font-semibold text-ink">Verification Successful</h1>
-      <p className="text-sm text-ink-muted">Email verified successfully! Your account is ready.</p>
+      <div>
+        <h1 className="auth-desk__title">Verified</h1>
+        <p className="auth-desk__subtitle mx-auto max-w-xs">
+          Your email is confirmed. Taking you to your parish portal…
+        </p>
+      </div>
     </div>
   );
 }

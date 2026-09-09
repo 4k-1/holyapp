@@ -86,7 +86,8 @@ export function RecurringCommitmentsManagerModal({ onClose, onChanged }: Recurri
                           <AdminBadge tone="green">{EVENT_TYPE_LABELS[rc.type]}</AdminBadge>
                         </div>
                         <p className="mt-1 text-admin-support text-admin-ink-muted">
-                          {rc.days.join(", ")} · {rc.times.join(", ")}
+                          {rc.days.join(", ")} ·{" "}
+                          {rc.slots.map((s) => `${s.start} – ${s.end}`).join(", ")}
                         </p>
                         <p className="mt-0.5 text-admin-support text-admin-ink-faint">{rc.assignee || "Unassigned"}</p>
                       </div>
@@ -156,7 +157,11 @@ function RecurringCommitmentForm({
   const [type, setType] = useState<ScheduleEventType>(initial?.type ?? "mass");
   const [assignee, setAssignee] = useState(initial?.assignee ?? "");
   const [days, setDays] = useState<DayAbbrev[]>(initial?.days ?? []);
-  const [times24, setTimes24] = useState<string[]>(initial?.times.map(to24Hour) ?? ["06:00"]);
+  const [slots24, setSlots24] = useState<{ start: string; end: string }[]>(
+    initial?.slots.map((s) => ({ start: to24Hour(s.start), end: to24Hour(s.end) })) ?? [
+      { start: "06:00", end: "07:00" },
+    ]
+  );
   const [showOnOverview, setShowOnOverview] = useState(initial?.showOnOverview !== false);
   const [saving, setSaving] = useState(false);
 
@@ -164,16 +169,24 @@ function RecurringCommitmentForm({
     setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
   }
 
-  function addTimeInput() {
-    setTimes24((prev) => [...prev, "06:00"]);
+  function addSlot() {
+    setSlots24((prev) => [...prev, { start: "06:00", end: "07:00" }]);
   }
 
-  function removeTimeInput(idx: number) {
-    setTimes24((prev) => prev.filter((_, i) => i !== idx));
+  function removeSlot(idx: number) {
+    setSlots24((prev) => prev.filter((_, i) => i !== idx));
   }
+
+  function updateSlot(idx: number, patch: Partial<{ start: string; end: string }>) {
+    setSlots24((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
+  }
+
+  const slotsValid =
+    slots24.length > 0 &&
+    slots24.every((s) => s.start && s.end && s.start < s.end);
 
   async function handleSave() {
-    if (!label.trim() || days.length === 0 || times24.length === 0) return;
+    if (!label.trim() || days.length === 0 || !slotsValid) return;
     setSaving(true);
     try {
       const payload = {
@@ -181,7 +194,10 @@ function RecurringCommitmentForm({
         type,
         assignee,
         days,
-        times: times24.map(convert24to12),
+        slots: slots24.map((s) => ({
+          start: convert24to12(s.start),
+          end: convert24to12(s.end),
+        })),
         showOnOverview,
       };
       if (initial) {
@@ -252,25 +268,39 @@ function RecurringCommitmentForm({
       </div>
 
       <div className="mb-3">
-        <p className="mb-1.5 text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">Times</p>
+        <p className="mb-1.5 text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">
+          Time slots
+        </p>
         <div className="space-y-1.5">
-          {times24.map((t, i) => (
-            <div key={i} className="flex items-center gap-2">
+          {slots24.map((slot, i) => (
+            <div key={i} className="flex flex-wrap items-center gap-2">
               <input
                 type="time"
-                value={t}
-                onChange={(e) => setTimes24((prev) => prev.map((v, idx) => (idx === i ? e.target.value : v)))}
+                value={slot.start}
+                onChange={(e) => updateSlot(i, { start: e.target.value })}
+                aria-label={`Slot ${i + 1} start`}
                 className="rounded-lg border border-admin-border bg-admin-surface px-3 py-1.5 text-admin-body text-admin-ink"
               />
-              {times24.length > 1 && (
-                <button type="button" onClick={() => removeTimeInput(i)} className="text-admin-support font-semibold text-red-700">
+              <span className="text-admin-support text-admin-ink-muted">to</span>
+              <input
+                type="time"
+                value={slot.end}
+                onChange={(e) => updateSlot(i, { end: e.target.value })}
+                aria-label={`Slot ${i + 1} end`}
+                className="rounded-lg border border-admin-border bg-admin-surface px-3 py-1.5 text-admin-body text-admin-ink"
+              />
+              {slots24.length > 1 && (
+                <button type="button" onClick={() => removeSlot(i)} className="text-admin-support font-semibold text-red-700">
                   Remove
                 </button>
               )}
             </div>
           ))}
-          <button type="button" onClick={addTimeInput} className="text-admin-support font-semibold text-admin-green-700 hover:underline">
-            + Add another time
+          {!slotsValid && (
+            <p className="text-admin-support text-admin-red-700">Each slot needs an end time after its start.</p>
+          )}
+          <button type="button" onClick={addSlot} className="text-admin-support font-semibold text-admin-green-700 hover:underline">
+            + Add another slot
           </button>
         </div>
       </div>
@@ -289,7 +319,7 @@ function RecurringCommitmentForm({
         <AdminButton variant="secondary" size="sm" onClick={onCancel} disabled={saving}>
           Cancel
         </AdminButton>
-        <AdminButton size="sm" onClick={handleSave} disabled={!label.trim() || days.length === 0 || saving}>
+        <AdminButton size="sm" onClick={handleSave} disabled={!label.trim() || days.length === 0 || !slotsValid || saving}>
           {saving ? "Saving…" : initial ? "Save changes" : "Add commitment"}
         </AdminButton>
       </div>

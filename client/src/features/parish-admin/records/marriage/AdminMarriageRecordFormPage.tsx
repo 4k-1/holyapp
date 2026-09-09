@@ -7,6 +7,8 @@ import {
   AdminFormPage,
   AdminFormSection,
   AdminInput,
+  AdminSelect,
+  AdminTextarea,
   BookIcon,
   NoteIcon,
   UserIcon,
@@ -19,9 +21,10 @@ import {
   updateMarriageRecord,
   type MarriagePartyInput,
 } from "@/features/parish-admin/records/api/marriageRecordsApi";
+import { BaptismalRecordLinkField } from "@/features/parish-admin/records/BaptismalRecordLinkField";
 import { getMarriageParty } from "@/features/parish-admin/records/marriageHelpers";
 import { useAsync } from "@/hooks/useAsync";
-import type { CivilStatus, MarriagePartyRole } from "@/features/parish-admin/records/types";
+import type { BaptismalRecord, CivilStatus, MarriagePartyRole } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 
 interface ConsentFormState {
@@ -117,12 +120,6 @@ const emptyForm = (placeOfMarriage = ""): FormState => ({
   groom: emptyParty(),
   bride: emptyParty(),
 });
-
-const textareaClass =
-  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
-
-const selectClass =
-  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 function partyToForm(party: ReturnType<typeof getMarriageParty>): PartyFormState {
   if (!party) return emptyParty();
@@ -255,6 +252,33 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
     }));
   }
 
+  function applyPartyBaptismalLink(
+    partyKey: "groom" | "bride",
+    recordId: string,
+    rec: BaptismalRecord | null
+  ) {
+    setForm((prev) => {
+      const party = prev[partyKey];
+      return {
+        ...prev,
+        [partyKey]: {
+          ...party,
+          baptismalRecordId: recordId,
+          firstName: party.firstName || rec?.firstName || "",
+          middleName: party.middleName || rec?.middleName || "",
+          lastName: party.lastName || rec?.lastName || "",
+          dateOfBirth: party.dateOfBirth || rec?.dateOfBirth || "",
+          sex: party.sex || rec?.sex || "",
+          address: party.address || rec?.address || "",
+          fatherFirstName: party.fatherFirstName || rec?.fatherFirstName || "",
+          fatherLastName: party.fatherLastName || rec?.fatherLastName || "",
+          motherFirstName: party.motherFirstName || rec?.motherFirstName || "",
+          motherLastName: party.motherLastName || rec?.motherLastName || "",
+        },
+      };
+    });
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -304,22 +328,22 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
           title="Marriage details"
           description="Where and when the marriage took place, and the officiating minister."
         >
-          <AdminField label="Place of marriage">
-            <AdminInput
-              value={form.placeOfMarriage}
-              onChange={(e) => setMarriageField("placeOfMarriage", e.target.value)}
-              required
-            />
-          </AdminField>
-          <AdminField label="Marriage address">
-            <AdminInput
-              placeholder="Street address, if recorded separately"
-              value={form.marriageAddress}
-              onChange={(e) => setMarriageField("marriageAddress", e.target.value)}
-            />
-          </AdminField>
-          <AdminFieldGroup title="Date & time" className="mb-0">
-            <AdminField label="Date of marriage" className="mb-0 w-[160px]">
+          <AdminFieldGroup cols={2}>
+            <AdminField label="Place of marriage" className="mb-0 sm:col-span-2">
+              <AdminInput
+                value={form.placeOfMarriage}
+                onChange={(e) => setMarriageField("placeOfMarriage", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Marriage address" className="mb-0 sm:col-span-2">
+              <AdminInput
+                placeholder="Street address, if recorded separately"
+                value={form.marriageAddress}
+                onChange={(e) => setMarriageField("marriageAddress", e.target.value)}
+              />
+            </AdminField>
+            <AdminField label="Date of marriage" className="mb-0">
               <AdminInput
                 type="date"
                 value={form.dateOfMarriage}
@@ -327,22 +351,22 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
                 required
               />
             </AdminField>
-            <AdminField label="Time" className="mb-0 w-[130px]">
+            <AdminField label="Time" className="mb-0">
               <AdminInput
                 type="time"
                 value={form.timeOfMarriage}
                 onChange={(e) => setMarriageField("timeOfMarriage", e.target.value)}
               />
             </AdminField>
+            <AdminField label="Minister" className="mb-0 sm:col-span-2">
+              <AdminInput
+                placeholder="Rev. Fr."
+                value={form.minister}
+                onChange={(e) => setMarriageField("minister", e.target.value)}
+                required
+              />
+            </AdminField>
           </AdminFieldGroup>
-          <AdminField label="Minister">
-            <AdminInput
-              placeholder="Rev. Fr."
-              value={form.minister}
-              onChange={(e) => setMarriageField("minister", e.target.value)}
-              required
-            />
-          </AdminField>
         </AdminFormSection>
 
         <AdminFormSection
@@ -351,12 +375,11 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
           title="Register & witnesses"
           description="Book/page/entry reference and the two required witnesses."
         >
-          <AdminFieldGroup title="Register reference">
+          <AdminFieldGroup cols={3} title="Register reference">
             <AdminField label="Book no." className="mb-0">
               <AdminInput
                 value={form.bookNumber}
                 onChange={(e) => setMarriageField("bookNumber", e.target.value)}
-                className="max-w-[72px]"
                 required
               />
             </AdminField>
@@ -364,7 +387,6 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
               <AdminInput
                 value={form.pageNumber}
                 onChange={(e) => setMarriageField("pageNumber", e.target.value)}
-                className="max-w-[72px]"
                 required
               />
             </AdminField>
@@ -372,21 +394,20 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
               <AdminInput
                 value={form.entryNumber}
                 onChange={(e) => setMarriageField("entryNumber", e.target.value)}
-                className="max-w-[72px]"
                 required
               />
             </AdminField>
           </AdminFieldGroup>
 
-          <AdminFieldGroup title="Witnesses" className="mb-0">
-            <AdminField label="Witness one" className="mb-0 flex-1">
+          <AdminFieldGroup cols={2} title="Witnesses" className="mb-0">
+            <AdminField label="Witness one" className="mb-0">
               <AdminInput
                 value={form.witnessOne}
                 onChange={(e) => setMarriageField("witnessOne", e.target.value)}
                 required
               />
             </AdminField>
-            <AdminField label="Witness two" className="mb-0 flex-1">
+            <AdminField label="Witness two" className="mb-0">
               <AdminInput
                 value={form.witnessTwo}
                 onChange={(e) => setMarriageField("witnessTwo", e.target.value)}
@@ -399,22 +420,25 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
         <PartyFormSection
           title="Groom"
           tone="blue"
+          parishId={parish.id}
           party={form.groom}
           onChange={(key, value) => setPartyField("groom", key, value)}
+          onBaptismalLink={(recordId, rec) => applyPartyBaptismalLink("groom", recordId, rec)}
         />
         <PartyFormSection
           title="Bride"
           tone="rose"
+          parishId={parish.id}
           party={form.bride}
           onChange={(key, value) => setPartyField("bride", key, value)}
+          onBaptismalLink={(recordId, rec) => applyPartyBaptismalLink("bride", recordId, rec)}
         />
 
         <AdminFormSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks" className="mb-0">
-          <textarea
+          <AdminTextarea
             value={form.remarks}
             onChange={(e) => setMarriageField("remarks", e.target.value)}
             placeholder="Additional notes about this entry"
-            className={textareaClass}
           />
         </AdminFormSection>
 
@@ -434,13 +458,17 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
 function PartyFormSection({
   title,
   tone,
+  parishId,
   party,
   onChange,
+  onBaptismalLink,
 }: {
   title: string;
   tone: AdminSectionTone;
+  parishId: string;
   party: PartyFormState;
   onChange: (key: keyof PartyFormState, value: unknown) => void;
+  onBaptismalLink: (recordId: string, rec: BaptismalRecord | null) => void;
 }) {
   function addConsent() {
     onChange("consentPersons", [...party.consentPersons, emptyConsent()]);
@@ -460,20 +488,27 @@ function PartyFormSection({
 
   return (
     <AdminFormSection tone={tone} icon={<UserIcon className="h-4.5 w-4.5" />} title={title}>
-      <AdminFieldGroup title="Full name">
-        <AdminField label="First" className="mb-0 w-[120px]">
+      <AdminFieldGroup cols={3}>
+        <AdminField label="First name" className="mb-0">
           <AdminInput value={party.firstName} onChange={(e) => onChange("firstName", e.target.value)} required />
         </AdminField>
-        <AdminField label="Middle" className="mb-0 w-[110px]">
+        <AdminField label="Middle name" className="mb-0">
           <AdminInput value={party.middleName} onChange={(e) => onChange("middleName", e.target.value)} />
         </AdminField>
-        <AdminField label="Last" className="mb-0 w-[130px]">
+        <AdminField label="Last name" className="mb-0">
           <AdminInput value={party.lastName} onChange={(e) => onChange("lastName", e.target.value)} required />
         </AdminField>
       </AdminFieldGroup>
 
-      <AdminFieldGroup title="Birth details">
-        <AdminField label="Date of birth" className="mb-0 w-[150px]">
+      <AdminFieldGroup cols={3} title="Birth details">
+        <AdminField label="Sex" className="mb-0">
+          <AdminSelect value={party.sex} onChange={(e) => onChange("sex", e.target.value)}>
+            <option value="">—</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </AdminSelect>
+        </AdminField>
+        <AdminField label="Date of birth" className="mb-0 sm:col-span-2">
           <AdminInput
             type="date"
             value={party.dateOfBirth}
@@ -481,118 +516,111 @@ function PartyFormSection({
             required
           />
         </AdminField>
-        <AdminField label="Sex" className="mb-0 w-[110px]">
-          <select className={selectClass} value={party.sex} onChange={(e) => onChange("sex", e.target.value)}>
-            <option value="">—</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-        </AdminField>
-        <AdminField label="Birthplace" className="mb-0 flex-1">
+        <AdminField label="Birthplace" className="mb-0 sm:col-span-3">
           <AdminInput value={party.birthplace} onChange={(e) => onChange("birthplace", e.target.value)} />
         </AdminField>
       </AdminFieldGroup>
 
-      <AdminField label="Citizenship">
-        <AdminInput value={party.citizenship} onChange={(e) => onChange("citizenship", e.target.value)} />
-      </AdminField>
-      <AdminField label="Address">
-        <AdminInput value={party.address} onChange={(e) => onChange("address", e.target.value)} />
-      </AdminField>
-      <AdminField label="Religion">
-        <AdminInput value={party.religion} onChange={(e) => onChange("religion", e.target.value)} />
-      </AdminField>
-      <AdminField label="Civil status">
-        <select
-          className={selectClass}
-          value={party.civilStatus}
-          onChange={(e) => onChange("civilStatus", e.target.value)}
-        >
-          <option value="">—</option>
-          <option value="Single">Single</option>
-          <option value="Widowed">Widowed</option>
-          <option value="Divorced">Divorced</option>
-          <option value="Annulled">Annulled</option>
-        </select>
-      </AdminField>
-      <AdminField label="Baptismal record ID (optional)" className="mb-0">
-        <AdminInput
-          placeholder="e.g. bap-002"
-          value={party.baptismalRecordId}
-          onChange={(e) => onChange("baptismalRecordId", e.target.value)}
-        />
-      </AdminField>
+      <AdminFieldGroup cols={2}>
+        <AdminField label="Citizenship" className="mb-0">
+          <AdminInput value={party.citizenship} onChange={(e) => onChange("citizenship", e.target.value)} />
+        </AdminField>
+        <AdminField label="Civil status" className="mb-0">
+          <AdminSelect
+            value={party.civilStatus}
+            onChange={(e) => onChange("civilStatus", e.target.value)}
+          >
+            <option value="">—</option>
+            <option value="Single">Single</option>
+            <option value="Widowed">Widowed</option>
+            <option value="Divorced">Divorced</option>
+            <option value="Annulled">Annulled</option>
+          </AdminSelect>
+        </AdminField>
+        <AdminField label="Address" className="mb-0 sm:col-span-2">
+          <AdminInput value={party.address} onChange={(e) => onChange("address", e.target.value)} />
+        </AdminField>
+        <AdminField label="Religion" className="mb-0 sm:col-span-2">
+          <AdminInput value={party.religion} onChange={(e) => onChange("religion", e.target.value)} />
+        </AdminField>
+      </AdminFieldGroup>
 
-      <AdminFieldGroup title="Father" className="mt-4">
-        <AdminField label="First" className="mb-0 w-[120px]">
+      <BaptismalRecordLinkField
+        parishId={parishId}
+        value={party.baptismalRecordId}
+        initialQuery={[party.firstName, party.middleName, party.lastName].filter(Boolean).join(" ")}
+        label="Baptismal record (optional)"
+        onChange={onBaptismalLink}
+        className="mb-5"
+      />
+
+      <AdminFieldGroup cols={3} title="Father">
+        <AdminField label="First name" className="mb-0">
           <AdminInput value={party.fatherFirstName} onChange={(e) => onChange("fatherFirstName", e.target.value)} />
         </AdminField>
-        <AdminField label="M.I." className="mb-0 w-[60px]">
+        <AdminField label="Middle initial" className="mb-0">
           <AdminInput
             value={party.fatherMiddleInitial}
             onChange={(e) => onChange("fatherMiddleInitial", e.target.value)}
-            maxLength={5}
           />
         </AdminField>
-        <AdminField label="Last" className="mb-0 w-[130px]">
+        <AdminField label="Last name" className="mb-0">
           <AdminInput value={party.fatherLastName} onChange={(e) => onChange("fatherLastName", e.target.value)} />
         </AdminField>
       </AdminFieldGroup>
 
-      <AdminFieldGroup title="Mother" className="mb-0">
-        <AdminField label="First" className="mb-0 w-[120px]">
+      <AdminFieldGroup cols={3} title="Mother" className="mb-0">
+        <AdminField label="First name" className="mb-0">
           <AdminInput value={party.motherFirstName} onChange={(e) => onChange("motherFirstName", e.target.value)} />
         </AdminField>
-        <AdminField label="M.I." className="mb-0 w-[60px]">
+        <AdminField label="Middle initial" className="mb-0">
           <AdminInput
             value={party.motherMiddleInitial}
             onChange={(e) => onChange("motherMiddleInitial", e.target.value)}
-            maxLength={5}
           />
         </AdminField>
-        <AdminField label="Last" className="mb-0 w-[130px]">
+        <AdminField label="Last name" className="mb-0">
           <AdminInput value={party.motherLastName} onChange={(e) => onChange("motherLastName", e.target.value)} />
         </AdminField>
       </AdminFieldGroup>
 
-      <div className="mt-4 border-t border-dashed border-admin-border pt-4">
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">
-            Consent persons
-          </p>
+      <div className="mt-5 border-t border-dashed border-admin-border pt-5">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-[0.8125rem] font-semibold text-admin-ink">Consent persons</p>
           <AdminButton variant="secondary" size="sm" type="button" onClick={addConsent}>
             Add consent
           </AdminButton>
         </div>
         {party.consentPersons.length === 0 ? (
-          <p className="text-admin-label text-admin-ink-faint">None recorded.</p>
+          <p className="text-admin-support text-admin-ink-faint">None recorded.</p>
         ) : (
           party.consentPersons.map((c, i) => (
-            <div key={i} className="mb-3 rounded-[8px] border border-admin-border bg-admin-surface-alt p-3">
-              <div className="mb-2 flex flex-wrap gap-2">
-                <AdminField label="First" className="mb-0 w-[100px]">
+            <div key={i} className="mb-3 rounded-[8px] border border-admin-border bg-admin-surface-alt p-4">
+              <AdminFieldGroup cols={3} className="mb-4">
+                <AdminField label="First name" className="mb-0">
                   <AdminInput
                     value={c.firstName}
                     onChange={(e) => updateConsent(i, "firstName", e.target.value)}
                   />
                 </AdminField>
-                <AdminField label="M.I." className="mb-0 w-[50px]">
+                <AdminField label="Middle initial" className="mb-0">
                   <AdminInput
                     value={c.middleInitial}
                     onChange={(e) => updateConsent(i, "middleInitial", e.target.value)}
-                    maxLength={5}
                   />
                 </AdminField>
-                <AdminField label="Last" className="mb-0 w-[110px]">
+                <AdminField label="Last name" className="mb-0">
                   <AdminInput value={c.lastName} onChange={(e) => updateConsent(i, "lastName", e.target.value)} />
                 </AdminField>
-              </div>
-              <AdminField label="Relation" className="mb-2">
-                <AdminInput value={c.relation} onChange={(e) => updateConsent(i, "relation", e.target.value)} />
-              </AdminField>
-              <AdminField label="Residence" className="mb-2">
-                <AdminInput value={c.residence} onChange={(e) => updateConsent(i, "residence", e.target.value)} />
-              </AdminField>
+              </AdminFieldGroup>
+              <AdminFieldGroup cols={2} className="mb-3">
+                <AdminField label="Relation" className="mb-0">
+                  <AdminInput value={c.relation} onChange={(e) => updateConsent(i, "relation", e.target.value)} />
+                </AdminField>
+                <AdminField label="Residence" className="mb-0">
+                  <AdminInput value={c.residence} onChange={(e) => updateConsent(i, "residence", e.target.value)} />
+                </AdminField>
+              </AdminFieldGroup>
               <AdminButton variant="ghost" size="sm" type="button" onClick={() => removeConsent(i)}>
                 Remove
               </AdminButton>

@@ -7,6 +7,8 @@ import {
   AdminFormPage,
   AdminFormSection,
   AdminInput,
+  AdminSelect,
+  AdminTextarea,
   NoteIcon,
   UserIcon,
 } from "@/features/parish-admin/components/AdminForm";
@@ -16,7 +18,9 @@ import {
   getConfirmationRecord,
   updateConfirmationRecord,
 } from "@/features/parish-admin/records/api/confirmationRecordsApi";
+import { BaptismalRecordLinkField } from "@/features/parish-admin/records/BaptismalRecordLinkField";
 import { useAsync } from "@/hooks/useAsync";
+import type { BaptismalRecord } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 
 interface FormState {
@@ -68,12 +72,6 @@ const emptyForm = (): FormState => ({
   entryNumber: "",
   remarks: "",
 });
-
-const selectClass =
-  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
-
-const textareaClass =
-  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "edit" }) {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -139,6 +137,26 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  function applyBaptismalLink(recordId: string, rec: BaptismalRecord | null) {
+    setForm((prev) => ({
+      ...prev,
+      baptismalRecordId: recordId,
+      baptismDate: rec?.dateOfBaptism ?? (recordId ? prev.baptismDate : ""),
+      baptismPlace: rec?.placeOfBaptism ?? (recordId ? prev.baptismPlace : ""),
+      // Prefill blank identity fields from the baptismal entry when linking.
+      firstName: prev.firstName || rec?.firstName || "",
+      middleName: prev.middleName || rec?.middleName || "",
+      lastName: prev.lastName || rec?.lastName || "",
+      sex: prev.sex || rec?.sex || "",
+      dateOfBirth: prev.dateOfBirth || rec?.dateOfBirth || "",
+      address: prev.address || rec?.address || "",
+      fatherFirstName: prev.fatherFirstName || rec?.fatherFirstName || "",
+      fatherLastName: prev.fatherLastName || rec?.fatherLastName || "",
+      motherFirstName: prev.motherFirstName || rec?.motherFirstName || "",
+      motherLastName: prev.motherLastName || rec?.motherLastName || "",
+    }));
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -198,34 +216,34 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
           title="Personal information"
           description="Who was confirmed, and their family details."
         >
-          <AdminFieldGroup title="Name of confirmed">
-            <AdminField label="First" className="mb-0 w-[130px]">
+          <AdminFieldGroup cols={3}>
+            <AdminField label="First name" className="mb-0">
               <AdminInput value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} required />
             </AdminField>
-            <AdminField label="Middle" className="mb-0 w-[130px]">
+            <AdminField label="Middle name" className="mb-0">
               <AdminInput value={form.middleName} onChange={(e) => setField("middleName", e.target.value)} required />
             </AdminField>
-            <AdminField label="Last" className="mb-0 w-[150px]">
+            <AdminField label="Last name" className="mb-0">
               <AdminInput value={form.lastName} onChange={(e) => setField("lastName", e.target.value)} required />
             </AdminField>
           </AdminFieldGroup>
 
-          <AdminFieldGroup title="Birth & residence">
-            <AdminField label="Sex" className="mb-0 w-[110px]">
-              <select value={form.sex} onChange={(e) => setField("sex", e.target.value)} className={selectClass}>
+          <AdminFieldGroup cols={3} title="Birth & residence">
+            <AdminField label="Sex" className="mb-0">
+              <AdminSelect value={form.sex} onChange={(e) => setField("sex", e.target.value)}>
                 <option value="">—</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
-              </select>
+              </AdminSelect>
             </AdminField>
-            <AdminField label="Date of birth" className="mb-0 w-[150px]">
+            <AdminField label="Date of birth" className="mb-0 sm:col-span-2">
               <AdminInput
                 type="date"
                 value={form.dateOfBirth}
                 onChange={(e) => setField("dateOfBirth", e.target.value)}
               />
             </AdminField>
-            <AdminField label="Address" className="mb-0 flex-1">
+            <AdminField label="Address" className="mb-0 sm:col-span-3">
               <AdminInput
                 value={form.address}
                 onChange={(e) => setField("address", e.target.value)}
@@ -234,21 +252,21 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
             </AdminField>
           </AdminFieldGroup>
 
-          <AdminFieldGroup title="Father">
-            <AdminField label="Last" className="mb-0 w-[140px]">
-              <AdminInput value={form.fatherLastName} onChange={(e) => setField("fatherLastName", e.target.value)} />
-            </AdminField>
-            <AdminField label="First" className="mb-0 w-[160px]">
+          <AdminFieldGroup cols={2} title="Father">
+            <AdminField label="First name" className="mb-0">
               <AdminInput value={form.fatherFirstName} onChange={(e) => setField("fatherFirstName", e.target.value)} />
+            </AdminField>
+            <AdminField label="Last name" className="mb-0">
+              <AdminInput value={form.fatherLastName} onChange={(e) => setField("fatherLastName", e.target.value)} />
             </AdminField>
           </AdminFieldGroup>
 
-          <AdminFieldGroup title="Mother" className="mb-0">
-            <AdminField label="Last" className="mb-0 w-[140px]">
-              <AdminInput value={form.motherLastName} onChange={(e) => setField("motherLastName", e.target.value)} />
-            </AdminField>
-            <AdminField label="First" className="mb-0 w-[160px]">
+          <AdminFieldGroup cols={2} title="Mother" className="mb-0">
+            <AdminField label="First name" className="mb-0">
               <AdminInput value={form.motherFirstName} onChange={(e) => setField("motherFirstName", e.target.value)} />
+            </AdminField>
+            <AdminField label="Last name" className="mb-0">
+              <AdminInput value={form.motherLastName} onChange={(e) => setField("motherLastName", e.target.value)} />
             </AdminField>
           </AdminFieldGroup>
         </AdminFormSection>
@@ -259,39 +277,38 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
           title="Confirmation details"
           description="Minister, date, and register reference for this sacrament."
         >
-          <AdminField label="Date of confirmation">
-            <AdminInput
-              type="date"
-              value={form.dateOfConfirmation}
-              onChange={(e) => setField("dateOfConfirmation", e.target.value)}
-              required
-            />
-          </AdminField>
+          <AdminFieldGroup cols={2}>
+            <AdminField label="Date of confirmation" className="mb-0">
+              <AdminInput
+                type="date"
+                value={form.dateOfConfirmation}
+                onChange={(e) => setField("dateOfConfirmation", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Minister" className="mb-0">
+              <AdminInput
+                placeholder="Most Rev. / Rev. Fr."
+                value={form.minister}
+                onChange={(e) => setField("minister", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Place of confirmation" className="mb-0 sm:col-span-2">
+              <AdminInput
+                placeholder="Church / parish"
+                value={form.placeOfConfirmation}
+                onChange={(e) => setField("placeOfConfirmation", e.target.value)}
+                required
+              />
+            </AdminField>
+          </AdminFieldGroup>
 
-          <AdminField label="Place of confirmation">
-            <AdminInput
-              placeholder="Church / parish"
-              value={form.placeOfConfirmation}
-              onChange={(e) => setField("placeOfConfirmation", e.target.value)}
-              required
-            />
-          </AdminField>
-
-          <AdminField label="Minister">
-            <AdminInput
-              placeholder="Most Rev. / Rev. Fr."
-              value={form.minister}
-              onChange={(e) => setField("minister", e.target.value)}
-              required
-            />
-          </AdminField>
-
-          <AdminFieldGroup title="Register reference">
+          <AdminFieldGroup cols={3} title="Register reference">
             <AdminField label="Book no." className="mb-0">
               <AdminInput
                 value={form.bookNumber}
                 onChange={(e) => setField("bookNumber", e.target.value)}
-                className="max-w-[72px]"
                 required
               />
             </AdminField>
@@ -299,7 +316,6 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
               <AdminInput
                 value={form.pageNumber}
                 onChange={(e) => setField("pageNumber", e.target.value)}
-                className="max-w-[72px]"
                 required
               />
             </AdminField>
@@ -307,7 +323,6 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
               <AdminInput
                 value={form.entryNumber}
                 onChange={(e) => setField("entryNumber", e.target.value)}
-                className="max-w-[72px]"
                 required
               />
             </AdminField>
@@ -319,7 +334,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
                 type="checkbox"
                 checked={form.isAdult}
                 onChange={(e) => setField("isAdult", e.target.checked)}
-                className="h-4 w-4 rounded border-admin-border-strong text-admin-green-700 focus:ring-admin-green-600/25"
+                className="h-4 w-4 rounded border-admin-border-strong text-admin-green-700 focus:ring-admin-green-700/20"
               />
               <span className="text-admin-body text-admin-ink">Adult confirmation (RCIA / OCIA)</span>
             </label>
@@ -328,7 +343,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
                 type="checkbox"
                 checked={form.isPriorMarriage}
                 onChange={(e) => setField("isPriorMarriage", e.target.checked)}
-                className="h-4 w-4 rounded border-admin-border-strong text-admin-green-700 focus:ring-admin-green-600/25"
+                className="h-4 w-4 rounded border-admin-border-strong text-admin-green-700 focus:ring-admin-green-700/20"
               />
               <span className="text-admin-body text-admin-ink">Prior marriage on record</span>
             </label>
@@ -339,39 +354,39 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
           tone="green"
           icon={<DropletIcon className="h-4.5 w-4.5" />}
           title="Baptism reference"
-          description="Optional — link back to the baptismal register."
+          description="Optional — search and link the baptismal register entry."
         >
-          <AdminField label="Baptismal record ID">
-            <AdminInput
-              placeholder="e.g. 6:21"
-              value={form.baptismalRecordId}
-              onChange={(e) => setField("baptismalRecordId", e.target.value)}
-            />
-          </AdminField>
+          <BaptismalRecordLinkField
+            parishId={parish.id}
+            value={form.baptismalRecordId}
+            initialQuery={[form.firstName, form.middleName, form.lastName].filter(Boolean).join(" ")}
+            onChange={(recordId, rec) => applyBaptismalLink(recordId, rec)}
+            className="mb-4"
+          />
 
-          <AdminField label="Baptismal date">
-            <AdminInput
-              type="date"
-              value={form.baptismDate}
-              onChange={(e) => setField("baptismDate", e.target.value)}
-            />
-          </AdminField>
-
-          <AdminField label="Place of baptism" className="mb-0">
-            <AdminInput
-              placeholder="Parish / city"
-              value={form.baptismPlace}
-              onChange={(e) => setField("baptismPlace", e.target.value)}
-            />
-          </AdminField>
+          <AdminFieldGroup cols={2} className="mb-0">
+            <AdminField label="Baptismal date" className="mb-0">
+              <AdminInput
+                type="date"
+                value={form.baptismDate}
+                onChange={(e) => setField("baptismDate", e.target.value)}
+              />
+            </AdminField>
+            <AdminField label="Place of baptism" className="mb-0">
+              <AdminInput
+                placeholder="Parish / city"
+                value={form.baptismPlace}
+                onChange={(e) => setField("baptismPlace", e.target.value)}
+              />
+            </AdminField>
+          </AdminFieldGroup>
         </AdminFormSection>
 
         <AdminFormSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks" className="mb-0">
-          <textarea
+          <AdminTextarea
             value={form.remarks}
             onChange={(e) => setField("remarks", e.target.value)}
             placeholder="Additional notes about this entry"
-            className={textareaClass}
           />
         </AdminFormSection>
 

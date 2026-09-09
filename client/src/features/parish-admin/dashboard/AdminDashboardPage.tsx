@@ -1,6 +1,7 @@
 // src/features/parish-admin/dashboard/AdminDashboardPage.tsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import {
   getAttentionItems,
   getDashboardStats,
@@ -9,33 +10,19 @@ import {
   getTodayMasses,
   getUpcomingEvents,
 } from "./api/dashboardApi";
-import type {
-  ActivityItem,
-  AttentionItem,
-  ChipTone,
-  DashboardStat,
-  DotTone,
-  QuickAction,
-  TodayMass,
-  UpcomingEvent,
-} from "./types";
+import type { DashboardStat, DotTone, QuickAction } from "./types";
+import "./AdminDashboardPage.css";
 
-const CHIP_TONE_CLASSES: Record<ChipTone, string> = {
-  amber: "bg-amber-100 text-amber-700",
-  gold: "bg-admin-gold-100 text-admin-gold-700",
-  green: "bg-admin-green-100 text-admin-green-700",
+const CHIP_TONE_CLASSES: Record<"amber" | "gold" | "green", string> = {
+  amber: "admin-dash__chip admin-dash__chip--amber",
+  gold: "admin-dash__chip admin-dash__chip--gold",
+  green: "admin-dash__chip admin-dash__chip--green",
 };
 
-const DOT_TONE_CLASSES: Record<DotTone, string> = {
-  amber: "bg-amber-700",
-  green: "bg-admin-green-700",
-  gold: "bg-admin-gold-600",
-};
-
-const STATUS_TEXT_CLASSES: Record<DotTone, string> = {
-  amber: "text-amber-700",
-  green: "text-admin-green-700",
-  gold: "text-admin-gold-700",
+const PILL_TONE: Record<DotTone, string> = {
+  amber: "admin-dash__pill admin-dash__pill--amber",
+  green: "admin-dash__pill admin-dash__pill--ok",
+  gold: "admin-dash__pill admin-dash__pill--gold",
 };
 
 function greeting() {
@@ -46,12 +33,13 @@ function greeting() {
 }
 
 export function AdminDashboardPage() {
-  const [attention, setAttention] = useState<AttentionItem[]>([]);
+  const user = useCurrentUser();
+  const [attention, setAttention] = useState<Awaited<ReturnType<typeof getAttentionItems>>>([]);
   const [stats, setStats] = useState<DashboardStat[]>([]);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
-  const [todayMasses, setTodayMasses] = useState<TodayMass[]>([]);
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
-  const [upcoming, setUpcoming] = useState<UpcomingEvent[]>([]);
+  const [todayMasses, setTodayMasses] = useState<Awaited<ReturnType<typeof getTodayMasses>>>([]);
+  const [activity, setActivity] = useState<Awaited<ReturnType<typeof getRecentActivity>>>([]);
+  const [upcoming, setUpcoming] = useState<Awaited<ReturnType<typeof getUpcomingEvents>>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,162 +68,166 @@ export function AdminDashboardPage() {
     year: "numeric",
   });
 
+  const firstName = user?.firstName?.trim() || "there";
+  const primaryAction = quickActions[0];
+  const secondaryActions = quickActions.slice(1);
+
   if (loading) {
-    return <p className="text-admin-body text-admin-ink-muted">Loading dashboard…</p>;
+    return <p className="admin-dash__muted text-admin-body">Loading dashboard…</p>;
   }
 
   return (
-    <div>
-      <div className="mb-5">
-        <div className="mb-1.5 flex items-center gap-2 text-admin-gold-700">
-          <SunIcon className="h-[15px] w-[15px]" />
-          <span className="text-admin-support font-semibold uppercase tracking-admin-label">{todayLabel}</span>
+    <div className="admin-dash mx-auto max-w-[1180px]">
+      <header className="mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)] sm:text-[1.5rem]">
+            {greeting()}, {firstName}
+          </h1>
+          <p className="admin-dash__muted mt-1.5 text-admin-body">
+            {todayLabel} · parish desk overview
+          </p>
         </div>
-        {/* TODO: swap "there" for the real signed-in staff first name once the current-user hook shape is confirmed */}
-        <h1 className="font-serif text-admin-page font-semibold text-admin-ink">{greeting()}</h1>
-        <p className="mt-1 text-admin-body text-admin-ink-muted">Here's what's happening at the parish today.</p>
-      </div>
+        <div className="flex flex-wrap gap-2">
+          {primaryAction && (
+            <Link to={primaryAction.href} className="admin-dash__cta-primary">
+              <PlusIcon className="h-3.5 w-3.5" />
+              {primaryAction.label}
+            </Link>
+          )}
+          {secondaryActions[0] && (
+            <Link to={secondaryActions[0].href} className="admin-dash__cta-ghost">
+              {secondaryActions[0].label}
+            </Link>
+          )}
+        </div>
+      </header>
+
+      <section className="mb-5 grid grid-cols-2 gap-3 lg:mb-6 lg:grid-cols-4 lg:gap-4" aria-label="Overview counts">
+        {stats.map((s) => (
+          <div key={s.id} className="admin-dash__card admin-dash__stat p-4 sm:p-5">
+            <div className="mb-4 flex items-start justify-between gap-2">
+              <p className="admin-dash__muted text-admin-support font-medium">{s.label}</p>
+              <span className={CHIP_TONE_CLASSES[s.chipTone]}>
+                <StatIconGlyph icon={s.icon} className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="font-sans text-[1.75rem] font-semibold leading-none tabular-nums tracking-[-0.03em] text-[var(--dash-ink)]">
+              {s.value}
+            </p>
+            <p className="admin-dash__faint mt-2 text-admin-label">{s.delta}</p>
+          </div>
+        ))}
+      </section>
 
       {attention.length > 0 && (
-        <div className="mb-[22px] flex items-start gap-4 rounded-[var(--radius)] border border-admin-green-100 border-l-4 border-l-admin-green-600 bg-admin-green-050 px-5 py-[18px]">
-          <div className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[9px] bg-white text-admin-green-700">
-            <AlertIcon className="h-[18px] w-[18px]" />
-          </div>
-          <div className="flex-1">
-            <p className="mb-2.5 text-admin-body font-bold text-admin-green-900">Needs your attention</p>
-            <div>
-              {attention.map((item, i) => (
-                <div
-                  key={item.id}
-                  className={`flex flex-wrap items-center justify-between gap-4 py-2 ${
-                    i < attention.length - 1 ? "border-b border-admin-gold-700/[0.18]" : ""
-                  }`}
-                >
-                  <p className="text-admin-body leading-normal text-admin-ink-muted">
-                    <strong className="text-admin-green-900">{item.boldText}</strong>
-                    {item.restText}
-                  </p>
-                  <Link
-                    to={item.ctaHref}
-                    className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-admin-support font-semibold ${
-                      item.ctaVariant === "primary"
-                        ? "bg-admin-green-700 text-white hover:bg-admin-green-900"
-                        : "border border-admin-border-strong bg-admin-surface text-admin-ink hover:bg-admin-surface-alt"
-                    }`}
-                  >
-                    {item.ctaLabel}
-                    <ArrowRightIcon className="h-[14px] w-[14px]" />
-                  </Link>
-                </div>
-              ))}
+        <section className="admin-dash__card admin-dash__attention mb-5 p-4 sm:mb-6 sm:p-5" aria-label="Needs attention">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="admin-dash__attention-icon">
+                <AlertIcon className="h-4 w-4" />
+              </span>
+              <h2 className="admin-dash__attention-title">Needs attention</h2>
             </div>
+            <span className="admin-dash__pill admin-dash__pill--amber">{attention.length} open</span>
           </div>
-        </div>
+          <ul className="space-y-3">
+            {attention.map((item) => (
+              <li key={item.id} className="admin-dash__row">
+                <p className="admin-dash__muted min-w-0 flex-1 text-admin-body leading-relaxed">
+                  <strong className="font-semibold text-[var(--dash-ink)]">{item.boldText}</strong>
+                  {item.restText}
+                </p>
+                <Link
+                  to={item.ctaHref}
+                  className={
+                    item.ctaVariant === "primary" ? "admin-dash__cta-primary" : "admin-dash__cta-ghost"
+                  }
+                >
+                  {item.ctaLabel}
+                  <ArrowRightIcon className="h-3.5 w-3.5" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
-      <div className="mb-[18px] grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-        {stats.map((s) => (
-          <div
-            key={s.id}
-            className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4 shadow-[0_2px_8px_rgba(10,40,30,0.06)]"
-          >
-            <div className="mb-3 flex items-center gap-2.5">
-              <div className={`flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-lg ${CHIP_TONE_CLASSES[s.chipTone]}`}>
-                <StatIconGlyph icon={s.icon} className="h-[15px] w-[15px]" />
-              </div>
-              <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">{s.label}</p>
-            </div>
-            <p className="mb-1 font-serif text-admin-metric font-semibold tabular-nums text-admin-green-900">{s.value}</p>
-            <p className="text-admin-label text-admin-ink-faint">{s.delta}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mb-[26px] flex flex-wrap gap-2.5">
-        {quickActions.map((qa) => (
-          <Link
-            key={qa.id}
-            to={qa.href}
-            className="flex items-center gap-2 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5 text-admin-body font-semibold text-admin-green-800 hover:border-admin-green-600 hover:bg-admin-green-050"
-          >
-            <QuickActionIconGlyph icon={qa.icon} className="h-[15px] w-[15px] text-admin-green-700" />
-            {qa.label}
-          </Link>
-        ))}
-      </div>
-
-      <div className="mb-5 rounded-[var(--radius)] border border-admin-border bg-admin-surface p-5 shadow-[0_2px_8px_rgba(10,40,30,0.06)]">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">Today's Masses</p>
-          <Link to="schedule" className="text-admin-body font-semibold text-admin-green-700 hover:underline">
-            Open full schedule
-          </Link>
-        </div>
-        {todayMasses.length === 0 ? (
-          <p className="px-0.5 py-1.5 text-admin-support text-admin-ink-faint">No Masses scheduled today.</p>
-        ) : (
-          <div className="flex gap-2.5 overflow-x-auto pb-0.5">
-            {todayMasses.map((m) => (
-              <Link
-                key={m.id}
-                to="schedule"
-                className="flex min-w-[150px] flex-shrink-0 items-center gap-2.5 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5 hover:border-admin-green-600 hover:bg-admin-green-050"
-              >
-                <div>
-                  <p className="whitespace-nowrap font-serif text-admin-body font-semibold text-admin-green-900">{m.time}</p>
-                  <p className="whitespace-nowrap text-admin-label text-admin-ink-muted">{m.priest || "Unassigned"}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-5 shadow-[0_2px_8px_rgba(10,40,30,0.06)]">
-          <div className="mb-3.5 flex items-center justify-between">
-            <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">Recent activity</p>
-            <span className="cursor-pointer text-admin-body font-semibold text-admin-green-700 hover:underline">View all</span>
-          </div>
-          <div>
-            {activity.map((item, i) => (
-              <div key={item.id} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <span className="mt-[3px] h-[11px] w-[11px] flex-shrink-0 rounded-full bg-admin-gold-600" />
-                  {i < activity.length - 1 && <span className="mt-1 w-px flex-1 bg-admin-border-strong" />}
-                </div>
-                <div className="pb-4">
-                  <p className="mb-0.5 text-admin-body font-semibold text-admin-ink">{item.title}</p>
-                  <p className="text-admin-support leading-[1.6] text-admin-ink-muted">{item.meta}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-5 shadow-[0_2px_8px_rgba(10,40,30,0.06)]">
-          <div className="mb-3.5 flex items-center justify-between">
-            <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">Upcoming events</p>
-            <Link to="schedule" className="text-admin-body font-semibold text-admin-green-700 hover:underline">
-              View calendar
+      {secondaryActions.length > 1 && (
+        <nav className="mb-5 flex flex-wrap gap-2 sm:mb-6" aria-label="More quick actions">
+          {secondaryActions.slice(1).map((qa) => (
+            <Link key={qa.id} to={qa.href} className="admin-dash__soft-btn">
+              <QuickActionIconGlyph icon={qa.icon} className="admin-dash__soft-btn-icon h-3.5 w-3.5" />
+              {qa.label}
             </Link>
+          ))}
+        </nav>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-5">
+        <section className="admin-dash__card p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-[0.95rem] font-semibold text-[var(--dash-ink)]">Recent activity</h2>
+            <span className="admin-dash__pill admin-dash__pill--ok">Latest</span>
           </div>
-          <div>
-            {upcoming.map((ev, i) => (
-              <div key={ev.id} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <span className={`mt-[3px] h-[11px] w-[11px] flex-shrink-0 rounded-full ${DOT_TONE_CLASSES[ev.dotTone]}`} />
-                  {i < upcoming.length - 1 && <span className="mt-1 w-px flex-1 bg-admin-border-strong" />}
+          <ul className="divide-y divide-[var(--dash-border)]">
+            {activity.map((item) => (
+              <li key={item.id} className="flex gap-3 py-3.5 first:pt-0 last:pb-0">
+                <span className="admin-dash__dot" aria-hidden />
+                <div className="min-w-0">
+                  <p className="text-admin-body font-medium text-[var(--dash-ink)]">{item.title}</p>
+                  <p className="admin-dash__muted mt-0.5 text-admin-support leading-relaxed">{item.meta}</p>
                 </div>
-                <div className="pb-4">
-                  <p className="mb-0.5 text-admin-body font-semibold text-admin-ink">{ev.title}</p>
-                  <p className="text-admin-support leading-[1.6] text-admin-ink-muted">
-                    {ev.date} · <span className={`font-semibold ${STATUS_TEXT_CLASSES[ev.dotTone]}`}>{ev.status}</span>
-                  </p>
-                </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
+        </section>
+
+        <div className="flex flex-col gap-4 lg:gap-5">
+          <section className="admin-dash__card p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-[0.95rem] font-semibold text-[var(--dash-ink)]">Today’s Masses</h2>
+              <Link to="schedule" className="admin-dash__link">
+                Schedule
+              </Link>
+            </div>
+            {todayMasses.length === 0 ? (
+              <p className="admin-dash__faint text-admin-support">No Masses scheduled today.</p>
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                {todayMasses.map((m) => (
+                  <Link key={m.id} to="schedule" className="admin-dash__nested flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-sans text-admin-body font-semibold tabular-nums text-[var(--dash-ink)]">
+                        {m.time}
+                      </p>
+                      <p className="admin-dash__muted mt-0.5 text-admin-label">{m.priest || "Unassigned"}</p>
+                    </div>
+                    <span className="admin-dash__pill admin-dash__pill--ok">Mass</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="admin-dash__card p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-[0.95rem] font-semibold text-[var(--dash-ink)]">Upcoming events</h2>
+              <Link to="schedule" className="admin-dash__link">
+                Calendar
+              </Link>
+            </div>
+            <ul className="space-y-3">
+              {upcoming.map((ev) => (
+                <li key={ev.id} className="admin-dash__nested flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-admin-body font-medium text-[var(--dash-ink)]">{ev.title}</p>
+                    <p className="admin-dash__muted mt-0.5 text-admin-support">{ev.date}</p>
+                  </div>
+                  <span className={PILL_TONE[ev.dotTone]}>{ev.status}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
       </div>
     </div>
@@ -268,21 +260,9 @@ function QuickActionIconGlyph({ icon, className }: { icon: QuickAction["icon"]; 
   }
 }
 
-function SunIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
-      <circle cx="12" cy="12" r="4" />
-      <path
-        d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function AlertIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
       <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" strokeLinejoin="round" />
       <line x1="12" y1="9" x2="12" y2="13" strokeLinecap="round" />
       <line x1="12" y1="17" x2="12.01" y2="17" strokeLinecap="round" />
@@ -292,7 +272,7 @@ function AlertIcon({ className }: { className?: string }) {
 
 function ArrowRightIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className={className} aria-hidden>
       <line x1="5" y1="12" x2="19" y2="12" strokeLinecap="round" />
       <polyline points="12 5 19 12 12 19" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -301,7 +281,7 @@ function ArrowRightIcon({ className }: { className?: string }) {
 
 function InboxIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
       <path d="M22 12h-6l-2 3h-4l-2-3H2" strokeLinejoin="round" />
       <path
         d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
@@ -313,7 +293,7 @@ function InboxIcon({ className }: { className?: string }) {
 
 function WalletIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
       <path d="M20 7H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1z" strokeLinejoin="round" />
       <path d="M17 12.5h.01" strokeLinecap="round" />
       <path d="M5 7V5a2 2 0 0 1 2-2h9" strokeLinecap="round" />
@@ -323,7 +303,7 @@ function WalletIcon({ className }: { className?: string }) {
 
 function CheckIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={className} aria-hidden>
       <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -331,7 +311,7 @@ function CheckIcon({ className }: { className?: string }) {
 
 function CalendarIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <line x1="16" y1="2" x2="16" y2="6" strokeLinecap="round" />
       <line x1="8" y1="2" x2="8" y2="6" strokeLinecap="round" />
@@ -342,7 +322,7 @@ function CalendarIcon({ className }: { className?: string }) {
 
 function PlusIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={className} aria-hidden>
       <line x1="12" y1="5" x2="12" y2="19" strokeLinecap="round" />
       <line x1="5" y1="12" x2="19" y2="12" strokeLinecap="round" />
     </svg>
@@ -351,7 +331,7 @@ function PlusIcon({ className }: { className?: string }) {
 
 function FileIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
       <polyline points="14 2 14 8 20 8" strokeLinejoin="round" />
     </svg>
@@ -360,7 +340,7 @@ function FileIcon({ className }: { className?: string }) {
 
 function ChartIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
       <line x1="18" y1="20" x2="18" y2="10" strokeLinecap="round" />
       <line x1="12" y1="20" x2="12" y2="4" strokeLinecap="round" />
       <line x1="6" y1="20" x2="6" y2="14" strokeLinecap="round" />
@@ -370,7 +350,7 @@ function ChartIcon({ className }: { className?: string }) {
 
 function ScanIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
       <path
         d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"
         strokeLinecap="round"

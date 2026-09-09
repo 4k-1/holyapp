@@ -7,6 +7,8 @@ import {
   AdminFormPage,
   AdminFormSection,
   AdminInput,
+  AdminSelect,
+  AdminTextarea,
   ChecklistIcon,
   FamilyIcon,
   NoteIcon,
@@ -85,12 +87,6 @@ const emptyForm = (placeOfBaptism = ""): FormState => ({
   entryNumber: "",
   remarks: "",
 });
-
-const textareaClass =
-  "min-h-[80px] w-full resize-y rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body leading-relaxed text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
-
-const selectClass =
-  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit" }) {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -245,26 +241,26 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
           title="Personal information"
           description="Who was baptized, and where they were born."
         >
-          <AdminFieldGroup title="Name of baptized">
-            <AdminField label="First" className="mb-0 w-[130px]">
+          <AdminFieldGroup cols={3}>
+            <AdminField label="First name" className="mb-0">
               <AdminInput
-                placeholder="First"
+                placeholder="Juan"
                 value={form.firstName}
                 onChange={(e) => setField("firstName", e.target.value)}
                 required
               />
             </AdminField>
-            <AdminField label="Middle" className="mb-0 w-[130px]">
+            <AdminField label="Middle name" className="mb-0">
               <AdminInput
-                placeholder="Middle"
+                placeholder="Santos"
                 value={form.middleName}
                 onChange={(e) => setField("middleName", e.target.value)}
                 required
               />
             </AdminField>
-            <AdminField label="Last" className="mb-0 w-[150px]">
+            <AdminField label="Last name" className="mb-0">
               <AdminInput
-                placeholder="Last"
+                placeholder="Dela Cruz"
                 value={form.lastName}
                 onChange={(e) => setField("lastName", e.target.value)}
                 required
@@ -272,15 +268,15 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
             </AdminField>
           </AdminFieldGroup>
 
-          <AdminFieldGroup title="Birth details">
-            <AdminField label="Sex" className="mb-0 w-[120px]">
-              <select className={selectClass} value={form.sex} onChange={(e) => setField("sex", e.target.value)}>
+          <AdminFieldGroup cols={3} title="Birth details">
+            <AdminField label="Sex" className="mb-0">
+              <AdminSelect value={form.sex} onChange={(e) => setField("sex", e.target.value)}>
                 <option value="">—</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
-              </select>
+              </AdminSelect>
             </AdminField>
-            <AdminField label="Date of birth" className="mb-0 w-[150px]">
+            <AdminField label="Date of birth" className="mb-0">
               <AdminInput
                 type="date"
                 value={form.dateOfBirth}
@@ -288,27 +284,27 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
                 required
               />
             </AdminField>
-            <AdminField label="Place of birth" className="mb-0 w-[200px]">
+            <AdminField label="Place of birth" className="mb-0">
               <AdminInput value={form.placeOfBirth} onChange={(e) => setField("placeOfBirth", e.target.value)} />
             </AdminField>
           </AdminFieldGroup>
 
-          <AdminField label="Address">
-            <AdminInput value={form.address} onChange={(e) => setField("address", e.target.value)} />
-          </AdminField>
-
-          <AdminField label="Legitimacy status" className="mb-0">
-            <select
-              className={selectClass}
-              value={form.legitimacyStatus}
-              onChange={(e) => setField("legitimacyStatus", e.target.value as LegitimacyStatus | "")}
-            >
-              <option value="">—</option>
-              <option value="Legitimate">Legitimate</option>
-              <option value="Illegitimate">Illegitimate</option>
-              <option value="Natural">Natural</option>
-            </select>
-          </AdminField>
+          <AdminFieldGroup cols={2}>
+            <AdminField label="Address" className="mb-0 sm:col-span-2">
+              <AdminInput value={form.address} onChange={(e) => setField("address", e.target.value)} />
+            </AdminField>
+            <AdminField label="Legitimacy status" className="mb-0">
+              <AdminSelect
+                value={form.legitimacyStatus}
+                onChange={(e) => setField("legitimacyStatus", e.target.value as LegitimacyStatus | "")}
+              >
+                <option value="">—</option>
+                <option value="Legitimate">Legitimate</option>
+                <option value="Illegitimate">Illegitimate</option>
+                <option value="Natural">Natural</option>
+              </AdminSelect>
+            </AdminField>
+          </AdminFieldGroup>
         </AdminFormSection>
 
         <AdminFormSection
@@ -317,39 +313,38 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
           title="Baptismal information"
           description="Minister, date, and register reference for this sacrament."
         >
-          <AdminField label="Minister">
-            <AdminInput
-              placeholder="Rev. Fr."
-              value={form.minister}
-              onChange={(e) => setField("minister", e.target.value)}
-              required
-            />
-          </AdminField>
+          <AdminFieldGroup cols={2}>
+            <AdminField label="Minister" className="mb-0">
+              <AdminInput
+                placeholder="Rev. Fr."
+                value={form.minister}
+                onChange={(e) => setField("minister", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Date of baptism" className="mb-0">
+              <AdminInput
+                type="date"
+                value={form.dateOfBaptism}
+                onChange={(e) => setField("dateOfBaptism", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Place of baptism" className="mb-0 sm:col-span-2">
+              <AdminInput
+                value={form.placeOfBaptism}
+                onChange={(e) => setField("placeOfBaptism", e.target.value)}
+                required
+              />
+            </AdminField>
+          </AdminFieldGroup>
 
-          <AdminField label="Date of baptism">
-            <AdminInput
-              type="date"
-              value={form.dateOfBaptism}
-              onChange={(e) => setField("dateOfBaptism", e.target.value)}
-              required
-            />
-          </AdminField>
-
-          <AdminField label="Place of baptism">
-            <AdminInput
-              value={form.placeOfBaptism}
-              onChange={(e) => setField("placeOfBaptism", e.target.value)}
-              required
-            />
-          </AdminField>
-
-          <AdminFieldGroup title="Register reference" className="mb-0">
+          <AdminFieldGroup cols={3} title="Register reference" className="mb-0">
             <AdminField label="Book no." className="mb-0">
               <AdminInput
                 placeholder="6"
                 value={form.bookNumber}
                 onChange={(e) => setField("bookNumber", e.target.value)}
-                className="max-w-[72px]"
                 required
               />
             </AdminField>
@@ -358,7 +353,6 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
                 placeholder="21"
                 value={form.pageNumber}
                 onChange={(e) => setField("pageNumber", e.target.value)}
-                className="max-w-[72px]"
                 required
               />
             </AdminField>
@@ -367,7 +361,6 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
                 placeholder="04"
                 value={form.entryNumber}
                 onChange={(e) => setField("entryNumber", e.target.value)}
-                className="max-w-[72px]"
                 required
               />
             </AdminField>
@@ -380,39 +373,35 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
           title="Parents"
           description="As recorded in the parish register."
         >
-          <AdminFieldGroup title="Father">
-            <AdminField label="Last" className="mb-0 w-[160px]">
+          <AdminFieldGroup cols={2} title="Father">
+            <AdminField label="First name" className="mb-0">
               <AdminInput
-                placeholder="Last"
-                value={form.fatherLastName}
-                onChange={(e) => setField("fatherLastName", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="First" className="mb-0 w-[140px]">
-              <AdminInput
-                placeholder="First"
                 value={form.fatherFirstName}
                 onChange={(e) => setField("fatherFirstName", e.target.value)}
                 required
               />
             </AdminField>
-          </AdminFieldGroup>
-
-          <AdminFieldGroup title="Mother" className="mb-0">
-            <AdminField label="Last" className="mb-0 w-[160px]">
+            <AdminField label="Last name" className="mb-0">
               <AdminInput
-                placeholder="Last"
-                value={form.motherLastName}
-                onChange={(e) => setField("motherLastName", e.target.value)}
+                value={form.fatherLastName}
+                onChange={(e) => setField("fatherLastName", e.target.value)}
                 required
               />
             </AdminField>
-            <AdminField label="First" className="mb-0 w-[140px]">
+          </AdminFieldGroup>
+
+          <AdminFieldGroup cols={2} title="Mother" className="mb-0">
+            <AdminField label="First name" className="mb-0">
               <AdminInput
-                placeholder="First"
                 value={form.motherFirstName}
                 onChange={(e) => setField("motherFirstName", e.target.value)}
+                required
+              />
+            </AdminField>
+            <AdminField label="Last name" className="mb-0">
+              <AdminInput
+                value={form.motherLastName}
+                onChange={(e) => setField("motherLastName", e.target.value)}
                 required
               />
             </AdminField>
@@ -424,15 +413,15 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
           icon={<FamilyIcon className="h-4.5 w-4.5" />}
           title="Grandparents"
         >
-          <AdminFieldGroup title="Paternal">
-            <AdminField label="Grandfather" className="mb-0 w-full">
+          <AdminFieldGroup cols={2} title="Paternal">
+            <AdminField label="Grandfather" className="mb-0">
               <AdminInput
                 value={form.paternalGrandfather}
                 onChange={(e) => setField("paternalGrandfather", e.target.value)}
                 required
               />
             </AdminField>
-            <AdminField label="Grandmother" className="mb-0 w-full">
+            <AdminField label="Grandmother" className="mb-0">
               <AdminInput
                 value={form.paternalGrandmother}
                 onChange={(e) => setField("paternalGrandmother", e.target.value)}
@@ -441,15 +430,15 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
             </AdminField>
           </AdminFieldGroup>
 
-          <AdminFieldGroup title="Maternal" className="mb-0">
-            <AdminField label="Grandfather" className="mb-0 w-full">
+          <AdminFieldGroup cols={2} title="Maternal" className="mb-0">
+            <AdminField label="Grandfather" className="mb-0">
               <AdminInput
                 value={form.maternalGrandfather}
                 onChange={(e) => setField("maternalGrandfather", e.target.value)}
                 required
               />
             </AdminField>
-            <AdminField label="Grandmother" className="mb-0 w-full">
+            <AdminField label="Grandmother" className="mb-0">
               <AdminInput
                 value={form.maternalGrandmother}
                 onChange={(e) => setField("maternalGrandmother", e.target.value)}
@@ -487,8 +476,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
         </AdminFormSection>
 
         <AdminFormSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks" className="mb-0">
-          <textarea
-            className={textareaClass}
+          <AdminTextarea
             value={form.remarks}
             onChange={(e) => setField("remarks", e.target.value)}
             placeholder="Optional notes from the register"

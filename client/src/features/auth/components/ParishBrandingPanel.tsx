@@ -1,4 +1,5 @@
 import type { Parish } from "@/types";
+import "@/features/auth/styles/authDesk.css";
 
 interface ParishBrandingPanelProps {
   parish: Parish | null;
@@ -10,7 +11,7 @@ export function ParishBrandingPanel({ parish }: ParishBrandingPanelProps) {
 
   return (
     <div
-      className="relative hidden h-full w-full flex-col justify-center overflow-hidden p-10 md:flex"
+      className="auth-desk__brand h-full w-full"
       style={{
         backgroundImage: hasBackground ? `url(${parish!.backgroundImageUrl})` : undefined,
         backgroundSize: "cover",
@@ -20,32 +21,28 @@ export function ParishBrandingPanel({ parish }: ParishBrandingPanelProps) {
       {!hasBackground && (
         <div
           className="absolute inset-0"
-          style={{ background: "linear-gradient(160deg, var(--color-primary) 0%, #0e2419 100%)" }}
+          style={{
+            background:
+              "radial-gradient(120% 80% at 20% 20%, #2f6f2a 0%, transparent 55%), linear-gradient(165deg, #1f4a3a 0%, #172d31 70%)",
+          }}
           aria-hidden="true"
         />
       )}
-      <div className="absolute inset-0 bg-black/45" aria-hidden="true" />
+      <div className="auth-desk__brand-overlay" aria-hidden="true" />
 
-      {/* ambient gold glow */}
-      <div
-        className="pointer-events-none absolute -left-24 top-1/4 h-[28rem] w-[28rem] rounded-full opacity-25 blur-[100px]"
-        style={{ background: "#d4a017" }}
-        aria-hidden="true"
-      />
-
-      <div className="relative z-10">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-white/70">
+      <div className="auth-desk__brand-copy">
+        <p className="mb-3 text-[0.75rem] font-semibold tracking-[0.04em] text-white/65">
           {parish?.name ?? "HolyApp"}
         </p>
-        <h2 className="max-w-md font-serif text-3xl font-semibold leading-tight text-white">
+        <h2 className="font-serif text-[1.75rem] font-bold leading-tight tracking-[-0.01em] text-white sm:text-[2rem]">
           Your sacramental records, kept with care and always within reach.
         </h2>
-        <div className="mt-8 border-l-2 border-accent pl-4">
-          <p className="max-w-sm font-serif text-lg italic text-white/90">
+        <div className="mt-8 border-l-2 border-white/40 pl-4">
+          <p className="max-w-sm font-serif text-lg italic leading-snug text-white/90">
             {tagline ?? '"Let all that you do be done in love."'}
           </p>
           {!tagline && (
-            <p className="mt-1 text-sm font-medium uppercase tracking-wide text-white/60">
+            <p className="mt-1.5 text-[0.75rem] font-medium tracking-[0.03em] text-white/55">
               1 Corinthians 16:14
             </p>
           )}

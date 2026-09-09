@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
-import { ensureParishes, searchParishes } from "@/features/parish/parishApi";
+import { searchParishes } from "@/features/parish/parishApi";
 import type { Parish } from "@/types";
 
 interface ParishSearchStepProps {
@@ -10,21 +10,7 @@ interface ParishSearchStepProps {
 
 export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState(() => searchParishes(""));
-
-  useEffect(() => {
-    let cancelled = false;
-    void ensureParishes()
-      .then(() => {
-        if (!cancelled) setResults(searchParishes(query));
-      })
-      .catch(() => {
-        if (!cancelled) setResults(searchParishes(query));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [query]);
+  const results = searchParishes(query);
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-4">

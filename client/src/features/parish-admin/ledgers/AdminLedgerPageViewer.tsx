@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { RecordDetailBackLink } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { getLedgerBook, listLedgerPages } from "@/features/parish-admin/ledgers/api/ledgersApi";
 import { ledgerPageAlt, ledgerSacramentLabel, ledgerYearRange } from "@/features/parish-admin/ledgers/ledgersHelpers";
 import { useAsync } from "@/hooks/useAsync";
 import type { Parish } from "@/types";
+import "@/features/parish-admin/styles/adminDesk.css";
 
 export function AdminLedgerPageViewer() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -81,29 +82,33 @@ export function AdminLedgerPageViewer() {
 
   if ((bookLoading && !book) || (pagesLoading && pages.length === 0 && !page)) {
     return (
-      <div>
+      <div className="admin-dash mx-auto max-w-[1180px]">
         <RecordDetailBackLink />
-        <p className="text-admin-body text-admin-ink-muted">Loading scanned page…</p>
+        <p className="admin-dash__muted text-admin-body">Loading scanned page…</p>
       </div>
     );
   }
 
   if (!book) {
     return (
-      <div>
+      <div className="admin-dash mx-auto max-w-[1180px]">
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Book not found</h1>
-        <p className="text-admin-body text-admin-ink-muted">This register is not available for this parish.</p>
+        <h1 className="mb-1 font-serif text-[1.35rem] font-bold text-[var(--dash-ink)] sm:text-[1.5rem]">
+          Book not found
+        </h1>
+        <p className="admin-dash__muted text-admin-body">This register is not available for this parish.</p>
       </div>
     );
   }
 
   if (!Number.isInteger(pageNumber) || pageNumber < 1 || !page) {
     return (
-      <div>
+      <div className="admin-dash mx-auto max-w-[1180px]">
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Page not found</h1>
-        <p className="text-admin-body text-admin-ink-muted">
+        <h1 className="mb-1 font-serif text-[1.35rem] font-bold text-[var(--dash-ink)] sm:text-[1.5rem]">
+          Page not found
+        </h1>
+        <p className="admin-dash__muted text-admin-body">
           Page {pageNumberParam || "—"} is not in {book.title}.
         </p>
       </div>
@@ -114,44 +119,42 @@ export function AdminLedgerPageViewer() {
     pages.length > 0 ? `${pageIndex + 1} of ${pages.length} digitized pages` : "1 page";
 
   return (
-    <div>
+    <div className="admin-dash mx-auto max-w-[1180px]">
       <RecordDetailBackLink />
 
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="mb-1 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+          <p className="mb-1.5 text-[0.75rem] font-medium tracking-[0.01em] text-[var(--dash-ink-soft)]">
             {ledgerSacramentLabel(book.sacramentType)} · {ledgerYearRange(book)}
           </p>
-          <h1 className="mb-1 font-serif text-admin-page font-semibold leading-tight text-admin-ink">
+          <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)] sm:text-[1.5rem]">
             {book.title}, page {page.pageNumber}
           </h1>
-          <p className="text-admin-body text-admin-ink-muted">{positionLabel}</p>
+          <p className="admin-dash__muted mt-1.5 text-admin-body">{positionLabel}</p>
         </div>
 
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="flex flex-wrap items-end gap-3">
           <AdminButton
             variant="secondary"
             onClick={() => prevPage && goToPageNumber(prevPage.pageNumber)}
             disabled={!prevPage}
             aria-label="Previous page"
+            className="!rounded-[10px]"
           >
             ← Previous
           </AdminButton>
           <form onSubmit={handleJump} className="flex items-end gap-2">
-            <label className="block">
-              <span className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                Jump to page
-              </span>
+            <AdminField label="Jump to page" className="mb-0">
               <AdminInput
                 type="number"
                 min={1}
-                className="w-[88px]"
+                className="w-[96px]"
                 value={jumpValue}
                 onChange={(e) => setJumpValue(e.target.value)}
                 aria-label="Page number"
               />
-            </label>
-            <AdminButton type="submit" variant="secondary">
+            </AdminField>
+            <AdminButton type="submit" variant="secondary" className="!rounded-[10px]">
               Go
             </AdminButton>
           </form>
@@ -160,19 +163,20 @@ export function AdminLedgerPageViewer() {
             onClick={() => nextPage && goToPageNumber(nextPage.pageNumber)}
             disabled={!nextPage}
             aria-label="Next page"
+            className="!rounded-[10px]"
           >
             Next →
           </AdminButton>
         </div>
-      </div>
+      </header>
 
       {jumpError && (
-        <p className="mb-3 text-admin-support text-admin-red-700" role="alert">
+        <p className="mb-4 text-admin-support text-admin-red-700" role="alert">
           {jumpError}
         </p>
       )}
 
-      <p className="mb-3 text-admin-label text-admin-ink-faint">Use ← and → to move between pages.</p>
+      <p className="mb-4 text-admin-support text-[var(--dash-ink-faint)]">Use ← and → to move between pages.</p>
 
       <AdminCard className="overflow-hidden p-0">
         <img

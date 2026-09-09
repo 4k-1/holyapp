@@ -1,7 +1,12 @@
 // src/features/parish-admin/schedule/api/scheduleApi.ts
 import { delay } from "@/services/delay";
 import { RECURRING_COMMITMENTS, RECURRING_OVERRIDES, SCHEDULE_BLOCKS, ASSIGNABLE_STAFF } from "@/services/mocks/schedule.mock";
-import { getOccurrencesForDate, findConflict as findConflictHelper, toISO, daysInMonth } from "../scheduleHelpers";
+import {
+  getOccurrencesForDate,
+  findConflict as findConflictHelper,
+  toISO,
+  daysInMonth,
+} from "../scheduleHelpers";
 import type { RecurringCommitment, ScheduleBlock, ScheduleOccurrence } from "../types";
 
 // NOTE: parishId isn't wired into filtering yet since the mock is single-tenant —

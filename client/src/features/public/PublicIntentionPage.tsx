@@ -1,20 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { ensureParishes, getParishBySlug } from "@/features/parish/parishApi";
+import { getParishBySlug } from "@/features/parish/parishApi";
 import { IntentionForm } from "@/features/parishioner/intentions/IntentionForm";
-import type { Parish } from "@/types";
 
 export function PublicIntentionPage() {
   const { parishSlug } = useParams();
-  const [parish, setParish] = useState<Parish | undefined>(() =>
-    parishSlug ? getParishBySlug(parishSlug) : undefined
-  );
+  const parish = parishSlug ? getParishBySlug(parishSlug) : undefined;
   const [submitted, setSubmitted] = useState(false);
-
-  useEffect(() => {
-    if (!parishSlug) return;
-    void ensureParishes().then(() => setParish(getParishBySlug(parishSlug)));
-  }, [parishSlug]);
 
   if (!parish) {
     return (

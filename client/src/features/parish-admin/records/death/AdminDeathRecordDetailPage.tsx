@@ -9,10 +9,13 @@ import {
   RecordDetailSection,
 } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
-import { CandleIcon, ShieldIcon } from "@/components/ui/icons/SacramentIcons";
+import { CandleIcon, DropletIcon, ShieldIcon } from "@/components/ui/icons/SacramentIcons";
 import { generateDeathCertificate, getDeathRecord } from "@/features/parish-admin/records/api/deathRecordsApi";
+import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
 import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
+import { LinkedRecordLink } from "@/features/parish-admin/records/LinkedRecordLink";
+import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import { useAsync } from "@/hooks/useAsync";
 import {
   DEATH_SACRAMENT_LABELS,
@@ -25,6 +28,7 @@ import {
   kinFullName,
   recordFullName,
 } from "@/features/parish-admin/records/deathHelpers";
+import { baptismRecordRef, recordFullName as baptismFullName } from "@/features/parish-admin/records/baptismalHelpers";
 import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 
@@ -35,6 +39,13 @@ export function AdminDeathRecordDetailPage() {
   const id = decodeURIComponent(recordId);
 
   const { data: record, loading, refetch } = useAsync(() => getDeathRecord(parish.id, id), [parish.id, id]);
+  const { data: linkedBaptism } = useAsync(
+    () =>
+      record?.baptismalRecordId
+        ? getBaptismalRecord(parish.id, record.baptismalRecordId)
+        : Promise.resolve(undefined),
+    [parish.id, record?.baptismalRecordId]
+  );
   const [certificateModal, setCertificateModal] = useState<IssuedRecordCertificate | "new" | null>(null);
 
   if (loading && !record) {
@@ -138,6 +149,21 @@ export function AdminDeathRecordDetailPage() {
           </div>
         </RecordDetailSection>
       </div>
+
+      {record.baptismalRecordId && (
+        <RecordDetailSection tone="green" icon={<DropletIcon className="h-4.5 w-4.5" />} title="Baptism Reference">
+          <div className="p-5 px-[22px]">
+            <div className="flex items-baseline justify-between gap-4 py-[10.5px]">
+              <span className="shrink-0 text-xs text-admin-ink-muted">Linked baptismal record</span>
+              <LinkedRecordLink
+                to={recordDetailPath(parish.slug, "baptismal", record.baptismalRecordId)}
+                name={linkedBaptism ? baptismFullName(linkedBaptism) : record.baptismalRecordId}
+                registerRef={linkedBaptism ? baptismRecordRef(linkedBaptism) : "?:?:?"}
+              />
+            </div>
+          </div>
+        </RecordDetailSection>
+      )}
 
       {record.sacramentsReceived.length > 0 && (
         <RecordDetailSection tone="amber" icon={<ShieldIcon className="h-4.5 w-4.5" />} title="Sacraments Received">

@@ -14,9 +14,18 @@ interface DayAgendaSidebarProps {
   onAdd: () => void;
   onAssign: (occurrence: ScheduleOccurrence) => void;
   onChanged: () => void;
+  onViewAssignee: (assignee: string) => void;
 }
 
-export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssign, onChanged }: DayAgendaSidebarProps) {
+export function DayAgendaSidebar({
+  dateStr,
+  occurrences,
+  todayStr,
+  onAdd,
+  onAssign,
+  onChanged,
+  onViewAssignee,
+}: DayAgendaSidebarProps) {
   const navigate = useNavigate();
   const d = new Date(dateStr + "T00:00:00");
   const isToday = dateStr === todayStr;
@@ -87,14 +96,28 @@ export function DayAgendaSidebar({ dateStr, occurrences, todayStr, onAdd, onAssi
                         onClick: () => handleMarkRecorded(o),
                       },
                       { label: o.assignee ? "Reassign" : "Assign", onClick: () => onAssign(o) },
+                      o.assignee && {
+                        label: `View all for ${o.assignee}`,
+                        onClick: () => onViewAssignee(o.assignee),
+                      },
                     ]}
                   />
                 </div>
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  <span className="text-admin-support text-admin-ink-muted">
-                    {sourceLabel}
-                    {o.assignee ? ` · ${o.assignee}` : " · Unassigned"}
-                  </span>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                  <span className="text-admin-support text-admin-ink-muted">{sourceLabel}</span>
+                  <span className="text-admin-support text-admin-ink-muted">·</span>
+                  {o.assignee ? (
+                    <button
+                      type="button"
+                      onClick={() => onViewAssignee(o.assignee)}
+                      className="text-admin-support font-semibold text-admin-green-700 hover:underline"
+                      title={`View all events for ${o.assignee}`}
+                    >
+                      {o.assignee}
+                    </button>
+                  ) : (
+                    <span className="text-admin-support text-admin-ink-muted">Unassigned</span>
+                  )}
                 </div>
                 {o.recordStatus && (
                   <div className="mt-2">

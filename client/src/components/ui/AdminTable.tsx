@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "./AdminTable.css";
 
 export interface AdminTableColumn<T> {
   key: string;
@@ -12,45 +13,65 @@ interface AdminTableProps<T> {
   rows: T[];
   getRowKey: (row: T) => string;
   emptyMessage?: string;
+  /** Invoice-style card chrome around the table */
+  title?: string;
+  subtitle?: string;
+  toolbar?: ReactNode;
 }
 
-export function AdminTable<T>({ columns, rows, getRowKey, emptyMessage = "No records found." }: AdminTableProps<T>) {
-  if (rows.length === 0) {
-    return (
-      <div className="px-6 py-10 text-center text-admin-body text-admin-ink-muted">{emptyMessage}</div>
-    );
+export function AdminTable<T>({
+  columns,
+  rows,
+  getRowKey,
+  emptyMessage = "No records found.",
+  title,
+  subtitle,
+  toolbar,
+}: AdminTableProps<T>) {
+  const table = rows.length === 0 ? (
+    <div className="admin-table__empty">{emptyMessage}</div>
+  ) : (
+    <div className="admin-table__scroll">
+      <table className="admin-table__grid">
+        <thead>
+          <tr>
+            {columns.map((col) => (
+              <th key={col.key} className={col.className}>
+                {col.header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={getRowKey(row)}>
+              {columns.map((col) => (
+                <td key={col.key} className={col.className}>
+                  {col.render(row)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  if (!title && !toolbar) {
+    return <div className="admin-table">{table}</div>;
   }
 
   return (
-    <table className="w-full border-collapse text-admin-body">
-      <thead>
-        <tr>
-          {columns.map((col, i) => (
-            <th
-              key={col.key}
-              className={`border-b border-admin-border bg-admin-surface-alt px-4 py-[11px] text-left text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted ${
-                i === 0 ? "rounded-tl-[var(--radius)]" : ""
-              } ${i === columns.length - 1 ? "rounded-tr-[var(--radius)]" : ""} ${col.className ?? ""}`}
-            >
-              {col.header}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={getRowKey(row)} className="transition-colors hover:bg-admin-green-050">
-            {columns.map((col) => (
-              <td
-                key={col.key}
-                className="border-b border-admin-border px-4 py-[13px] text-admin-ink last:border-b-0 [tr:last-child_&]:border-b-0"
-              >
-                {col.render(row)}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="admin-table admin-table--card">
+      <div className="admin-table__toolbar">
+        <div className="admin-table__heading min-w-0">
+          {title ? <h2 className="admin-table__title">{title}</h2> : null}
+          {title && subtitle ? <span className="admin-table__sep" aria-hidden="true" /> : null}
+          {subtitle ? <p className="admin-table__subtitle">{subtitle}</p> : null}
+        </div>
+        {toolbar ? <div className="admin-table__toolbar-end">{toolbar}</div> : null}
+      </div>
+      {table}
+    </div>
   );
 }

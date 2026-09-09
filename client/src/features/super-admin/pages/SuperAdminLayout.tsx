@@ -49,8 +49,8 @@ function SuperAdminShell() {
 
   if (!user) return null;
 
-  function handleSignOut() {
-    logout();
+  async function handleSignOut() {
+    await logout();
     navigate("/super-admin/login", { replace: true });
   }
 
