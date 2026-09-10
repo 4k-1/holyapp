@@ -3,11 +3,11 @@ require('dotenv').config();
 const pool = require('../src/config/db');
 const { hashPassword } = require('../src/utils/password');
 
-const DEV_PASSWORD = 'password123';
+const DEV_PASSWORD = 'Password123!';
 
 const PARISHES = [
   {
-    key: 'mtcarmel',
+    key: 'a',
     slug: 'mtcarmel',
     name: 'Santuario Arquidiocesano de Nuestra Señora del Carmen, la Limpia',
     address: 'Cebu City, Cebu',
@@ -15,7 +15,7 @@ const PARISHES = [
     email: 'office@mtcarmel-cebu.ph',
   },
   {
-    key: 'san-nicolas',
+    key: 'b',
     slug: 'san-nicolas',
     name: 'San Nicolas de Tolentino Parish',
     address: 'Cebu City, Cebu',
@@ -26,102 +26,39 @@ const PARISHES = [
 
 const USERS = [
   {
-    email: 'super@holyapp.ph',
+    email: 'super.admin@holyapp.local',
     role: 'super_admin',
     parishKey: null,
-    first_name: 'Platform',
-    last_name: 'Administrator',
-    contact_number: '+63 917 000 0001',
+    first_name: 'Super',
+    last_name: 'Admin',
   },
   {
-    email: 'admin@immaculada.ph',
+    email: 'admin.a@holyapp.local',
     role: 'parish_admin',
-    parishKey: 'mtcarmel',
-    first_name: 'Immaculada',
-    last_name: 'Santos',
-    contact_number: '+63 917 111 0001',
+    parishKey: 'a',
+    first_name: 'Anna',
+    last_name: 'Admin',
   },
   {
-    email: 'juan.santos@immaculada.ph',
+    email: 'staff.a@holyapp.local',
     role: 'parish_staff',
-    parishKey: 'mtcarmel',
-    first_name: 'Juan',
-    last_name: 'Santos',
-    contact_number: '+63 917 111 0002',
+    parishKey: 'a',
+    first_name: 'Sam',
+    last_name: 'Staff',
   },
   {
-    email: 'emilio.reyes@immaculada.ph',
-    role: 'parish_staff',
-    parishKey: 'mtcarmel',
-    first_name: 'Emilio',
-    last_name: 'Reyes',
-    contact_number: '+63 917 111 0003',
+    email: 'parishioner.a@holyapp.local',
+    role: 'parishioner',
+    parishKey: 'a',
+    first_name: 'Pat',
+    last_name: 'Parishioner',
   },
   {
-    email: 'carla.bautista@immaculada.ph',
+    email: 'admin.b@holyapp.local',
     role: 'parish_admin',
-    parishKey: 'mtcarmel',
-    first_name: 'Carla',
-    last_name: 'Bautista',
-    contact_number: '+63 917 111 0004',
-  },
-  {
-    email: 'miguel.torres@immaculada.ph',
-    role: 'parish_staff',
-    parishKey: 'mtcarmel',
-    first_name: 'Miguel',
-    last_name: 'Torres',
-    contact_number: '+63 917 111 0005',
-    status: 'suspended',
-  },
-  {
-    email: 'admin@sannicolas.ph',
-    role: 'parish_admin',
-    parishKey: 'san-nicolas',
-    first_name: 'Luis',
-    last_name: 'Mendoza',
-    contact_number: '+63 917 222 0001',
-  },
-  {
-    email: 'juan@example.com',
-    role: 'parishioner',
-    parishKey: 'mtcarmel',
-    first_name: 'Juan',
-    last_name: 'Dela Cruz',
-    birthday: '1998-04-12',
-    address: 'Cebu City, Cebu',
-    contact_number: '+63 917 555 0101',
-  },
-  {
-    email: 'maria.santos@gmail.com',
-    role: 'parishioner',
-    parishKey: 'mtcarmel',
-    first_name: 'Maria',
-    last_name: 'Santos',
-    birthday: '1995-11-22',
-    address: 'Cebu City, Cebu',
-    contact_number: '+63 917 555 0102',
-  },
-  {
-    email: 'elena.cruz@gmail.com',
-    role: 'parishioner',
-    parishKey: 'mtcarmel',
-    first_name: 'Elena',
-    last_name: 'Cruz',
-    birthday: '1992-03-09',
-    address: 'Talisay City, Cebu',
-    contact_number: '+63 917 555 0103',
-    status: 'suspended',
-  },
-  {
-    email: 'rosa.villanueva@gmail.com',
-    role: 'parishioner',
-    parishKey: 'san-nicolas',
-    first_name: 'Rosa',
-    last_name: 'Villanueva',
-    birthday: '1988-07-19',
-    address: 'Cebu City, Cebu',
-    contact_number: '+63 917 555 0201',
+    parishKey: 'b',
+    first_name: 'Bella',
+    last_name: 'Admin',
   },
 ];
 
@@ -146,50 +83,24 @@ async function upsertParish(parish) {
   return inserted.rows[0].id;
 }
 
-async function upsertUser({
-  email,
-  role,
-  parishId,
-  first_name,
-  last_name,
-  passwordHash,
-  status = 'active',
-  contact_number = null,
-  birthday = null,
-  address = null,
-}) {
-  const verifiedAt = role === 'parishioner' || status === 'active' ? new Date() : null;
+async function upsertUser({ email, role, parishId, first_name, last_name, passwordHash }) {
+  const verifiedAt = new Date();
   const result = await pool.query(
     `INSERT INTO app_user (
        parish_id, role, email, password_hash, status,
-       first_name, last_name, contact_number, birthday, address, email_verified_at
+       first_name, last_name, email_verified_at
      )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     VALUES ($1, $2, $3, $4, 'active', $5, $6, $7)
      ON CONFLICT (email) DO UPDATE SET
        password_hash = EXCLUDED.password_hash,
        role = EXCLUDED.role,
        parish_id = EXCLUDED.parish_id,
-       status = EXCLUDED.status,
+       status = 'active',
        first_name = EXCLUDED.first_name,
        last_name = EXCLUDED.last_name,
-       contact_number = EXCLUDED.contact_number,
-       birthday = EXCLUDED.birthday,
-       address = EXCLUDED.address,
        email_verified_at = EXCLUDED.email_verified_at
      RETURNING id, email, role, parish_id, status`,
-    [
-      parishId,
-      role,
-      email,
-      passwordHash,
-      status,
-      first_name,
-      last_name,
-      contact_number,
-      birthday,
-      address,
-      verifiedAt,
-    ]
+    [parishId, role, email, passwordHash, first_name, last_name, verifiedAt]
   );
   return result.rows[0];
 }
@@ -207,7 +118,7 @@ async function main() {
     console.log(`  ${parish.slug}  ${parish.name} -> ${parishIds[parish.key]}`);
   }
 
-  console.log('\nSeeded users (password for all: password123):');
+  console.log('\nSeeded users (password for all: Password123!):');
   for (const user of USERS) {
     const row = await upsertUser({
       ...user,
