@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ParishBrandingPanel } from "@/features/auth/components/ParishBrandingPanel";
 import { ParishSearchStep } from "@/features/auth/components/ParishSearchStep";
@@ -19,16 +19,37 @@ type Step = "search" | "register" | "otp" | "success";
 
 export function RegisterPage() {
   const [searchParams] = useSearchParams();
-
-  const initialParish = (() => {
-    const slug = searchParams.get("parish");
-    return slug ? getParishBySlug(slug) ?? null : null;
-  })();
-
-  const [step, setStep] = useState<Step>(initialParish ? "register" : "search");
-  const [selectedParish, setSelectedParish] = useState<Parish | null>(initialParish);
+  const parishSlug = searchParams.get("parish");
+  const [step, setStep] = useState<Step>(parishSlug ? "register" : "search");
+  const [selectedParish, setSelectedParish] = useState<Parish | null>(null);
   const [pendingEmail, setPendingEmail] = useState("");
+  const [bootError, setBootError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!parishSlug) return;
+    let cancelled = false;
+    void getParishBySlug(parishSlug)
+      .then((parish) => {
+        if (cancelled) return;
+        if (parish) {
+          setSelectedParish(parish);
+          setStep("register");
+        } else {
+          setBootError("Parish not found.");
+          setStep("search");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBootError("Could not load parish.");
+          setStep("search");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [parishSlug]);
 
   async function handleRegisterSubmit(data: RegisterInput) {
     await startRegistration(data);
@@ -78,10 +99,16 @@ export function RegisterPage() {
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div className="flex min-h-full flex-col justify-center px-6 py-16 sm:px-10">
             <div className="mx-auto w-full max-w-[28rem]">
+              {bootError && step === "search" && (
+                <p role="alert" className="auth-desk__error mb-4">
+                  {bootError}
+                </p>
+              )}
               {step === "search" && (
                 <ParishSearchStep
                   onSelect={(parish) => {
                     setSelectedParish(parish);
+                    setBootError(null);
                     setStep("register");
                   }}
                 />

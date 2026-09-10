@@ -12,7 +12,7 @@ export async function parishLayoutLoader({ params }: LoaderFunctionArgs) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  const parish = getParishBySlug(slug);
+  const parish = await getParishBySlug(slug);
   if (!parish) {
     throw new Response("Not Found", { status: 404 });
   }

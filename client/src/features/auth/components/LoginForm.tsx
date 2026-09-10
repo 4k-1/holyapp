@@ -76,7 +76,8 @@ export function LoginForm({ parish }: LoginFormProps) {
               type="button"
               className="auth-desk__ghost shrink-0 text-[0.75rem]"
               onClick={() => {
-                /* TODO: forgot password flow */
+                const q = email.trim() ? `?email=${encodeURIComponent(email.trim())}` : "";
+                navigate(`/forgot-password${q}`);
               }}
             >
               Forgot password?

@@ -4,7 +4,7 @@ import "@/features/auth/styles/authDesk.css";
 interface OtpStepProps {
   email: string;
   onVerify: (code: string) => Promise<void>;
-  onResend: () => void;
+  onResend: () => void | Promise<void>;
 }
 
 export function OtpStep({ email, onVerify, onResend }: OtpStepProps) {
@@ -77,7 +77,20 @@ export function OtpStep({ email, onVerify, onResend }: OtpStepProps) {
 
       <p className="text-[0.84375rem] text-[var(--auth-ink-soft)]">
         Didn&apos;t receive a code?{" "}
-        <button type="button" onClick={onResend} className="auth-desk__link">
+        <button
+          type="button"
+          className="auth-desk__link"
+          onClick={() => {
+            void (async () => {
+              try {
+                setError(null);
+                await onResend();
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Could not resend code.");
+              }
+            })();
+          }}
+        >
           Resend
         </button>
       </p>

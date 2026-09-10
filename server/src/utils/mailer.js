@@ -34,6 +34,10 @@ function fromAddress() {
 
 async function sendMail({ to, subject, text, html }) {
   if (!smtpConfigured()) {
+    if (debugEnabled()) {
+      console.log(`[mail:debug] to=${to} subject="${subject}"\n${text}`);
+      return { messageId: 'auth-debug' };
+    }
     const err = new Error(
       'Email sending is not configured. Set SMTP_USER and SMTP_PASS (Gmail App Password) in server/.env'
     );
@@ -50,6 +54,7 @@ async function sendMail({ to, subject, text, html }) {
       html: html || text.replace(/\n/g, '<br>'),
     });
     console.log(`[mail] sent to ${to} subject="${subject}" id=${info.messageId}`);
+    return info;
   } catch (err) {
     console.error(`[mail] failed to send to ${to}:`, err.message);
     const wrapped = new Error(

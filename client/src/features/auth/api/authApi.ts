@@ -1,6 +1,5 @@
 import type { CurrentUser, Role } from "@/types";
 import { apiFetch, ApiError, refreshAccessToken } from "@/lib/api";
-import { MOCK_USERS } from "@/services/mocks/users.mock";
 import {
   clearSession,
   getAccessToken,
@@ -12,8 +11,8 @@ import {
 } from "@/features/auth/session";
 
 /**
- * Auth is partially real: login, logout, refresh, and session validation hit the backend.
- * Register and profile flows are still mocked.
+ * Auth is partially real: login, logout, refresh, register/verify, and session validation hit the backend.
+ * Profile update flows are still mocked.
  * Guards remain UX-only — the backend must enforce roles on every request.
  */
 
@@ -106,65 +105,72 @@ export interface RegisterInput {
   parishId: string;
 }
 
-// Holds a not-yet-verified registration between "submit form" and "verify OTP"
-let pendingRegistration: RegisterInput | null = null;
+/** Email waiting on OTP verify after startRegistration. */
+let pendingVerificationEmail: string | null = null;
 
 export async function startRegistration(input: RegisterInput): Promise<void> {
-  await new Promise((r) => setTimeout(r, 300));
-
-  const exists = MOCK_USERS.some((u) => u.email === input.email);
-  if (exists) {
-    throw new Error("An account with this email already exists.");
+  try {
+    await apiFetch<{ ok: boolean; email: string }>("/auth/register", {
+      method: "POST",
+      body: {
+        firstName: input.firstName,
+        lastName: input.lastName,
+        middleName: input.middleName,
+        birthday: input.birthday,
+        address: input.address,
+        email: input.email.trim(),
+        password: input.password,
+        parishId: input.parishId,
+      },
+      auth: false,
+    });
+    pendingVerificationEmail = input.email.trim();
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw new Error(err.message);
+    }
+    throw new Error("Unable to reach the server. Is the backend running?");
   }
-
-  pendingRegistration = input;
-  // In real life: backend sends an actual email here.
-  console.info(`[mock] Verification code sent to ${input.email}: 1234`);
 }
 
 export async function verifyRegistrationCode(code: string): Promise<CurrentUser> {
-  await new Promise((r) => setTimeout(r, 300));
-
-  if (!pendingRegistration) {
+  if (!pendingVerificationEmail) {
     throw new Error("No pending registration found. Please register again.");
   }
 
-  // Mock: any code "1234" succeeds. Real implementation checks server-issued code.
-  if (code !== "1234") {
-    throw new Error("Invalid verification code.");
+  try {
+    const data = await apiFetch<BackendAuthResponse>("/auth/verify-email", {
+      method: "POST",
+      body: { email: pendingVerificationEmail, code: code.trim() },
+      auth: false,
+    });
+    const user = mapBackendUser(data.user);
+    setSession(data.token, data.refresh_token);
+    setCurrentUser(user);
+    pendingVerificationEmail = null;
+    return user;
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw new Error(err.message);
+    }
+    throw new Error("Unable to reach the server. Is the backend running?");
   }
-
-  const input = pendingRegistration;
-  pendingRegistration = null;
-
-  const fullName = [input.firstName, input.middleName, input.lastName]
-    .filter(Boolean)
-    .join(" ");
-
-  const newUser: CurrentUser = {
-    id: `u-${Date.now()}`,
-    parishId: input.parishId,
-    role: "parishioner",
-    status: "active",
-    fullName,
-    email: input.email,
-    firstName: input.firstName,
-    lastName: input.lastName,
-    middleName: input.middleName,
-    birthday: input.birthday,
-    address: input.address,
-    emailVerifiedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-  };
-
-  MOCK_USERS.push({ ...newUser, password: input.password });
-  setCurrentUser(newUser);
-  return newUser;
 }
 
-export function resendVerificationCode(): void {
-  if (!pendingRegistration) return;
-  console.info(`[mock] Resent code to ${pendingRegistration.email}: 1234`);
+export async function resendVerificationCode(): Promise<void> {
+  if (!pendingVerificationEmail) return;
+  try {
+    await apiFetch("/auth/resend-verification", {
+      method: "POST",
+      body: { email: pendingVerificationEmail },
+      auth: false,
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw new Error(err.message);
+    }
+    throw new Error("Unable to reach the server. Is the backend running?");
+  }
 }
 
 export async function logout() {
@@ -278,10 +284,45 @@ export async function updateProfile(input: UpdateProfileInput): Promise<CurrentU
   return updated;
 }
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  const trimmed = email.trim();
+  if (!trimmed) throw new Error("Email is required.");
+  try {
+    await apiFetch("/auth/forgot-password", {
+      method: "POST",
+      body: { email: trimmed },
+      auth: false,
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw new Error(err.message);
+    }
+    throw new Error("Unable to reach the server. Is the backend running?");
+  }
+}
+
+/** Logged-in users: send reset email to the current account. */
 export async function sendPasswordResetEmail(): Promise<void> {
-  await new Promise((r) => setTimeout(r, 500));
   const current = getCurrentUser();
-  console.info(`[mock] Password reset link sent to ${current?.email}`);
+  if (!current?.email) throw new Error("Not logged in.");
+  await requestPasswordReset(current.email);
+}
+
+export async function resetPassword(token: string, password: string): Promise<void> {
+  if (!token) throw new Error("This reset link is invalid or has expired.");
+  if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+  try {
+    await apiFetch("/auth/reset-password", {
+      method: "POST",
+      body: { token, password },
+      auth: false,
+    });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      throw new Error(err.message);
+    }
+    throw new Error("Unable to reach the server. Is the backend running?");
+  }
 }
 
 export async function deleteAccount(): Promise<void> {

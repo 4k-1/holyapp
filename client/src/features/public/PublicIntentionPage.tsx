@@ -1,12 +1,35 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getParishBySlug } from "@/features/parish/parishApi";
 import { IntentionForm } from "@/features/parishioner/intentions/IntentionForm";
+import type { Parish } from "@/types";
 
 export function PublicIntentionPage() {
   const { parishSlug } = useParams();
-  const parish = parishSlug ? getParishBySlug(parishSlug) : undefined;
+  const [parish, setParish] = useState<Parish | null | undefined>(undefined);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (!parishSlug) {
+      setParish(null);
+      return;
+    }
+    let cancelled = false;
+    void getParishBySlug(parishSlug).then((found) => {
+      if (!cancelled) setParish(found ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [parishSlug]);
+
+  if (parish === undefined) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4 text-center">
+        <p className="text-sm text-ink-muted">Loading…</p>
+      </div>
+    );
+  }
 
   if (!parish) {
     return (

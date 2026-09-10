@@ -1,7 +1,16 @@
+const fs = require('fs');
 const os = require('os');
 
 function isLoopbackHost(hostname) {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+}
+
+function runningInDocker() {
+  try {
+    return fs.existsSync('/.dockerenv');
+  } catch {
+    return false;
+  }
 }
 
 function lanIpv4() {
@@ -30,7 +39,9 @@ function frontendUrl() {
 
   try {
     const url = new URL(configured);
-    if (isLoopbackHost(url.hostname)) {
+    // Inside Docker, LAN rewrite would use the container bridge IP (e.g. 172.19.x),
+    // which is unreachable from the host browser — keep localhost as configured.
+    if (isLoopbackHost(url.hostname) && !runningInDocker()) {
       const lan = lanIpv4();
       if (lan) {
         url.hostname = lan;

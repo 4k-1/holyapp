@@ -28,7 +28,9 @@ interface DashboardPageProps {
 
 export function DashboardPage({ parishId, parishSlug, userName }: DashboardPageProps) {
   const { data: requests = [] } = useAsync(() => listRequests(parishId), [parishId]);
+  const hasRequests = requests.length > 0;
   const recentRequests = requests.slice(0, 4);
+  const newRequestPath = `/${parishSlug}/portal/requests/new`;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
@@ -41,54 +43,70 @@ export function DashboardPage({ parishId, parishSlug, userName }: DashboardPageP
         <h1 className="relative mt-2 font-serif text-[22px] font-semibold sm:text-[25px] md:text-[29px]">
           Good morning, {userName} <span aria-hidden="true">🕊</span>
         </h1>
-      </div>  
+      </div>
 
       <div className="mb-6 rounded-[18px] border border-border bg-surface p-6 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="font-serif text-xl font-semibold text-ink">My Certificate Requests</h2>
-          <Link
-            to={`/${parishSlug}/portal/requests`}
-            className="flex items-center gap-1 text-sm font-semibold text-ink-muted hover:underline"
-          >
-            View all →
-          </Link>
+          {hasRequests && (
+            <Link
+              to={`/${parishSlug}/portal/requests`}
+              className="shrink-0 text-sm font-semibold text-ink-muted hover:underline"
+            >
+              View all →
+            </Link>
+          )}
         </div>
 
-        <div className="flex flex-col divide-y divide-border">
-          {recentRequests.map((request) => (
-            <div key={request.id} className="flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0">
-              {(() => {
-                const Icon = sacramentIcons[request.sacramentType];
-                return (
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${getSacramentIconStyle(request.sacramentType)}`}>
-                    <Icon className="h-[18px] w-[18px]" />
-                  </div>
-                );
-              })()}
-              <div className="min-w-0 flex-1">
-                <p className="text-[14.5px] font-semibold text-ink">
-                  {sacramentLabels[request.sacramentType]}
-                </p>
-                <p className="text-xs text-ink-muted">
-                  Requested{" "}
-                  {new Date(request.createdAt).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </p>
+        {hasRequests ? (
+          <div className="flex flex-col divide-y divide-border">
+            {recentRequests.map((request) => (
+              <div key={request.id} className="flex items-center gap-3.5 py-3.5 first:pt-0 last:pb-0">
+                {(() => {
+                  const Icon = sacramentIcons[request.sacramentType];
+                  return (
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${getSacramentIconStyle(request.sacramentType)}`}>
+                      <Icon className="h-[18px] w-[18px]" />
+                    </div>
+                  );
+                })()}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14.5px] font-semibold text-ink">
+                    {sacramentLabels[request.sacramentType]}
+                  </p>
+                  <p className="text-xs text-ink-muted">
+                    Requested{" "}
+                    {new Date(request.createdAt).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+                <span
+                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide ${getStatusPillClasses(
+                    request
+                  )}`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                  {deriveStatusLabel(request)}
+                </span>
               </div>
-              <span
-                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide ${getStatusPillClasses(
-                  request
-                )}`}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {deriveStatusLabel(request)}
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border bg-surface-alt px-5 py-8 text-center">
+            <p className="text-sm text-ink-muted">
+              No certificate requests yet. Start with a baptism, confirmation, marriage, or death certificate.
+            </p>
+            <Link
+              to={newRequestPath}
+              className="mt-4 inline-block rounded-[11px] bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-transform hover:opacity-95 active:scale-95"
+            >
+              Make a request
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
