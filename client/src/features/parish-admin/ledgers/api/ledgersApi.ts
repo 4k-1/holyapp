@@ -1,4 +1,5 @@
 import { delay } from "@/services/delay";
+import { recordBelongsToParish } from "@/features/parish/parishApi";
 import { MOCK_LEDGER_BOOKS, MOCK_LEDGER_PAGES } from "@/services/mocks/ledgers.mock";
 import { makeLedgerScanDataUrl } from "@/features/parish-admin/ledgers/ledgerScanImage";
 import { searchLedgerPages } from "@/features/parish-admin/ledgers/ledgersHelpers";
@@ -13,21 +14,34 @@ import type {
 } from "@/features/parish-admin/ledgers/types";
 import type { SacramentType } from "@/types";
 
+async function findLedgerBook(parishId: string, bookId: string) {
+  for (const b of MOCK_LEDGER_BOOKS) {
+    if (b.id === bookId && (await recordBelongsToParish(b.parishId, parishId))) return b;
+  }
+  return undefined;
+}
+
 export async function listLedgerBooks(parishId: string): Promise<LedgerBook[]> {
   await delay(220);
-  return MOCK_LEDGER_BOOKS.filter((b) => b.parishId === parishId);
+  const out: LedgerBook[] = [];
+  for (const b of MOCK_LEDGER_BOOKS) {
+    if (await recordBelongsToParish(b.parishId, parishId)) out.push(b);
+  }
+  return out;
 }
 
 export async function getLedgerBook(parishId: string, bookId: string): Promise<LedgerBook | undefined> {
   await delay(150);
-  return MOCK_LEDGER_BOOKS.find((b) => b.id === bookId && b.parishId === parishId);
+  return findLedgerBook(parishId, bookId);
 }
 
 export async function listLedgerPages(parishId: string, bookId: string): Promise<LedgerPage[]> {
   await delay(180);
-  return MOCK_LEDGER_PAGES.filter((p) => p.parishId === parishId && p.bookId === bookId).sort(
-    (a, b) => a.pageNumber - b.pageNumber
-  );
+  const out: LedgerPage[] = [];
+  for (const p of MOCK_LEDGER_PAGES) {
+    if (p.bookId === bookId && (await recordBelongsToParish(p.parishId, parishId))) out.push(p);
+  }
+  return out.sort((a, b) => a.pageNumber - b.pageNumber);
 }
 
 export async function getLedgerPage(
@@ -36,9 +50,16 @@ export async function getLedgerPage(
   pageNumber: number
 ): Promise<LedgerPage | undefined> {
   await delay(140);
-  return MOCK_LEDGER_PAGES.find(
-    (p) => p.parishId === parishId && p.bookId === bookId && p.pageNumber === pageNumber
-  );
+  for (const p of MOCK_LEDGER_PAGES) {
+    if (
+      p.bookId === bookId &&
+      p.pageNumber === pageNumber &&
+      (await recordBelongsToParish(p.parishId, parishId))
+    ) {
+      return p;
+    }
+  }
+  return undefined;
 }
 
 export async function searchLedgers(
@@ -47,8 +68,14 @@ export async function searchLedgers(
   options?: { field?: LedgerSearchField; bookId?: string; sacrament?: SacramentType | "all" }
 ): Promise<LedgerSearchHit[]> {
   await delay(260);
-  const books = MOCK_LEDGER_BOOKS.filter((b) => b.parishId === parishId);
-  const pages = MOCK_LEDGER_PAGES.filter((p) => p.parishId === parishId);
+  const books: LedgerBook[] = [];
+  const pages: LedgerPage[] = [];
+  for (const b of MOCK_LEDGER_BOOKS) {
+    if (await recordBelongsToParish(b.parishId, parishId)) books.push(b);
+  }
+  for (const p of MOCK_LEDGER_PAGES) {
+    if (await recordBelongsToParish(p.parishId, parishId)) pages.push(p);
+  }
   return searchLedgerPages(books, pages, query, options);
 }
 
@@ -85,7 +112,7 @@ export async function uploadLedgerPages(
   if (inputs.length === 0) throw new Error("Add at least one photo.");
 
   const bookId = inputs[0].bookId;
-  const book = MOCK_LEDGER_BOOKS.find((b) => b.id === bookId && b.parishId === parishId);
+  const book = await findLedgerBook(parishId, bookId);
   if (!book) throw new Error(`Book ${bookId} not found`);
   if (inputs.some((input) => input.bookId !== bookId)) {
     throw new Error("All photos must go into the same book.");

@@ -1,4 +1,5 @@
 import { MOCK_MASS_INTENTIONS } from "@/services/mocks/massIntentions.mock";
+import { recordBelongsToParish } from "@/features/parish/parishApi";
 import { delay } from "@/services/delay";
 import type { MassIntentionRequest } from "@/types";
 
@@ -16,7 +17,13 @@ export interface SubmitIntentionInput {
 /** Parishioner portal: this requester's intentions only. Admin uses listAdminMassSlots. */
 export async function listMassIntentions(parishId: string, requesterId: string): Promise<MassIntentionRequest[]> {
   await delay(200);
-  return MOCK_MASS_INTENTIONS.filter((i) => i.parishId === parishId && i.requesterId === requesterId).sort(
+  const out: MassIntentionRequest[] = [];
+  for (const i of MOCK_MASS_INTENTIONS) {
+    if (i.requesterId === requesterId && (await recordBelongsToParish(i.parishId, parishId))) {
+      out.push(i);
+    }
+  }
+  return out.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }

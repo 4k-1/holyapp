@@ -1,11 +1,23 @@
 import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCertificate";
+import { recordBelongsToParish } from "@/features/parish/parishApi";
 import { MOCK_CONFIRMATION_RECORDS } from "@/services/mocks/confirmationRecords.mock";
 import { delay } from "@/services/delay";
 import type { ConfirmationRecord } from "@/features/parish-admin/records/types";
 
+async function findConfirmationRecord(parishId: string, recordId: string) {
+  for (const r of MOCK_CONFIRMATION_RECORDS) {
+    if (r.id === recordId && (await recordBelongsToParish(r.parishId, parishId))) return r;
+  }
+  return undefined;
+}
+
 export async function listConfirmationRecords(parishId: string): Promise<ConfirmationRecord[]> {
   await delay(200);
-  return MOCK_CONFIRMATION_RECORDS.filter((r) => r.parishId === parishId);
+  const out: ConfirmationRecord[] = [];
+  for (const r of MOCK_CONFIRMATION_RECORDS) {
+    if (await recordBelongsToParish(r.parishId, parishId)) out.push(r);
+  }
+  return out;
 }
 
 export async function getConfirmationRecord(
@@ -13,7 +25,7 @@ export async function getConfirmationRecord(
   recordId: string
 ): Promise<ConfirmationRecord | undefined> {
   await delay(150);
-  return MOCK_CONFIRMATION_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
+  return findConfirmationRecord(parishId, recordId);
 }
 
 export type ConfirmationRecordInput = Omit<
@@ -48,7 +60,7 @@ export async function updateConfirmationRecord(
   input: ConfirmationRecordInput
 ): Promise<ConfirmationRecord> {
   await delay(400);
-  const record = MOCK_CONFIRMATION_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
+  const record = await findConfirmationRecord(parishId, recordId);
   if (!record) throw new Error(`Record ${recordId} not found`);
   Object.assign(record, input, { updatedAt: new Date().toISOString() });
   return { ...record };
@@ -59,7 +71,7 @@ export async function generateConfirmationCertificate(
   recordId: string
 ): Promise<ConfirmationRecord> {
   await delay(400);
-  const record = MOCK_CONFIRMATION_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
+  const record = await findConfirmationRecord(parishId, recordId);
   if (!record) throw new Error(`Record ${recordId} not found`);
   appendIssuedCertificate(record, "confirmation");
   return { ...record };

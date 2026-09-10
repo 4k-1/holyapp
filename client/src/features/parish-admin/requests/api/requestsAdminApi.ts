@@ -1,4 +1,5 @@
 import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
+import { recordBelongsToParish } from "@/features/parish/parishApi";
 import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
 import { MOCK_CERTIFICATES } from "@/services/mocks/certificates.mock";
 import { delay } from "@/services/delay";
@@ -10,9 +11,20 @@ import type { CertificateRequest, IssuedCertificateFields, SacramentType } from 
  * change (to `fetch` calls), not the pages that call them.
  */
 
+async function findAdminRequest(parishId: string, requestId: string) {
+  for (const r of MOCK_REQUESTS) {
+    if (r.id === requestId && (await recordBelongsToParish(r.parishId, parishId))) return r;
+  }
+  return undefined;
+}
+
 export async function listAdminRequests(parishId: string): Promise<CertificateRequest[]> {
   await delay(200);
-  return MOCK_REQUESTS.filter((r) => r.parishId === parishId);
+  const out: CertificateRequest[] = [];
+  for (const r of MOCK_REQUESTS) {
+    if (await recordBelongsToParish(r.parishId, parishId)) out.push(r);
+  }
+  return out;
 }
 
 export async function getAdminRequest(
@@ -20,7 +32,7 @@ export async function getAdminRequest(
   requestId: string
 ): Promise<CertificateRequest | undefined> {
   await delay(150);
-  return MOCK_REQUESTS.find((r) => r.id === requestId && r.parishId === parishId);
+  return findAdminRequest(parishId, requestId);
 }
 
 export async function rejectAdminRequest(

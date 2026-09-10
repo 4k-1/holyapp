@@ -1,15 +1,27 @@
 import { MOCK_MARRIAGE_RECORDS } from "@/services/mocks/marriageRecords.mock";
 import { delay } from "@/services/delay";
 import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCertificate";
+import { recordBelongsToParish } from "@/features/parish/parishApi";
 import type {
   MarriageConsentPerson,
   MarriageParty,
   MarriageRecord,
 } from "@/features/parish-admin/records/types";
 
+async function findMarriageRecord(parishId: string, recordId: string) {
+  for (const r of MOCK_MARRIAGE_RECORDS) {
+    if (r.id === recordId && (await recordBelongsToParish(r.parishId, parishId))) return r;
+  }
+  return undefined;
+}
+
 export async function listMarriageRecords(parishId: string): Promise<MarriageRecord[]> {
   await delay(200);
-  return MOCK_MARRIAGE_RECORDS.filter((r) => r.parishId === parishId);
+  const out: MarriageRecord[] = [];
+  for (const r of MOCK_MARRIAGE_RECORDS) {
+    if (await recordBelongsToParish(r.parishId, parishId)) out.push(r);
+  }
+  return out;
 }
 
 export async function getMarriageRecord(
@@ -17,7 +29,7 @@ export async function getMarriageRecord(
   recordId: string
 ): Promise<MarriageRecord | undefined> {
   await delay(150);
-  return MOCK_MARRIAGE_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
+  return findMarriageRecord(parishId, recordId);
 }
 
 export type MarriageConsentPersonInput = Omit<MarriageConsentPerson, "id">;
@@ -73,7 +85,7 @@ export async function updateMarriageRecord(
   input: MarriageRecordInput
 ): Promise<MarriageRecord> {
   await delay(400);
-  const record = MOCK_MARRIAGE_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
+  const record = await findMarriageRecord(parishId, recordId);
   if (!record) throw new Error(`Record ${recordId} not found`);
   Object.assign(record, input, {
     parties: assignPartyIds(input.parties, recordId),
@@ -87,7 +99,7 @@ export async function generateMarriageCertificate(
   recordId: string
 ): Promise<MarriageRecord> {
   await delay(400);
-  const record = MOCK_MARRIAGE_RECORDS.find((r) => r.id === recordId && r.parishId === parishId);
+  const record = await findMarriageRecord(parishId, recordId);
   if (!record) throw new Error(`Record ${recordId} not found`);
   appendIssuedCertificate(record, "marriage");
   return { ...record };

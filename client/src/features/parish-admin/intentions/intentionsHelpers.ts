@@ -102,6 +102,8 @@ export function intentionsForSlot(intentions: MassIntentionRequest[], date: stri
 
 export function buildMassSlotViews(options: {
   parishId: string;
+  /** Live UUID plus mock aliases (parish-1 / parish-2). Defaults to parishId only. */
+  parishIdAliases?: string[];
   from: string;
   to: string;
   location: string;
@@ -110,7 +112,8 @@ export function buildMassSlotViews(options: {
   maxIntentions?: number;
 }): MassSlotView[] {
   const maxIntentions = options.maxIntentions ?? MASS_INTENTION_MAX_PER_SLOT;
-  const parishIntentions = options.intentions.filter((intention) => intention.parishId === options.parishId);
+  const aliases = new Set(options.parishIdAliases ?? [options.parishId]);
+  const parishIntentions = options.intentions.filter((intention) => aliases.has(intention.parishId));
   const slots: MassSlotView[] = [];
 
   for (const date of datesInRange(options.from, options.to)) {

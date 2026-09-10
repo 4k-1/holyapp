@@ -1,15 +1,26 @@
 import { delay } from "@/services/delay";
+import { recordBelongsToParish } from "@/features/parish/parishApi";
 import { DONATIONS_LIST, DONATION_TREND } from "@/services/mocks/donations.mock";
 import type { Donation, DonationTrendPoint, NewDonationInput } from "../types";
 
 export async function listDonations(parishId: string): Promise<Donation[]> {
   await delay();
-  return DONATIONS_LIST.filter((d) => d.parishId === parishId);
+  const out: Donation[] = [];
+  for (const d of DONATIONS_LIST) {
+    if (await recordBelongsToParish(d.parishId, parishId)) out.push(d);
+  }
+  return out;
 }
 
 export async function getDonationTrend(parishId: string): Promise<DonationTrendPoint[]> {
   await delay(80);
-  const hasParishData = DONATIONS_LIST.some((d) => d.parishId === parishId);
+  let hasParishData = false;
+  for (const d of DONATIONS_LIST) {
+    if (await recordBelongsToParish(d.parishId, parishId)) {
+      hasParishData = true;
+      break;
+    }
+  }
   if (!hasParishData) return [];
   return [...DONATION_TREND];
 }

@@ -1,12 +1,17 @@
 import type { RequestFormState } from "@/features/parishioner/requests/types";
 import type { CertificateRequest } from "@/types";
+import { recordBelongsToParish } from "@/features/parish/parishApi";
 import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
 import { delay } from "@/services/delay";
 
 /** Only this file is allowed to import MOCK_REQUESTS on the parishioner side. */
 export async function listRequests(parishId: string): Promise<CertificateRequest[]> {
   await delay(200);
-  return MOCK_REQUESTS.filter((r) => r.parishId === parishId);
+  const out: CertificateRequest[] = [];
+  for (const r of MOCK_REQUESTS) {
+    if (await recordBelongsToParish(r.parishId, parishId)) out.push(r);
+  }
+  return out;
 }
 
 export async function submitRequest(

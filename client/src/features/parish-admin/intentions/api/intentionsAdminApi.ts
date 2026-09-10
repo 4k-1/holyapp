@@ -1,4 +1,5 @@
 import { delay } from "@/services/delay";
+import { mockParishIdsFor, recordBelongsToParish } from "@/features/parish/parishApi";
 import { MOCK_MASS_INTENTIONS, MOCK_PARISH_MASS_CAPACITY } from "@/services/mocks/massIntentions.mock";
 import { listMassSchedule } from "@/features/parishioner/intentions/api/massScheduleApi";
 import { buildMassSlotViews } from "@/features/parish-admin/intentions/intentionsHelpers";
@@ -34,6 +35,7 @@ export async function listAdminMassSlots(
   await delay(80);
   return buildMassSlotViews({
     parishId,
+    parishIdAliases: await mockParishIdsFor(parishId),
     from: range.from,
     to: range.to,
     location: range.location,
@@ -53,12 +55,16 @@ export async function bookSlotIntention(
   input: BookSlotIntentionInput
 ): Promise<MassIntentionRequest> {
   await delay(350);
-  const booked = MOCK_MASS_INTENTIONS.filter(
-    (intention) =>
-      intention.parishId === parishId &&
+  const booked = [];
+  for (const intention of MOCK_MASS_INTENTIONS) {
+    if (
       intention.scheduleDate === slot.date &&
-      intention.scheduleTime === slot.time
-  );
+      intention.scheduleTime === slot.time &&
+      (await recordBelongsToParish(intention.parishId, parishId))
+    ) {
+      booked.push(intention);
+    }
+  }
   if (booked.length >= slot.maxIntentions) {
     throw new Error("This Mass is at full capacity.");
   }
@@ -100,9 +106,11 @@ export async function markIntentionSaid(intentionId: string): Promise<MassIntent
  */
 export async function listAdminIntentions(parishId: string): Promise<MassIntentionRequest[]> {
   await delay(180);
-  return MOCK_MASS_INTENTIONS.filter((intention) => intention.parishId === parishId).sort((a, b) =>
-    a.scheduleDate < b.scheduleDate ? 1 : -1
-  );
+  const out: MassIntentionRequest[] = [];
+  for (const intention of MOCK_MASS_INTENTIONS) {
+    if (await recordBelongsToParish(intention.parishId, parishId)) out.push(intention);
+  }
+  return out.sort((a, b) => (a.scheduleDate < b.scheduleDate ? 1 : -1));
 }
 
 /** Parish-wide intention slots per Mass. Same cap applies to every Mass. */
