@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { getCurrentUser, logout } from "@/features/auth/api/authApi";
 import { AccountListRow } from "@/features/parishioner/account/components/AccountListRow";
 import { PersonalInfoPanel } from "@/features/parishioner/account/components/PersonalInfoPanel";
 import { ChangePasswordPanel } from "@/features/parishioner/account/components/ChangePasswordPanel";
 import { DeleteAccountPanel } from "@/features/parishioner/account/components/DeleteAccountPanel";
-import type { CurrentUser } from "@/types";
+import type { CurrentUser, Parish } from "@/types";
 
 export function AccountPage() {
   const navigate = useNavigate();
+  const { parish } = useOutletContext<{ parish: Parish }>();
   const [user, setUser] = useState<CurrentUser | null>(() => getCurrentUser());
 
   if (!user) return null;
@@ -22,7 +23,7 @@ export function AccountPage() {
 
   async function handleLogout() {
     await logout();
-    navigate("/login");
+    navigate(`/${parish.slug}/login`, { replace: true });
   }
 
   return (

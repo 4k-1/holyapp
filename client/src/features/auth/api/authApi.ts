@@ -34,6 +34,7 @@ export function setCurrentUser(user: CurrentUser | null) {
   } else {
     localStorage.removeItem(USER_STORAGE_KEY);
   }
+  window.dispatchEvent(new Event("holyapp-user-updated"));
 }
 
 export async function login(email: string, password: string): Promise<CurrentUser> {
@@ -68,7 +69,7 @@ export async function login(email: string, password: string): Promise<CurrentUse
 export async function loginSuperAdmin(email: string, password: string): Promise<CurrentUser> {
   let data: BackendAuthResponse;
   try {
-    data = await apiFetch<BackendAuthResponse>("/auth/login", {
+    data = await apiFetch<BackendAuthResponse>("/auth/login/super-admin", {
       method: "POST",
       body: { email, password },
       auth: false,
@@ -76,9 +77,6 @@ export async function loginSuperAdmin(email: string, password: string): Promise<
   } catch (err) {
     if (err instanceof ApiError) {
       if (err.status === 401) throw new Error("Invalid email or password.");
-      if (err.status === 403) {
-        throw new Error("This platform account has been suspended.");
-      }
       throw new Error(err.message);
     }
     throw new Error("Unable to reach the server. Is the backend running?");

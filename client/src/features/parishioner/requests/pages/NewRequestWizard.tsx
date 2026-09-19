@@ -6,6 +6,7 @@ import { SacramentStep } from "@/features/parishioner/requests/components/Sacram
 import { SacramentFieldsForm } from "@/features/parishioner/requests/components/SacramentFieldsForm";
 import { DetailsStepExtras } from "@/features/parishioner/requests/components/DetailsStepExtras";
 import { ConfirmationStep } from "@/features/parishioner/requests/components/ConfirmationStep";
+import { getCurrentUser } from "@/features/auth/api/authApi";
 import { submitRequest } from "@/features/parishioner/requests/api/requestsApi";
 import type { RequestFormState } from "@/features/parishioner/requests/types";
 import type { Parish } from "@/types";
@@ -30,7 +31,9 @@ export function NewRequestWizard() {
   async function handleNext() {
     if (step === 2) {
       setSubmitting(true);
-      await submitRequest(form, parish.id, "u-parishioner");
+      const requesterId = getCurrentUser()?.id;
+      if (!requesterId) throw new Error("Not logged in.");
+      await submitRequest(form, parish.id, requesterId);
       setSubmitting(false);
       setStep(3);
       return;

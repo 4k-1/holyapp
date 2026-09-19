@@ -77,6 +77,7 @@ export type SettingsSectionId =
   | "marriage-reqs"
   | "payment"
   | "privacy"
+  | "personal"
   | "security";
 
 export interface SettingsSectionMeta {
@@ -97,5 +98,6 @@ export const SETTINGS_SECTIONS: SettingsSectionMeta[] = [
   { id: "marriage-reqs", label: "Marriage Application Requirements", path: "marriage-requirements", enabled: false },
   { id: "payment", label: "Payment Configuration", path: "payment", enabled: false },
   { id: "privacy", label: "Data & Privacy", path: "privacy", enabled: false },
+  { id: "personal", label: "My Profile", path: "personal", enabled: true },
   { id: "security", label: "Account & Security", path: "security", enabled: true },
 ];

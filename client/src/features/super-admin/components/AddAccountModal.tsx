@@ -184,12 +184,14 @@ export function ResetPasswordModal({
             Cancel
           </button>
           <button type="button" className={saBtnPrimary} onClick={handleConfirm} disabled={busy}>
-            {busy ? "Sending…" : "Send Reset Link"}
+            {busy ? "Resetting…" : "Set temporary password"}
           </button>
         </>
       }
     >
-      <p className="m-0 text-[13px] text-admin-ink-muted">Send a password reset link to {name}?</p>
+      <p className="m-0 text-[13px] text-admin-ink-muted">
+        Set a new temporary password for {name}? Share it with them so they can sign in.
+      </p>
       {error ? <p className="text-[12.5px] font-medium text-admin-red-700">{error}</p> : null}
     </SuperAdminModal>
   );

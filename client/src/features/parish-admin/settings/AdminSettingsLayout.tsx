@@ -1,23 +1,34 @@
 // src/features/parish-admin/settings/AdminSettingsLayout.tsx
 import { NavLink, Outlet, useOutletContext } from "react-router-dom";
 import { SETTINGS_SECTIONS } from "./types";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { canManageParishSettings } from "@/features/parish-admin/permissions";
 import type { Parish } from "@/types";
+
+const STAFF_SETTINGS_IDS = new Set(["personal", "security"]);
 
 export function AdminSettingsLayout() {
   const { parish } = useOutletContext<{ parish: Parish }>();
+  const user = useCurrentUser();
+  const canManage = canManageParishSettings(user?.role);
+  const sections = SETTINGS_SECTIONS.filter((s) => canManage || STAFF_SETTINGS_IDS.has(s.id));
 
   return (
     <div>
       <div className="mb-5">
-        <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Settings</h1>
+        <h1 className="font-serif text-admin-page font-semibold text-admin-ink">
+          {canManage ? "Settings" : "My Account"}
+        </h1>
         <p className="mt-1 text-admin-body text-admin-ink-muted">
-          Parish-wide defaults that apply automatically across the rest of the system.
+          {canManage
+            ? "Parish-wide defaults that apply automatically across the rest of the system."
+            : "Your name, contact details, and sign-in options. Parish profile, fees, certificates, and staff accounts are managed by the parish admin."}
         </p>
       </div>
 
       <div className="grid grid-cols-1 items-start gap-7 md:grid-cols-[220px_1fr]">
         <nav className="flex flex-col gap-0.5 md:sticky md:top-5">
-          {SETTINGS_SECTIONS.map((s) =>
+          {sections.map((s) =>
             s.enabled ? (
               <NavLink
                 key={s.id}

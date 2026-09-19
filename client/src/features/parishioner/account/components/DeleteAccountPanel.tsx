@@ -1,20 +1,22 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { deleteAccount } from "@/features/auth/api/authApi";
+import type { Parish } from "@/types";
 
 export function DeleteAccountPanel() {
   const [confirming, setConfirming] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
+  const { parish } = useOutletContext<{ parish: Parish }>();
 
   async function handleConfirmDelete() {
     setDeleting(true);
     try {
       await deleteAccount();
-      navigate("/login");
+      navigate(`/${parish.slug}/login`, { replace: true });
     } finally {
       setDeleting(false);
     }

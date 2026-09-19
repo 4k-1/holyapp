@@ -1,19 +1,11 @@
 import { delay } from "@/services/delay";
+import { apiFetch, ApiError } from "@/lib/api";
 import {
-  createParishAccount,
   getDashboardSnapshot,
-  getParishOverview,
-  getPlatformAccounts,
   getPlatformAuditLog,
-  getSuperAdminParishOverviews,
   onboardParish,
-  removeParishAccount,
-  resetAccountPassword,
-  setAccountCanEdit,
-  setAccountStatus,
   setParishCertTheme,
   updateParish,
-  updateParishAccount,
   type CreateParishAccountInput,
   type UpdateParishAccountInput,
   type DashboardSnapshot,
@@ -37,19 +29,33 @@ export type {
 };
 export { CERT_THEMES, getCertTheme };
 
+function fail(err: unknown): never {
+  if (err instanceof ApiError) throw new Error(err.message);
+  throw new Error("Unable to reach the server.");
+}
+
 export async function getPlatformDashboard(): Promise<DashboardSnapshot> {
   await delay(200);
   return getDashboardSnapshot();
 }
 
 export async function listPlatformParishes(): Promise<SuperAdminParishOverview[]> {
-  await delay(200);
-  return getSuperAdminParishOverviews();
+  try {
+    const data = await apiFetch<{ parishes: SuperAdminParishOverview[] }>("/platform/parishes");
+    return data.parishes ?? [];
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function getPlatformParish(id: string): Promise<SuperAdminParishOverview | null> {
-  await delay(150);
-  return getParishOverview(id);
+  try {
+    const data = await apiFetch<{ parish: SuperAdminParishOverview }>(`/platform/parishes/${id}`);
+    return data.parish ?? null;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
+    fail(err);
+  }
 }
 
 export async function createPlatformParish(input: OnboardParishInput) {
@@ -66,33 +72,63 @@ export async function updatePlatformParish(
 }
 
 export async function createPlatformAccount(input: CreateParishAccountInput) {
-  await delay(250);
-  return createParishAccount(input);
+  try {
+    return await apiFetch<{
+      user: SuperAdminParishOverview["admins"][number];
+      credentials: { email: string; password: string };
+    }>("/platform/accounts", {
+      method: "POST",
+      body: input,
+    });
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function removePlatformAccount(userId: string) {
-  await delay(180);
-  return removeParishAccount(userId);
+  try {
+    await apiFetch<{ ok: boolean }>(`/platform/accounts/${userId}`, { method: "DELETE" });
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function setPlatformAccountStatus(userId: string, status: UserStatus) {
-  await delay(180);
-  return setAccountStatus(userId, status);
+  try {
+    const data = await apiFetch<{ user: SuperAdminParishOverview["admins"][number] }>(
+      `/platform/accounts/${userId}/status`,
+      { method: "PATCH", body: { status } }
+    );
+    return data.user;
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function resetPlatformAccountPassword(userId: string) {
-  await delay(180);
-  return resetAccountPassword(userId);
+  try {
+    return await apiFetch<{
+      credentials: { email: string; password: string };
+    }>(`/platform/accounts/${userId}/reset-password`, { method: "POST", body: {} });
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function updatePlatformAccount(userId: string, patch: UpdateParishAccountInput) {
-  await delay(200);
-  return updateParishAccount(userId, patch);
+  try {
+    const data = await apiFetch<{ user: SuperAdminParishOverview["admins"][number] }>(
+      `/platform/accounts/${userId}`,
+      { method: "PATCH", body: patch }
+    );
+    return data.user;
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function setPlatformAccountCanEdit(userId: string, canEditRecords: boolean) {
-  await delay(120);
-  return setAccountCanEdit(userId, canEditRecords);
+  return updatePlatformAccount(userId, { canEditRecords });
 }
 
 export async function setPlatformParishCertTheme(parishId: string, themeId: string) {
@@ -101,11 +137,26 @@ export async function setPlatformParishCertTheme(parishId: string, themeId: stri
 }
 
 export async function listPlatformAccounts(): Promise<PlatformAccount[]> {
-  await delay(200);
-  return getPlatformAccounts();
+  const parishes = await listPlatformParishes();
+  const accounts: PlatformAccount[] = [];
+  for (const row of parishes) {
+    for (const user of [...row.admins, ...row.staff, ...row.parishioners]) {
+      accounts.push({
+        user,
+        parish: row.parish,
+        canEditRecords: user.role === "parish_admin",
+      });
+    }
+  }
+  return accounts;
 }
 
 export async function listPlatformAuditLog(): Promise<AuditLogEntry[]> {
-  await delay(200);
-  return getPlatformAuditLog();
+  try {
+    const data = await apiFetch<{ entries: AuditLogEntry[] }>("/audit");
+    return data.entries ?? [];
+  } catch {
+    await delay(200);
+    return getPlatformAuditLog();
+  }
 }

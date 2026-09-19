@@ -2,6 +2,8 @@ import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, FileIcon, NoteIcon, UserIcon } from "@/features/parish-admin/components/AdminForm";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { canEditSacramentalRecords } from "@/features/parish-admin/permissions";
 import {
   RecordDetailBackLink,
   RecordDetailInfoRow,
@@ -35,6 +37,8 @@ export function AdminConfirmationRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { recordId = "" } = useParams();
   const navigate = useNavigate();
+  const user = useCurrentUser();
+  const canEdit = canEditSacramentalRecords(user?.role);
   const id = decodeURIComponent(recordId);
 
   const { data: record, loading, refetch } = useAsync(() => getConfirmationRecord(parish.id, id), [parish.id, id]);
@@ -113,20 +117,22 @@ export function AdminConfirmationRecordDetailPage() {
             <FileIcon />
             Generate Certificate
           </AdminButton>
-          <div className="flex gap-2">
-            <AdminButton variant="secondary" className="flex-1" onClick={() => navigate("edit")}>
-              <EditIcon />
-              Edit
-            </AdminButton>
-            <AdminButton
-              variant="danger"
-              className="flex-1"
-              onClick={() => console.info("[mock] archive record", record.id)}
-            >
-              <TrashIcon />
-              Archive
-            </AdminButton>
-          </div>
+          {canEdit && (
+            <div className="flex gap-2">
+              <AdminButton variant="secondary" className="flex-1" onClick={() => navigate("edit")}>
+                <EditIcon />
+                Edit
+              </AdminButton>
+              <AdminButton
+                variant="danger"
+                className="flex-1"
+                onClick={() => console.info("[mock] archive record", record.id)}
+              >
+                <TrashIcon />
+                Archive
+              </AdminButton>
+            </div>
+          )}
         </div>
       </AdminCard>
 

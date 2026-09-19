@@ -2,6 +2,15 @@ import { redirect, type LoaderFunctionArgs } from "react-router-dom";
 import { getCurrentUser } from "@/features/auth/api/authApi";
 import type { Role } from "@/types";
 
+function parishLoginPath(request: Request) {
+  const url = new URL(request.url);
+  const slug = url.pathname.split("/").filter(Boolean)[0];
+  if (slug && slug !== "login" && slug !== "register" && slug !== "super-admin") {
+    return `/${slug}/login`;
+  }
+  return "/login";
+}
+
 function loginRedirect(path: string, request: Request) {
   const url = new URL(request.url);
   const from = encodeURIComponent(url.pathname + url.search);
@@ -13,7 +22,7 @@ export function requireRole(allowedRoles: Role[]) {
     const user = getCurrentUser();
 
     if (!user) {
-      throw loginRedirect("/login", request);
+      throw loginRedirect(parishLoginPath(request), request);
     }
 
     if (!allowedRoles.includes(user.role)) {

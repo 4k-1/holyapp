@@ -15,6 +15,8 @@ import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/A
 import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
 import { addBaptismalAnnotation, generateBaptismalCertificate, getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { useAsync } from "@/hooks/useAsync";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { canEditSacramentalRecords } from "@/features/parish-admin/permissions";
 import {
   annotationDotClass,
   annotationTagClass,
@@ -36,6 +38,8 @@ export function AdminBaptismalRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { recordId = "" } = useParams();
   const navigate = useNavigate();
+  const user = useCurrentUser();
+  const canEdit = canEditSacramentalRecords(user?.role);
   const id = decodeURIComponent(recordId);
 
   const { data: record, loading, refetch } = useAsync(() => getBaptismalRecord(parish.id, id), [parish.id, id]);
@@ -102,20 +106,22 @@ export function AdminBaptismalRecordDetailPage() {
             <FileIcon />
             Generate Certificate
           </AdminButton>
-          <div className="flex gap-2">
-            <AdminButton variant="secondary" className="flex-1" onClick={() => navigate("edit")}>
-              <EditIcon />
-              Edit
-            </AdminButton>
-            <AdminButton
-              variant="danger"
-              className="flex-1"
-              onClick={() => console.info("[mock] archive record", record.id)}
-            >
-              <TrashIcon />
-              Archive
-            </AdminButton>
-          </div>
+          {canEdit && (
+            <div className="flex gap-2">
+              <AdminButton variant="secondary" className="flex-1" onClick={() => navigate("edit")}>
+                <EditIcon />
+                Edit
+              </AdminButton>
+              <AdminButton
+                variant="danger"
+                className="flex-1"
+                onClick={() => console.info("[mock] archive record", record.id)}
+              >
+                <TrashIcon />
+                Archive
+              </AdminButton>
+            </div>
+          )}
         </div>
       </AdminCard>
 

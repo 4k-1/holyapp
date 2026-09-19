@@ -29,11 +29,14 @@ import { AdminCertificatesReportPage } from "@/features/parish-admin/reports/Adm
 import { AdminDonationsReportPage } from "@/features/parish-admin/reports/AdminDonationsReportPage";
 import { AdminIntentionsReportPage } from "@/features/parish-admin/reports/AdminIntentionsReportPage";
 import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSettingsLayout";
+import { SettingsHomeRedirect } from "@/features/parish-admin/settings/SettingsHomeRedirect";
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
 import { ServiceFeesSection } from "@/features/parish-admin/settings/components/ServiceFeesSection";
 import { StaffAccountsSection } from "@/features/parish-admin/settings/components/StaffAccountsSection";
 import { CertificateConfigSection } from "@/features/parish-admin/settings/components/CertificateConfigSection";
 import { AccountSecuritySection } from "@/features/parish-admin/settings/components/AccountSecuritySection";
+import { AdminPersonalInfoSection } from "@/features/parish-admin/settings/components/AdminPersonalInfoSection";
+import { RequireParishAdmin } from "@/features/parish-admin/RequireParishAdmin";
 
 export const parishAdminRoutes: RouteObject[] = [
   {
@@ -48,28 +51,44 @@ export const parishAdminRoutes: RouteObject[] = [
       { path: "records/baptismal/:recordId", element: <AdminBaptismalRecordDetailPage /> },
       {
         path: "records/baptismal/:recordId/edit",
-        element: <AdminBaptismalRecordFormPage mode="edit" />,
+        element: (
+          <RequireParishAdmin>
+            <AdminBaptismalRecordFormPage mode="edit" />
+          </RequireParishAdmin>
+        ),
       },
       { path: "records/confirmation", element: <AdminConfirmationRecordsPage /> },
       { path: "records/confirmation/new", element: <AdminConfirmationRecordFormPage mode="create" /> },
       { path: "records/confirmation/:recordId", element: <AdminConfirmationRecordDetailPage /> },
       {
         path: "records/confirmation/:recordId/edit",
-        element: <AdminConfirmationRecordFormPage mode="edit" />,
+        element: (
+          <RequireParishAdmin>
+            <AdminConfirmationRecordFormPage mode="edit" />
+          </RequireParishAdmin>
+        ),
       },
       { path: "records/marriage", element: <AdminMarriageRecordsPage /> },
       { path: "records/marriage/new", element: <AdminMarriageRecordFormPage mode="create" /> },
       { path: "records/marriage/:recordId", element: <AdminMarriageRecordDetailPage /> },
       {
         path: "records/marriage/:recordId/edit",
-        element: <AdminMarriageRecordFormPage mode="edit" />,
+        element: (
+          <RequireParishAdmin>
+            <AdminMarriageRecordFormPage mode="edit" />
+          </RequireParishAdmin>
+        ),
       },
       { path: "records/death", element: <AdminDeathRecordsPage /> },
       { path: "records/death/new", element: <AdminDeathRecordFormPage mode="create" /> },
       { path: "records/death/:recordId", element: <AdminDeathRecordDetailPage /> },
       {
         path: "records/death/:recordId/edit",
-        element: <AdminDeathRecordFormPage mode="edit" />,
+        element: (
+          <RequireParishAdmin>
+            <AdminDeathRecordFormPage mode="edit" />
+          </RequireParishAdmin>
+        ),
       },
       { path: "records/ledgers", element: <AdminLedgersPage /> },
       { path: "records/ledgers/:bookId", element: <AdminLedgerBookPage /> },
@@ -95,12 +114,18 @@ export const parishAdminRoutes: RouteObject[] = [
         path: "settings",
         element: <AdminSettingsLayout />,
         children: [
-          { index: true, element: <Navigate to="parish-profile" replace /> },
-          { path: "parish-profile", element: <ParishProfileSection /> },
-          { path: "fees", element: <ServiceFeesSection /> },
-          { path: "staff", element: <StaffAccountsSection /> },
-          { path: "certificates", element: <CertificateConfigSection /> },
+          { index: true, element: <SettingsHomeRedirect /> },
+          {
+            element: <RequireParishAdmin fallback="personal" />,
+            children: [
+              { path: "parish-profile", element: <ParishProfileSection /> },
+              { path: "fees", element: <ServiceFeesSection /> },
+              { path: "staff", element: <StaffAccountsSection /> },
+              { path: "certificates", element: <CertificateConfigSection /> },
+            ],
+          },
           { path: "security", element: <AccountSecuritySection /> },
+          { path: "personal", element: <AdminPersonalInfoSection /> },
         ],
       },
     ],

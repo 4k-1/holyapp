@@ -112,9 +112,9 @@ export function SuperAdminParishAccountsPage() {
 
   async function handleReset() {
     if (!resetting) return;
-    await resetPlatformAccountPassword(resetting.id);
-    setToast(`Reset link recorded for ${resetting.fullName}`);
+    const result = await resetPlatformAccountPassword(resetting.id);
     setResetting(null);
+    setCredentials(result.credentials);
   }
 
   async function handleRemove(user: CurrentUser) {

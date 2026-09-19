@@ -10,7 +10,11 @@ export function useCurrentUser() {
       setUser(getCurrentUser());
     }
     window.addEventListener("storage", syncFromStorage);
-    return () => window.removeEventListener("storage", syncFromStorage);
+    window.addEventListener("holyapp-user-updated", syncFromStorage);
+    return () => {
+      window.removeEventListener("storage", syncFromStorage);
+      window.removeEventListener("holyapp-user-updated", syncFromStorage);
+    };
   }, []);
 
   return user;
