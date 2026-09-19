@@ -52,7 +52,7 @@
   justify-content: center;
   border-radius: 0.75rem;
   background: var(--dash-green-soft);
-  color: #3f8f38;
+  color: var(--dash-green);
 }
 
 .admin-dash__attention-title {

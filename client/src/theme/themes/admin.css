@@ -1,5 +1,5 @@
 [data-portal="admin"] {
-  /* Type roles: page / section / group / metric (Libre Baskerville) + body / support / label (Inter). */
+  /* Type roles: page / section / group / metric (Plus Jakarta Sans) + body / support / label (Inter). */
   --text-admin-page: 1.5rem;
   --text-admin-section: 1.1875rem;
   --text-admin-group: 0.9375rem;
@@ -42,7 +42,7 @@
   color: var(--color-admin-green-900);
 }
 
-/* Super-admin HTML: forest green + gold, Inter 800. Parish admin keeps the teal set above. */
+/* Super-admin HTML: forest green + gold, Inter 800. Parish admin keeps the ReadyTask green set above. */
 [data-portal="admin"][data-surface="platform"] {
   --color-admin-bg: #f6f8f6;
   --color-admin-surface: #ffffff;

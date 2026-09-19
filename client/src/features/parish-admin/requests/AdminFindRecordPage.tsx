@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { AdminButton, AdminField, AdminInput, BookIcon } from "@/features/parish-admin/components/AdminForm";
-import { RecordDetailSection } from "@/features/parish-admin/components/AdminRecordDetailSection";
+import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import {
   getAdminRequest,
@@ -25,6 +24,7 @@ import {
 import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import type { BaptismalRecord } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import "@/features/parish-admin/requests/AdminFindRecordPage.css";
 
 interface MatchFilters {
   name: string;
@@ -146,6 +146,18 @@ export function AdminFindRecordPage() {
   const [status, setStatus] = useState<RequestStatus>("pending");
   const [confirmedRecord, setConfirmedRecord] = useState<BaptismalRecord | null>(null);
   const [rejectedNote, setRejectedNote] = useState("");
+  const [matchFlash, setMatchFlash] = useState<{ count: number; id: number } | null>(null);
+
+  useEffect(() => {
+    if (!matchFlash) return;
+    const timer = window.setTimeout(() => setMatchFlash(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [matchFlash]);
+
+  function flashMatches(count: number) {
+    if (count > 0) setMatchFlash({ count, id: Date.now() });
+    else setMatchFlash(null);
+  }
 
   // Wait until request, records, AND sponsor assignments are loaded before
   // the first search. Otherwise we search an incomplete list, set
@@ -164,8 +176,10 @@ export function AdminFindRecordPage() {
       sponsor2: details?.sponsor2 ?? "",
     };
     setFilters(initial);
-    setResults(searchRecords(parishRecords, initial, sponsorsByRecordId));
+    const found = searchRecords(parishRecords, initial, sponsorsByRecordId);
+    setResults(found);
     setSeeded(true);
+    if (found.length > 0) setMatchFlash({ count: found.length, id: Date.now() });
   }, [request, parishRecords, recordsLoading, sponsorsByRecordId, sponsorsLoading, seeded]);
 
   if (requestLoading || (request && (recordsLoading || sponsorsLoading) && !seeded)) {
@@ -196,7 +210,9 @@ export function AdminFindRecordPage() {
   }
 
   function runSearch() {
-    setResults(searchRecords(parishRecords, filters, sponsorsByRecordId));
+    const found = searchRecords(parishRecords, filters, sponsorsByRecordId);
+    setResults(found);
+    flashMatches(found.length);
   }
 
   async function handleLink(record: BaptismalRecord) {
@@ -301,146 +317,132 @@ export function AdminFindRecordPage() {
       )}
 
       <div className={closed ? "pointer-events-none opacity-45 grayscale-[0.3]" : undefined}>
-        {/* Request on file + Search ledger — equal width, equal height, compact */}
-        <div className="mb-4 grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
-          <RecordDetailSection
-            tone="gold"
-            icon={<FileIcon className="h-4 w-4" />}
-            title="Request on file"
-            right={
-              <span className="rounded-full border border-admin-gold-700/30 bg-admin-gold-700/10 px-2 py-0.5 font-mono text-admin-label text-admin-gold-700">
-                {request.id}
+        <div className="match-pair">
+          <article className="match-card">
+            <header className="match-card__head">
+              <h2 className="match-card__title font-sans">Request on file</h2>
+              <span className="match-card__pill">
+                <span className="match-card__pill-dot" aria-hidden="true" />
+                On file
               </span>
-            }
-            className="mb-0 flex h-full flex-col"
-          >
-            <div className="flex flex-1 flex-col p-4 px-5">
-              <div className="grid grid-cols-2 gap-x-2.5 gap-y-0">
-                <ReadOnlyField label="Name of baptized" value={details?.subjectName || "—"} />
-                <ReadOnlyField
-                  label="Baptismal date"
-                  value={details?.baptismDate || "Not stated"}
-                  muted={!details?.baptismDate}
-                />
-                <ReadOnlyField label="Birthdate" value={details?.birthdate || "—"} />
-                <ReadOnlyField label="Place of birth" value={details?.birthplace || "—"} />
-                <ReadOnlyField label="Mother's name" value={details?.motherName || "—"} />
-                <ReadOnlyField label="Father's name" value={details?.fatherName || "—"} />
-                <ReadOnlyField label="Sponsor 1" value={details?.sponsor1 || "—"} />
-                <ReadOnlyField label="Sponsor 2" value={details?.sponsor2 || "—"} />
-              </div>
-
-              <div className="mt-auto pt-2.5">
-                <AdminButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => console.info("[mock] view supporting docs", request.id)}
-                >
-                  <FileIcon />
-                  View Supporting Docs
-                </AdminButton>
-              </div>
+            </header>
+            <div className="match-card__body">
+              <MatchReadRow label="Name of baptized" value={details?.subjectName || "—"} />
+              <MatchReadRow
+                label="Baptismal date"
+                value={details?.baptismDate || "Not stated"}
+                muted={!details?.baptismDate}
+              />
+              <MatchReadRow label="Birthdate" value={details?.birthdate || "—"} />
+              <MatchReadRow label="Place of birth" value={details?.birthplace || "—"} />
+              <MatchReadRow label="Mother's name" value={details?.motherName || "—"} />
+              <MatchReadRow label="Father's name" value={details?.fatherName || "—"} />
+              <MatchReadRow label="Sponsor 1" value={details?.sponsor1 || "—"} />
+              <MatchReadRow label="Sponsor 2" value={details?.sponsor2 || "—"} />
             </div>
-          </RecordDetailSection>
+            <footer className="match-card__foot">
+              <AdminButton
+                variant="secondary"
+                size="sm"
+                onClick={() => console.info("[mock] view supporting docs", request.id)}
+              >
+                <FileIcon />
+                View supporting docs
+              </AdminButton>
+            </footer>
+          </article>
 
-          <RecordDetailSection
-            tone="blue"
-            icon={<SearchIcon className="h-4 w-4" />}
-            title="Search the baptismal ledger"
-            right={
-              <span className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                Editable
-              </span>
-            }
-            className="mb-0 flex h-full flex-col"
-          >
-            <div className="flex flex-1 flex-col p-4 px-5">
-              <div className="grid grid-cols-2 gap-x-2.5 gap-y-0">
-                <AdminField label="Name of baptized">
-                  <AdminInput
-                    placeholder="Juan Dela Cruz"
-                    value={filters.name}
-                    onChange={(e) => setFilter("name", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Baptismal date">
-                  <AdminInput
-                    placeholder="If known"
-                    value={filters.baptismDate}
-                    onChange={(e) => setFilter("baptismDate", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Birthdate">
-                  <AdminInput
-                    placeholder="January 18, 2005"
-                    value={filters.birthdate}
-                    onChange={(e) => setFilter("birthdate", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Place of birth">
-                  <AdminInput
-                    placeholder="Manila, Metro Manila"
-                    value={filters.placeOfBirth}
-                    onChange={(e) => setFilter("placeOfBirth", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Mother's name">
-                  <AdminInput
-                    placeholder="Maria Santos"
-                    value={filters.mother}
-                    onChange={(e) => setFilter("mother", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Father's name">
-                  <AdminInput
-                    placeholder="Jose Reyes"
-                    value={filters.father}
-                    onChange={(e) => setFilter("father", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Sponsor 1">
-                  <AdminInput
-                    placeholder="Juanita Alfonso"
-                    value={filters.sponsor1}
-                    onChange={(e) => setFilter("sponsor1", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Sponsor 2">
-                  <AdminInput
-                    placeholder="Emilio Javier"
-                    value={filters.sponsor2}
-                    onChange={(e) => setFilter("sponsor2", e.target.value)}
-                  />
-                </AdminField>
-              </div>
-
-              <div className="mt-auto flex items-center gap-3 border-t border-admin-border pt-2.5">
-                <AdminButton onClick={runSearch}>
-                  <SearchIcon />
-                  Search ledger
-                </AdminButton>
-                <p className="text-admin-label leading-snug text-admin-ink-muted">
-                  Pre-filled from the request — narrow or clear a field before searching.
-                </p>
-              </div>
+          <article className="match-card">
+            <header className="match-card__head">
+              <h2 className="match-card__title font-sans">Search the ledger</h2>
+              <span className="match-card__meta">Editable</span>
+            </header>
+            <div className="match-card__body">
+              <MatchSearchRow
+                label="Name of baptized"
+                value={filters.name}
+                placeholder="Juan Dela Cruz"
+                onChange={(v) => setFilter("name", v)}
+              />
+              <MatchSearchRow
+                label="Baptismal date"
+                value={filters.baptismDate}
+                placeholder="If known"
+                onChange={(v) => setFilter("baptismDate", v)}
+              />
+              <MatchSearchRow
+                label="Birthdate"
+                value={filters.birthdate}
+                placeholder="January 18, 2005"
+                onChange={(v) => setFilter("birthdate", v)}
+              />
+              <MatchSearchRow
+                label="Place of birth"
+                value={filters.placeOfBirth}
+                placeholder="Manila, Metro Manila"
+                onChange={(v) => setFilter("placeOfBirth", v)}
+              />
+              <MatchSearchRow
+                label="Mother's name"
+                value={filters.mother}
+                placeholder="Maria Santos"
+                onChange={(v) => setFilter("mother", v)}
+              />
+              <MatchSearchRow
+                label="Father's name"
+                value={filters.father}
+                placeholder="Jose Reyes"
+                onChange={(v) => setFilter("father", v)}
+              />
+              <MatchSearchRow
+                label="Sponsor 1"
+                value={filters.sponsor1}
+                placeholder="Juanita Alfonso"
+                onChange={(v) => setFilter("sponsor1", v)}
+              />
+              <MatchSearchRow
+                label="Sponsor 2"
+                value={filters.sponsor2}
+                placeholder="Emilio Javier"
+                onChange={(v) => setFilter("sponsor2", v)}
+              />
             </div>
-          </RecordDetailSection>
+            <footer className="match-card__foot">
+              <AdminButton size="sm" onClick={runSearch}>
+                <SearchIcon />
+                Search ledger
+              </AdminButton>
+              <p className="match-card__hint">Pre-filled from the request. Narrow a field, then search.</p>
+            </footer>
+          </article>
         </div>
 
-        <RecordDetailSection
-          tone="green"
-          icon={<BookIcon className="h-4 w-4" />}
-          title="Candidate records"
-          right={<ResultBadge count={results.length} />}
-          className="mb-0 overflow-hidden"
-        >
-          <AdminTable
-            columns={columns}
-            rows={results}
-            getRowKey={(r) => r.id}
-            emptyMessage="No matching entry found. Try loosening a field — a maiden name, spelling, or exact date can differ from the request — or reject the request if the entry genuinely can't be located."
-          />
-        </RecordDetailSection>
+        <article className={`match-card match-card--results${results.length > 0 ? " match-card--has-hits" : ""}`}>
+          <header className="match-card__head">
+            <h2 className="match-card__title font-sans">Candidate records</h2>
+            <ResultBadge count={results.length} pulse={matchFlash != null && results.length > 0} />
+          </header>
+          {matchFlash && (
+            <div key={matchFlash.id} className="match-found-toast" role="status">
+              <span className="match-found-toast__check" aria-hidden="true">
+                <CheckIcon />
+              </span>
+              <span>
+                {matchFlash.count === 1
+                  ? "Matching record found"
+                  : `${matchFlash.count} matching records found`}
+              </span>
+            </div>
+          )}
+          <div className="match-card__body">
+            <AdminTable
+              columns={columns}
+              rows={results}
+              getRowKey={(r) => r.id}
+              emptyMessage="No matching entry found. Try loosening a field — a maiden name, spelling, or exact date can differ from the request — or reject the request if the entry genuinely can't be located."
+            />
+          </div>
+        </article>
       </div>
 
       {reviewRecord && (
@@ -715,18 +717,14 @@ function StatusBanner({ tone, children }: { tone: "confirmed" | "rejected"; chil
 
 // Color-coded so the outcome of a search reads instantly, before anyone
 // scans the table rows: green = candidates found, amber = none yet.
-function ResultBadge({ count }: { count: number }) {
-  const hasResults = count > 0;
+function ResultBadge({ count, pulse }: { count: number; pulse?: boolean }) {
+  if (count === 0) {
+    return <span className="match-card__meta">No matches</span>;
+  }
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-admin-support font-semibold ${
-        hasResults
-          ? "border-admin-green-700/30 bg-admin-green-100 text-admin-green-900"
-          : "border-admin-gold-700/30 bg-admin-gold-700/10 text-admin-gold-700"
-      }`}
-    >
-      <span className="font-mono">{count}</span>
-      {count === 1 ? "record matched" : "records matched"}
+    <span className={`match-card__pill${pulse ? " match-card__pill--pulse" : ""}`}>
+      <span className="match-card__pill-dot" aria-hidden="true" />
+      {count === 1 ? "1 match" : `${count} matches`}
     </span>
   );
 }
@@ -759,23 +757,42 @@ function BackLink() {
   );
 }
 
-// Same label + box dimensions as AdminField/AdminInput on the search card,
-// so each row on this read-only side lines up exactly with its counterpart
-// on the right — same height, same vertical position, easy to eyeball across.
-function ReadOnlyField({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+// Compact label + value row for the request card — same footprint as search fields.
+function MatchReadRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
-    <div className="mb-4">
-      <label className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+    <div className="match-row">
+      <span className="match-row__label">{label}</span>
+      <span className={`match-row__value${muted ? " match-row__value--muted" : ""}`} title={value}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function MatchSearchRow({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+}) {
+  const id = `match-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  return (
+    <div className="match-row">
+      <label className="match-row__label" htmlFor={id}>
         {label}
       </label>
-      <div
-        className={`w-full truncate rounded-[7px] border border-admin-border bg-admin-surface-alt px-[11px] py-[9px] text-admin-body ${
-          muted ? "italic text-admin-ink-muted" : "font-semibold text-admin-ink"
-        }`}
-        title={value}
-      >
-        {value}
-      </div>
+      <input
+        id={id}
+        className="match-row__input"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </div>
   );
 }

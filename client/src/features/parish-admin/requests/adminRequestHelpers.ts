@@ -1,7 +1,7 @@
 import type { CertificateRequest } from "@/types";
 import { deriveStatusKey, type DerivedStatusKey } from "@/features/parishioner/dashboard/deriveStatusLabel";
 
-export type BadgeTone = "amber" | "green" | "red" | "gold" | "muted";
+export type BadgeTone = "amber" | "green" | "red" | "gold" | "muted" | "blue" | "slate";
 
 const adminLabels: Record<DerivedStatusKey, string> = {
   pending: "Pending",
@@ -19,15 +19,15 @@ export function deriveAdminStatusLabel(request: CertificateRequest): string {
 export function getAdminStatusTone(request: CertificateRequest): BadgeTone {
   switch (deriveStatusKey(request)) {
     case "pending":
-      return "amber";
+      return "slate";
     case "awaiting_payment":
       return "gold";
-    case "ready":
-      return "gold";
     case "processing":
-      return "green";
+      return "blue";
+    case "ready":
+      return "amber";
     case "released":
-      return "green";
+      return "muted";
     case "rejected":
       return "red";
     default:

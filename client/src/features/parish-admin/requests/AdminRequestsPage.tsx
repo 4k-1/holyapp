@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
-import { EyeIcon } from "@/components/ui/icons/AdminIcons";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
@@ -152,29 +151,24 @@ export function AdminRequestsPage() {
       render: (r) => {
         const primary = getAdminActionLabel(r);
         return (
-          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="inline-flex flex-wrap items-center gap-1.5">
             <button
               type="button"
               onClick={() => setDetailRequestId(r.id)}
-              className="inline-flex items-center justify-center rounded-md p-1 text-admin-green-700 hover:bg-admin-green-050"
-              aria-label="View request"
-              title="View"
+              className="admin-table__action"
             >
-              <EyeIcon className="h-4 w-4" />
+              View
             </button>
             {primary !== "View" &&
               (primary === "Find record" ? (
-                <Link
-                  to={`${r.id}/find-record`}
-                  className="font-semibold text-admin-green-700 hover:underline"
-                >
+                <Link to={`${r.id}/find-record`} className="admin-table__action">
                   Find record
                 </Link>
               ) : primary === "Release →" ? (
                 <button
                   type="button"
                   onClick={() => setReleaseRequestId(r.id)}
-                  className="font-semibold text-admin-green-700 hover:underline"
+                  className="admin-table__action"
                 >
                   Release
                 </button>
@@ -182,7 +176,7 @@ export function AdminRequestsPage() {
                 <button
                   type="button"
                   onClick={() => setIssueRequestId(r.id)}
-                  className="font-semibold text-admin-green-700 hover:underline"
+                  className="admin-table__action"
                 >
                   {primary.replace(" →", "")}
                 </button>
@@ -190,7 +184,7 @@ export function AdminRequestsPage() {
                 <button
                   type="button"
                   onClick={() => console.info("[mock] action for", r.id)}
-                  className="font-semibold text-admin-green-700 hover:underline"
+                  className="admin-table__action"
                 >
                   {primary}
                 </button>

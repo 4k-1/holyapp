@@ -3,20 +3,20 @@
 @import "../theme/themes/light.css";
 @import "../theme/themes/dark.css";
 @import "../theme/themes/admin.css";
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&family=Source+Sans+3:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* Default fonts — parishioner-facing pages */
 :root {
-  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-serif: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Admin/staff portal — churchy serif for titles, Inter for body */
+/* Admin/staff portal — Plus Jakarta Sans for titles, Inter for body */
 [data-portal="admin"] {
-  --font-serif: "Libre Baskerville", ui-serif, Georgia, serif;
+  --font-serif: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 

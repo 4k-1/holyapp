@@ -142,11 +142,13 @@
   border: 1px solid var(--at-border);
   background: #f7f8f8;
   padding: 0.28rem 0.7rem;
+  font-family: inherit;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--at-ink);
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
   transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
