@@ -5,26 +5,29 @@ import { listServiceFees, updateServiceFeeAmount } from "../api/feesApi";
 import { EditServiceFeeModal } from "./EditServiceFeeModal";
 import type { ServiceFee } from "../types";
 
-// TODO: wire to the real signed-in staff name once useCurrentUser's shape is confirmed.
-const CURRENT_STAFF_NAME = "Parish Staff";
-
 export function ServiceFeesSection() {
   const [fees, setFees] = useState<ServiceFee[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingFee, setEditingFee] = useState<ServiceFee | null>(null);
 
   useEffect(() => {
-    listServiceFees().then((data) => {
-      setFees(data);
-      setLoading(false);
-    });
+    listServiceFees()
+      .then(setFees)
+      .catch((err: unknown) => {
+        window.alert(err instanceof Error ? err.message : "Could not load service fees.");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleSave(amount: number) {
     if (!editingFee) return;
-    const updated = await updateServiceFeeAmount(editingFee.id, amount, CURRENT_STAFF_NAME);
-    setFees((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
-    setEditingFee(null);
+    try {
+      const updated = await updateServiceFeeAmount(editingFee.id, amount);
+      setFees((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+      setEditingFee(null);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Could not update fee.");
+    }
   }
 
   if (loading) {

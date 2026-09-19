@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getCurrentUser, logout } from "@/features/auth/api/authApi";
 import { AccountListRow } from "@/features/parishioner/account/components/AccountListRow";
 import { PersonalInfoPanel } from "@/features/parishioner/account/components/PersonalInfoPanel";
@@ -57,6 +57,18 @@ export function AccountPage() {
         <AccountListRow icon="ℹ" label="Personal Information">
           <PersonalInfoPanel user={user} onUpdated={setUser} />
         </AccountListRow>
+        <Link
+          to="../timeline"
+          className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-surface-alt"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            ✝
+          </span>
+          <span className="flex-1 text-[14.5px] font-semibold text-ink">Sacramental timeline</span>
+          <span className="shrink-0 text-ink-muted" aria-hidden="true">
+            ›
+          </span>
+        </Link>
       </div>
 
       <p className="mb-2.5 ml-1 text-xs font-bold uppercase tracking-wide text-ink-muted">Security</p>

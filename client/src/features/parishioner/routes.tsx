@@ -5,6 +5,7 @@ import { NewRequestWizard } from "@/features/parishioner/requests/pages/NewReque
 import { RequestsListPage } from "@/features/parishioner/requests/pages/RequestsListPage";
 import { CertificatesWalletPage } from "@/features/parishioner/certificates/CertificatesWalletPage";
 import { AccountPage } from "@/features/parishioner/account/AccountPage";
+import { SacramentalTimelinePage } from "@/features/parishioner/timeline/SacramentalTimelinePage";
 import { DonationsPage } from "@/features/parishioner/donations/DonationsPage";
 import { MyIntentionsPage } from "./intentions/MyIntentionsPage";
 import { MassIntentionPage } from "./intentions/MassIntentionPage";
@@ -17,6 +18,7 @@ export const parishionerRoutes: RouteObject[] = [
       { path: "requests/new", element: <NewRequestWizard /> },
       { path: "wallet", element: <CertificatesWalletPage /> },
       { path: "account", element: <AccountPage /> },
+      { path: "timeline", element: <SacramentalTimelinePage /> },
       { path: "donate", element: <DonationsPage /> },
       { path: "intention", element: <MassIntentionPage /> },
       { path: "intentions", element: <MyIntentionsPage /> },

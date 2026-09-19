@@ -23,11 +23,15 @@ export function ParishProfileSection() {
   const [justSaved, setJustSaved] = useState(false);
 
   useEffect(() => {
-    getParishProfile().then((p) => {
-      setSaved(p);
-      setDraft(p);
-      setLoading(false);
-    });
+    getParishProfile()
+      .then((p) => {
+        setSaved(p);
+        setDraft(p);
+      })
+      .catch((err: unknown) => {
+        window.alert(err instanceof Error ? err.message : "Could not load parish profile.");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   function setField<K extends keyof ParishProfile>(key: K, value: ParishProfile[K]) {
@@ -53,6 +57,8 @@ export function ParishProfileSection() {
       setDraft(result);
       setEditing(false);
       setJustSaved(true);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Could not save parish profile.");
     } finally {
       setSaving(false);
     }

@@ -13,6 +13,7 @@ const navItems = [
   { to: "requests/new", label: "Request Certificate", end: true },
   { to: "requests", label: "My Requests", end: true },
   { to: "wallet", label: "Wallet", end: true },
+  { to: "timeline", label: "Timeline", end: true },
 ];
 
 export function Navbar({ parish, userInitials, userName }: NavbarProps) {

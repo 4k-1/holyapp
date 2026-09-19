@@ -66,11 +66,15 @@ export function CertificateConfigSection() {
   const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
-    getCertificateConfig().then((config) => {
-      setSaved(cloneConfig(config));
-      setDraft(cloneConfig(config));
-      setLoading(false);
-    });
+    getCertificateConfig()
+      .then((config) => {
+        setSaved(cloneConfig(config));
+        setDraft(cloneConfig(config));
+      })
+      .catch((err: unknown) => {
+        window.alert(err instanceof Error ? err.message : "Could not load certificate settings.");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const dirty = useMemo(() => {

@@ -37,10 +37,12 @@ export function StaffAccountsSection() {
   const [deactivateTarget, setDeactivateTarget] = useState<StaffAccount | null>(null);
 
   useEffect(() => {
-    listStaffAccounts().then((data) => {
-      setAccounts(data);
-      setLoading(false);
-    });
+    listStaffAccounts()
+      .then(setAccounts)
+      .catch((err: unknown) => {
+        window.alert(err instanceof Error ? err.message : "Could not load staff accounts.");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   function openAdd() {
@@ -59,14 +61,18 @@ export function StaffAccountsSection() {
   }
 
   async function handleSave(input: NewStaffInput) {
-    if (modalMode === "edit" && activeAccount) {
-      const updated = await updateStaffAccount(activeAccount.id, input);
-      setAccounts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-    } else {
-      const created = await addStaffAccount(input);
-      setAccounts((prev) => [...prev, created]);
+    try {
+      if (modalMode === "edit" && activeAccount) {
+        const updated = await updateStaffAccount(activeAccount.id, input);
+        setAccounts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      } else {
+        const created = await addStaffAccount(input);
+        setAccounts((prev) => [...prev, created]);
+      }
+      closeModal();
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Could not save staff account.");
     }
-    closeModal();
   }
 
   async function handleReactivate(account: StaffAccount) {

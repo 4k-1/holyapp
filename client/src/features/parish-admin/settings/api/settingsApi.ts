@@ -1,18 +1,28 @@
-// src/features/parish-admin/settings/api/settingsApi.ts
-import { delay } from "@/services/delay";
-import { PARISH_PROFILE, setParishProfile } from "@/services/mocks/parishProfile.mock";
+import { apiFetch, ApiError } from "@/lib/api";
 import type { ParishProfile } from "../types";
 
-// NOTE: not scoped by parishId yet since the mock is single-tenant —
-// thread parishId through here once parish profile is per-parish.
+function fail(err: unknown): never {
+  if (err instanceof ApiError) throw new Error(err.message);
+  throw new Error("Unable to reach the server.");
+}
 
 export async function getParishProfile(): Promise<ParishProfile> {
-  await delay();
-  return { ...PARISH_PROFILE };
+  try {
+    const data = await apiFetch<{ profile: ParishProfile }>("/parish/settings/profile");
+    return data.profile;
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function updateParishProfile(input: ParishProfile): Promise<ParishProfile> {
-  await delay();
-  setParishProfile({ ...input });
-  return { ...input };
+  try {
+    const data = await apiFetch<{ profile: ParishProfile }>("/parish/settings/profile", {
+      method: "PATCH",
+      body: input,
+    });
+    return data.profile;
+  } catch (err) {
+    fail(err);
+  }
 }

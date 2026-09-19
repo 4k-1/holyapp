@@ -25,6 +25,8 @@ export function PersonalInfoPanel({ user, onUpdated }: PersonalInfoPanelProps) {
       const updated = await updateProfile({ firstName, lastName, middleName, birthday, email, address });
       onUpdated(updated);
       setEditing(false);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Could not save profile.");
     } finally {
       setSaving(false);
     }

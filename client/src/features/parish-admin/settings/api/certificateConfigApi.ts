@@ -1,7 +1,11 @@
-import { delay } from "@/services/delay";
-import { CERTIFICATE_CONFIG, setCertificateConfig } from "@/services/mocks/certificateConfig.mock";
+import { apiFetch, ApiError } from "@/lib/api";
 import type { CertificateAppearance, CertificateConfigBySacrament } from "../types";
 import type { SacramentType } from "@/types";
+
+function fail(err: unknown): never {
+  if (err instanceof ApiError) throw new Error(err.message);
+  throw new Error("Unable to reach the server.");
+}
 
 function cloneConfig(config: CertificateConfigBySacrament): CertificateConfigBySacrament {
   return {
@@ -13,21 +17,29 @@ function cloneConfig(config: CertificateConfigBySacrament): CertificateConfigByS
 }
 
 export async function getCertificateConfig(): Promise<CertificateConfigBySacrament> {
-  await delay(200);
-  return cloneConfig(CERTIFICATE_CONFIG);
+  try {
+    const data = await apiFetch<{ certificates: CertificateConfigBySacrament }>("/parish/settings/certificates");
+    return cloneConfig(data.certificates);
+  } catch (err) {
+    fail(err);
+  }
 }
 
-export async function getCertificateAppearance(
-  sacramentType: SacramentType
-): Promise<CertificateAppearance> {
-  await delay(150);
-  return { ...CERTIFICATE_CONFIG[sacramentType] };
+export async function getCertificateAppearance(sacramentType: SacramentType): Promise<CertificateAppearance> {
+  const config = await getCertificateConfig();
+  return { ...config[sacramentType] };
 }
 
 export async function updateCertificateConfig(
   input: CertificateConfigBySacrament
 ): Promise<CertificateConfigBySacrament> {
-  await delay(300);
-  setCertificateConfig(input);
-  return cloneConfig(CERTIFICATE_CONFIG);
+  try {
+    const data = await apiFetch<{ certificates: CertificateConfigBySacrament }>("/parish/settings/certificates", {
+      method: "PUT",
+      body: { certificates: input },
+    });
+    return cloneConfig(data.certificates);
+  } catch (err) {
+    fail(err);
+  }
 }

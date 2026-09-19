@@ -8,11 +8,11 @@ import {
   setSession,
   USER_STORAGE_KEY,
   type BackendAuthResponse,
+  type BackendAuthUser,
 } from "@/features/auth/session";
 
 /**
- * Auth is partially real: login, logout, refresh, register/verify, and session validation hit the backend.
- * Profile update flows are still mocked.
+ * Auth hits the backend for login, logout, refresh, register/verify, session, and profile updates.
  * Guards remain UX-only — the backend must enforce roles on every request.
  */
 
@@ -262,26 +262,26 @@ export interface UpdateProfileInput {
 }
 
 export async function updateProfile(input: UpdateProfileInput): Promise<CurrentUser> {
-  await new Promise((r) => setTimeout(r, 400));
-
-  const current = getCurrentUser();
-  if (!current) throw new Error("Not logged in.");
-
-  const fullName = [input.firstName, input.middleName, input.lastName].filter(Boolean).join(" ");
-
-  const updated: CurrentUser = {
-    ...current,
-    firstName: input.firstName,
-    lastName: input.lastName,
-    middleName: input.middleName,
-    birthday: input.birthday,
-    email: input.email,
-    address: input.address,
-    fullName,
-  };
-
-  setCurrentUser(updated);
-  return updated;
+  if (!getCurrentUser()) throw new Error("Not logged in.");
+  try {
+    const data = await apiFetch<{ user: BackendAuthUser }>("/auth/me", {
+      method: "PATCH",
+      body: {
+        firstName: input.firstName,
+        lastName: input.lastName,
+        middleName: input.middleName,
+        birthday: input.birthday,
+        email: input.email,
+        address: input.address,
+      },
+    });
+    const updated = mapBackendUser(data.user);
+    setCurrentUser(updated);
+    return updated;
+  } catch (err) {
+    if (err instanceof ApiError) throw new Error(err.message);
+    throw new Error("Unable to reach the server. Is the backend running?");
+  }
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {

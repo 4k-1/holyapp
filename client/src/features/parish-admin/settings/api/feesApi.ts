@@ -1,22 +1,28 @@
-// src/features/parish-admin/settings/api/feesApi.ts
-import { delay } from "@/services/delay";
-import { SERVICE_FEES } from "@/services/mocks/serviceFees.mock";
+import { apiFetch, ApiError } from "@/lib/api";
 import type { ServiceFee } from "../types";
 
-// NOTE: not scoped by parishId yet since the mock is single-tenant —
-// thread parishId through here once fees are per-parish.
-
-export async function listServiceFees(): Promise<ServiceFee[]> {
-  await delay();
-  return [...SERVICE_FEES];
+function fail(err: unknown): never {
+  if (err instanceof ApiError) throw new Error(err.message);
+  throw new Error("Unable to reach the server.");
 }
 
-export async function updateServiceFeeAmount(id: string, amount: number, updatedBy: string): Promise<ServiceFee> {
-  await delay();
-  const fee = SERVICE_FEES.find((f) => f.id === id);
-  if (!fee) throw new Error(`Unknown fee id: ${id}`);
-  fee.amount = amount;
-  fee.updatedBy = updatedBy;
-  fee.updatedOn = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-  return { ...fee };
+export async function listServiceFees(): Promise<ServiceFee[]> {
+  try {
+    const data = await apiFetch<{ fees: ServiceFee[] }>("/parish/settings/fees");
+    return data.fees ?? [];
+  } catch (err) {
+    fail(err);
+  }
+}
+
+export async function updateServiceFeeAmount(id: string, amount: number, _updatedBy?: string): Promise<ServiceFee> {
+  try {
+    const data = await apiFetch<{ fee: ServiceFee }>(`/parish/settings/fees/${id}`, {
+      method: "PATCH",
+      body: { amount },
+    });
+    return data.fee;
+  } catch (err) {
+    fail(err);
+  }
 }

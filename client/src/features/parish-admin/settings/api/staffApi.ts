@@ -1,47 +1,68 @@
-// src/features/parish-admin/settings/api/staffApi.ts
-import { delay } from "@/services/delay";
-import { STAFF_ACCOUNTS } from "@/services/mocks/staffAccounts.mock";
-import type { NewStaffInput, StaffAccount, StaffStatus } from "../types";
+import { apiFetch, ApiError } from "@/lib/api";
+import type { NewStaffInput, StaffAccount, StaffRole, StaffStatus } from "../types";
 
-// NOTE: not scoped by parishId yet since the mock is single-tenant —
-// thread parishId through here once staff accounts are per-parish.
+function fail(err: unknown): never {
+  if (err instanceof ApiError) throw new Error(err.message);
+  throw new Error("Unable to reach the server.");
+}
 
-let nextId = STAFF_ACCOUNTS.length + 1;
+function asStaffRole(role: string): StaffRole {
+  if (role === "Priest" || role === "Parish Secretary" || role === "Admin Staff") return role;
+  return "Admin Staff";
+}
+
+function asStaff(row: StaffAccount): StaffAccount {
+  return {
+    id: row.id,
+    name: row.name,
+    role: asStaffRole(row.role),
+    email: row.email,
+    status: row.status === "Inactive" ? "Inactive" : "Active",
+    accessRole: row.accessRole === "admin" ? "admin" : "staff",
+  };
+}
 
 export async function listStaffAccounts(): Promise<StaffAccount[]> {
-  await delay();
-  return [...STAFF_ACCOUNTS];
+  try {
+    const data = await apiFetch<{ staff: StaffAccount[] }>("/staff");
+    return (data.staff ?? []).map(asStaff);
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function addStaffAccount(input: NewStaffInput): Promise<StaffAccount> {
-  await delay();
-  const account: StaffAccount = {
-    id: `st${nextId++}`,
-    name: input.name,
-    role: input.role,
-    email: input.email,
-    status: "Active",
-    accessRole: input.accessRole,
-  };
-  STAFF_ACCOUNTS.push(account);
-  return { ...account };
+  try {
+    const data = await apiFetch<{ staff: StaffAccount }>("/staff", {
+      method: "POST",
+      body: input,
+    });
+    return asStaff(data.staff);
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function updateStaffAccount(id: string, input: NewStaffInput): Promise<StaffAccount> {
-  await delay();
-  const account = STAFF_ACCOUNTS.find((s) => s.id === id);
-  if (!account) throw new Error(`Unknown staff id: ${id}`);
-  account.name = input.name;
-  account.role = input.role;
-  account.email = input.email;
-  account.accessRole = input.accessRole;
-  return { ...account };
+  try {
+    const data = await apiFetch<{ staff: StaffAccount }>(`/staff/${id}`, {
+      method: "PATCH",
+      body: input,
+    });
+    return asStaff(data.staff);
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function setStaffAccountStatus(id: string, status: StaffStatus): Promise<StaffAccount> {
-  await delay();
-  const account = STAFF_ACCOUNTS.find((s) => s.id === id);
-  if (!account) throw new Error(`Unknown staff id: ${id}`);
-  account.status = status;
-  return { ...account };
+  try {
+    const data = await apiFetch<{ staff: StaffAccount }>(`/staff/${id}/status`, {
+      method: "PATCH",
+      body: { status },
+    });
+    return asStaff(data.staff);
+  } catch (err) {
+    fail(err);
+  }
 }
