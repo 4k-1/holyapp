@@ -1,0 +1,74 @@
+import { useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { logout } from "@/features/auth/api/authApi";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { SuperAdminSidebar } from "@/features/super-admin/components/SuperAdminSidebar";
+import { SuperAdminTopbar } from "@/features/super-admin/components/SuperAdminTopbar";
+import { SuperAdminChromeProvider, useSuperAdminChromeHeading } from "@/features/super-admin/SuperAdminChrome";
+
+function headingFromPath(pathname: string) {
+  if (pathname.startsWith("/super-admin/parishes")) {
+    return { title: "Parishes", sub: "Every parish on HolyApp." };
+  }
+  if (pathname.startsWith("/super-admin/templates")) {
+    return { title: "Certificate Templates", sub: "Manage certificate layouts platform-wide, and check parish branding" };
+  }
+  if (pathname.startsWith("/super-admin/audit")) {
+    return { title: "Audit Logs", sub: "System-wide activity across all parishes" };
+  }
+  if (pathname.startsWith("/super-admin/reports")) {
+    return { title: "System Reports", sub: "Aggregated statistics for oversight" };
+  }
+  if (pathname.startsWith("/super-admin/settings")) {
+    return { title: "Settings", sub: "Super Admin preferences" };
+  }
+  if (/^\/super-admin\/accounts\/[^/]+/.test(pathname)) {
+    return { title: "", sub: "" };
+  }
+  if (pathname.startsWith("/super-admin/accounts")) {
+    return { title: "Parish Admins", sub: "Create and manage Parish Admin accounts" };
+  }
+  return { title: "System Overview", sub: "Cross-parish oversight — Diocese of Cebu" };
+}
+
+export function SuperAdminLayout() {
+  return (
+    <SuperAdminChromeProvider>
+      <SuperAdminShell />
+    </SuperAdminChromeProvider>
+  );
+}
+
+function SuperAdminShell() {
+  const user = useCurrentUser();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const override = useSuperAdminChromeHeading();
+  const heading = override ?? headingFromPath(location.pathname);
+  const [collapsed, setCollapsed] = useState(false);
+
+  if (!user) return null;
+
+  async function handleSignOut() {
+    await logout();
+    navigate("/super-admin/login", { replace: true });
+  }
+
+  return (
+    <div data-portal="admin" data-surface="platform" className="flex h-dvh flex-col bg-admin-bg font-sans text-admin-ink">
+      <SuperAdminTopbar user={user} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <SuperAdminSidebar collapsed={collapsed} onSignOut={handleSignOut} />
+        <div className="min-w-0 flex-1 overflow-y-auto px-8 py-[26px]">
+          {heading.title ? (
+            <header className="mb-[22px]">
+              <h1 className="font-sans text-[21px] font-extrabold leading-tight text-admin-ink">{heading.title}</h1>
+              {heading.sub ? <p className="mt-[3px] text-[12.8px] text-admin-ink-muted">{heading.sub}</p> : null}
+            </header>
+          ) : null}
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  );
+}
