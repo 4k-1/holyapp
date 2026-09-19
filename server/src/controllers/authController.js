@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const { ROLES } = require('../constants/roles');
 const { hashPassword, comparePassword } = require('../utils/password');
 const { sendMail, verificationEmail, passwordResetEmail } = require('../utils/mailer');
+const { writeAudit } = require('../utils/audit');
 const {
   signAccessToken,
   accessTokenExpiresInSeconds,
@@ -158,6 +159,14 @@ async function loginWithPortal(req, res, portal) {
 
     const passwordMatches = await comparePassword(password, user.password_hash);
     if (!passwordMatches) {
+      await writeAudit({
+        parishId: user.parish_id,
+        actorId: user.id,
+        action: 'auth.login_failed',
+        entityType: 'app_user',
+        entityId: user.id,
+        metadata: { email: user.email },
+      });
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
@@ -165,7 +174,16 @@ async function loginWithPortal(req, res, portal) {
       return res.status(403).json({ error: 'Please verify your email first.' });
     }
 
-    res.json(await issueSession(user));
+    const session = await issueSession(user);
+    await writeAudit({
+      parishId: user.parish_id,
+      actorId: user.id,
+      action: 'auth.login',
+      entityType: 'app_user',
+      entityId: user.id,
+      metadata: { portal },
+    });
+    res.json(session);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -490,6 +508,109 @@ async function me(req, res) {
   }
 }
 
+function optionalText(value) {
+  if (value === undefined) return undefined;
+  const trimmed = String(value).trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+async function updateMe(req, res) {
+  try {
+    const current = await findUserById(req.user.id);
+    if (!current) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (current.status !== 'active') {
+      return res.status(403).json({ error: 'Account is not active' });
+    }
+
+    const firstName = optionalText(pick(req.body, 'firstName', 'first_name'));
+    const lastName = optionalText(pick(req.body, 'lastName', 'last_name'));
+    const middleName = optionalText(pick(req.body, 'middleName', 'middle_name'));
+    const address = optionalText(pick(req.body, 'address', 'address'));
+    const contactNumber = optionalText(pick(req.body, 'contactNumber', 'contact_number'));
+    const birthdayRaw = pick(req.body, 'birthday', 'birthday');
+    const emailRaw = pick(req.body, 'email', 'email');
+
+    if (firstName !== undefined && !firstName) {
+      return res.status(400).json({ error: 'First name is required' });
+    }
+    if (lastName !== undefined && !lastName) {
+      return res.status(400).json({ error: 'Last name is required' });
+    }
+
+    let email = current.email;
+    if (emailRaw !== undefined) {
+      email = String(emailRaw).trim().toLowerCase();
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+      if (email !== current.email.toLowerCase()) {
+        const taken = await pool.query(
+          `SELECT id FROM app_user WHERE lower(email) = $1 AND id <> $2`,
+          [email, current.id]
+        );
+        if (taken.rows.length > 0) {
+          return res.status(409).json({ error: 'An account with this email already exists.' });
+        }
+      }
+    }
+
+    let birthday = current.birthday;
+    if (birthdayRaw !== undefined) {
+      const text = String(birthdayRaw).trim();
+      birthday = text === '' ? null : text.slice(0, 10);
+    }
+
+    const next = {
+      first_name: firstName !== undefined ? firstName : current.first_name,
+      last_name: lastName !== undefined ? lastName : current.last_name,
+      middle_name: middleName !== undefined ? middleName : current.middle_name,
+      address: address !== undefined ? address : current.address,
+      contact_number: contactNumber !== undefined ? contactNumber : current.contact_number,
+      birthday,
+      email,
+    };
+
+    const updated = await pool.query(
+      `UPDATE app_user
+       SET first_name = $1,
+           last_name = $2,
+           middle_name = $3,
+           birthday = $4,
+           address = $5,
+           contact_number = $6,
+           email = $7,
+           updated_at = NOW()
+       WHERE id = $8
+       RETURNING ${USER_COLUMNS}`,
+      [
+        next.first_name,
+        next.last_name,
+        next.middle_name,
+        next.birthday,
+        next.address,
+        next.contact_number,
+        next.email,
+        current.id,
+      ]
+    );
+
+    await writeAudit({
+      parishId: current.parish_id,
+      actorId: current.id,
+      action: 'profile.updated',
+      entityType: 'app_user',
+      entityId: current.id,
+      metadata: { role: current.role },
+    });
+
+    res.json({ user: publicUser(updated.rows[0]) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 module.exports = {
   login,
   loginSuperAdmin,
@@ -501,4 +622,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   me,
+  updateMe,
 };

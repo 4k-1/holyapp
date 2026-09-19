@@ -29,10 +29,14 @@ const authRoutes = require('./routes/authRoutes');
 const rbacRoutes = require('./routes/rbacRoutes');
 const parishRoutes = require('./routes/parishRoutes');
 const parishesRoutes = require('./routes/parishesRoutes');
+const staffRoutes = require('./routes/staffRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 app.use('/auth', authRoutes);
 app.use('/rbac', rbacRoutes);
 app.use('/parish', parishRoutes);
 app.use('/parishes', parishesRoutes);
+app.use('/staff', staffRoutes);
+app.use('/audit', auditRoutes);
 
 const { frontendUrl } = require('./utils/frontendUrl');
 const PORT = process.env.PORT || 5000;

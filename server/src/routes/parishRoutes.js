@@ -1,9 +1,19 @@
 const express = require('express');
 const pool = require('../config/db');
-const { authenticate } = require('../middleware/rbac');
-const { scopeParish } = require('../middleware/scopeParish');
+const { authenticate, requireRole } = require('../middleware/rbac');
+const { scopeParish, requireParish } = require('../middleware/scopeParish');
+const { ROLES } = require('../constants/roles');
+const {
+  getProfile,
+  updateProfile,
+  listFees,
+  updateFee,
+  getCertificates,
+  updateCertificates,
+} = require('../controllers/parishSettingsController');
 
 const router = express.Router();
+const office = [ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF];
 
 async function parishContext(req, res) {
   try {
@@ -36,6 +46,54 @@ async function parishContext(req, res) {
 }
 
 router.get('/context', authenticate, scopeParish, parishContext);
+router.get(
+  '/settings/profile',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(...office),
+  getProfile
+);
+router.patch(
+  '/settings/profile',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN),
+  updateProfile
+);
+router.get(
+  '/settings/fees',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(...office),
+  listFees
+);
+router.patch(
+  '/settings/fees/:feeId',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN),
+  updateFee
+);
+router.get(
+  '/settings/certificates',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(...office),
+  getCertificates
+);
+router.put(
+  '/settings/certificates',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN),
+  updateCertificates
+);
 router.get('/:parishId/context', authenticate, scopeParish, parishContext);
 
 module.exports = router;

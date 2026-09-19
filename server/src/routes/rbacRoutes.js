@@ -1,12 +1,27 @@
 const express = require('express');
 const { authenticate, requireRole } = require('../middleware/rbac');
 const { ROLES, ALL_ROLES } = require('../constants/roles');
+const { listPermissions, updatePermissions } = require('../controllers/permissionsController');
 
 const router = express.Router();
 
 router.get('/me', authenticate, (req, res) => {
   res.json({ user: req.user });
 });
+
+router.get(
+  '/permissions',
+  authenticate,
+  requireRole(ROLES.SUPER_ADMIN),
+  listPermissions
+);
+
+router.put(
+  '/permissions',
+  authenticate,
+  requireRole(ROLES.SUPER_ADMIN),
+  updatePermissions
+);
 
 router.get(
   '/super-admin',

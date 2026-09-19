@@ -37,4 +37,11 @@ function scopeParish(req, res, next) {
   return next();
 }
 
-module.exports = { scopeParish };
+function requireParish(req, res, next) {
+  if (!req.parishId) {
+    return res.status(400).json({ error: 'Parish is required.' });
+  }
+  return next();
+}
+
+module.exports = { scopeParish, requireParish };
