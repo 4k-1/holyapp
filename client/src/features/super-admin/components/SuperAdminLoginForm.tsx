@@ -87,6 +87,18 @@ export function SuperAdminLoginForm() {
             </button>
           </div>
         </AdminField>
+        <p className="-mt-2 text-right">
+          <Link
+            to={
+              email.trim()
+                ? `/forgot-password?from=super-admin&email=${encodeURIComponent(email.trim())}`
+                : "/forgot-password?from=super-admin"
+            }
+            className="font-semibold text-admin-green-700 underline decoration-admin-green-100 underline-offset-2 hover:text-admin-green-600"
+          >
+            Forgot password?
+          </Link>
+        </p>
       </div>
 
       {error && (
