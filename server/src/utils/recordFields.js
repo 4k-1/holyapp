@@ -83,6 +83,10 @@ function sendRecordError(res, err) {
   return res.status(500).json({ error: err.message });
 }
 
+function recordStatus(archivedAt) {
+  return archivedAt ? 'Archived' : 'Active';
+}
+
 module.exports = {
   httpError,
   requiredText,
@@ -94,4 +98,5 @@ module.exports = {
   optionalUuid,
   optionalInt,
   sendRecordError,
+  recordStatus,
 };
