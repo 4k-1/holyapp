@@ -2,6 +2,7 @@ import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCe
 import { recordBelongsToParish } from "@/features/parish/parishApi";
 import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
 import { delay } from "@/services/delay";
+import { apiFetch, ApiError } from "@/lib/api";
 import type { BaptismalRecord, RecordAnnotation } from "@/features/parish-admin/records/types";
 
 async function findBaptismalRecord(parishId: string, recordId: string) {
@@ -11,21 +12,24 @@ async function findBaptismalRecord(parishId: string, recordId: string) {
   return undefined;
 }
 
-export async function listBaptismalRecords(parishId: string): Promise<BaptismalRecord[]> {
-  await delay(200);
-  const out: BaptismalRecord[] = [];
-  for (const r of MOCK_BAPTISMAL_RECORDS) {
-    if (await recordBelongsToParish(r.parishId, parishId)) out.push(r);
-  }
-  return out;
+export async function listBaptismalRecords(_parishId: string): Promise<BaptismalRecord[]> {
+  const data = await apiFetch<{ records: BaptismalRecord[] }>("/records/baptism");
+  return data.records;
 }
 
 export async function getBaptismalRecord(
-  parishId: string,
+  _parishId: string,
   recordId: string
 ): Promise<BaptismalRecord | undefined> {
-  await delay(150);
-  return findBaptismalRecord(parishId, recordId);
+  try {
+    const data = await apiFetch<{ record: BaptismalRecord }>(
+      `/records/baptism/${encodeURIComponent(recordId)}`
+    );
+    return data.record;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return undefined;
+    throw err;
+  }
 }
 
 export type BaptismalRecordInput = Omit<
@@ -35,24 +39,13 @@ export type BaptismalRecordInput = Omit<
 
 export async function createBaptismalRecord(
   parishId: string,
-  input: BaptismalRecordInput,
-  encodedBy = "u-admin"
+  input: BaptismalRecordInput
 ): Promise<BaptismalRecord> {
-  await delay(400);
-  const now = new Date().toISOString();
-  const record: BaptismalRecord = {
-    ...input,
-    id: `bap-${Date.now()}`,
-    parishId,
-    encodedBy,
-    createdAt: now,
-    updatedAt: now,
-    status: "Active",
-    certificates: [],
-    annotations: [],
-  };
-  MOCK_BAPTISMAL_RECORDS.push(record);
-  return record;
+  const data = await apiFetch<{ record: BaptismalRecord }>("/records/baptism", {
+    method: "POST",
+    body: { ...input, parishId },
+  });
+  return data.record;
 }
 
 export async function updateBaptismalRecord(

@@ -7,7 +7,9 @@ const {
   dateOnly,
   sendRecordError,
   httpError,
+  recordStatus,
 } = require('../utils/recordFields');
+const { findParishRecord } = require('../utils/recordQuery');
 
 const LEGITIMACY = {
   legitimate: 'Legitimate',
@@ -56,7 +58,7 @@ function toBaptismalRecord(row) {
     encodedBy: row.encoded_by,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
     updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
-    status: 'Active',
+    status: recordStatus(row.archived_at),
     certificates: [],
     annotations: [],
   };
@@ -152,4 +154,30 @@ async function createBaptism(req, res) {
   }
 }
 
-module.exports = { createBaptism, toBaptismalRecord };
+async function listBaptisms(req, res) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM baptism
+       WHERE parish_id = $1
+       ORDER BY date_of_baptism DESC, created_at DESC`,
+      [req.parishId]
+    );
+    res.json({ records: result.rows.map(toBaptismalRecord) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+async function getBaptism(req, res) {
+  try {
+    const row = await findParishRecord(pool, 'baptism', req.parishId, req.params.id);
+    if (!row) {
+      return res.status(404).json({ error: 'Record not found.' });
+    }
+    res.json({ record: toBaptismalRecord(row) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+module.exports = { createBaptism, listBaptisms, getBaptism, toBaptismalRecord };

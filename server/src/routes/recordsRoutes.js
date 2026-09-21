@@ -2,13 +2,31 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/rbac');
 const { scopeParish, requireParish } = require('../middleware/scopeParish');
 const { ROLES } = require('../constants/roles');
-const { createBaptism } = require('../controllers/baptismController');
+const { createBaptism, listBaptisms, getBaptism } = require('../controllers/baptismController');
 const { createConfirmation } = require('../controllers/confirmationController');
 const { createMarriage } = require('../controllers/marriageController');
 const { createDeath } = require('../controllers/deathController');
 
 const router = express.Router();
 const office = [ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF];
+
+router.get(
+  '/baptism',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(...office),
+  listBaptisms
+);
+
+router.get(
+  '/baptism/:id',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(...office),
+  getBaptism
+);
 
 router.post(
   '/baptism',
