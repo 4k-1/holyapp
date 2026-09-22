@@ -33,6 +33,7 @@ const staffRoutes = require('./routes/staffRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const platformRoutes = require('./routes/platformRoutes');
 const recordsRoutes = require('./routes/recordsRoutes');
+const requestRoutes = require('./routes/requestRoutes');
 app.use('/auth', authRoutes);
 app.use('/rbac', rbacRoutes);
 app.use('/parish', parishRoutes);
@@ -41,6 +42,7 @@ app.use('/staff', staffRoutes);
 app.use('/audit', auditRoutes);
 app.use('/platform', platformRoutes);
 app.use('/records', recordsRoutes);
+app.use('/requests', requestRoutes);
 
 const { frontendUrl } = require('./utils/frontendUrl');
 const PORT = process.env.PORT || 5000;
