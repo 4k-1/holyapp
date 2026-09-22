@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { downloadCertificate, listCertificates } from "@/features/parishioner/certificates/api/certificatesApi";
+import { listCertificates } from "@/features/parishioner/certificates/api/certificatesApi";
+import { CertificatePdfCapture } from "@/features/parishioner/certificates/CertificatePdfCapture";
+import { saveCertificatePdf } from "@/features/parishioner/certificates/saveCertificatePdf";
 import { useAsync } from "@/hooks/useAsync";
 import { CertificateCard } from "@/features/parishioner/certificates/CertificateCard";
 import { CertificateViewerModal } from "@/features/parishioner/certificates/CertificateViewerModal";
@@ -10,20 +12,34 @@ export function CertificatesWalletPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { data: certificates = [], loading } = useAsync(() => listCertificates(parish.id), [parish.id]);
   const [viewing, setViewing] = useState<IssuedCertificate | null>(null);
+  const [saving, setSaving] = useState<IssuedCertificate | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const savingRef = useRef<IssuedCertificate | null>(null);
 
   function handleView(certificate: IssuedCertificate) {
     setViewing(certificate);
   }
 
-  async function handleDownload(certificate: IssuedCertificate) {
+  function handleDownload(certificate: IssuedCertificate) {
+    if (savingRef.current) return;
     setDownloadError(null);
-    try {
-      await downloadCertificate(certificate);
-    } catch (err) {
-      setDownloadError(err instanceof Error ? err.message : "Could not download this certificate.");
-    }
+    savingRef.current = certificate;
+    setSaving(certificate);
   }
+
+  const handleSheetReady = useCallback((element: HTMLElement) => {
+    const certificate = savingRef.current;
+    if (!certificate) return;
+    const filename = `${certificate.certCode || "certificate"}.pdf`;
+    saveCertificatePdf(element, filename)
+      .catch((err: unknown) => {
+        setDownloadError(err instanceof Error ? err.message : "Could not download this certificate.");
+      })
+      .finally(() => {
+        savingRef.current = null;
+        setSaving(null);
+      });
+  }, []);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
@@ -47,6 +63,7 @@ export function CertificatesWalletPage() {
               certificate={certificate}
               onView={handleView}
               onDownload={handleDownload}
+              downloading={saving?.id === certificate.id}
             />
           ))}
         </div>
@@ -55,6 +72,7 @@ export function CertificatesWalletPage() {
       {viewing && (
         <CertificateViewerModal certificate={viewing} parish={parish} onClose={() => setViewing(null)} />
       )}
+      {saving && <CertificatePdfCapture certificate={saving} parish={parish} onReady={handleSheetReady} />}
     </div>
   );
 }

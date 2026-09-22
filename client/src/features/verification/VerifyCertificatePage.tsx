@@ -1,16 +1,44 @@
 import { useParams } from "react-router-dom";
-import { apiFetch } from "@/lib/api";
+import { CertificateDocument } from "@/features/parish-admin/components/CertificateDocument";
+import { CERT_SHEET_WIDTH } from "@/features/parish-admin/components/certificate/constants";
 import { useAsync } from "@/hooks/useAsync";
+import type { Parish, SacramentType } from "@/types";
+import mtcarmellogo from "@/assets/mtcarmellogo.png";
+
+interface VerificationFields {
+  requestId: string;
+  registerRef: string;
+  birthdate?: string;
+  birthplace?: string;
+  baptismDate?: string;
+  confirmationDate?: string;
+  marriageDate?: string;
+  deathDate?: string;
+  motherName?: string;
+  fatherName?: string;
+  certCode?: string;
+  verifyUrl?: string;
+}
 
 interface Verification {
   status: "valid" | "superseded" | "invalid";
   code: string;
   holderName: string;
-  sacramentType: string;
+  sacramentType: SacramentType;
   issuedAt: string;
   parishName: string;
+  parishAddress?: string;
+  parishSlug?: string;
+  signatoryName?: string;
+  signatoryTitle?: string;
+  footerText?: string;
   reason?: string;
+  fields?: VerificationFields;
 }
+
+const SEALS: Record<string, string> = {
+  mtcarmel: mtcarmellogo,
+};
 
 const statusCopy: Record<Verification["status"], { title: string; detail: string }> = {
   valid: {
@@ -27,44 +55,92 @@ const statusCopy: Record<Verification["status"], { title: string; detail: string
   },
 };
 
+function apiBases() {
+  const configured = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+  const host = window.location.hostname;
+  const bases = [""];
+  if (host && host !== "localhost" && host !== "127.0.0.1") {
+    bases.push(`http://${host}:5000`);
+  }
+  if (configured && !bases.includes(configured)) bases.push(configured);
+  return bases;
+}
+
+async function loadVerification(hash: string): Promise<Verification> {
+  const path = `/certificates/verify/${encodeURIComponent(hash)}`;
+  for (const base of apiBases()) {
+    try {
+      const response = await fetch(`${base}${path}`);
+      const text = await response.text();
+      if (!text.trim().startsWith("{")) continue;
+      const payload = JSON.parse(text) as { error?: string } & Partial<Verification>;
+      if (!response.ok || !payload.status || !payload.holderName) continue;
+      return payload as Verification;
+    } catch {
+      /* this address is unreachable from the phone; try the next one */
+    }
+  }
+  throw new Error("Certificate not found.");
+}
+
+function parishFrom(data: Verification): Parish {
+  return {
+    id: data.parishSlug || "parish",
+    slug: data.parishSlug || "",
+    name: data.parishName,
+    address: data.parishAddress || "",
+    contact: "",
+    email: "",
+    sealUrl: data.parishSlug ? SEALS[data.parishSlug] : undefined,
+    createdAt: "",
+    updatedAt: "",
+  };
+}
+
 export function VerifyCertificatePage() {
   const { hash = "" } = useParams();
-  const { data, loading, error } = useAsync(
-    () => apiFetch<Verification>(`/certificates/verify/${encodeURIComponent(hash)}`, { auth: false }),
-    [hash]
-  );
+  const { data, loading, error } = useAsync(() => loadVerification(hash), [hash]);
+  const copy = data ? statusCopy[data.status] : null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f6f3ee] px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8a8175]">Certificate check</p>
+    <div className="min-h-screen bg-[#ececec] px-4 py-8">
+      <div className="mx-auto w-full max-w-[640px]">
         {loading ? (
-          <p className="mt-3 text-sm text-[#5c564e]">Checking this certificate…</p>
-        ) : error || !data ? (
-          <h1 className="mt-2 font-serif text-2xl font-bold text-[#1d1a16]">Certificate not found</h1>
+          <p className="text-sm text-[#5c564e]">Checking this certificate…</p>
+        ) : error || !data || !copy ? (
+          <div className="rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8a8175]">Certificate check</p>
+            <h1 className="mt-2 font-serif text-2xl font-bold text-[#1d1a16]">Certificate not found</h1>
+          </div>
         ) : (
           <>
-            <h1 className="mt-2 font-serif text-2xl font-bold text-[#1d1a16]">{statusCopy[data.status].title}</h1>
-            <p className="mt-2 text-sm text-[#5c564e]">{statusCopy[data.status].detail}</p>
-            <dl className="mt-5 space-y-2 text-sm text-[#1d1a16]">
-              <div className="flex justify-between gap-4">
-                <dt className="text-[#8a8175]">Parish</dt>
-                <dd className="text-right">{data.parishName}</dd>
+            <div
+              className={`mb-4 rounded-2xl border px-4 py-3 ${
+                data.status === "valid"
+                  ? "border-[#1a3d2b]/20 bg-white text-[#1a3d2b]"
+                  : "border-[#7A3C35]/25 bg-white text-[#7A3C35]"
+              }`}
+            >
+              <p className="font-serif text-xl font-bold">{copy.title}</p>
+              <p className="mt-1 text-sm">{copy.detail}</p>
+              {data.reason && <p className="mt-2 text-sm">{data.reason}</p>}
+            </div>
+            <div className="overflow-x-auto">
+              <div style={{ width: CERT_SHEET_WIDTH }}>
+                <CertificateDocument
+                  parish={parishFrom(data)}
+                  sacramentType={data.sacramentType}
+                  subjectName={data.holderName}
+                  fields={data.fields ?? { requestId: "", registerRef: "—", certCode: data.code }}
+                  appearance={{
+                    signatoryName: data.signatoryName || "",
+                    signatoryTitle: data.signatoryTitle || "",
+                    numberingPrefix: "",
+                    footerText: data.footerText || "",
+                  }}
+                />
               </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-[#8a8175]">Name</dt>
-                <dd className="text-right">{data.holderName}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-[#8a8175]">Number</dt>
-                <dd className="text-right">{data.code}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-[#8a8175]">Issued</dt>
-                <dd className="text-right">{data.issuedAt}</dd>
-              </div>
-            </dl>
-            {data.reason && <p className="mt-4 text-sm text-[#7A3C35]">{data.reason}</p>}
+            </div>
           </>
         )}
       </div>

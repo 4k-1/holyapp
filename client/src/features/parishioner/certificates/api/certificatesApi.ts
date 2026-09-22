@@ -25,7 +25,11 @@ export async function downloadCertificate(certificate: IssuedCertificate): Promi
     }
     throw new Error(message);
   }
-  const blob = await response.blob();
+  const bytes = await response.arrayBuffer();
+  if (bytes.byteLength < 5) throw new Error("The certificate file was empty.");
+  const header = new TextDecoder().decode(bytes.slice(0, 5));
+  if (header !== "%PDF-") throw new Error("The download was not a PDF file.");
+  const blob = new Blob([bytes], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -33,5 +37,5 @@ export async function downloadCertificate(certificate: IssuedCertificate): Promi
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }

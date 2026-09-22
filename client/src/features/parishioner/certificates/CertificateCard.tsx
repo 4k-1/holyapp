@@ -20,9 +20,10 @@ interface CertificateCardProps {
   certificate: IssuedCertificate;
   onView: (certificate: IssuedCertificate) => void;
   onDownload: (certificate: IssuedCertificate) => void;
+  downloading?: boolean;
 }
 
-export function CertificateCard({ certificate, onView, onDownload }: CertificateCardProps) {
+export function CertificateCard({ certificate, onView, onDownload, downloading = false }: CertificateCardProps) {
   const Icon = sacramentIcons[certificate.sacramentType];
 
   return (
@@ -53,8 +54,9 @@ export function CertificateCard({ certificate, onView, onDownload }: Certificate
         variant="primary"
         className="flex-1 py-2 text-xs active:scale-95"
         onClick={() => onDownload(certificate)}
+        disabled={downloading}
       >
-        Download
+        {downloading ? "Saving…" : "Download"}
       </Button>
       </div>
     </div>

@@ -46,6 +46,14 @@ function dateStamp(value) {
   return `${year}-${month}-${day}`;
 }
 
+function prettyDate(value) {
+  const iso = dateStamp(value);
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return value ? String(value) : '';
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
 async function rollback(client) {
   try {
     await client.query('ROLLBACK');
@@ -398,7 +406,8 @@ async function verifyCertificate(req, res) {
   try {
     const result = await pool.query(
       `SELECT c.status, c.certificate_code, c.holder_name, c.record_type, c.issued_at,
-              c.invalidation_reason, p.name AS parish_name
+              c.invalidation_reason, c.snapshot, c.qr_code,
+              p.name AS parish_name, p.address AS parish_address, p.slug AS parish_slug
        FROM certificate c
        JOIN parish p ON p.id = c.parish_id
        WHERE c.hash = $1`,
@@ -406,6 +415,7 @@ async function verifyCertificate(req, res) {
     );
     const row = result.rows[0];
     if (!row) return res.status(404).json({ error: 'No certificate matches this code.' });
+    const snapshot = row.snapshot && typeof row.snapshot === 'object' ? row.snapshot : {};
     return res.json({
       status: row.status,
       code: row.certificate_code,
@@ -413,7 +423,26 @@ async function verifyCertificate(req, res) {
       sacramentType: row.record_type,
       issuedAt: dateStamp(row.issued_at),
       parishName: row.parish_name,
+      parishAddress: row.parish_address || '',
+      parishSlug: row.parish_slug || '',
+      signatoryName: snapshot.signatoryName || '',
+      signatoryTitle: snapshot.signatoryTitle || '',
+      footerText: snapshot.footerText || '',
       reason: row.status === 'invalid' ? row.invalidation_reason : undefined,
+      fields: {
+        requestId: snapshot.requestId || '',
+        registerRef: snapshot.registerRef || '—',
+        birthdate: snapshot.birthdate || undefined,
+        birthplace: snapshot.birthplace || undefined,
+        baptismDate: snapshot.baptismDate || undefined,
+        confirmationDate: snapshot.confirmationDate || undefined,
+        marriageDate: snapshot.marriageDate || undefined,
+        deathDate: snapshot.deathDate || undefined,
+        motherName: snapshot.motherName || undefined,
+        fatherName: snapshot.fatherName || undefined,
+        certCode: row.certificate_code || undefined,
+        verifyUrl: row.qr_code || undefined,
+      },
     });
   } catch (err) {
     return sendError(res, err);
@@ -444,44 +473,48 @@ async function downloadPdf(req, res) {
     const snapshot = row.snapshot && typeof row.snapshot === 'object' ? row.snapshot : {};
     const png = await QRCode.toBuffer(row.qr_code, { width: 180, margin: 1 });
     const doc = new PDFDocument({ size: 'A4', margin: 64 });
+    const safeName = String(row.certificate_code || 'certificate').replace(/[^\w.-]+/g, '_');
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `inline; filename="${row.certificate_code || 'certificate'}.pdf"`
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}.pdf"`);
     doc.pipe(res);
-    doc.font('Times-Bold').fontSize(18).text(row.parish_name, { align: 'center' });
-    doc.moveDown(0.4);
-    doc.font('Times-Bold').fontSize(16).text(TITLES[row.record_type] || 'Certificate', { align: 'center' });
-    doc.moveDown(1.2);
-    doc.font('Times-Roman').fontSize(12);
-    doc.text(`This certifies the sacramental record of ${row.holder_name}.`);
+    const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    doc.font('Times-Bold').fontSize(16).text(row.parish_name, { align: 'center', width });
+    doc.moveDown(0.35);
+    doc.font('Times-Bold').fontSize(14).text(TITLES[row.record_type] || 'Certificate', { align: 'center', width });
+    doc.moveDown(0.8);
+    doc.font('Times-Roman').fontSize(12).text(`This certifies the sacramental record of ${row.holder_name}.`, { width });
     doc.moveDown(0.6);
+    const sacramentDate = snapshot.baptismDate || snapshot.confirmationDate || snapshot.marriageDate || snapshot.deathDate;
     const lines = [
       ['Certificate No.', row.certificate_code],
       ['Register', snapshot.registerRef],
-      ['Birthdate', snapshot.birthdate],
+      ['Birthdate', prettyDate(snapshot.birthdate)],
       ['Birthplace', snapshot.birthplace],
-      ['Date', snapshot.baptismDate || snapshot.confirmationDate || snapshot.marriageDate || snapshot.deathDate],
+      ['Date', prettyDate(sacramentDate)],
       ['Mother', snapshot.motherName],
       ['Father', snapshot.fatherName],
-      ['Issued', dateStamp(row.issued_at)],
+      ['Issued', prettyDate(row.issued_at)],
       ['Status', row.status],
     ];
     for (const [label, value] of lines) {
       if (!value) continue;
-      doc.font('Times-Bold').text(`${label}: `, { continued: true });
-      doc.font('Times-Roman').text(String(value));
+      doc.font('Times-Bold').fontSize(12).text(`${label}: `, { continued: true, width });
+      doc.font('Times-Roman').fontSize(12).text(String(value), { width });
     }
+    doc.moveDown(1);
+    const qrSize = 96;
+    const qrX = doc.page.margins.left;
+    const qrY = doc.y;
+    doc.image(png, qrX, qrY, { width: qrSize });
+    doc.x = qrX;
+    doc.y = qrY + qrSize + 14;
+    doc.font('Times-Roman').fontSize(10).text('Scan to verify this certificate', { width });
+    doc.moveDown(0.25);
+    doc.fontSize(8).text(row.qr_code, { width });
     if (snapshot.footerText) {
       doc.moveDown(0.8);
-      doc.font('Times-Italic').fontSize(10).text(snapshot.footerText);
+      doc.font('Times-Italic').fontSize(10).text(snapshot.footerText, { width });
     }
-    doc.image(png, doc.page.width - 64 - 110, 72, { width: 110 });
-    doc.font('Times-Roman').fontSize(8).text(row.qr_code, 64, doc.page.height - 80, {
-      width: doc.page.width - 128,
-      align: 'center',
-    });
     doc.end();
   } catch (err) {
     if (!res.headersSent) return sendError(res, err);
