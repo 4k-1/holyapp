@@ -14,6 +14,7 @@ import { AdminAddAnnotationModal } from "@/features/parish-admin/records/baptism
 import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
 import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
 import { addBaptismalAnnotation, generateBaptismalCertificate, getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { revokeIssuedCertificate } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import { useAsync } from "@/hooks/useAsync";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { canEditSacramentalRecords } from "@/features/parish-admin/permissions";
@@ -72,6 +73,14 @@ export function AdminBaptismalRecordDetailPage() {
   const laterAnnotations = [...record.annotations].sort(
     (a, b) => annotationTime(a.date) - annotationTime(b.date)
   );
+
+  async function handleRevoke(cert: IssuedRecordCertificate) {
+    if (!cert.id) return;
+    const reason = window.prompt("Why is this certificate being revoked?");
+    if (!reason?.trim()) return;
+    await revokeIssuedCertificate(cert.id, reason.trim());
+    refetch();
+  }
 
   return (
     <div className="mx-auto max-w-[920px]">
@@ -229,7 +238,11 @@ export function AdminBaptismalRecordDetailPage() {
         </div>
       </RecordDetailSection>
 
-      <IssuedCertificatesSection certificates={certs} onView={(c) => setCertificateModal(c)} />
+      <IssuedCertificatesSection
+        certificates={certs}
+        onView={(c) => setCertificateModal(c)}
+        onRevoke={canEdit ? handleRevoke : undefined}
+      />
 
       <RecordDetailMeta
         encodedBy={encodedByLabel(record.encodedBy)}

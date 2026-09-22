@@ -29,7 +29,10 @@ const REQUEST_COLUMNS = `
   r.delivery_method, r.created_at, r.subject_details, r.pickup_ready,
   pay.status AS payment_status,
   pay.amount_due,
-  pay.payment_type
+  pay.payment_type,
+  cert.id AS issued_certificate_id,
+  cert.certificate_code AS issued_certificate_code,
+  cert.status AS issued_certificate_status
 `;
 
 const REQUEST_FROM = `
@@ -41,6 +44,7 @@ const REQUEST_FROM = `
     ORDER BY created_at DESC
     LIMIT 1
   ) pay ON true
+  LEFT JOIN certificate cert ON cert.id = r.certificate_id
 `;
 
 function sendError(res, err) {
@@ -188,6 +192,13 @@ function toCertificateRequest(row) {
     linkedRecordId: row.record_id,
     rejectionReason: row.rejection_reason || undefined,
     pickupReady: Boolean(row.pickup_ready) || row.status === 'ready',
+    issuedCertificate: row.issued_certificate_id
+      ? {
+          id: row.issued_certificate_id,
+          code: row.issued_certificate_code,
+          state: row.issued_certificate_status,
+        }
+      : null,
   };
 }
 

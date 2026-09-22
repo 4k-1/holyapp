@@ -89,3 +89,11 @@ export async function releaseCertificate(
     body: input,
   });
 }
+
+export async function revokeIssuedCertificate(certificateId: string, reason: string): Promise<void> {
+  await apiFetch(`/certificates/${certificateId}/revoke`, {
+    method: "POST",
+    auth: true,
+    body: { reason },
+  });
+}

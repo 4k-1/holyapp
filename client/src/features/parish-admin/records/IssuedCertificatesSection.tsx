@@ -7,9 +7,11 @@ import type { IssuedRecordCertificate } from "@/features/parish-admin/records/ty
 export function IssuedCertificatesSection({
   certificates,
   onView,
+  onRevoke,
 }: {
   certificates: IssuedRecordCertificate[];
   onView: (cert: IssuedRecordCertificate) => void;
+  onRevoke?: (cert: IssuedRecordCertificate) => void;
 }) {
   return (
     <RecordDetailSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Issued certificates" className="mb-0">
@@ -35,10 +37,17 @@ export function IssuedCertificatesSection({
                   Issued {c.date} by {c.by} · {c.code}
                 </p>
               </div>
-              <AdminButton variant="secondary" size="sm" onClick={() => onView(c)}>
-                <PrintIcon />
-                View & print
-              </AdminButton>
+              <div className="flex flex-wrap items-center gap-2">
+                {c.status === "Valid" && c.id && onRevoke && (
+                  <AdminButton variant="danger" size="sm" onClick={() => onRevoke(c)}>
+                    Revoke
+                  </AdminButton>
+                )}
+                <AdminButton variant="secondary" size="sm" onClick={() => onView(c)}>
+                  <PrintIcon />
+                  View & print
+                </AdminButton>
+              </div>
             </div>
           ))
         )}

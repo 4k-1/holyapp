@@ -6,6 +6,7 @@ const {
   verifyCertificate,
   listMyCertificates,
   downloadPdf,
+  revokeCertificate,
 } = require('../controllers/certificateController');
 
 const router = express.Router();
@@ -18,6 +19,14 @@ router.get(
   requireParish,
   requireRole(ROLES.PARISHIONER),
   listMyCertificates
+);
+router.post(
+  '/:id/revoke',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  revokeCertificate
 );
 router.get(
   '/:id/pdf',

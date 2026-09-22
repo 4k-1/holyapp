@@ -93,6 +93,11 @@ export interface CertificateRequest {
   rejectionReason?: string;
   /** Pickup only — set when staff confirms print/seal; unlocks "Ready for Pickup" status. */
   pickupReady?: boolean;
+  issuedCertificate?: {
+    id: string;
+    code: string;
+    state: CertificateState;
+  } | null;
 }
 
 /**

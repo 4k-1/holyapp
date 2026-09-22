@@ -26,6 +26,7 @@ export interface RecordAnnotation {
 }
 
 export interface IssuedRecordCertificate {
+  id?: string;
   type: string;
   date: string;
   by: string;

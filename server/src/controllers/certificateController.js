@@ -489,6 +489,77 @@ async function downloadPdf(req, res) {
   }
 }
 
+async function listRecordCertificates(parishId, recordType, recordId) {
+  const result = await pool.query(
+    `SELECT c.id, c.certificate_code, c.status, c.issued_at, c.record_type,
+            NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS issued_by_name
+     FROM certificate c
+     LEFT JOIN app_user u ON u.id = c.issued_by
+     WHERE c.parish_id = $1 AND c.record_type = $2 AND c.record_id = $3
+     ORDER BY c.version DESC`,
+    [parishId, recordType, recordId]
+  );
+  const labels = { valid: 'Valid', superseded: 'Superseded', invalid: 'Invalid' };
+  return result.rows.map((row) => ({
+    id: row.id,
+    type: TITLES[row.record_type] || 'Certificate',
+    date: dateStamp(row.issued_at),
+    by: row.issued_by_name || 'Parish office',
+    status: labels[row.status] || 'Valid',
+    code: row.certificate_code,
+  }));
+}
+
+async function revokeCertificate(req, res) {
+  const reason = text(req.body && req.body.reason, 1000);
+  if (!reason) return res.status(400).json({ error: 'A reason is required to revoke a certificate.' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const current = await client.query(
+      `SELECT id, status, parish_id
+       FROM certificate
+       WHERE id = $1 AND parish_id = $2
+       FOR UPDATE`,
+      [req.params.id, req.parishId]
+    );
+    const certificate = current.rows[0];
+    if (!certificate) throw httpError(404, 'Certificate not found.');
+    if (certificate.status === 'invalid') throw httpError(400, 'This certificate is already revoked.');
+    if (certificate.status !== 'valid') {
+      throw httpError(400, 'Only the current valid certificate can be revoked.');
+    }
+
+    await client.query(
+      `UPDATE certificate
+       SET status = 'invalid',
+           invalidated_by = $1,
+           invalidated_at = NOW(),
+           invalidation_reason = $2
+       WHERE id = $3`,
+      [req.user.id, reason, certificate.id]
+    );
+    await client.query('COMMIT');
+
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'certificate.revoked',
+      entityType: 'certificate',
+      entityId: certificate.id,
+      metadata: { reason },
+    });
+    return res.json({ id: certificate.id, state: 'invalid', reason });
+  } catch (err) {
+    await rollback(client);
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    return sendError(res, err);
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   issueDigital,
   markReady,
@@ -496,5 +567,7 @@ module.exports = {
   listMyCertificates,
   verifyCertificate,
   downloadPdf,
+  revokeCertificate,
+  listRecordCertificates,
   toIssuedCertificate,
 };

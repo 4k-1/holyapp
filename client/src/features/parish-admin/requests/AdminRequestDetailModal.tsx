@@ -19,7 +19,7 @@ import {
 import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import { AdminIssueCertificateModal } from "@/features/parish-admin/requests/AdminIssueCertificateModal";
 import { AdminReleaseCertificateModal } from "@/features/parish-admin/requests/AdminReleaseCertificateModal";
-import { confirmRequestPayment } from "@/features/parish-admin/requests/api/requestsAdminApi";
+import { confirmRequestPayment, revokeIssuedCertificate } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import type { CertificateRequest, Parish, SacramentType } from "@/types";
 
 const sacramentLabels: Record<SacramentType, string> = {
@@ -86,6 +86,19 @@ export function AdminRequestDetailModal({
     onClose();
   }
 
+  async function revokeIssued() {
+    if (!request.issuedCertificate || request.issuedCertificate.state !== "valid") return;
+    const reason = window.prompt("Why is this certificate being revoked?");
+    if (!reason?.trim()) return;
+    setPayError(null);
+    try {
+      await revokeIssuedCertificate(request.issuedCertificate.id, reason.trim());
+      onIssueComplete?.();
+      onClose();
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Could not revoke this certificate.");
+    }
+  }
   async function recordPayment() {
     setPaying(true);
     setPayError(null);
@@ -286,9 +299,16 @@ export function AdminRequestDetailModal({
           )}
 
           {(statusKey === "released" || statusKey === "rejected") && (
-            <AdminButton variant="secondary" onClick={onClose}>
-              Close
-            </AdminButton>
+            <>
+              {statusKey === "released" && request.issuedCertificate?.state === "valid" && (
+                <AdminButton variant="danger" onClick={revokeIssued}>
+                  Revoke certificate
+                </AdminButton>
+              )}
+              <AdminButton variant="secondary" onClick={onClose}>
+                Close
+              </AdminButton>
+            </>
           )}
         </div>
       </div>
