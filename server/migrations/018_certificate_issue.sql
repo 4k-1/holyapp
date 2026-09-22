@@ -1,0 +1,3 @@
+ALTER TABLE certificate ADD COLUMN IF NOT EXISTS certificate_code VARCHAR(50);
+ALTER TABLE certificate ADD COLUMN IF NOT EXISTS holder_name VARCHAR(255);
+ALTER TABLE certificate ADD COLUMN IF NOT EXISTS snapshot JSONB NOT NULL DEFAULT '{}'::jsonb;

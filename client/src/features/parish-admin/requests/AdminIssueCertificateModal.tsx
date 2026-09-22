@@ -56,6 +56,8 @@ export function AdminIssueCertificateModal({
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [certCode, setCertCode] = useState("");
+  const [verifyUrl, setVerifyUrl] = useState("");
+  const [issueError, setIssueError] = useState<string | null>(null);
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -68,14 +70,16 @@ export function AdminIssueCertificateModal({
   async function handleConfirm() {
     if (!verified || !linked) return;
     setSubmitting(true);
+    setIssueError(null);
     try {
-      if (isDigital) {
-        const result = await issueCertificate(request.id);
-        setCertCode(result.certificateCode);
-      } else {
-        await markReadyForPickup(request.id);
-      }
+      const result = isDigital
+        ? await issueCertificate(request.id)
+        : await markReadyForPickup(request.id);
+      setCertCode(result.certificateCode);
+      setVerifyUrl(result.verifyUrl);
       setDone(true);
+    } catch (err) {
+      setIssueError(err instanceof Error ? err.message : "Could not issue this certificate.");
     } finally {
       setSubmitting(false);
     }
@@ -92,7 +96,7 @@ export function AdminIssueCertificateModal({
   }
 
   const previewName = linked ? recordFullName(linked) : subjectName;
-  const fields: CertificateFields = linked
+  const baseFields: CertificateFields = linked
     ? baptismCertificateFields(linked, { requestId: request.id, certCode: certCode || undefined })
     : {
         requestId: request.id,
@@ -104,6 +108,11 @@ export function AdminIssueCertificateModal({
         fatherName: request.details?.fatherName ?? "—",
         certCode: certCode || undefined,
       };
+  const fields: CertificateFields = {
+    ...baseFields,
+    certCode: certCode || baseFields.certCode,
+    verifyUrl: verifyUrl || undefined,
+  };
 
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 pt-8 sm:pt-12">
@@ -242,7 +251,8 @@ export function AdminIssueCertificateModal({
         </div>
 
         {/* Footer */}
-        <div className="flex flex-wrap justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+          {issueError && <p className="mr-auto text-admin-body text-admin-red-700">{issueError}</p>}
           {done ? (
             <>
               {!isDigital && (

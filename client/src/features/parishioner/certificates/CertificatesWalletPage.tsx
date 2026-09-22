@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { listCertificates } from "@/features/parishioner/certificates/api/certificatesApi";
+import { downloadCertificate, listCertificates } from "@/features/parishioner/certificates/api/certificatesApi";
 import { useAsync } from "@/hooks/useAsync";
 import { CertificateCard } from "@/features/parishioner/certificates/CertificateCard";
 import { CertificateViewerModal } from "@/features/parishioner/certificates/CertificateViewerModal";
@@ -10,14 +10,19 @@ export function CertificatesWalletPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { data: certificates = [], loading } = useAsync(() => listCertificates(parish.id), [parish.id]);
   const [viewing, setViewing] = useState<IssuedCertificate | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   function handleView(certificate: IssuedCertificate) {
     setViewing(certificate);
   }
 
-  function handleDownload(certificate: IssuedCertificate) {
-    console.info("Download certificate", certificate.id);
-    // TODO: trigger actual file download once backend exists
+  async function handleDownload(certificate: IssuedCertificate) {
+    setDownloadError(null);
+    try {
+      await downloadCertificate(certificate);
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : "Could not download this certificate.");
+    }
   }
 
   return (
@@ -26,6 +31,7 @@ export function CertificatesWalletPage() {
       <p className="mb-6 mt-1.5 text-sm text-ink-muted">
         Every certificate released to you lives here. Download or view anytime — no need to request again.
       </p>
+      {downloadError && <p className="mb-4 text-sm font-medium text-red-700">{downloadError}</p>}
 
       {loading ? (
         <p className="text-sm text-ink-muted">Loading your certificates…</p>

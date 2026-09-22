@@ -1,4 +1,5 @@
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
+import QRCode from "qrcode";
 import type { CertificateAppearance } from "@/features/parish-admin/settings/types";
 import type { Parish, SacramentType } from "@/types";
 import {
@@ -28,6 +29,7 @@ export interface CertificateFields {
   fatherName?: string;
   certCode?: string;
   notations?: string[];
+  verifyUrl?: string;
 }
 
 interface CertificateDocumentProps {
@@ -184,7 +186,7 @@ export const CertificateDocument = forwardRef<HTMLDivElement, CertificateDocumen
                   {signatoryTitle}
                 </p>
               </div>
-              <FakeQrCode seed={qrSeed} />
+              {fields.verifyUrl ? <VerifyQr value={fields.verifyUrl} /> : <FakeQrCode seed={qrSeed} />}
             </div>
 
             <p style={{ margin: "14px 0 0", fontFamily: "ui-monospace, Consolas, monospace", fontSize: 9, color: CERT_INK_FAINT }}>
@@ -273,6 +275,55 @@ function CornerOrnament({ style }: { style: React.CSSProperties }) {
       <path d="M1 18 V16" stroke={CERT_ACCENT} strokeWidth={1.3} strokeLinecap="round" />
       <path d="M16 1 H18" stroke={CERT_ACCENT} strokeWidth={1.3} strokeLinecap="round" />
     </svg>
+  );
+}
+
+function VerifyQr({ value }: { value: string }) {
+  const [src, setSrc] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    QRCode.toDataURL(value, { margin: 0, width: 180, errorCorrectionLevel: "M" })
+      .then((url) => {
+        if (!cancelled) setSrc(url);
+      })
+      .catch(() => {
+        if (!cancelled) setSrc("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [value]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flexShrink: 0 }}>
+      <div
+        style={{
+          padding: 5,
+          background: "#fff",
+          border: `1px solid ${CERT_INK}`,
+          lineHeight: 0,
+        }}
+      >
+        {src ? (
+          <img src={src} alt="Scan to verify this certificate" width={62} height={62} />
+        ) : (
+          <div style={{ width: 62, height: 62 }} />
+        )}
+      </div>
+      <p
+        style={{
+          margin: 0,
+          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+          fontSize: 7,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: CERT_INK_FAINT,
+        }}
+      >
+        Scan to verify
+      </p>
+    </div>
   );
 }
 

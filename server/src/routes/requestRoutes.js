@@ -11,6 +11,7 @@ const {
   rejectRequest,
   confirmPayment,
 } = require('../controllers/certificateRequestController');
+const { issueDigital, markReady, releasePickup } = require('../controllers/certificateController');
 
 const router = express.Router();
 const parishioner = [authenticate, scopeParish, requireParish, requireRole(ROLES.PARISHIONER)];
@@ -28,5 +29,8 @@ router.get('/:id', ...office, getRequest);
 router.post('/:id/link', ...office, linkRequest);
 router.post('/:id/reject', ...office, rejectRequest);
 router.post('/:id/payment', ...office, confirmPayment);
+router.post('/:id/issue', ...office, issueDigital);
+router.post('/:id/ready', ...office, markReady);
+router.post('/:id/release', ...office, releasePickup);
 
 module.exports = router;

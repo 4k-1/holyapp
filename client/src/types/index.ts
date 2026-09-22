@@ -113,6 +113,7 @@ export interface IssuedCertificateFields {
   motherName?: string;
   fatherName?: string;
   notations?: string[];
+  verifyUrl?: string;
 }
 
 export interface IssuedCertificate {
