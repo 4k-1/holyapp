@@ -19,6 +19,7 @@ import {
 import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import { AdminIssueCertificateModal } from "@/features/parish-admin/requests/AdminIssueCertificateModal";
 import { AdminReleaseCertificateModal } from "@/features/parish-admin/requests/AdminReleaseCertificateModal";
+import { confirmRequestPayment } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import type { CertificateRequest, Parish, SacramentType } from "@/types";
 
 const sacramentLabels: Record<SacramentType, string> = {
@@ -33,6 +34,7 @@ interface AdminRequestDetailModalProps {
   parish: Parish;
   onClose: () => void;
   onReject?: (request: CertificateRequest) => void;
+  onPaymentRecorded?: (request: CertificateRequest) => void;
   onIssueComplete?: () => void;
   onReleaseComplete?: () => void;
 }
@@ -42,11 +44,14 @@ export function AdminRequestDetailModal({
   parish,
   onClose,
   onReject,
+  onPaymentRecorded,
   onIssueComplete,
   onReleaseComplete,
 }: AdminRequestDetailModalProps) {
   const [issueOpen, setIssueOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
   const statusKey = deriveStatusKey(request);
   const canReject = canRejectRequest(request);
   const subjectName = request.details?.subjectName ?? request.requesterId;
@@ -79,6 +84,19 @@ export function AdminRequestDetailModal({
   function reject() {
     onReject?.(request);
     onClose();
+  }
+
+  async function recordPayment() {
+    setPaying(true);
+    setPayError(null);
+    try {
+      const updated = await confirmRequestPayment(request.id);
+      onPaymentRecorded?.(updated);
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Could not record this payment.");
+    } finally {
+      setPaying(false);
+    }
   }
 
   return (
@@ -240,12 +258,13 @@ export function AdminRequestDetailModal({
                   Reject request
                 </AdminButton>
               )}
-              <AdminButton variant="secondary" disabled>
+              <AdminButton variant="secondary" onClick={recordPayment} disabled={paying}>
                 <ClockIcon />
-                Awaiting payment
+                {paying ? "Recording payment..." : "Record cash payment"}
               </AdminButton>
             </>
           )}
+          {payError && <p className="mr-auto text-admin-body text-admin-red-700">{payError}</p>}
 
           {statusKey === "processing" && (
             <AdminButton onClick={() => setIssueOpen(true)}>

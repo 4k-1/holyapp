@@ -147,6 +147,8 @@ export function AdminFindRecordPage() {
   const [confirmedRecord, setConfirmedRecord] = useState<BaptismalRecord | null>(null);
   const [rejectedNote, setRejectedNote] = useState("");
   const [matchFlash, setMatchFlash] = useState<{ count: number; id: number } | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [rejectError, setRejectError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!matchFlash) return;
@@ -216,21 +218,31 @@ export function AdminFindRecordPage() {
   }
 
   async function handleLink(record: BaptismalRecord) {
-    await linkRequestToRecord(currentRequest.id, record.id);
-    setReviewRecord(null);
-    setConfirmedRecord(record);
-    setStatus("confirmed");
+    setLinkError(null);
+    try {
+      await linkRequestToRecord(currentRequest.id, record.id);
+      setReviewRecord(null);
+      setConfirmedRecord(record);
+      setStatus("confirmed");
+    } catch (err) {
+      setLinkError(err instanceof Error ? err.message : "Could not link this record.");
+    }
   }
 
   async function handleReject() {
     const note = rejectReason.trim();
-    await rejectAdminRequest(
-      currentRequest.id,
-      note || "No matching baptismal record found in parish register."
-    );
-    setRejectedNote(note);
-    setRejectOpen(false);
-    setStatus("rejected");
+    setRejectError(null);
+    try {
+      await rejectAdminRequest(
+        currentRequest.id,
+        note || "No matching baptismal record found in parish register."
+      );
+      setRejectedNote(note);
+      setRejectOpen(false);
+      setStatus("rejected");
+    } catch (err) {
+      setRejectError(err instanceof Error ? err.message : "Could not reject this request.");
+    }
   }
 
   const columns: AdminTableColumn<BaptismalRecord>[] = [
@@ -456,8 +468,12 @@ export function AdminFindRecordPage() {
           requestSponsor2={filters.sponsor2}
           record={reviewRecord}
           recordSponsors={sponsorsByRecordId[reviewRecord.id] ?? []}
-          onClose={() => setReviewRecord(null)}
+          onClose={() => {
+            setLinkError(null);
+            setReviewRecord(null);
+          }}
           onLink={() => handleLink(reviewRecord)}
+          error={linkError}
         />
       )}
 
@@ -465,8 +481,12 @@ export function AdminFindRecordPage() {
         <RejectModal
           reason={rejectReason}
           onReasonChange={setRejectReason}
-          onCancel={() => setRejectOpen(false)}
+          onCancel={() => {
+            setRejectError(null);
+            setRejectOpen(false);
+          }}
           onConfirm={handleReject}
+          error={rejectError}
         />
       )}
     </div>
@@ -485,6 +505,7 @@ function ReviewMatchModal({
   recordSponsors,
   onClose,
   onLink,
+  error,
 }: {
   requestName: string;
   requestBirthdate?: string;
@@ -497,6 +518,7 @@ function ReviewMatchModal({
   recordSponsors: RecordSponsor[];
   onClose: () => void;
   onLink: () => void;
+  error?: string | null;
 }) {
   // Ledger sponsors aren't stored as "Sponsor 1" / "Sponsor 2" slots — the
   // primary assignment (e.g. Ninang) sorts first, so pair it against
@@ -614,7 +636,8 @@ function ReviewMatchModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+          {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
           <AdminButton variant="secondary" onClick={onClose}>
             Back to results
           </AdminButton>
@@ -633,11 +656,13 @@ function RejectModal({
   onReasonChange,
   onCancel,
   onConfirm,
+  error,
 }: {
   reason: string;
   onReasonChange: (v: string) => void;
   onCancel: () => void;
   onConfirm: () => void;
+  error?: string | null;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 pt-10">
@@ -669,7 +694,8 @@ function RejectModal({
             className="min-h-[80px] w-full resize-y rounded-[var(--radius)] border border-admin-border bg-admin-surface-alt px-2.5 py-2 text-admin-body text-admin-ink"
           />
         </div>
-        <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+          {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
           <AdminButton variant="secondary" onClick={onCancel}>
             Cancel
           </AdminButton>

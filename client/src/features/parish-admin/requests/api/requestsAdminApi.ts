@@ -1,69 +1,56 @@
 import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
-import { recordBelongsToParish } from "@/features/parish/parishApi";
-import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
+import { ApiError, apiFetch } from "@/lib/api";
 import { MOCK_CERTIFICATES } from "@/services/mocks/certificates.mock";
+import { MOCK_REQUESTS } from "@/services/mocks/requests.mock";
 import { delay } from "@/services/delay";
 import type { CertificateRequest, IssuedCertificateFields, SacramentType } from "@/types";
 
-/**
- * Only this file is allowed to import MOCK_REQUESTS. Pages call these
- * functions instead — when a real backend exists, only the bodies below
- * change (to `fetch` calls), not the pages that call them.
- */
-
-async function findAdminRequest(parishId: string, requestId: string) {
-  for (const r of MOCK_REQUESTS) {
-    if (r.id === requestId && (await recordBelongsToParish(r.parishId, parishId))) return r;
-  }
-  return undefined;
-}
-
 export async function listAdminRequests(parishId: string): Promise<CertificateRequest[]> {
-  await delay(200);
-  const out: CertificateRequest[] = [];
-  for (const r of MOCK_REQUESTS) {
-    if (await recordBelongsToParish(r.parishId, parishId)) out.push(r);
-  }
-  return out;
+  const data = await apiFetch<{ requests: CertificateRequest[] }>("/requests", { auth: true });
+  return (data.requests ?? []).filter((request) => request.parishId === parishId);
 }
 
 export async function getAdminRequest(
   parishId: string,
   requestId: string
 ): Promise<CertificateRequest | undefined> {
-  await delay(150);
-  return findAdminRequest(parishId, requestId);
+  try {
+    const request = await apiFetch<CertificateRequest>(`/requests/${requestId}`, { auth: true });
+    return request.parishId === parishId ? request : undefined;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return undefined;
+    throw err;
+  }
 }
 
 export async function rejectAdminRequest(
   requestId: string,
   reason = "Rejected by staff."
 ): Promise<CertificateRequest> {
-  await delay(300);
-  const request = MOCK_REQUESTS.find((r) => r.id === requestId);
-  if (!request) throw new Error(`Request ${requestId} not found`);
-  if (request.payment?.status === "paid") {
-    throw new Error("Paid requests cannot be rejected. Handle as a refund instead.");
-  }
-  request.status = "rejected";
-  request.rejectionReason = reason;
-  return { ...request };
+  return apiFetch<CertificateRequest>(`/requests/${requestId}/reject`, {
+    method: "POST",
+    auth: true,
+    body: { reason },
+  });
 }
 
 export async function linkRequestToRecord(
   requestId: string,
   recordId: string
 ): Promise<CertificateRequest> {
-  await delay(300);
-  const request = MOCK_REQUESTS.find((r) => r.id === requestId);
-  if (!request) throw new Error(`Request ${requestId} not found`);
-  request.linkedRecordId = recordId;
-  request.status = "processing";
-  request.payment = request.payment ?? { status: "unpaid", amount: 100 };
-  if (request.payment.status !== "paid") {
-    request.payment = { ...request.payment, status: "unpaid" };
-  }
-  return { ...request };
+  return apiFetch<CertificateRequest>(`/requests/${requestId}/link`, {
+    method: "POST",
+    auth: true,
+    body: { recordId },
+  });
+}
+
+export async function confirmRequestPayment(requestId: string): Promise<CertificateRequest> {
+  return apiFetch<CertificateRequest>(`/requests/${requestId}/payment`, {
+    method: "POST",
+    auth: true,
+    body: {},
+  });
 }
 
 function generateCertCode(sacramentType: SacramentType): string {

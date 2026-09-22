@@ -1,8 +1,27 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
+const { optionalUuid } = require('../utils/recordFields');
 
 const SACRAMENTS = ['baptism', 'confirmation', 'marriage', 'death'];
 const DELIVERIES = ['pickup', 'digital'];
+const RECORD_TABLES = {
+  baptism: 'baptism',
+  confirmation: 'confirmation',
+  marriage: 'marriage',
+  death: 'death',
+};
+const FEE_NAMES = {
+  baptism: 'Baptismal Certificate',
+  confirmation: 'Confirmation Certificate',
+  marriage: 'Marriage Certificate',
+  death: 'Death Certificate',
+};
+const FEE_DEFAULTS = {
+  baptism: 100,
+  confirmation: 100,
+  marriage: 150,
+  death: 100,
+};
 
 const REQUEST_COLUMNS = `
   r.id, r.parish_id, r.request_type, r.record_type, r.record_id, r.certificate_id,
@@ -244,9 +263,267 @@ async function listMyRequests(req, res) {
   }
 }
 
+async function feeAmount(db, parishId, sacrament, copies) {
+  const named = await db.query(
+    'SELECT amount FROM service_fee WHERE parish_id = $1 AND service_name = $2',
+    [parishId, FEE_NAMES[sacrament]]
+  );
+  const base = named.rows[0] ? Number(named.rows[0].amount) : FEE_DEFAULTS[sacrament];
+  const count = Math.max(1, Number(copies) || 1);
+  return Math.round(base * count * 100) / 100;
+}
+
+async function rollback(client) {
+  try {
+    await client.query('ROLLBACK');
+  } catch {
+    /* the transaction may already be closed */
+  }
+}
+
+async function listParishRequests(req, res) {
+  try {
+    const result = await pool.query(
+      `SELECT ${REQUEST_COLUMNS} ${REQUEST_FROM}
+       WHERE r.parish_id = $1
+       ORDER BY r.created_at DESC`,
+      [req.parishId]
+    );
+    return res.json({ requests: result.rows.map(toCertificateRequest) });
+  } catch (err) {
+    return sendError(res, err);
+  }
+}
+
+async function getRequest(req, res) {
+  try {
+    const row = await loadRequest(req.params.id, req.parishId);
+    if (!row) return res.status(404).json({ error: 'Request not found.' });
+    return res.json(toCertificateRequest(row));
+  } catch (err) {
+    return sendError(res, err);
+  }
+}
+
+async function linkRequest(req, res) {
+  const recordId = optionalUuid(req.body && req.body.recordId);
+  if (!recordId) return res.status(400).json({ error: 'Choose a record to link.' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const current = await client.query(
+      `SELECT id, status, record_type, copies
+       FROM certificate_request
+       WHERE id = $1 AND parish_id = $2
+       FOR UPDATE`,
+      [req.params.id, req.parishId]
+    );
+    const request = current.rows[0];
+    if (!request) {
+      await rollback(client);
+      return res.status(404).json({ error: 'Request not found.' });
+    }
+    if (request.status !== 'pending') {
+      await rollback(client);
+      return res.status(400).json({ error: 'Only a pending request can be linked to a record.' });
+    }
+
+    const table = RECORD_TABLES[request.record_type];
+    const record = await client.query(
+      `SELECT id FROM ${table} WHERE id = $1 AND parish_id = $2`,
+      [recordId, req.parishId]
+    );
+    if (!record.rows[0]) {
+      await rollback(client);
+      return res.status(400).json({
+        error: `That record is not a ${request.record_type} entry in this parish.`,
+      });
+    }
+
+    const amount = await feeAmount(client, req.parishId, request.record_type, request.copies);
+    const existingPay = await client.query(
+      'SELECT id FROM payment WHERE certificate_request_id = $1 LIMIT 1',
+      [request.id]
+    );
+    if (!existingPay.rows[0]) {
+      await client.query(
+        `INSERT INTO payment (certificate_request_id, payment_type, amount_due, status)
+         VALUES ($1, 'cash', $2, 'unpaid')`,
+        [request.id, amount]
+      );
+    }
+
+    await client.query(
+      `UPDATE certificate_request
+       SET record_id = $1, status = 'processing', processed_by = $2, updated_at = NOW()
+       WHERE id = $3`,
+      [recordId, req.user.id, request.id]
+    );
+    await client.query('COMMIT');
+
+    const row = await loadRequest(request.id, req.parishId);
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'certificate_request.linked',
+      entityType: 'certificate_request',
+      entityId: request.id,
+      metadata: { recordId, sacrament: request.record_type },
+    });
+    return res.json(toCertificateRequest(row));
+  } catch (err) {
+    await rollback(client);
+    return sendError(res, err);
+  } finally {
+    client.release();
+  }
+}
+
+async function rejectRequest(req, res) {
+  const reason = text(req.body && req.body.reason, 1000) || 'Rejected by staff.';
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const current = await client.query(
+      `SELECT id, status
+       FROM certificate_request
+       WHERE id = $1 AND parish_id = $2
+       FOR UPDATE`,
+      [req.params.id, req.parishId]
+    );
+    const request = current.rows[0];
+    if (!request) {
+      await rollback(client);
+      return res.status(404).json({ error: 'Request not found.' });
+    }
+    if (request.status === 'rejected') {
+      await rollback(client);
+      return res.status(400).json({ error: 'This request is already rejected.' });
+    }
+    if (request.status === 'released' || request.status === 'ready') {
+      await rollback(client);
+      return res.status(400).json({ error: 'A released certificate cannot be rejected.' });
+    }
+
+    const paid = await client.query(
+      `SELECT id FROM payment
+       WHERE certificate_request_id = $1 AND status = 'paid'
+       LIMIT 1`,
+      [request.id]
+    );
+    if (paid.rows[0]) {
+      await rollback(client);
+      return res.status(400).json({
+        error: 'Paid requests cannot be rejected. Handle as a refund instead.',
+      });
+    }
+
+    await client.query(
+      `UPDATE certificate_request
+       SET status = 'rejected', rejection_reason = $1, processed_by = $2, updated_at = NOW()
+       WHERE id = $3`,
+      [reason, req.user.id, request.id]
+    );
+    await client.query('COMMIT');
+
+    const row = await loadRequest(request.id, req.parishId);
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'certificate_request.rejected',
+      entityType: 'certificate_request',
+      entityId: request.id,
+      metadata: { reason },
+    });
+    return res.json(toCertificateRequest(row));
+  } catch (err) {
+    await rollback(client);
+    return sendError(res, err);
+  } finally {
+    client.release();
+  }
+}
+
+async function confirmPayment(req, res) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const current = await client.query(
+      `SELECT id, status
+       FROM certificate_request
+       WHERE id = $1 AND parish_id = $2
+       FOR UPDATE`,
+      [req.params.id, req.parishId]
+    );
+    const request = current.rows[0];
+    if (!request) {
+      await rollback(client);
+      return res.status(404).json({ error: 'Request not found.' });
+    }
+    if (request.status !== 'processing') {
+      await rollback(client);
+      return res.status(400).json({ error: 'Link a record before recording payment.' });
+    }
+
+    const payment = await client.query(
+      `SELECT id, amount_due, status
+       FROM payment
+       WHERE certificate_request_id = $1
+       ORDER BY created_at DESC
+       LIMIT 1
+       FOR UPDATE`,
+      [request.id]
+    );
+    const row = payment.rows[0];
+    if (!row) {
+      await rollback(client);
+      return res.status(400).json({ error: 'This request has no fee to collect.' });
+    }
+    if (row.status === 'paid') {
+      await rollback(client);
+      return res.status(400).json({ error: 'Payment is already recorded.' });
+    }
+
+    await client.query(
+      `UPDATE payment
+       SET status = 'paid',
+           payment_type = 'cash',
+           amount_tendered = amount_due,
+           change = 0,
+           collected_by = $1,
+           paid_at = NOW()
+       WHERE id = $2`,
+      [req.user.id, row.id]
+    );
+    await client.query('COMMIT');
+
+    const updated = await loadRequest(request.id, req.parishId);
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'certificate_request.payment_recorded',
+      entityType: 'certificate_request',
+      entityId: request.id,
+      metadata: { amount: Number(row.amount_due), method: 'cash' },
+    });
+    return res.json(toCertificateRequest(updated));
+  } catch (err) {
+    await rollback(client);
+    return sendError(res, err);
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   createRequest,
   listMyRequests,
+  listParishRequests,
+  getRequest,
+  linkRequest,
+  rejectRequest,
+  confirmPayment,
   toCertificateRequest,
   loadRequest,
 };
