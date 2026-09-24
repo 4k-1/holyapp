@@ -40,7 +40,7 @@ async function listBaptismAnnotations(db, baptismId) {
      FROM annotation a
      JOIN app_user u ON u.id = a.annotated_by
      WHERE a.baptism_id = $1
-     ORDER BY COALESCE(a.event_date, a.annotated_at::date), a.annotated_at`,
+     ORDER BY COALESCE(a.event_date, a.annotated_at::date) NULLS LAST, a.annotated_at`,
     [baptismId]
   );
   return result.rows.map(toClientAnnotation);

@@ -20,7 +20,7 @@ export function getMarriageParty(
   rec: MarriageRecord,
   role: MarriagePartyRole
 ): MarriageParty | undefined {
-  return rec.parties.find((p) => p.role === role);
+  return rec.parties?.find((p) => p.role === role);
 }
 
 export function partyFullName(party: Pick<MarriageParty, "firstName" | "middleName" | "lastName">) {
@@ -122,11 +122,11 @@ export function filterMarriageRecords(records: MarriageRecord[], criteria: Marri
   return records.filter((r) => {
     if (groom && !groomFullName(r).toLowerCase().includes(groom)) return false;
     if (bride && !brideFullName(r).toLowerCase().includes(bride)) return false;
-    if (minister && !r.minister.toLowerCase().includes(minister)) return false;
+    if (minister && !(r.minister ?? "").toLowerCase().includes(minister)) return false;
     if (
       witness &&
-      !r.witnessOne.toLowerCase().includes(witness) &&
-      !r.witnessTwo.toLowerCase().includes(witness)
+      !(r.witnessOne ?? "").toLowerCase().includes(witness) &&
+      !(r.witnessTwo ?? "").toLowerCase().includes(witness)
     ) {
       return false;
     }

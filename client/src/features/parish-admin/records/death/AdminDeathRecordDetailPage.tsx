@@ -12,7 +12,8 @@ import {
 } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { CandleIcon, DropletIcon, ShieldIcon } from "@/components/ui/icons/SacramentIcons";
-import { generateDeathCertificate, getDeathRecord } from "@/features/parish-admin/records/api/deathRecordsApi";
+import { archiveDeathRecord, generateDeathCertificate, getDeathRecord, unarchiveDeathRecord } from "@/features/parish-admin/records/api/deathRecordsApi";
+import { AdminArchiveRecordModal } from "@/features/parish-admin/records/AdminArchiveRecordModal";
 import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
 import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
@@ -51,6 +52,7 @@ export function AdminDeathRecordDetailPage() {
     [parish.id, record?.baptismalRecordId]
   );
   const [certificateModal, setCertificateModal] = useState<IssuedRecordCertificate | "new" | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   if (loading && !record) {
     return (
@@ -91,8 +93,7 @@ export function AdminDeathRecordDetailPage() {
             </p>
             <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
             <p className="mb-2.5 text-admin-body text-admin-ink-muted">
-              Died {formatRecordDate(record.dateOfDeath)} · Buried {formatRecordDate(record.dateOfBurial)} at{" "}
-              {record.placeOfBurial}
+              Died {formatRecordDate(record.dateOfDeath)} · Buried {formatRecordDate(record.dateOfBurial)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
@@ -119,14 +120,16 @@ export function AdminDeathRecordDetailPage() {
                 <EditIcon />
                 Edit
               </AdminButton>
-              <AdminButton
-                variant="danger"
-                className="flex-1"
-                onClick={() => console.info("[mock] archive record", record.id)}
-              >
-                <TrashIcon />
-                Archive
-              </AdminButton>
+              {record.status === "Archived" ? (
+                <AdminButton variant="secondary" className="flex-1" onClick={() => setArchiveOpen(true)}>
+                  Restore
+                </AdminButton>
+              ) : (
+                <AdminButton variant="danger" className="flex-1" onClick={() => setArchiveOpen(true)}>
+                  <TrashIcon />
+                  Archive
+                </AdminButton>
+              )}
             </div>
           )}
         </div>
@@ -145,7 +148,6 @@ export function AdminDeathRecordDetailPage() {
           <div className="p-5 px-[22px]">
             <RecordDetailInfoRow label="Date of death" value={formatRecordDate(record.dateOfDeath)} />
             <RecordDetailInfoRow label="Date of burial" value={formatRecordDate(record.dateOfBurial)} />
-            <RecordDetailInfoRow label="Place of burial" value={record.placeOfBurial} />
             {record.nicheNumber && <RecordDetailInfoRow label="Niche number" value={record.nicheNumber} />}
             {record.nicheType && <RecordDetailInfoRow label="Niche type" value={record.nicheType} />}
             <RecordDetailInfoRow label="Minister" value={record.minister} />
@@ -223,6 +225,21 @@ export function AdminDeathRecordDetailPage() {
         created={formatDateTime(record.createdAt)}
         updated={formatDateTime(record.updatedAt)}
       />
+
+      {archiveOpen && (
+        <AdminArchiveRecordModal
+          recordName={name}
+          registerLabel="death record"
+          intent={record.status === "Archived" ? "restore" : "archive"}
+          onClose={() => setArchiveOpen(false)}
+          onConfirm={() =>
+            (record.status === "Archived"
+              ? unarchiveDeathRecord(parish.id, record.id)
+              : archiveDeathRecord(parish.id, record.id)
+            ).then(() => refetch())
+          }
+        />
+      )}
 
       {certificateModal && (
         <AdminGenerateCertificateModal

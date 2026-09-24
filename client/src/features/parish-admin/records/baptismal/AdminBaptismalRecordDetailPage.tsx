@@ -13,7 +13,8 @@ import { DropletIcon } from "@/components/ui/icons/SacramentIcons";
 import { AdminAddAnnotationModal } from "@/features/parish-admin/records/baptismal/AdminAddAnnotationModal";
 import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
 import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
-import { addBaptismalAnnotation, generateBaptismalCertificate, getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { addBaptismalAnnotation, archiveBaptismalRecord, generateBaptismalCertificate, getBaptismalRecord, unarchiveBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
+import { AdminArchiveRecordModal } from "@/features/parish-admin/records/AdminArchiveRecordModal";
 import { revokeIssuedCertificate } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import { useAsync } from "@/hooks/useAsync";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
@@ -43,9 +44,10 @@ export function AdminBaptismalRecordDetailPage() {
   const canEdit = canEditSacramentalRecords(user?.role);
   const id = decodeURIComponent(recordId);
 
-  const { data: record, loading, refetch } = useAsync(() => getBaptismalRecord(parish.id, id), [parish.id, id]);
+  const { data: record, loading, error, refetch } = useAsync(() => getBaptismalRecord(parish.id, id), [parish.id, id]);
   const [addingAnnotation, setAddingAnnotation] = useState(false);
   const [certificateModal, setCertificateModal] = useState<IssuedRecordCertificate | "new" | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   if (loading && !record) {
     return (
@@ -60,9 +62,13 @@ export function AdminBaptismalRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">
+          {error ? "Could not load record" : "Record not found"}
+        </h1>
         <p className="text-admin-body text-admin-ink-muted">
-          This baptismal record is not available for this parish.
+          {error
+            ? error.message
+            : "This baptismal record is not available for this parish."}
         </p>
       </div>
     );
@@ -94,7 +100,7 @@ export function AdminBaptismalRecordDetailPage() {
           <div>
             <h1 className="mb-1 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
             <p className="mb-2 text-admin-body text-admin-ink-muted">
-              Baptized {formatRecordDate(record.dateOfBaptism)} at {record.placeOfBaptism}
+              Baptized {formatRecordDate(record.dateOfBaptism)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
@@ -121,14 +127,16 @@ export function AdminBaptismalRecordDetailPage() {
                 <EditIcon />
                 Edit
               </AdminButton>
-              <AdminButton
-                variant="danger"
-                className="flex-1"
-                onClick={() => console.info("[mock] archive record", record.id)}
-              >
-                <TrashIcon />
-                Archive
-              </AdminButton>
+              {record.status === "Archived" ? (
+                <AdminButton variant="secondary" className="flex-1" onClick={() => setArchiveOpen(true)}>
+                  Restore
+                </AdminButton>
+              ) : (
+                <AdminButton variant="danger" className="flex-1" onClick={() => setArchiveOpen(true)}>
+                  <TrashIcon />
+                  Archive
+                </AdminButton>
+              )}
             </div>
           )}
         </div>
@@ -148,7 +156,6 @@ export function AdminBaptismalRecordDetailPage() {
         <RecordDetailSection tone="gold" icon={<DropletIcon className="h-4.5 w-4.5" />} title="Baptismal Information" className="mb-0">
           <div className="p-5 px-[22px]">
             <RecordDetailInfoRow label="Date of baptism" value={formatRecordDate(record.dateOfBaptism)} />
-            <RecordDetailInfoRow label="Place of baptism" value={record.placeOfBaptism} />
             <RecordDetailInfoRow label="Minister" value={record.minister} />
             <RecordDetailInfoRow label="Mother's name" value={recordMotherName(record)} />
             <RecordDetailInfoRow label="Father's name" value={recordFatherName(record)} last />
@@ -276,6 +283,21 @@ export function AdminBaptismalRecordDetailPage() {
             await addBaptismalAnnotation(parish.id, record.id, input);
             refetch();
           }}
+        />
+      )}
+
+      {archiveOpen && (
+        <AdminArchiveRecordModal
+          recordName={name}
+          registerLabel="baptismal record"
+          intent={record.status === "Archived" ? "restore" : "archive"}
+          onClose={() => setArchiveOpen(false)}
+          onConfirm={() =>
+            (record.status === "Archived"
+              ? unarchiveBaptismalRecord(parish.id, record.id)
+              : archiveBaptismalRecord(parish.id, record.id)
+            ).then(() => refetch())
+          }
         />
       )}
 

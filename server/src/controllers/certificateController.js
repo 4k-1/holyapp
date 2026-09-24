@@ -537,24 +537,29 @@ async function downloadPdf(req, res) {
 }
 
 async function listRecordCertificates(parishId, recordType, recordId) {
-  const result = await pool.query(
-    `SELECT c.id, c.certificate_code, c.status, c.issued_at, c.record_type,
-            NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS issued_by_name
-     FROM certificate c
-     LEFT JOIN app_user u ON u.id = c.issued_by
-     WHERE c.parish_id = $1 AND c.record_type = $2 AND c.record_id = $3
-     ORDER BY c.version DESC`,
-    [parishId, recordType, recordId]
-  );
-  const labels = { valid: 'Valid', superseded: 'Superseded', invalid: 'Invalid' };
-  return result.rows.map((row) => ({
-    id: row.id,
-    type: TITLES[row.record_type] || 'Certificate',
-    date: dateStamp(row.issued_at),
-    by: row.issued_by_name || 'Parish office',
-    status: labels[row.status] || 'Valid',
-    code: row.certificate_code,
-  }));
+  try {
+    const result = await pool.query(
+      `SELECT c.id, c.certificate_code, c.status, c.issued_at, c.record_type,
+              NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS issued_by_name
+       FROM certificate c
+       LEFT JOIN app_user u ON u.id = c.issued_by
+       WHERE c.parish_id = $1 AND c.record_type = $2 AND c.record_id = $3
+       ORDER BY c.version DESC`,
+      [parishId, recordType, recordId]
+    );
+    const labels = { valid: 'Valid', superseded: 'Superseded', invalid: 'Invalid' };
+    return result.rows.map((row) => ({
+      id: row.id,
+      type: TITLES[row.record_type] || 'Certificate',
+      date: dateStamp(row.issued_at),
+      by: row.issued_by_name || 'Parish office',
+      status: labels[row.status] || 'Valid',
+      code: row.certificate_code,
+    }));
+  } catch (err) {
+    if (err.code === '42703') return [];
+    throw err;
+  }
 }
 
 async function revokeCertificate(req, res) {
@@ -607,6 +612,52 @@ async function revokeCertificate(req, res) {
   }
 }
 
+function holderFromRow(recordType, row) {
+  if (recordType === 'marriage') return 'Marriage record';
+  return [row.first_name, row.middle_name, row.last_name].filter(Boolean).join(' ') || 'Certificate subject';
+}
+
+function issueFromRecord(recordType) {
+  return async function issueFromRecordHandler(req, res) {
+    const table = RECORD_TABLES[recordType];
+    if (!table) return res.status(400).json({ error: 'Unknown record type.' });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const found = await client.query(`SELECT * FROM ${table} WHERE id = $1 AND parish_id = $2`, [
+        req.params.id,
+        req.parishId,
+      ]);
+      const record = found.rows[0];
+      if (!record) throw httpError(404, 'Record not found.');
+      const request = {
+        id: null,
+        record_type: recordType,
+        record_id: record.id,
+        subject_details: { subjectName: holderFromRow(recordType, record) },
+      };
+      await issueCertificateRow(client, request, req.user.id, req.parishId);
+      await client.query('COMMIT');
+      await writeAudit({
+        parishId: req.parishId,
+        actorId: req.user.id,
+        action: 'certificate.issued',
+        entityType: recordType,
+        entityId: record.id,
+        metadata: { source: 'register' },
+      });
+      const certificates = await listRecordCertificates(req.parishId, recordType, record.id);
+      return res.status(201).json({ certificates });
+    } catch (err) {
+      await rollback(client);
+      if (err.status) return res.status(err.status).json({ error: err.message });
+      return sendError(res, err);
+    } finally {
+      client.release();
+    }
+  };
+}
+
 module.exports = {
   issueDigital,
   markReady,
@@ -617,4 +668,5 @@ module.exports = {
   revokeCertificate,
   listRecordCertificates,
   toIssuedCertificate,
+  issueFromRecord,
 };

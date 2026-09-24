@@ -9,7 +9,7 @@ const {
   httpError,
   recordStatus,
 } = require('../utils/recordFields');
-const { findParishRecord } = require('../utils/recordQuery');
+const { findParishRecord, archivedListClause } = require('../utils/recordQuery');
 const { listRecordCertificates } = require('./certificateController');
 const { listBaptismAnnotations } = require('../utils/baptismAnnotation');
 
@@ -66,28 +66,39 @@ function toBaptismalRecord(row) {
   };
 }
 
-async function createBaptism(req, res) {
-  const body = req.body || {};
+function parseBaptismBody(body) {
+  return {
+    firstName: requiredText(body.firstName, 'First name'),
+    middleName: requiredText(body.middleName, 'Middle name'),
+    lastName: requiredText(body.lastName, 'Last name'),
+    sex: optionalText(body.sex),
+    dateOfBirth: dateValue(body.dateOfBirth, 'Date of birth'),
+    placeOfBirth: optionalText(body.placeOfBirth),
+    dateOfBaptism: dateValue(body.dateOfBaptism, 'Date of baptism'),
+    placeOfBaptism: requiredText(body.placeOfBaptism, 'Place of baptism'),
+    legitimacyStatus: legitimacyToDb(body.legitimacyStatus),
+    address: optionalText(body.address),
+    minister: requiredText(body.minister, 'Minister'),
+    fatherLastName: requiredText(body.fatherLastName, "Father's last name"),
+    fatherFirstName: requiredText(body.fatherFirstName, "Father's first name"),
+    motherLastName: requiredText(body.motherLastName, "Mother's last name"),
+    motherFirstName: requiredText(body.motherFirstName, "Mother's first name"),
+    paternalGrandfather: requiredText(body.paternalGrandfather, 'Paternal grandfather'),
+    paternalGrandmother: requiredText(body.paternalGrandmother, 'Paternal grandmother'),
+    maternalGrandfather: requiredText(body.maternalGrandfather, 'Maternal grandfather'),
+    maternalGrandmother: requiredText(body.maternalGrandmother, 'Maternal grandmother'),
+    withMarriageCertificate: Boolean(body.withMarriageCertificate),
+    withBirthCertificate: Boolean(body.withBirthCertificate),
+    bookNumber: requiredText(body.bookNumber, 'Book number'),
+    pageNumber: requiredText(body.pageNumber, 'Page number'),
+    entryNumber: requiredText(body.entryNumber, 'Entry number'),
+    remarks: optionalText(body.remarks),
+  };
+}
 
+async function createBaptism(req, res) {
   try {
-    const firstName = requiredText(body.firstName, 'First name');
-    const middleName = requiredText(body.middleName, 'Middle name');
-    const lastName = requiredText(body.lastName, 'Last name');
-    const dateOfBirth = dateValue(body.dateOfBirth, 'Date of birth');
-    const dateOfBaptism = dateValue(body.dateOfBaptism, 'Date of baptism');
-    const placeOfBaptism = requiredText(body.placeOfBaptism, 'Place of baptism');
-    const minister = requiredText(body.minister, 'Minister');
-    const fatherLastName = requiredText(body.fatherLastName, "Father's last name");
-    const fatherFirstName = requiredText(body.fatherFirstName, "Father's first name");
-    const motherLastName = requiredText(body.motherLastName, "Mother's last name");
-    const motherFirstName = requiredText(body.motherFirstName, "Mother's first name");
-    const paternalGrandfather = requiredText(body.paternalGrandfather, 'Paternal grandfather');
-    const paternalGrandmother = requiredText(body.paternalGrandmother, 'Paternal grandmother');
-    const maternalGrandfather = requiredText(body.maternalGrandfather, 'Maternal grandfather');
-    const maternalGrandmother = requiredText(body.maternalGrandmother, 'Maternal grandmother');
-    const bookNumber = requiredText(body.bookNumber, 'Book number');
-    const pageNumber = requiredText(body.pageNumber, 'Page number');
-    const entryNumber = requiredText(body.entryNumber, 'Entry number');
+    const fields = parseBaptismBody(req.body || {});
 
     const inserted = await pool.query(
       `INSERT INTO baptism (
@@ -111,31 +122,31 @@ async function createBaptism(req, res) {
        RETURNING *`,
       [
         req.parishId,
-        firstName,
-        middleName,
-        lastName,
-        optionalText(body.sex),
-        dateOfBirth,
-        optionalText(body.placeOfBirth),
-        dateOfBaptism,
-        placeOfBaptism,
-        legitimacyToDb(body.legitimacyStatus),
-        optionalText(body.address),
-        minister,
-        fatherLastName,
-        fatherFirstName,
-        motherLastName,
-        motherFirstName,
-        paternalGrandfather,
-        paternalGrandmother,
-        maternalGrandfather,
-        maternalGrandmother,
-        Boolean(body.withMarriageCertificate),
-        Boolean(body.withBirthCertificate),
-        bookNumber,
-        pageNumber,
-        entryNumber,
-        optionalText(body.remarks),
+        fields.firstName,
+        fields.middleName,
+        fields.lastName,
+        fields.sex,
+        fields.dateOfBirth,
+        fields.placeOfBirth,
+        fields.dateOfBaptism,
+        fields.placeOfBaptism,
+        fields.legitimacyStatus,
+        fields.address,
+        fields.minister,
+        fields.fatherLastName,
+        fields.fatherFirstName,
+        fields.motherLastName,
+        fields.motherFirstName,
+        fields.paternalGrandfather,
+        fields.paternalGrandmother,
+        fields.maternalGrandfather,
+        fields.maternalGrandmother,
+        fields.withMarriageCertificate,
+        fields.withBirthCertificate,
+        fields.bookNumber,
+        fields.pageNumber,
+        fields.entryNumber,
+        fields.remarks,
         req.user.id,
       ]
     );
@@ -147,7 +158,7 @@ async function createBaptism(req, res) {
       action: 'baptism.created',
       entityType: 'baptism',
       entityId: record.id,
-      metadata: { bookNumber, pageNumber, entryNumber },
+      metadata: { bookNumber: fields.bookNumber, pageNumber: fields.pageNumber, entryNumber: fields.entryNumber },
     });
 
     res.status(201).json({ record });
@@ -160,7 +171,7 @@ async function listBaptisms(req, res) {
   try {
     const result = await pool.query(
       `SELECT * FROM baptism
-       WHERE parish_id = $1
+       WHERE parish_id = $1 ${archivedListClause(req)}
        ORDER BY date_of_baptism DESC, created_at DESC`,
       [req.parishId]
     );
@@ -177,12 +188,106 @@ async function getBaptism(req, res) {
       return res.status(404).json({ error: 'Record not found.' });
     }
     const record = toBaptismalRecord(row);
-    record.annotations = await listBaptismAnnotations(pool, row.id);
-    record.certificates = await listRecordCertificates(req.parishId, 'baptism', row.id);
+    try {
+      record.annotations = await listBaptismAnnotations(pool, row.id);
+    } catch (annotationErr) {
+      console.error('listBaptismAnnotations failed', annotationErr);
+      record.annotations = [];
+    }
+    try {
+      record.certificates = await listRecordCertificates(req.parishId, 'baptism', row.id);
+    } catch (certErr) {
+      console.error('listRecordCertificates failed', certErr);
+      record.certificates = [];
+    }
     res.json({ record });
   } catch (err) {
     return sendRecordError(res, err);
   }
 }
 
-module.exports = { createBaptism, listBaptisms, getBaptism, toBaptismalRecord };
+async function updateBaptism(req, res) {
+  try {
+    const current = await findParishRecord(pool, 'baptism', req.parishId, req.params.id);
+    if (!current) {
+      return res.status(404).json({ error: 'Record not found.' });
+    }
+    const fields = parseBaptismBody(req.body || {});
+    const updated = await pool.query(
+      `UPDATE baptism
+       SET first_name = $1,
+           middle_name = $2,
+           last_name = $3,
+           sex = $4,
+           date_of_birth = $5,
+           place_of_birth = $6,
+           date_of_baptism = $7,
+           place_of_baptism = $8,
+           status = $9,
+           address = $10,
+           minister = $11,
+           father_last_name = $12,
+           father_first_name = $13,
+           mother_last_name = $14,
+           mother_first_name = $15,
+           paternal_grandfather = $16,
+           paternal_grandmother = $17,
+           maternal_grandfather = $18,
+           maternal_grandmother = $19,
+           with_marriage_certificate = $20,
+           with_birth_certificate = $21,
+           book_number = $22,
+           page_number = $23,
+           entry_number = $24,
+           remarks = $25,
+           updated_at = NOW()
+       WHERE id = $26 AND parish_id = $27
+       RETURNING *`,
+      [
+        fields.firstName,
+        fields.middleName,
+        fields.lastName,
+        fields.sex,
+        fields.dateOfBirth,
+        fields.placeOfBirth,
+        fields.dateOfBaptism,
+        fields.placeOfBaptism,
+        fields.legitimacyStatus,
+        fields.address,
+        fields.minister,
+        fields.fatherLastName,
+        fields.fatherFirstName,
+        fields.motherLastName,
+        fields.motherFirstName,
+        fields.paternalGrandfather,
+        fields.paternalGrandmother,
+        fields.maternalGrandfather,
+        fields.maternalGrandmother,
+        fields.withMarriageCertificate,
+        fields.withBirthCertificate,
+        fields.bookNumber,
+        fields.pageNumber,
+        fields.entryNumber,
+        fields.remarks,
+        current.id,
+        req.parishId,
+      ]
+    );
+    const record = toBaptismalRecord(updated.rows[0]);
+    record.annotations = await listBaptismAnnotations(pool, record.id);
+    record.certificates = await listRecordCertificates(req.parishId, 'baptism', record.id);
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'baptism.updated',
+      entityType: 'baptism',
+      entityId: record.id,
+      metadata: { bookNumber: fields.bookNumber, pageNumber: fields.pageNumber, entryNumber: fields.entryNumber },
+    });
+    res.json({ record });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+module.exports = { createBaptism, listBaptisms, getBaptism, updateBaptism, toBaptismalRecord };

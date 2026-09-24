@@ -1,36 +1,32 @@
-import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCertificate";
-import { recordBelongsToParish } from "@/features/parish/parishApi";
-import { MOCK_DEATH_RECORDS } from "@/services/mocks/deathRecords.mock";
-import { delay } from "@/services/delay";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 import type {
   DeathKin,
   DeathRecord,
   DeathSacramentReceived,
 } from "@/features/parish-admin/records/types";
 
-async function findDeathRecord(parishId: string, recordId: string) {
-  for (const r of MOCK_DEATH_RECORDS) {
-    if (r.id === recordId && (await recordBelongsToParish(r.parishId, parishId))) return r;
-  }
-  return undefined;
-}
-
-export async function listDeathRecords(parishId: string): Promise<DeathRecord[]> {
-  await delay(200);
-  const out: DeathRecord[] = [];
-  for (const r of MOCK_DEATH_RECORDS) {
-    if (await recordBelongsToParish(r.parishId, parishId)) out.push(r);
-  }
-  return out;
+export async function listDeathRecords(
+  _parishId: string,
+  options?: { archived?: boolean }
+): Promise<DeathRecord[]> {
+  const query = options?.archived ? "?archived=1" : "";
+  const data = await apiFetch<{ records: DeathRecord[] }>(`/records/death${query}`);
+  return data.records ?? [];
 }
 
 export async function getDeathRecord(
-  parishId: string,
+  _parishId: string,
   recordId: string
 ): Promise<DeathRecord | undefined> {
-  await delay(150);
-  return findDeathRecord(parishId, recordId);
+  try {
+    const data = await apiFetch<{ record: DeathRecord }>(
+      `/records/death/${encodeURIComponent(recordId)}`
+    );
+    return data.record;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return undefined;
+    throw err;
+  }
 }
 
 export type DeathKinInput = Omit<DeathKin, "id">;
@@ -53,20 +49,6 @@ export type DeathRecordInput = Omit<
   sacramentsReceived: DeathSacramentReceivedInput[];
 };
 
-function assignNestedIds(
-  kin: DeathKinInput[],
-  sacraments: DeathSacramentReceivedInput[],
-  deathId: string
-) {
-  return {
-    kin: kin.map((k, i) => ({ ...k, id: `${deathId}-kin-${i + 1}` })),
-    sacramentsReceived: sacraments.map((s, i) => ({
-      ...s,
-      id: `${deathId}-sac-${i + 1}`,
-    })),
-  };
-}
-
 export async function createDeathRecord(
   parishId: string,
   input: DeathRecordInput & { annotationNote?: string }
@@ -83,21 +65,36 @@ export async function updateDeathRecord(
   recordId: string,
   input: DeathRecordInput
 ): Promise<DeathRecord> {
-  await delay(400);
-  const record = await findDeathRecord(parishId, recordId);
-  if (!record) throw new Error(`Record ${recordId} not found`);
-  const nested = assignNestedIds(input.kin, input.sacramentsReceived, recordId);
-  Object.assign(record, input, nested, { updatedAt: new Date().toISOString() });
-  return { ...record };
+  const data = await apiFetch<{ record: DeathRecord }>(
+    `/records/death/${encodeURIComponent(recordId)}`,
+    { method: "PATCH", body: { ...input, parishId } }
+  );
+  return data.record;
+}
+
+export async function archiveDeathRecord(_parishId: string, recordId: string): Promise<void> {
+  await apiFetch(`/records/death/${encodeURIComponent(recordId)}/archive`, {
+    method: "POST",
+    body: {},
+  });
+}
+
+export async function unarchiveDeathRecord(_parishId: string, recordId: string): Promise<void> {
+  await apiFetch(`/records/death/${encodeURIComponent(recordId)}/unarchive`, {
+    method: "POST",
+    body: {},
+  });
 }
 
 export async function generateDeathCertificate(
   parishId: string,
   recordId: string
 ): Promise<DeathRecord> {
-  await delay(400);
-  const record = await findDeathRecord(parishId, recordId);
-  if (!record) throw new Error(`Record ${recordId} not found`);
-  appendIssuedCertificate(record, "death");
-  return { ...record };
+  await apiFetch(`/records/death/${encodeURIComponent(recordId)}/certificates`, {
+    method: "POST",
+    body: {},
+  });
+  const record = await getDeathRecord(parishId, recordId);
+  if (!record) throw new Error("Record not found.");
+  return record;
 }

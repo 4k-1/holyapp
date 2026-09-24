@@ -12,7 +12,8 @@ import {
 } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { DropletIcon, ShieldIcon } from "@/components/ui/icons/SacramentIcons";
-import { generateConfirmationCertificate, getConfirmationRecord } from "@/features/parish-admin/records/api/confirmationRecordsApi";
+import { archiveConfirmationRecord, generateConfirmationCertificate, getConfirmationRecord, unarchiveConfirmationRecord } from "@/features/parish-admin/records/api/confirmationRecordsApi";
+import { AdminArchiveRecordModal } from "@/features/parish-admin/records/AdminArchiveRecordModal";
 import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
 import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
 import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
@@ -43,6 +44,7 @@ export function AdminConfirmationRecordDetailPage() {
 
   const { data: record, loading, refetch } = useAsync(() => getConfirmationRecord(parish.id, id), [parish.id, id]);
   const [certificateModal, setCertificateModal] = useState<IssuedRecordCertificate | "new" | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   const { data: linkedBaptism } = useAsync(
     () =>
@@ -95,7 +97,7 @@ export function AdminConfirmationRecordDetailPage() {
             </p>
             <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
             <p className="mb-2.5 text-admin-body text-admin-ink-muted">
-              Confirmed {formatRecordDate(record.dateOfConfirmation)} at {record.placeOfConfirmation}
+              Confirmed {formatRecordDate(record.dateOfConfirmation)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
@@ -123,14 +125,16 @@ export function AdminConfirmationRecordDetailPage() {
                 <EditIcon />
                 Edit
               </AdminButton>
-              <AdminButton
-                variant="danger"
-                className="flex-1"
-                onClick={() => console.info("[mock] archive record", record.id)}
-              >
-                <TrashIcon />
-                Archive
-              </AdminButton>
+              {record.status === "Archived" ? (
+                <AdminButton variant="secondary" className="flex-1" onClick={() => setArchiveOpen(true)}>
+                  Restore
+                </AdminButton>
+              ) : (
+                <AdminButton variant="danger" className="flex-1" onClick={() => setArchiveOpen(true)}>
+                  <TrashIcon />
+                  Archive
+                </AdminButton>
+              )}
             </div>
           )}
         </div>
@@ -153,7 +157,6 @@ export function AdminConfirmationRecordDetailPage() {
         <RecordDetailSection tone="gold" icon={<ShieldIcon className="h-4.5 w-4.5" />} title="Confirmation Information">
           <div className="p-5 px-[22px]">
             <RecordDetailInfoRow label="Date of confirmation" value={formatRecordDate(record.dateOfConfirmation)} />
-            <RecordDetailInfoRow label="Place of confirmation" value={record.placeOfConfirmation} />
             <RecordDetailInfoRow label="Minister" value={record.minister} />
             <RecordDetailInfoRow label="Father's name" value={recordFatherName(record) || "—"} />
             <RecordDetailInfoRow label="Mother's name" value={recordMotherName(record) || "—"} last />
@@ -212,6 +215,21 @@ export function AdminConfirmationRecordDetailPage() {
         created={formatDateTime(record.createdAt)}
         updated={formatDateTime(record.updatedAt)}
       />
+
+      {archiveOpen && (
+        <AdminArchiveRecordModal
+          recordName={name}
+          registerLabel="confirmation record"
+          intent={record.status === "Archived" ? "restore" : "archive"}
+          onClose={() => setArchiveOpen(false)}
+          onConfirm={() =>
+            (record.status === "Archived"
+              ? unarchiveConfirmationRecord(parish.id, record.id)
+              : archiveConfirmationRecord(parish.id, record.id)
+            ).then(() => refetch())
+          }
+        />
+      )}
 
       {certificateModal && (
         <AdminGenerateCertificateModal

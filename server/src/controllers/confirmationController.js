@@ -9,7 +9,10 @@ const {
   optionalUuid,
   sendRecordError,
   httpError,
+  recordStatus,
 } = require('../utils/recordFields');
+const { findParishRecord, archivedListClause } = require('../utils/recordQuery');
+const { listRecordCertificates } = require('./certificateController');
 
 function toConfirmationRecord(row) {
   return {
@@ -40,7 +43,7 @@ function toConfirmationRecord(row) {
     encodedBy: row.encoded_by,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
     updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
-    status: 'Active',
+    status: recordStatus(row.archived_at),
     certificates: [],
   };
 }
@@ -59,20 +62,38 @@ async function resolveBaptismalRecordId(parishId, value) {
   return baptismalRecordId;
 }
 
+async function parseConfirmationBody(parishId, body) {
+  return {
+    firstName: requiredText(body.firstName, 'First name'),
+    middleName: requiredText(body.middleName, 'Middle name'),
+    lastName: requiredText(body.lastName, 'Last name'),
+    sex: optionalText(body.sex),
+    dateOfBirth: dateValue(body.dateOfBirth, 'Date of birth', { required: false }),
+    address: optionalText(body.address),
+    fatherLastName: optionalText(body.fatherLastName),
+    fatherFirstName: optionalText(body.fatherFirstName),
+    motherLastName: optionalText(body.motherLastName),
+    motherFirstName: optionalText(body.motherFirstName),
+    dateOfConfirmation: dateValue(body.dateOfConfirmation, 'Date of confirmation'),
+    placeOfConfirmation: requiredText(body.placeOfConfirmation, 'Place of confirmation'),
+    minister: requiredText(body.minister, 'Minister'),
+    baptismalRecordId: await resolveBaptismalRecordId(parishId, body.baptismalRecordId),
+    baptismDate: dateValue(body.baptismDate, 'Baptismal date', { required: false }),
+    baptismPlace: optionalText(body.baptismPlace),
+    isPriorMarriage: Boolean(body.isPriorMarriage),
+    isAdult: Boolean(body.isAdult),
+    bookNumber: requiredText(body.bookNumber, 'Book number'),
+    pageNumber: requiredText(body.pageNumber, 'Page number'),
+    entryNumber: requiredText(body.entryNumber, 'Entry number'),
+    remarks: optionalText(body.remarks),
+  };
+}
+
 async function createConfirmation(req, res) {
   const body = req.body || {};
 
   try {
-    const firstName = requiredText(body.firstName, 'First name');
-    const middleName = requiredText(body.middleName, 'Middle name');
-    const lastName = requiredText(body.lastName, 'Last name');
-    const dateOfConfirmation = dateValue(body.dateOfConfirmation, 'Date of confirmation');
-    const placeOfConfirmation = requiredText(body.placeOfConfirmation, 'Place of confirmation');
-    const minister = requiredText(body.minister, 'Minister');
-    const bookNumber = requiredText(body.bookNumber, 'Book number');
-    const pageNumber = requiredText(body.pageNumber, 'Page number');
-    const entryNumber = requiredText(body.entryNumber, 'Entry number');
-    const baptismalRecordId = await resolveBaptismalRecordId(req.parishId, body.baptismalRecordId);
+    const fields = await parseConfirmationBody(req.parishId, body);
 
     const inserted = await pool.query(
       `INSERT INTO confirmation (
@@ -96,28 +117,28 @@ async function createConfirmation(req, res) {
        RETURNING *`,
       [
         req.parishId,
-        firstName,
-        middleName,
-        lastName,
-        optionalText(body.sex),
-        dateValue(body.dateOfBirth, 'Date of birth', { required: false }),
-        optionalText(body.address),
-        optionalText(body.fatherLastName),
-        optionalText(body.fatherFirstName),
-        optionalText(body.motherLastName),
-        optionalText(body.motherFirstName),
-        dateOfConfirmation,
-        placeOfConfirmation,
-        minister,
-        baptismalRecordId,
-        dateValue(body.baptismDate, 'Baptismal date', { required: false }),
-        optionalText(body.baptismPlace),
-        Boolean(body.isPriorMarriage),
-        Boolean(body.isAdult),
-        bookNumber,
-        pageNumber,
-        entryNumber,
-        optionalText(body.remarks),
+        fields.firstName,
+        fields.middleName,
+        fields.lastName,
+        fields.sex,
+        fields.dateOfBirth,
+        fields.address,
+        fields.fatherLastName,
+        fields.fatherFirstName,
+        fields.motherLastName,
+        fields.motherFirstName,
+        fields.dateOfConfirmation,
+        fields.placeOfConfirmation,
+        fields.minister,
+        fields.baptismalRecordId,
+        fields.baptismDate,
+        fields.baptismPlace,
+        fields.isPriorMarriage,
+        fields.isAdult,
+        fields.bookNumber,
+        fields.pageNumber,
+        fields.entryNumber,
+        fields.remarks,
         req.user.id,
       ]
     );
@@ -125,15 +146,15 @@ async function createConfirmation(req, res) {
     const record = toConfirmationRecord(inserted.rows[0]);
     await annotateFromSacrament(pool, {
       parishId: req.parishId,
-      baptismId: baptismalRecordId,
+      baptismId: fields.baptismalRecordId,
       annotationType: 'confirmation',
       referenceRecordId: record.id,
       actorId: req.user.id,
-      notes: optionalText(body.annotationNote) || `Confirmed at ${placeOfConfirmation}.`,
-      eventDate: dateOfConfirmation,
-      bookNumber,
-      pageNumber,
-      entryNumber,
+      notes: optionalText(body.annotationNote) || `Confirmed at ${fields.placeOfConfirmation}.`,
+      eventDate: fields.dateOfConfirmation,
+      bookNumber: fields.bookNumber,
+      pageNumber: fields.pageNumber,
+      entryNumber: fields.entryNumber,
     });
     await writeAudit({
       parishId: req.parishId,
@@ -141,7 +162,7 @@ async function createConfirmation(req, res) {
       action: 'confirmation.created',
       entityType: 'confirmation',
       entityId: record.id,
-      metadata: { bookNumber, pageNumber, entryNumber },
+      metadata: { bookNumber: fields.bookNumber, pageNumber: fields.pageNumber, entryNumber: fields.entryNumber },
     });
 
     res.status(201).json({ record });
@@ -150,4 +171,115 @@ async function createConfirmation(req, res) {
   }
 }
 
-module.exports = { createConfirmation, toConfirmationRecord };
+async function listConfirmations(req, res) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM confirmation
+       WHERE parish_id = $1 ${archivedListClause(req)}
+       ORDER BY date_of_confirmation DESC, created_at DESC`,
+      [req.parishId]
+    );
+    res.json({ records: result.rows.map(toConfirmationRecord) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+async function getConfirmation(req, res) {
+  try {
+    const row = await findParishRecord(pool, 'confirmation', req.parishId, req.params.id);
+    if (!row) {
+      return res.status(404).json({ error: 'Record not found.' });
+    }
+    const record = toConfirmationRecord(row);
+    record.certificates = await listRecordCertificates(req.parishId, 'confirmation', row.id);
+    res.json({ record });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+async function updateConfirmation(req, res) {
+  try {
+    const current = await findParishRecord(pool, 'confirmation', req.parishId, req.params.id);
+    if (!current) {
+      return res.status(404).json({ error: 'Record not found.' });
+    }
+    const fields = await parseConfirmationBody(req.parishId, req.body || {});
+    const updated = await pool.query(
+      `UPDATE confirmation
+       SET first_name = $1,
+           middle_name = $2,
+           last_name = $3,
+           sex = $4,
+           date_of_birth = $5,
+           address = $6,
+           father_last_name = $7,
+           father_first_name = $8,
+           mother_last_name = $9,
+           mother_first_name = $10,
+           date_of_confirmation = $11,
+           place_of_confirmation = $12,
+           minister = $13,
+           baptismal_record_id = $14,
+           baptism_date = $15,
+           baptism_place = $16,
+           is_prior_marriage = $17,
+           is_adult = $18,
+           book_number = $19,
+           page_number = $20,
+           entry_number = $21,
+           remarks = $22,
+           updated_at = NOW()
+       WHERE id = $23 AND parish_id = $24
+       RETURNING *`,
+      [
+        fields.firstName,
+        fields.middleName,
+        fields.lastName,
+        fields.sex,
+        fields.dateOfBirth,
+        fields.address,
+        fields.fatherLastName,
+        fields.fatherFirstName,
+        fields.motherLastName,
+        fields.motherFirstName,
+        fields.dateOfConfirmation,
+        fields.placeOfConfirmation,
+        fields.minister,
+        fields.baptismalRecordId,
+        fields.baptismDate,
+        fields.baptismPlace,
+        fields.isPriorMarriage,
+        fields.isAdult,
+        fields.bookNumber,
+        fields.pageNumber,
+        fields.entryNumber,
+        fields.remarks,
+        current.id,
+        req.parishId,
+      ]
+    );
+    const record = toConfirmationRecord(updated.rows[0]);
+    record.certificates = await listRecordCertificates(req.parishId, 'confirmation', record.id);
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'confirmation.updated',
+      entityType: 'confirmation',
+      entityId: record.id,
+      metadata: { bookNumber: fields.bookNumber, pageNumber: fields.pageNumber, entryNumber: fields.entryNumber },
+    });
+    res.json({ record });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+module.exports = {
+  createConfirmation,
+  listConfirmations,
+  getConfirmation,
+  updateConfirmation,
+  toConfirmationRecord,
+};
