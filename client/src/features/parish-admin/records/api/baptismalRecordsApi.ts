@@ -72,21 +72,13 @@ export async function generateBaptismalCertificate(
 }
 
 export async function addBaptismalAnnotation(
-  parishId: string,
+  _parishId: string,
   recordId: string,
-  input: Omit<RecordAnnotation, "id" | "by">,
-  by = "Admin Immaculada"
+  input: Omit<RecordAnnotation, "id" | "by">
 ): Promise<BaptismalRecord> {
-  await delay(300);
-  const record = await findBaptismalRecord(parishId, recordId);
-  if (!record) throw new Error(`Record ${recordId} not found`);
-  if (!record.annotations) record.annotations = [];
-
-  record.annotations.push({
-    ...input,
-    id: `ann-${Date.now()}`,
-    by,
-  });
-  record.updatedAt = new Date().toISOString();
-  return { ...record };
+  const data = await apiFetch<{ record: BaptismalRecord }>(
+    `/records/baptism/${encodeURIComponent(recordId)}/annotations`,
+    { method: "POST", body: input }
+  );
+  return data.record;
 }

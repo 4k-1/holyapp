@@ -17,11 +17,13 @@ export interface RecordAnnotation {
   date: string;
   note: string;
   by: string;
+  source?: "auto" | "manual";
   linked?: {
     category: LinkableAnnotationCategory;
     book: string;
     page: string;
     line?: string;
+    recordId?: string;
   };
 }
 

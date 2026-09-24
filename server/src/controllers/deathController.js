@@ -6,9 +6,11 @@ const {
   dateValue,
   dateOnly,
   optionalInt,
+  optionalUuid,
   sendRecordError,
   httpError,
 } = require('../utils/recordFields');
+const { annotateFromSacrament } = require('../utils/baptismAnnotation');
 
 const SACRAMENTS = new Set(['last_rites', 'burial_mass', 'confession', 'communion']);
 
@@ -177,6 +179,19 @@ async function createDeath(req, res) {
       );
       sacramentRows.push(toSacrament(insertedSacrament.rows[0]));
     }
+
+    await annotateFromSacrament(client, {
+      parishId: req.parishId,
+      baptismId: optionalUuid(body.baptismalRecordId),
+      annotationType: 'death',
+      referenceRecordId: deathRow.id,
+      actorId: req.user.id,
+      notes: optionalText(body.annotationNote) || `Deceased. Buried at ${placeOfBurial}.`,
+      eventDate: dateOfDeath,
+      bookNumber,
+      pageNumber,
+      entryNumber,
+    });
 
     await client.query('COMMIT');
 

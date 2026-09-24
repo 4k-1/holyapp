@@ -2,6 +2,7 @@ import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCe
 import { recordBelongsToParish } from "@/features/parish/parishApi";
 import { MOCK_DEATH_RECORDS } from "@/services/mocks/deathRecords.mock";
 import { delay } from "@/services/delay";
+import { apiFetch } from "@/lib/api";
 import type {
   DeathKin,
   DeathRecord,
@@ -68,26 +69,13 @@ function assignNestedIds(
 
 export async function createDeathRecord(
   parishId: string,
-  input: DeathRecordInput,
-  encodedBy = "u-admin"
+  input: DeathRecordInput & { annotationNote?: string }
 ): Promise<DeathRecord> {
-  await delay(400);
-  const now = new Date().toISOString();
-  const id = `dth-${Date.now()}`;
-  const nested = assignNestedIds(input.kin, input.sacramentsReceived, id);
-  const record: DeathRecord = {
-    ...input,
-    ...nested,
-    id,
-    parishId,
-    encodedBy,
-    createdAt: now,
-    updatedAt: now,
-    status: "Active",
-    certificates: [],
-  };
-  MOCK_DEATH_RECORDS.push(record);
-  return record;
+  const data = await apiFetch<{ record: DeathRecord }>("/records/death", {
+    method: "POST",
+    body: { ...input, parishId },
+  });
+  return data.record;
 }
 
 export async function updateDeathRecord(

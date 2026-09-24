@@ -221,9 +221,10 @@ export function AdminBaptismalRecordDetailPage() {
                 category={annotation.category}
                 tagClass={annotationTagClass[annotation.category]}
                 dotClass={annotationDotClass[annotation.category]}
-                date={annotation.date}
+                date={formatRecordDate(annotation.date)}
                 note={annotation.note}
                 by={annotation.by}
+                source={annotation.source}
                 linked={annotation.linked}
                 last={i === laterAnnotations.length - 1}
               />
@@ -270,6 +271,7 @@ export function AdminBaptismalRecordDetailPage() {
           }}
           existingCategories={record.annotations.map((a) => a.category)}
           onClose={() => setAddingAnnotation(false)}
+          onRecorded={() => refetch()}
           onSubmit={async (input) => {
             await addBaptismalAnnotation(parish.id, record.id, input);
             refetch();
@@ -303,6 +305,7 @@ function TimelineEvent({
   date,
   note,
   by,
+  source,
   linked,
   last,
 }: {
@@ -312,6 +315,7 @@ function TimelineEvent({
   date: string;
   note: string;
   by?: string;
+  source?: RecordAnnotation["source"];
   linked?: RecordAnnotation["linked"];
   last?: boolean;
 }) {
@@ -339,7 +343,11 @@ function TimelineEvent({
             {linked.category} register · {linkedRegisterRef(linked)}
           </p>
         )}
-        {by && <p className="mt-0.5 text-admin-label text-admin-ink-faint">Noted by {by}</p>}
+        {by && (
+          <p className="mt-0.5 text-admin-label text-admin-ink-faint">
+            {source === "auto" ? "Added automatically" : "Recorded manually"} by {by}
+          </p>
+        )}
       </div>
     </li>
   );

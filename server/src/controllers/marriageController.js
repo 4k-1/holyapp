@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
+const { annotateFromSacrament } = require('../utils/baptismAnnotation');
 const {
   requiredText,
   optionalText,
@@ -284,6 +285,24 @@ async function createMarriage(req, res) {
         consents.push(insertedConsent.rows[0]);
       }
       partyRows.push(toMarriageParty(partyRow, consents));
+    }
+
+    for (const party of parsedParties) {
+      const spouse = parsedParties.find((other) => other.role !== party.role);
+      const spouseName = [spouse?.firstName, spouse?.lastName].filter(Boolean).join(' ');
+      await annotateFromSacrament(client, {
+        parishId: req.parishId,
+        baptismId: party.baptismalRecordId,
+        annotationType: 'marriage',
+        referenceRecordId: marriageRow.id,
+        actorId: req.user.id,
+        notes: optionalText(body.annotationNote)
+          || `Married${spouseName ? ` to ${spouseName}` : ''} at ${placeOfMarriage}.`,
+        eventDate: dateOfMarriage,
+        bookNumber,
+        pageNumber,
+        entryNumber,
+      });
     }
 
     await client.query('COMMIT');

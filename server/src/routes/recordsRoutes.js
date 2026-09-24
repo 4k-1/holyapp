@@ -3,6 +3,7 @@ const { authenticate, requireRole } = require('../middleware/rbac');
 const { scopeParish, requireParish } = require('../middleware/scopeParish');
 const { ROLES } = require('../constants/roles');
 const { createBaptism, listBaptisms, getBaptism } = require('../controllers/baptismController');
+const { createBaptismAnnotation } = require('../controllers/annotationController');
 const { createConfirmation } = require('../controllers/confirmationController');
 const { createMarriage } = require('../controllers/marriageController');
 const { createDeath } = require('../controllers/deathController');
@@ -26,6 +27,15 @@ router.get(
   requireParish,
   requireRole(...office),
   getBaptism
+);
+
+router.post(
+  '/baptism/:id/annotations',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(...office),
+  createBaptismAnnotation
 );
 
 router.post(

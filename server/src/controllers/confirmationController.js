@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
+const { annotateFromSacrament } = require('../utils/baptismAnnotation');
 const {
   requiredText,
   optionalText,
@@ -122,6 +123,18 @@ async function createConfirmation(req, res) {
     );
 
     const record = toConfirmationRecord(inserted.rows[0]);
+    await annotateFromSacrament(pool, {
+      parishId: req.parishId,
+      baptismId: baptismalRecordId,
+      annotationType: 'confirmation',
+      referenceRecordId: record.id,
+      actorId: req.user.id,
+      notes: optionalText(body.annotationNote) || `Confirmed at ${placeOfConfirmation}.`,
+      eventDate: dateOfConfirmation,
+      bookNumber,
+      pageNumber,
+      entryNumber,
+    });
     await writeAudit({
       parishId: req.parishId,
       actorId: req.user.id,

@@ -2,6 +2,7 @@ import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCe
 import { recordBelongsToParish } from "@/features/parish/parishApi";
 import { MOCK_CONFIRMATION_RECORDS } from "@/services/mocks/confirmationRecords.mock";
 import { delay } from "@/services/delay";
+import { apiFetch } from "@/lib/api";
 import type { ConfirmationRecord } from "@/features/parish-admin/records/types";
 
 async function findConfirmationRecord(parishId: string, recordId: string) {
@@ -35,23 +36,13 @@ export type ConfirmationRecordInput = Omit<
 
 export async function createConfirmationRecord(
   parishId: string,
-  input: ConfirmationRecordInput,
-  encodedBy = "u-admin"
+  input: ConfirmationRecordInput & { annotationNote?: string }
 ): Promise<ConfirmationRecord> {
-  await delay(400);
-  const now = new Date().toISOString();
-  const record: ConfirmationRecord = {
-    ...input,
-    id: `cfm-${Date.now()}`,
-    parishId,
-    encodedBy,
-    createdAt: now,
-    updatedAt: now,
-    status: "Active",
-    certificates: [],
-  };
-  MOCK_CONFIRMATION_RECORDS.push(record);
-  return record;
+  const data = await apiFetch<{ record: ConfirmationRecord }>("/records/confirmation", {
+    method: "POST",
+    body: { ...input, parishId },
+  });
+  return data.record;
 }
 
 export async function updateConfirmationRecord(

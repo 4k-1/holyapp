@@ -11,6 +11,7 @@ const {
 } = require('../utils/recordFields');
 const { findParishRecord } = require('../utils/recordQuery');
 const { listRecordCertificates } = require('./certificateController');
+const { listBaptismAnnotations } = require('../utils/baptismAnnotation');
 
 const LEGITIMACY = {
   legitimate: 'Legitimate',
@@ -176,6 +177,7 @@ async function getBaptism(req, res) {
       return res.status(404).json({ error: 'Record not found.' });
     }
     const record = toBaptismalRecord(row);
+    record.annotations = await listBaptismAnnotations(pool, row.id);
     record.certificates = await listRecordCertificates(req.parishId, 'baptism', row.id);
     res.json({ record });
   } catch (err) {

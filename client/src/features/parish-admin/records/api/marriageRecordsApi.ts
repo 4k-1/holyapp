@@ -1,5 +1,6 @@
 import { MOCK_MARRIAGE_RECORDS } from "@/services/mocks/marriageRecords.mock";
 import { delay } from "@/services/delay";
+import { apiFetch } from "@/lib/api";
 import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCertificate";
 import { recordBelongsToParish } from "@/features/parish/parishApi";
 import type {
@@ -58,25 +59,13 @@ function assignPartyIds(parties: MarriagePartyInput[], marriageId: string): Marr
 
 export async function createMarriageRecord(
   parishId: string,
-  input: MarriageRecordInput,
-  encodedBy = "u-admin"
+  input: MarriageRecordInput & { annotationNote?: string }
 ): Promise<MarriageRecord> {
-  await delay(400);
-  const now = new Date().toISOString();
-  const id = `mrg-${Date.now()}`;
-  const record: MarriageRecord = {
-    ...input,
-    id,
-    parishId,
-    parties: assignPartyIds(input.parties, id),
-    encodedBy,
-    createdAt: now,
-    updatedAt: now,
-    status: "Active",
-    certificates: [],
-  };
-  MOCK_MARRIAGE_RECORDS.push(record);
-  return record;
+  const data = await apiFetch<{ record: MarriageRecord }>("/records/marriage", {
+    method: "POST",
+    body: { ...input, parishId },
+  });
+  return data.record;
 }
 
 export async function updateMarriageRecord(
