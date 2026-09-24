@@ -27,6 +27,9 @@ const TITLES = {
   death: 'Certificate of Death',
 };
 
+const VERIFY_STATES = new Set(['valid', 'superseded', 'invalid']);
+const VERIFY_HASH = /^[a-f0-9]{32}$/;
+
 function sendError(res, err) {
   console.error(err);
   return res.status(500).json({ error: 'Could not complete this certificate.' });
@@ -403,6 +406,11 @@ async function listMyCertificates(req, res) {
 }
 
 async function verifyCertificate(req, res) {
+  const hash = String(req.params.hash || '').trim().toLowerCase();
+  if (!VERIFY_HASH.test(hash)) {
+    return res.status(404).json({ error: 'No certificate matches this code.' });
+  }
+
   try {
     const result = await pool.query(
       `SELECT c.status, c.certificate_code, c.holder_name, c.record_type, c.issued_at,
@@ -411,10 +419,15 @@ async function verifyCertificate(req, res) {
        FROM certificate c
        JOIN parish p ON p.id = c.parish_id
        WHERE c.hash = $1`,
-      [req.params.hash]
+      [hash]
     );
+    if (result.rowCount !== 1) {
+      return res.status(404).json({ error: 'No certificate matches this code.' });
+    }
     const row = result.rows[0];
-    if (!row) return res.status(404).json({ error: 'No certificate matches this code.' });
+    if (!VERIFY_STATES.has(row.status)) {
+      return res.status(503).json({ error: 'This certificate could not be checked.' });
+    }
     const snapshot = row.snapshot && typeof row.snapshot === 'object' ? row.snapshot : {};
     return res.json({
       status: row.status,
@@ -445,7 +458,8 @@ async function verifyCertificate(req, res) {
       },
     });
   } catch (err) {
-    return sendError(res, err);
+    console.error(err);
+    return res.status(503).json({ error: 'This certificate could not be checked.' });
   }
 }
 

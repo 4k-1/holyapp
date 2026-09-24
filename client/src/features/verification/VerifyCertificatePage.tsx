@@ -40,20 +40,34 @@ const SEALS: Record<string, string> = {
   mtcarmel: mtcarmellogo,
 };
 
-const statusCopy: Record<Verification["status"], { title: string; detail: string }> = {
+const statusCopy: Record<Verification["status"], { title: string; detail: string; tone: string }> = {
   valid: {
     title: "Valid certificate",
     detail: "This certificate is the current extract from the parish register.",
+    tone: "border-[#1a3d2b]/20 text-[#1a3d2b]",
   },
   superseded: {
     title: "Superseded certificate",
     detail: "A newer certificate was issued for this record. This copy is no longer the current one.",
+    tone: "border-[#8a5a12]/30 text-[#8a5a12]",
   },
   invalid: {
     title: "Revoked certificate",
     detail: "The parish office has revoked this certificate.",
+    tone: "border-[#7A3C35]/25 text-[#7A3C35]",
   },
 };
+
+const VERIFY_STATES = new Set<Verification["status"]>(["valid", "superseded", "invalid"]);
+
+function isVerification(payload: Partial<Verification>): payload is Verification {
+  return Boolean(
+    payload.status &&
+      VERIFY_STATES.has(payload.status) &&
+      payload.holderName &&
+      payload.code
+  );
+}
 
 function apiBases() {
   const configured = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
@@ -68,17 +82,33 @@ function apiBases() {
 
 async function loadVerification(hash: string): Promise<Verification> {
   const path = `/certificates/verify/${encodeURIComponent(hash)}`;
+  let unavailable = false;
+
   for (const base of apiBases()) {
     try {
       const response = await fetch(`${base}${path}`);
       const text = await response.text();
-      if (!text.trim().startsWith("{")) continue;
+      if (!text.trim().startsWith("{")) {
+        unavailable = true;
+        continue;
+      }
       const payload = JSON.parse(text) as { error?: string } & Partial<Verification>;
-      if (!response.ok || !payload.status || !payload.holderName) continue;
-      return payload as Verification;
-    } catch {
-      /* this address is unreachable from the phone; try the next one */
+      if (response.status === 404) {
+        throw new Error("Certificate not found.");
+      }
+      if (!response.ok || !isVerification(payload)) {
+        unavailable = true;
+        continue;
+      }
+      return payload;
+    } catch (err) {
+      if (err instanceof Error && err.message === "Certificate not found.") throw err;
+      unavailable = true;
     }
+  }
+
+  if (unavailable) {
+    throw new Error("This certificate could not be checked. Try again in a moment.");
   }
   throw new Error("Certificate not found.");
 }
@@ -110,17 +140,18 @@ export function VerifyCertificatePage() {
         ) : error || !data || !copy ? (
           <div className="rounded-2xl border border-[#e4ddd2] bg-white p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8a8175]">Certificate check</p>
-            <h1 className="mt-2 font-serif text-2xl font-bold text-[#1d1a16]">Certificate not found</h1>
+            <h1 className="mt-2 font-serif text-2xl font-bold text-[#1d1a16]">
+              {error instanceof Error && error.message.startsWith("This certificate could not be checked")
+                ? "Could not check this certificate"
+                : "Certificate not found"}
+            </h1>
+            {error instanceof Error && error.message.startsWith("This certificate could not be checked") && (
+              <p className="mt-2 text-sm text-[#5c564e]">{error.message}</p>
+            )}
           </div>
         ) : (
           <>
-            <div
-              className={`mb-4 rounded-2xl border px-4 py-3 ${
-                data.status === "valid"
-                  ? "border-[#1a3d2b]/20 bg-white text-[#1a3d2b]"
-                  : "border-[#7A3C35]/25 bg-white text-[#7A3C35]"
-              }`}
-            >
+            <div className={`mb-4 rounded-2xl border bg-white px-4 py-3 ${copy.tone}`}>
               <p className="font-serif text-xl font-bold">{copy.title}</p>
               <p className="mt-1 text-sm">{copy.detail}</p>
               {data.reason && <p className="mt-2 text-sm">{data.reason}</p>}

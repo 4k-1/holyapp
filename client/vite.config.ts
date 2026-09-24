@@ -9,6 +9,8 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
+    allowedHosts: true,
     proxy: {
       "/certificates": {
         target: "http://127.0.0.1:5000",
