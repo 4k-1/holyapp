@@ -1,4 +1,4 @@
-export type NotificationKind = "request" | "payment" | "schedule" | "intention" | "donation";
+export type NotificationKind = "request" | "payment" | "schedule" | "intention" | "donation" | "staff";
 
 export interface ParishNotification {
   id: string;

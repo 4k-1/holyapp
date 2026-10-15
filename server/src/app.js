@@ -35,6 +35,7 @@ const platformRoutes = require('./routes/platformRoutes');
 const recordsRoutes = require('./routes/recordsRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/auth', authRoutes);
 app.use('/rbac', rbacRoutes);
 app.use('/parish', parishRoutes);
@@ -45,6 +46,7 @@ app.use('/platform', platformRoutes);
 app.use('/records', recordsRoutes);
 app.use('/requests', requestRoutes);
 app.use('/certificates', certificateRoutes);
+app.use('/notifications', notificationRoutes);
 
 const { frontendUrl } = require('./utils/frontendUrl');
 const PORT = process.env.PORT || 5000;

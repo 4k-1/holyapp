@@ -48,7 +48,7 @@ export function AdminNotificationsPage() {
         (n) =>
           n.title.toLowerCase().includes(q) ||
           n.body.toLowerCase().includes(q) ||
-          NOTIFICATION_KIND_LABEL[n.kind].toLowerCase().includes(q)
+          (NOTIFICATION_KIND_LABEL[n.kind] ?? "").toLowerCase().includes(q)
       );
     }
 

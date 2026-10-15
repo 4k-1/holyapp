@@ -1,6 +1,4 @@
-import { MOCK_NOTIFICATIONS } from "@/services/mocks/notifications.mock";
-import { recordBelongsToParish } from "@/features/parish/parishApi";
-import { delay } from "@/services/delay";
+import { apiFetch } from "@/lib/api";
 import type { ParishNotification } from "@/features/parish-admin/notifications/types";
 
 function byUnreadThenNewest(a: ParishNotification, b: ParishNotification) {
@@ -8,41 +6,27 @@ function byUnreadThenNewest(a: ParishNotification, b: ParishNotification) {
   return a.createdAt < b.createdAt ? 1 : -1;
 }
 
-export async function listNotifications(parishId: string): Promise<ParishNotification[]> {
-  await delay(180);
-  const out: ParishNotification[] = [];
-  for (const n of MOCK_NOTIFICATIONS) {
-    if (await recordBelongsToParish(n.parishId, parishId)) out.push(n);
-  }
-  return out.slice().sort(byUnreadThenNewest);
+export async function listNotifications(_parishId: string): Promise<ParishNotification[]> {
+  const data = await apiFetch<{ notifications: ParishNotification[] }>("/notifications");
+  return (data.notifications ?? []).slice().sort(byUnreadThenNewest);
 }
 
-export async function getUnreadNotificationCount(parishId: string): Promise<number> {
-  await delay(80);
-  let count = 0;
-  for (const n of MOCK_NOTIFICATIONS) {
-    if (!n.read && (await recordBelongsToParish(n.parishId, parishId))) count += 1;
-  }
-  return count;
+export async function getUnreadNotificationCount(_parishId: string): Promise<number> {
+  const data = await apiFetch<{ count: number }>("/notifications/unread-count");
+  return data.count ?? 0;
 }
 
 export async function markNotificationRead(
-  parishId: string,
+  _parishId: string,
   notificationId: string
 ): Promise<ParishNotification> {
-  await delay(120);
-  for (const n of MOCK_NOTIFICATIONS) {
-    if (n.id === notificationId && (await recordBelongsToParish(n.parishId, parishId))) {
-      n.read = true;
-      return { ...n };
-    }
-  }
-  throw new Error(`Notification ${notificationId} not found`);
+  const data = await apiFetch<{ notification: ParishNotification }>(
+    `/notifications/${encodeURIComponent(notificationId)}/read`,
+    { method: "PATCH" }
+  );
+  return data.notification;
 }
 
-export async function markAllNotificationsRead(parishId: string): Promise<void> {
-  await delay(200);
-  for (const n of MOCK_NOTIFICATIONS) {
-    if (await recordBelongsToParish(n.parishId, parishId)) n.read = true;
-  }
+export async function markAllNotificationsRead(_parishId: string): Promise<void> {
+  await apiFetch("/notifications/read-all", { method: "PATCH" });
 }
