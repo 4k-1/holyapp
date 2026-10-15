@@ -41,6 +41,7 @@ function mapParish(row: BackendParish): Parish {
     contact: row.contact ?? "",
     email: row.email ?? "",
     sealUrl: row.seal_url ?? LOCAL_SEALS[row.slug],
+    backgroundImageUrl: LOCAL_SEALS[row.slug] ?? row.seal_url ?? undefined,
     tagline: row.tagline ?? LOCAL_TAGLINES[row.slug],
     createdAt: row.created_at ?? "",
     updatedAt: row.updated_at ?? "",
