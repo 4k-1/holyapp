@@ -57,7 +57,12 @@ export function AdminRequestDetailModal({
   const subjectName = request.details?.subjectName ?? request.requesterId;
   const copies = getRequestCopyCount(request);
   const fee = request.payment?.amount ?? 100 * copies;
-  const method = request.payment?.method ?? "—";
+  const method =
+    request.payment?.method === "gcash"
+      ? "GCash"
+      : request.payment?.method === "cash"
+        ? "Cash"
+        : request.payment?.method ?? "—";
   const details = request.details;
   const { data: linked } = useAsync(
     () =>
@@ -221,6 +226,14 @@ export function AdminRequestDetailModal({
                   <div className="mt-0.5 text-admin-body text-admin-ink">{method}</div>
                 </div>
               </div>
+              {request.payment?.status === "paid" && (
+                <p className="mt-3 text-admin-support text-admin-green-700">
+                  Receipt {request.payment.receiptNumber || "issued"}
+                  {request.payment.paidAt
+                    ? ` · ${new Date(request.payment.paidAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`
+                    : ""}
+                </p>
+              )}
             </div>
           </div>
 

@@ -10,6 +10,12 @@ const pool = require('./config/db');
 
 const app = express();
 app.use(cors());
+const { handlePaymongoWebhook } = require('./controllers/paymongoController');
+app.post(
+  '/payments/paymongo/webhook',
+  express.raw({ type: () => true, limit: '1mb' }),
+  handlePaymongoWebhook
+);
 app.use(express.json());
 
 app.get('/health', (req, res) => {

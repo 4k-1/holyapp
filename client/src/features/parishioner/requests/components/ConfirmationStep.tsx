@@ -27,8 +27,8 @@ export function ConfirmationStep() {
 
       <h2 className="mb-1.5 font-serif text-2xl font-bold text-ink">Request submitted</h2>
       <p className="mx-auto mb-6 max-w-sm text-sm text-ink-muted">
-        We'll email you at each step. Once staff approve your record match, you'll be asked to pay the certificate
-        fee — no payment needed right now.
+        We'll email you at each step. Once staff match your record, pay the certificate fee through GCash.
+        No payment is needed until then.
       </p>
 
       <div className="relative mx-auto flex max-w-md pt-1">

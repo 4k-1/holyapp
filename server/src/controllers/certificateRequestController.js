@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { optionalUuid } = require('../utils/recordFields');
+const { feeAmount } = require('../utils/serviceFee');
 
 const SACRAMENTS = ['baptism', 'confirmation', 'marriage', 'death'];
 const DELIVERIES = ['pickup', 'digital'];
@@ -10,19 +11,6 @@ const RECORD_TABLES = {
   marriage: 'marriage',
   death: 'death',
 };
-const FEE_NAMES = {
-  baptism: 'Baptismal Certificate',
-  confirmation: 'Confirmation Certificate',
-  marriage: 'Marriage Certificate',
-  death: 'Death Certificate',
-};
-const FEE_DEFAULTS = {
-  baptism: 100,
-  confirmation: 100,
-  marriage: 150,
-  death: 100,
-};
-
 const REQUEST_COLUMNS = `
   r.id, r.parish_id, r.request_type, r.record_type, r.record_id, r.certificate_id,
   r.purpose, r.copies, r.status, r.rejection_reason, r.requested_by, r.processed_by,
@@ -30,6 +18,9 @@ const REQUEST_COLUMNS = `
   pay.status AS payment_status,
   pay.amount_due,
   pay.payment_type,
+  pay.receipt_number,
+  pay.receipt_url,
+  pay.paid_at,
   cert.id AS issued_certificate_id,
   cert.certificate_code AS issued_certificate_code,
   cert.status AS issued_certificate_status
@@ -38,7 +29,7 @@ const REQUEST_COLUMNS = `
 const REQUEST_FROM = `
   FROM certificate_request r
   LEFT JOIN LATERAL (
-    SELECT status, amount_due, payment_type
+    SELECT status, amount_due, payment_type, receipt_number, receipt_url, paid_at
     FROM payment
     WHERE certificate_request_id = r.id
     ORDER BY created_at DESC
@@ -173,6 +164,9 @@ function toCertificateRequest(row) {
         status: row.payment_status,
         amount: Number(row.amount_due),
         method: row.payment_type || undefined,
+        receiptNumber: row.receipt_number || undefined,
+        receiptUrl: row.receipt_url || undefined,
+        paidAt: row.paid_at ? new Date(row.paid_at).toISOString() : undefined,
       }
     : null;
 
@@ -274,14 +268,9 @@ async function listMyRequests(req, res) {
   }
 }
 
-async function feeAmount(db, parishId, sacrament, copies) {
-  const named = await db.query(
-    'SELECT amount FROM service_fee WHERE parish_id = $1 AND service_name = $2',
-    [parishId, FEE_NAMES[sacrament]]
-  );
-  const base = named.rows[0] ? Number(named.rows[0].amount) : FEE_DEFAULTS[sacrament];
-  const count = Math.max(1, Number(copies) || 1);
-  return Math.round(base * count * 100) / 100;
+function receiptNumberFor(requestId) {
+  const compact = String(requestId).replace(/-/g, '').slice(0, 10).toUpperCase();
+  return `HA-${compact}`;
 }
 
 async function rollback(client) {
@@ -503,9 +492,10 @@ async function confirmPayment(req, res) {
            amount_tendered = amount_due,
            change = 0,
            collected_by = $1,
-           paid_at = NOW()
+           paid_at = NOW(),
+           receipt_number = COALESCE(receipt_number, $3)
        WHERE id = $2`,
-      [req.user.id, row.id]
+      [req.user.id, row.id, receiptNumberFor(request.id)]
     );
     await client.query('COMMIT');
 
@@ -537,4 +527,5 @@ module.exports = {
   confirmPayment,
   toCertificateRequest,
   loadRequest,
+  receiptNumberFor,
 };

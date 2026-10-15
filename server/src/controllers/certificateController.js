@@ -4,7 +4,8 @@ const QRCode = require('qrcode');
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { frontendUrl } = require('../utils/frontendUrl');
-const { loadRequest, toCertificateRequest } = require('./certificateRequestController');
+const { loadRequest, toCertificateRequest, receiptNumberFor } = require('./certificateRequestController');
+const { feeAmount } = require('../utils/serviceFee');
 
 const RECORD_TABLES = {
   baptism: 'baptism',
@@ -630,13 +631,36 @@ function issueFromRecord(recordType) {
       ]);
       const record = found.rows[0];
       if (!record) throw httpError(404, 'Record not found.');
-      const request = {
-        id: null,
-        record_type: recordType,
-        record_id: record.id,
-        subject_details: { subjectName: holderFromRow(recordType, record) },
-      };
-      await issueCertificateRow(client, request, req.user.id, req.parishId);
+      if (record.archived_at) throw httpError(400, 'Archived records cannot be issued from.');
+
+      const holder = holderFromRow(recordType, record);
+      const details = { subjectName: holder };
+      const created = await client.query(
+        `INSERT INTO certificate_request (
+           parish_id, request_type, record_type, record_id, purpose, copies,
+           status, requested_by, processed_by, delivery_method, subject_details
+         )
+         VALUES ($1, 'walkin', $2, $3, $4, 1, 'processing', $5, $5, 'digital', $6::jsonb)
+         RETURNING *`,
+        [req.parishId, recordType, record.id, 'Walk-in issuance', req.user.id, JSON.stringify(details)]
+      );
+      const request = created.rows[0];
+      const amount = await feeAmount(client, req.parishId, recordType, 1);
+      await client.query(
+        `INSERT INTO payment (
+           certificate_request_id, payment_type, amount_due, amount_tendered, change,
+           status, collected_by, paid_at, receipt_number
+         )
+         VALUES ($1, 'cash', $2, $2, 0, 'paid', $3, NOW(), $4)`,
+        [request.id, amount, req.user.id, receiptNumberFor(request.id)]
+      );
+      const issued = await issueCertificateRow(client, request, req.user.id, req.parishId);
+      await client.query(
+        `UPDATE certificate_request
+         SET status = 'released', certificate_id = $1, updated_at = NOW()
+         WHERE id = $2`,
+        [issued.id, request.id]
+      );
       await client.query('COMMIT');
       await writeAudit({
         parishId: req.parishId,

@@ -11,6 +11,11 @@ const {
   rejectRequest,
   confirmPayment,
 } = require('../controllers/certificateRequestController');
+const {
+  startGcashCheckout,
+  syncGcashPayment,
+  getReceipt,
+} = require('../controllers/paymongoController');
 const { issueDigital, markReady, releasePickup } = require('../controllers/certificateController');
 
 const router = express.Router();
@@ -25,6 +30,9 @@ const office = [
 router.post('/', ...parishioner, createRequest);
 router.get('/mine', ...parishioner, listMyRequests);
 router.get('/', ...office, listParishRequests);
+router.get('/:id/receipt', authenticate, scopeParish, requireParish, getReceipt);
+router.post('/:id/gcash', ...parishioner, startGcashCheckout);
+router.post('/:id/gcash/sync', ...parishioner, syncGcashPayment);
 router.get('/:id', ...office, getRequest);
 router.post('/:id/link', ...office, linkRequest);
 router.post('/:id/reject', ...office, rejectRequest);

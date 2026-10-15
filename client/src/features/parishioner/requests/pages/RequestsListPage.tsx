@@ -1,12 +1,29 @@
-import { Link, useOutletContext } from "react-router-dom";
-import { listRequests } from "@/features/parishioner/requests/api/requestsApi";
+import { useEffect, useRef } from "react";
+import { Link, useOutletContext, useSearchParams } from "react-router-dom";
+import { listRequests, syncGcashPayment } from "@/features/parishioner/requests/api/requestsApi";
 import { useAsync } from "@/hooks/useAsync";
 import { RequestDetailCard } from "@/features/parishioner/requests/components/RequestDetailCard";
 import type { Parish } from "@/types";
 
 export function RequestsListPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
-  const { data: requests = [], loading } = useAsync(() => listRequests(parish.id), [parish.id]);
+  const [params, setParams] = useSearchParams();
+  const { data: requests = [], loading, refetch } = useAsync(() => listRequests(parish.id), [parish.id]);
+  const syncing = useRef(false);
+
+  useEffect(() => {
+    const requestId = params.get("request");
+    const paid = params.get("paid");
+    if (!requestId || paid !== "1" || syncing.current) return;
+    syncing.current = true;
+    void syncGcashPayment(requestId)
+      .catch(() => null)
+      .finally(() => {
+        setParams({}, { replace: true });
+        refetch();
+        syncing.current = false;
+      });
+  }, [params, refetch, setParams]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
