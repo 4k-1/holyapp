@@ -36,7 +36,7 @@ export interface IssuedRecordCertificate {
   code: string;
 }
 
-export type LegitimacyStatus = "Legitimate" | "Illegitimate" | "Natural";
+export type LegitimacyStatus = "Legitimate" | "Illegitimate";
 
 /** Sacraments that record sponsors/godparents — matches the DB's sacrament_sponsor_assignment.sacrament_type. */
 export type SponsorSacramentType = "baptism" | "confirmation" | "marriage";

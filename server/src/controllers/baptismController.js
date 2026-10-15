@@ -22,7 +22,7 @@ const LEGITIMACY = {
 function legitimacyToDb(value) {
   if (value == null || String(value).trim() === '') return null;
   const key = String(value).trim().toLowerCase();
-  if (!LEGITIMACY[key]) {
+  if (key === 'natural' || !LEGITIMACY[key]) {
     throw httpError(400, 'Legitimacy status is not valid.');
   }
   return key;

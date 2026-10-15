@@ -126,7 +126,10 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       placeOfBirth: existing.placeOfBirth ?? "",
       dateOfBaptism: existing.dateOfBaptism,
       placeOfBaptism: existing.placeOfBaptism,
-      legitimacyStatus: existing.legitimacyStatus ?? "",
+      legitimacyStatus:
+        existing.legitimacyStatus === "Legitimate" || existing.legitimacyStatus === "Illegitimate"
+          ? existing.legitimacyStatus
+          : "",
       address: existing.address ?? "",
       minister: existing.minister,
       fatherLastName: existing.fatherLastName,
@@ -301,7 +304,6 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
                 <option value="">—</option>
                 <option value="Legitimate">Legitimate</option>
                 <option value="Illegitimate">Illegitimate</option>
-                <option value="Natural">Natural</option>
               </AdminSelect>
             </AdminField>
           </AdminFieldGroup>
