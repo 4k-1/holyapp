@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AdminInput } from "@/features/parish-admin/components/AdminForm";
 import {
+  confirmIntention,
   getMassIntentionCapacity,
   listAdminMassSlots,
   markIntentionSaid,
@@ -65,6 +66,16 @@ export function AdminMassIntentionsPage() {
   function goToToday() {
     setFrom(today);
     setTo(today);
+  }
+
+  async function handleConfirm(intention: MassIntentionRequest) {
+    setMarkingId(intention.id);
+    try {
+      await confirmIntention(intention.id);
+      refetch();
+    } finally {
+      setMarkingId(null);
+    }
   }
 
   async function handleMarkSaid(intention: MassIntentionRequest) {
@@ -145,6 +156,7 @@ export function AdminMassIntentionsPage() {
               slot={slot}
               markingId={markingId}
               onAddRequest={() => setBookingSlot(slot)}
+              onConfirm={handleConfirm}
               onMarkSaid={handleMarkSaid}
             />
           ))}
@@ -160,6 +172,7 @@ export function AdminMassIntentionsPage() {
                 slot={selectedSlot}
                 markingId={markingId}
                 onAddRequest={() => setBookingSlot(selectedSlot)}
+                onConfirm={handleConfirm}
                 onMarkSaid={handleMarkSaid}
               />
             ) : (

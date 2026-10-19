@@ -1,9 +1,14 @@
-import { MOCK_MASS_SCHEDULE } from "@/services/mocks/massSchedule.mock";
-import { delay } from "@/services/delay";
+import { apiFetch } from "@/lib/api";
 import type { MassScheduleEntry } from "@/types";
 
-/** Only this file is allowed to import MOCK_MASS_SCHEDULE. */
 export async function listMassSchedule(): Promise<MassScheduleEntry[]> {
-  await delay(150);
-  return MOCK_MASS_SCHEDULE;
+  const data = await apiFetch<{ schedule: MassScheduleEntry[] }>("/schedule/mass-times");
+  return data.schedule ?? [];
+}
+
+export async function listMassTimesForDate(date: string): Promise<{ times: string[]; label: string }> {
+  const data = await apiFetch<{ times?: string[]; label?: string }>(
+    `/schedule/mass-times?date=${encodeURIComponent(date)}`
+  );
+  return { times: data.times ?? [], label: data.label ?? "" };
 }

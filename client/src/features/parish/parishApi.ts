@@ -41,6 +41,7 @@ function mapParish(row: BackendParish): Parish {
     contact: row.contact ?? "",
     email: row.email ?? "",
     sealUrl: row.seal_url ?? LOCAL_SEALS[row.slug],
+    backgroundImageUrl: LOCAL_SEALS[row.slug] ?? row.seal_url ?? undefined,
     tagline: row.tagline ?? LOCAL_TAGLINES[row.slug],
     createdAt: row.created_at ?? "",
     updatedAt: row.updated_at ?? "",
@@ -63,9 +64,13 @@ export async function searchParishes(query: string): Promise<Parish[]> {
   const all = await listParishes();
   const q = query.trim().toLowerCase();
   if (!q) return all;
-  return all.filter(
-    (p) => p.name.toLowerCase().includes(q) || p.address.toLowerCase().includes(q)
-  );
+  const qCompact = q.replace(/\s+/g, "");
+  return all.filter((p) => {
+    const name = p.name.toLowerCase();
+    const address = p.address.toLowerCase();
+    const slug = p.slug.toLowerCase();
+    return name.includes(q) || address.includes(q) || slug.includes(qCompact);
+  });
 }
 
 /** Clear cache after seeds/migrations so the UI picks up new parishes. */

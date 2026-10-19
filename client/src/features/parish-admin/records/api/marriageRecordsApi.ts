@@ -1,35 +1,32 @@
-import { MOCK_MARRIAGE_RECORDS } from "@/services/mocks/marriageRecords.mock";
-import { delay } from "@/services/delay";
-import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCertificate";
-import { recordBelongsToParish } from "@/features/parish/parishApi";
+import { apiFetch, ApiError } from "@/lib/api";
 import type {
   MarriageConsentPerson,
   MarriageParty,
   MarriageRecord,
 } from "@/features/parish-admin/records/types";
 
-async function findMarriageRecord(parishId: string, recordId: string) {
-  for (const r of MOCK_MARRIAGE_RECORDS) {
-    if (r.id === recordId && (await recordBelongsToParish(r.parishId, parishId))) return r;
-  }
-  return undefined;
-}
-
-export async function listMarriageRecords(parishId: string): Promise<MarriageRecord[]> {
-  await delay(200);
-  const out: MarriageRecord[] = [];
-  for (const r of MOCK_MARRIAGE_RECORDS) {
-    if (await recordBelongsToParish(r.parishId, parishId)) out.push(r);
-  }
-  return out;
+export async function listMarriageRecords(
+  _parishId: string,
+  options?: { archived?: boolean }
+): Promise<MarriageRecord[]> {
+  const query = options?.archived ? "?archived=1" : "";
+  const data = await apiFetch<{ records: MarriageRecord[] }>(`/records/marriage${query}`);
+  return data.records ?? [];
 }
 
 export async function getMarriageRecord(
-  parishId: string,
+  _parishId: string,
   recordId: string
 ): Promise<MarriageRecord | undefined> {
-  await delay(150);
-  return findMarriageRecord(parishId, recordId);
+  try {
+    const data = await apiFetch<{ record: MarriageRecord }>(
+      `/records/marriage/${encodeURIComponent(recordId)}`
+    );
+    return data.record;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return undefined;
+    throw err;
+  }
 }
 
 export type MarriageConsentPersonInput = Omit<MarriageConsentPerson, "id">;
@@ -45,38 +42,15 @@ export type MarriageRecordInput = Omit<
   parties: MarriagePartyInput[];
 };
 
-function assignPartyIds(parties: MarriagePartyInput[], marriageId: string): MarriageParty[] {
-  return parties.map((party, i) => ({
-    ...party,
-    id: `${marriageId}-party-${i + 1}`,
-    consentPersons: party.consentPersons.map((c, j) => ({
-      ...c,
-      id: `${marriageId}-party-${i + 1}-consent-${j + 1}`,
-    })),
-  }));
-}
-
 export async function createMarriageRecord(
   parishId: string,
-  input: MarriageRecordInput,
-  encodedBy = "u-admin"
+  input: MarriageRecordInput & { annotationNote?: string }
 ): Promise<MarriageRecord> {
-  await delay(400);
-  const now = new Date().toISOString();
-  const id = `mrg-${Date.now()}`;
-  const record: MarriageRecord = {
-    ...input,
-    id,
-    parishId,
-    parties: assignPartyIds(input.parties, id),
-    encodedBy,
-    createdAt: now,
-    updatedAt: now,
-    status: "Active",
-    certificates: [],
-  };
-  MOCK_MARRIAGE_RECORDS.push(record);
-  return record;
+  const data = await apiFetch<{ record: MarriageRecord }>("/records/marriage", {
+    method: "POST",
+    body: { ...input, parishId },
+  });
+  return data.record;
 }
 
 export async function updateMarriageRecord(
@@ -84,23 +58,36 @@ export async function updateMarriageRecord(
   recordId: string,
   input: MarriageRecordInput
 ): Promise<MarriageRecord> {
-  await delay(400);
-  const record = await findMarriageRecord(parishId, recordId);
-  if (!record) throw new Error(`Record ${recordId} not found`);
-  Object.assign(record, input, {
-    parties: assignPartyIds(input.parties, recordId),
-    updatedAt: new Date().toISOString(),
+  const data = await apiFetch<{ record: MarriageRecord }>(
+    `/records/marriage/${encodeURIComponent(recordId)}`,
+    { method: "PATCH", body: { ...input, parishId } }
+  );
+  return data.record;
+}
+
+export async function archiveMarriageRecord(_parishId: string, recordId: string): Promise<void> {
+  await apiFetch(`/records/marriage/${encodeURIComponent(recordId)}/archive`, {
+    method: "POST",
+    body: {},
   });
-  return { ...record };
+}
+
+export async function unarchiveMarriageRecord(_parishId: string, recordId: string): Promise<void> {
+  await apiFetch(`/records/marriage/${encodeURIComponent(recordId)}/unarchive`, {
+    method: "POST",
+    body: {},
+  });
 }
 
 export async function generateMarriageCertificate(
   parishId: string,
   recordId: string
 ): Promise<MarriageRecord> {
-  await delay(400);
-  const record = await findMarriageRecord(parishId, recordId);
-  if (!record) throw new Error(`Record ${recordId} not found`);
-  appendIssuedCertificate(record, "marriage");
-  return { ...record };
+  await apiFetch(`/records/marriage/${encodeURIComponent(recordId)}/certificates`, {
+    method: "POST",
+    body: {},
+  });
+  const record = await getMarriageRecord(parishId, recordId);
+  if (!record) throw new Error("Record not found.");
+  return record;
 }

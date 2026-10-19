@@ -17,15 +17,18 @@ export interface RecordAnnotation {
   date: string;
   note: string;
   by: string;
+  source?: "auto" | "manual";
   linked?: {
     category: LinkableAnnotationCategory;
     book: string;
     page: string;
     line?: string;
+    recordId?: string;
   };
 }
 
 export interface IssuedRecordCertificate {
+  id?: string;
   type: string;
   date: string;
   by: string;
@@ -33,7 +36,7 @@ export interface IssuedRecordCertificate {
   code: string;
 }
 
-export type LegitimacyStatus = "Legitimate" | "Illegitimate" | "Natural";
+export type LegitimacyStatus = "Legitimate" | "Illegitimate";
 
 /** Sacraments that record sponsors/godparents — matches the DB's sacrament_sponsor_assignment.sacrament_type. */
 export type SponsorSacramentType = "baptism" | "confirmation" | "marriage";

@@ -6,19 +6,19 @@ interface ParishBrandingPanelProps {
 }
 
 export function ParishBrandingPanel({ parish }: ParishBrandingPanelProps) {
-  const hasBackground = Boolean(parish?.backgroundImageUrl);
+  const photo = parish?.backgroundImageUrl || parish?.sealUrl;
   const tagline = parish?.tagline;
 
   return (
     <div
       className="auth-desk__brand h-full w-full"
       style={{
-        backgroundImage: hasBackground ? `url(${parish!.backgroundImageUrl})` : undefined,
+        backgroundImage: photo ? `url(${photo})` : undefined,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
-      {!hasBackground && (
+      {!photo && (
         <div
           className="absolute inset-0"
           style={{
@@ -31,6 +31,13 @@ export function ParishBrandingPanel({ parish }: ParishBrandingPanelProps) {
       <div className="auth-desk__brand-overlay" aria-hidden="true" />
 
       <div className="auth-desk__brand-copy">
+        {parish && photo && (
+          <img
+            src={photo}
+            alt={parish.name}
+            className="auth-desk__brand-photo"
+          />
+        )}
         <p className="mb-3 text-[0.75rem] font-semibold tracking-[0.04em] text-white/65">
           {parish?.name ?? "HolyApp"}
         </p>

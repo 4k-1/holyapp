@@ -1,31 +1,28 @@
-import { appendIssuedCertificate } from "@/features/parish-admin/records/issueCertificate";
-import { recordBelongsToParish } from "@/features/parish/parishApi";
-import { MOCK_BAPTISMAL_RECORDS } from "@/services/mocks/baptismalRecords.mock";
-import { delay } from "@/services/delay";
+import { apiFetch, ApiError } from "@/lib/api";
 import type { BaptismalRecord, RecordAnnotation } from "@/features/parish-admin/records/types";
 
-async function findBaptismalRecord(parishId: string, recordId: string) {
-  for (const r of MOCK_BAPTISMAL_RECORDS) {
-    if (r.id === recordId && (await recordBelongsToParish(r.parishId, parishId))) return r;
-  }
-  return undefined;
-}
-
-export async function listBaptismalRecords(parishId: string): Promise<BaptismalRecord[]> {
-  await delay(200);
-  const out: BaptismalRecord[] = [];
-  for (const r of MOCK_BAPTISMAL_RECORDS) {
-    if (await recordBelongsToParish(r.parishId, parishId)) out.push(r);
-  }
-  return out;
+export async function listBaptismalRecords(
+  _parishId: string,
+  options?: { archived?: boolean }
+): Promise<BaptismalRecord[]> {
+  const query = options?.archived ? "?archived=1" : "";
+  const data = await apiFetch<{ records: BaptismalRecord[] }>(`/records/baptism${query}`);
+  return data.records ?? [];
 }
 
 export async function getBaptismalRecord(
-  parishId: string,
+  _parishId: string,
   recordId: string
 ): Promise<BaptismalRecord | undefined> {
-  await delay(150);
-  return findBaptismalRecord(parishId, recordId);
+  try {
+    const data = await apiFetch<{ record: BaptismalRecord }>(
+      `/records/baptism/${encodeURIComponent(recordId)}`
+    );
+    return data.record;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return undefined;
+    throw err;
+  }
 }
 
 export type BaptismalRecordInput = Omit<
@@ -35,24 +32,13 @@ export type BaptismalRecordInput = Omit<
 
 export async function createBaptismalRecord(
   parishId: string,
-  input: BaptismalRecordInput,
-  encodedBy = "u-admin"
+  input: BaptismalRecordInput
 ): Promise<BaptismalRecord> {
-  await delay(400);
-  const now = new Date().toISOString();
-  const record: BaptismalRecord = {
-    ...input,
-    id: `bap-${Date.now()}`,
-    parishId,
-    encodedBy,
-    createdAt: now,
-    updatedAt: now,
-    status: "Active",
-    certificates: [],
-    annotations: [],
-  };
-  MOCK_BAPTISMAL_RECORDS.push(record);
-  return record;
+  const data = await apiFetch<{ record: BaptismalRecord }>("/records/baptism", {
+    method: "POST",
+    body: { ...input, parishId },
+  });
+  return data.record;
 }
 
 export async function updateBaptismalRecord(
@@ -60,40 +46,48 @@ export async function updateBaptismalRecord(
   recordId: string,
   input: BaptismalRecordInput
 ): Promise<BaptismalRecord> {
-  await delay(400);
-  const record = await findBaptismalRecord(parishId, recordId);
-  if (!record) throw new Error(`Record ${recordId} not found`);
-  Object.assign(record, input, { updatedAt: new Date().toISOString() });
-  return { ...record };
+  const data = await apiFetch<{ record: BaptismalRecord }>(
+    `/records/baptism/${encodeURIComponent(recordId)}`,
+    { method: "PATCH", body: { ...input, parishId } }
+  );
+  return data.record;
 }
 
 export async function generateBaptismalCertificate(
   parishId: string,
   recordId: string
 ): Promise<BaptismalRecord> {
-  await delay(400);
-  const record = await findBaptismalRecord(parishId, recordId);
-  if (!record) throw new Error(`Record ${recordId} not found`);
-  appendIssuedCertificate(record, "baptism");
-  return { ...record };
+  await apiFetch<{ certificates: BaptismalRecord["certificates"] }>(
+    `/records/baptism/${encodeURIComponent(recordId)}/certificates`,
+    { method: "POST", body: {} }
+  );
+  const record = await getBaptismalRecord(parishId, recordId);
+  if (!record) throw new Error("Record not found.");
+  return record;
+}
+
+export async function archiveBaptismalRecord(_parishId: string, recordId: string): Promise<void> {
+  await apiFetch(`/records/baptism/${encodeURIComponent(recordId)}/archive`, {
+    method: "POST",
+    body: {},
+  });
+}
+
+export async function unarchiveBaptismalRecord(_parishId: string, recordId: string): Promise<void> {
+  await apiFetch(`/records/baptism/${encodeURIComponent(recordId)}/unarchive`, {
+    method: "POST",
+    body: {},
+  });
 }
 
 export async function addBaptismalAnnotation(
-  parishId: string,
+  _parishId: string,
   recordId: string,
-  input: Omit<RecordAnnotation, "id" | "by">,
-  by = "Admin Immaculada"
+  input: Omit<RecordAnnotation, "id" | "by">
 ): Promise<BaptismalRecord> {
-  await delay(300);
-  const record = await findBaptismalRecord(parishId, recordId);
-  if (!record) throw new Error(`Record ${recordId} not found`);
-  if (!record.annotations) record.annotations = [];
-
-  record.annotations.push({
-    ...input,
-    id: `ann-${Date.now()}`,
-    by,
-  });
-  record.updatedAt = new Date().toISOString();
-  return { ...record };
+  const data = await apiFetch<{ record: BaptismalRecord }>(
+    `/records/baptism/${encodeURIComponent(recordId)}/annotations`,
+    { method: "POST", body: input }
+  );
+  return data.record;
 }

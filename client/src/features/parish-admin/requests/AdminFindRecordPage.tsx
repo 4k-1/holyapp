@@ -49,9 +49,33 @@ function norm(s: string | undefined) {
 // dates (e.g. "2005-01-18"). Compare a search field against both the raw
 // ISO value and its formatted display so a search doesn't miss an otherwise
 // exact match just because the two sides spell the date differently.
+function calendarDay(value: string | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${parsed.getFullYear()}-${month}-${day}`;
+}
+
+function sameCalendarDay(a: string | undefined, b: string | undefined) {
+  const left = calendarDay(a);
+  const right = calendarDay(b);
+  return Boolean(left && right && left === right);
+}
+
+function displayDate(value: string | undefined) {
+  const day = calendarDay(value);
+  return day ? formatRecordDate(day) : value;
+}
+
 function dateFieldMatches(filterValue: string, isoDate: string) {
   const target = norm(filterValue);
   if (!target) return true;
+  if (sameCalendarDay(filterValue, isoDate)) return true;
   return norm(isoDate).includes(target) || norm(formatRecordDate(isoDate)).includes(target);
 }
 
@@ -64,6 +88,17 @@ function sponsorFieldMatches(filterValue: string, sponsorNames: string[]) {
   return sponsorNames.some((name) => norm(name).includes(target));
 }
 
+function nameMatches(filter: string, full: string) {
+  const target = norm(filter);
+  const hay = norm(full);
+  if (!target) return true;
+  if (hay.includes(target)) return true;
+  const words = target.split(/\s+/).filter((word) => word.length > 1);
+  if (words.length === 0) return false;
+  const hits = words.filter((word) => hay.includes(word)).length;
+  return hits >= Math.min(2, words.length);
+}
+
 function searchRecords(
   records: BaptismalRecord[],
   f: MatchFilters,
@@ -74,7 +109,7 @@ function searchRecords(
     const mother = recordMotherName(rec);
     const father = recordFatherName(rec);
     const sponsorNames = (sponsorsByRecordId[rec.id] ?? []).map(sponsorFullName);
-    if (norm(f.name) && !norm(full).includes(norm(f.name))) return false;
+    if (!nameMatches(f.name, full)) return false;
     if (norm(f.placeOfBirth) && !norm(rec.placeOfBirth).includes(norm(f.placeOfBirth))) return false;
     if (norm(f.mother) && !norm(mother).includes(norm(f.mother))) return false;
     if (norm(f.father) && !norm(father).includes(norm(f.father))) return false;
@@ -101,6 +136,8 @@ function wordOverlap(a: string | undefined, b: string | undefined) {
 
 function matchState(a: string | undefined, b: string | undefined): MatchState {
   if (!a) return "none";
+  if (sameCalendarDay(a, b)) return "match";
+  if (calendarDay(a) && calendarDay(b)) return "miss";
   const ratio = wordOverlap(a, b);
   if (ratio === 1) return "match";
   if (ratio > 0) return "partial";
@@ -117,6 +154,16 @@ const emptyFilters: MatchFilters = {
   sponsor1: "",
   sponsor2: "",
 };
+
+function searchLedger(
+  records: BaptismalRecord[],
+  filters: MatchFilters,
+  sponsorsByRecordId: Record<string, RecordSponsor[]>
+) {
+  const strict = searchRecords(records, filters, sponsorsByRecordId);
+  if (strict.length > 0 || !norm(filters.name)) return strict;
+  return searchRecords(records, { ...emptyFilters, name: filters.name }, sponsorsByRecordId);
+}
 
 export function AdminFindRecordPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -147,6 +194,8 @@ export function AdminFindRecordPage() {
   const [confirmedRecord, setConfirmedRecord] = useState<BaptismalRecord | null>(null);
   const [rejectedNote, setRejectedNote] = useState("");
   const [matchFlash, setMatchFlash] = useState<{ count: number; id: number } | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [rejectError, setRejectError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!matchFlash) return;
@@ -176,7 +225,7 @@ export function AdminFindRecordPage() {
       sponsor2: details?.sponsor2 ?? "",
     };
     setFilters(initial);
-    const found = searchRecords(parishRecords, initial, sponsorsByRecordId);
+    const found = searchLedger(parishRecords, initial, sponsorsByRecordId);
     setResults(found);
     setSeeded(true);
     if (found.length > 0) setMatchFlash({ count: found.length, id: Date.now() });
@@ -210,27 +259,37 @@ export function AdminFindRecordPage() {
   }
 
   function runSearch() {
-    const found = searchRecords(parishRecords, filters, sponsorsByRecordId);
+    const found = searchLedger(parishRecords, filters, sponsorsByRecordId);
     setResults(found);
     flashMatches(found.length);
   }
 
   async function handleLink(record: BaptismalRecord) {
-    await linkRequestToRecord(currentRequest.id, record.id);
-    setReviewRecord(null);
-    setConfirmedRecord(record);
-    setStatus("confirmed");
+    setLinkError(null);
+    try {
+      await linkRequestToRecord(currentRequest.id, record.id);
+      setReviewRecord(null);
+      setConfirmedRecord(record);
+      setStatus("confirmed");
+    } catch (err) {
+      setLinkError(err instanceof Error ? err.message : "Could not link this record.");
+    }
   }
 
   async function handleReject() {
     const note = rejectReason.trim();
-    await rejectAdminRequest(
-      currentRequest.id,
-      note || "No matching baptismal record found in parish register."
-    );
-    setRejectedNote(note);
-    setRejectOpen(false);
-    setStatus("rejected");
+    setRejectError(null);
+    try {
+      await rejectAdminRequest(
+        currentRequest.id,
+        note || "No matching baptismal record found in parish register."
+      );
+      setRejectedNote(note);
+      setRejectOpen(false);
+      setStatus("rejected");
+    } catch (err) {
+      setRejectError(err instanceof Error ? err.message : "Could not reject this request.");
+    }
   }
 
   const columns: AdminTableColumn<BaptismalRecord>[] = [
@@ -448,7 +507,8 @@ export function AdminFindRecordPage() {
       {reviewRecord && (
         <ReviewMatchModal
           requestName={filters.name}
-          requestBirthdate={filters.birthdate}
+          requestBirthdate={displayDate(filters.birthdate)}
+          requestBaptismDate={filters.baptismDate}
           requestBirthplace={filters.placeOfBirth}
           requestMother={filters.mother}
           requestFather={filters.father}
@@ -456,8 +516,12 @@ export function AdminFindRecordPage() {
           requestSponsor2={filters.sponsor2}
           record={reviewRecord}
           recordSponsors={sponsorsByRecordId[reviewRecord.id] ?? []}
-          onClose={() => setReviewRecord(null)}
+          onClose={() => {
+            setLinkError(null);
+            setReviewRecord(null);
+          }}
           onLink={() => handleLink(reviewRecord)}
+          error={linkError}
         />
       )}
 
@@ -465,8 +529,12 @@ export function AdminFindRecordPage() {
         <RejectModal
           reason={rejectReason}
           onReasonChange={setRejectReason}
-          onCancel={() => setRejectOpen(false)}
+          onCancel={() => {
+            setRejectError(null);
+            setRejectOpen(false);
+          }}
           onConfirm={handleReject}
+          error={rejectError}
         />
       )}
     </div>
@@ -476,6 +544,7 @@ export function AdminFindRecordPage() {
 function ReviewMatchModal({
   requestName,
   requestBirthdate,
+  requestBaptismDate,
   requestBirthplace,
   requestMother,
   requestFather,
@@ -485,9 +554,11 @@ function ReviewMatchModal({
   recordSponsors,
   onClose,
   onLink,
+  error,
 }: {
   requestName: string;
   requestBirthdate?: string;
+  requestBaptismDate?: string;
   requestBirthplace?: string;
   requestMother?: string;
   requestFather?: string;
@@ -497,13 +568,14 @@ function ReviewMatchModal({
   recordSponsors: RecordSponsor[];
   onClose: () => void;
   onLink: () => void;
+  error?: string | null;
 }) {
   // Ledger sponsors aren't stored as "Sponsor 1" / "Sponsor 2" slots — the
   // primary assignment (e.g. Ninang) sorts first, so pair it against
   // whichever request field is filled first for a sensible side-by-side.
   const fields: [string, string | undefined, string][] = [
     ["Name of baptized", requestName, recordFullName(record)],
-    ["Birthdate", requestBirthdate, formatRecordDate(record.dateOfBirth)],
+    ["Birthdate", displayDate(requestBirthdate), formatRecordDate(record.dateOfBirth)],
     ["Place of birth", requestBirthplace, record.placeOfBirth ?? ""],
     ["Mother's name", requestMother, recordMotherName(record)],
     ["Father's name", requestFather, recordFatherName(record)],
@@ -600,7 +672,13 @@ function ReviewMatchModal({
               </div>
               <div className="text-admin-body text-admin-ink">
                 {formatRecordDate(record.dateOfBaptism)}{" "}
-                <span className="text-admin-label text-admin-ink-muted">(not stated in request)</span>
+                <span className="text-admin-label text-admin-ink-muted">
+                  {requestBaptismDate
+                    ? sameCalendarDay(requestBaptismDate, record.dateOfBaptism)
+                      ? `(request: ${displayDate(requestBaptismDate)})`
+                      : `(request says ${displayDate(requestBaptismDate)})`
+                    : "(not stated in request)"}
+                </span>
               </div>
             </div>
             {record.minister && (
@@ -614,7 +692,8 @@ function ReviewMatchModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+          {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
           <AdminButton variant="secondary" onClick={onClose}>
             Back to results
           </AdminButton>
@@ -633,11 +712,13 @@ function RejectModal({
   onReasonChange,
   onCancel,
   onConfirm,
+  error,
 }: {
   reason: string;
   onReasonChange: (v: string) => void;
   onCancel: () => void;
   onConfirm: () => void;
+  error?: string | null;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 pt-10">
@@ -669,7 +750,8 @@ function RejectModal({
             className="min-h-[80px] w-full resize-y rounded-[var(--radius)] border border-admin-border bg-admin-surface-alt px-2.5 py-2 text-admin-body text-admin-ink"
           />
         </div>
-        <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+          {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
           <AdminButton variant="secondary" onClick={onCancel}>
             Cancel
           </AdminButton>

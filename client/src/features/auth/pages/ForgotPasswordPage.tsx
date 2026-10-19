@@ -6,6 +6,8 @@ import "@/features/auth/styles/authDesk.css";
 
 export function ForgotPasswordPage() {
   const [searchParams] = useSearchParams();
+  const fromSuperAdmin = searchParams.get("from") === "super-admin";
+  const signInPath = fromSuperAdmin ? "/super-admin/login" : "/login";
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,7 @@ export function ForgotPasswordPage() {
                   If an account exists for <span className="font-semibold text-[var(--auth-ink)]">{email.trim()}</span>,
                   we sent a reset link. With debug mail on, copy the link from the server logs.
                 </p>
-                <Link to="/login" className="auth-desk__link w-fit text-[0.875rem]">
+                <Link to={signInPath} className="auth-desk__link w-fit text-[0.875rem]">
                   ← Back to sign in
                 </Link>
               </div>
@@ -78,7 +80,7 @@ export function ForgotPasswordPage() {
                 </button>
 
                 <p className="border-t border-[var(--auth-border)] pt-5 text-center text-[0.84375rem] text-[var(--auth-ink-soft)]">
-                  <Link to="/login" className="auth-desk__link">
+                  <Link to={signInPath} className="auth-desk__link">
                     Back to sign in
                   </Link>
                 </p>

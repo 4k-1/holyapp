@@ -13,14 +13,20 @@ export function getTrackerState(request: CertificateRequest): TrackerState {
     return { steps: ["Pending", "Rejected"], doneCount: 1, currentIndex: 1, rejected: true, fillPercent: 100 };
   }
 
-  const steps =
-    request.deliveryMethod === "pickup"
+  const walkin = request.origin === "walkin";
+  const steps = walkin
+    ? request.deliveryMethod === "pickup"
+      ? ["Walk-in", "Ready for Pickup", "Released"]
+      : ["Walk-in", "Released"]
+    : request.deliveryMethod === "pickup"
       ? ["Pending", "Approved", "Pay", "Processing", "Ready for Pickup", "Released"]
       : ["Pending", "Approved", "Pay", "Processing", "Released"];
 
   let currentIndex = 0;
 
-  if (request.status === "pending") {
+  if (walkin) {
+    currentIndex = request.status === "released" ? steps.length - 1 : request.pickupReady ? 1 : 0;
+  } else if (request.status === "pending") {
     currentIndex = 0;
   } else if (request.status === "processing") {
     if (!request.payment || request.payment.status === "unpaid") {

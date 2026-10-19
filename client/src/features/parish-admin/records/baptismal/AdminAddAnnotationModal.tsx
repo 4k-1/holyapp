@@ -93,6 +93,7 @@ interface AdminAddAnnotationModalProps {
   existingCategories?: AnnotationCategory[];
   onClose: () => void;
   onSubmit: (input: AddAnnotationInput) => Promise<void>;
+  onRecorded?: () => void;
 }
 
 export function AdminAddAnnotationModal({
@@ -101,6 +102,7 @@ export function AdminAddAnnotationModal({
   existingCategories = [],
   onClose,
   onSubmit,
+  onRecorded,
 }: AdminAddAnnotationModalProps) {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const [category, setCategory] = useState<AnnotationCategory>("Confirmation");
@@ -117,10 +119,12 @@ export function AdminAddAnnotationModal({
   const [searching, setSearching] = useState(false);
   const [selectedHitId, setSelectedHitId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Shared create fields
   const [createPlace, setCreatePlace] = useState(parish.name);
   const [createMinister, setCreateMinister] = useState("");
+  const [createMiddle, setCreateMiddle] = useState(baptismal.middleName?.trim() ?? "");
   const [createBook, setCreateBook] = useState("");
   const [createPage, setCreatePage] = useState("");
   const [createEntry, setCreateEntry] = useState("");
@@ -158,7 +162,7 @@ export function AdminAddAnnotationModal({
     !creating ||
     (Boolean(createMinister.trim() && createBook.trim() && createPage.trim() && createEntry.trim()) &&
       (effectiveLinkedCategory === "Confirmation"
-        ? Boolean(createPlace.trim())
+        ? Boolean(createPlace.trim() && createMiddle.trim())
         : true) &&
       (effectiveLinkedCategory === "Marriage"
         ? Boolean(
@@ -272,7 +276,7 @@ export function AdminAddAnnotationModal({
     if (cat === "Confirmation") {
       const created = await createConfirmationRecord(parish.id, {
         firstName: baptismal.firstName,
-        middleName: baptismal.middleName,
+        middleName: createMiddle.trim(),
         lastName: baptismal.lastName,
         sex: baptismal.sex,
         dateOfBirth: baptismal.dateOfBirth,
@@ -283,6 +287,7 @@ export function AdminAddAnnotationModal({
         motherLastName: baptismal.motherLastName,
         dateOfConfirmation: date,
         placeOfConfirmation: createPlace.trim(),
+        annotationNote: note.trim(),
         minister: createMinister.trim(),
         baptismalRecordId: baptismal.id,
         baptismDate: baptismal.dateOfBaptism,
@@ -310,6 +315,7 @@ export function AdminAddAnnotationModal({
         pageNumber: createPage.trim(),
         entryNumber: createEntry.trim(),
         baptismalRecordId: baptismal.id,
+        annotationNote: note.trim(),
         kin: [],
         sacramentsReceived: [],
       });
@@ -355,6 +361,7 @@ export function AdminAddAnnotationModal({
       bookNumber: createBook.trim(),
       pageNumber: createPage.trim(),
       entryNumber: createEntry.trim(),
+      annotationNote: note.trim(),
       parties: subjectRole === "Groom" ? [subjectParty, spouseParty] : [spouseParty, subjectParty],
     });
     return { book: created.bookNumber, page: created.pageNumber, line: created.entryNumber };
@@ -364,34 +371,34 @@ export function AdminAddAnnotationModal({
     e.preventDefault();
     if (!canSave) return;
 
+    setError(null);
     setSubmitting(true);
     try {
-      let linked: AddAnnotationInput["linked"];
-
       if (creating) {
-        const ref = await createLinkedRecord();
-        linked = {
-          category: effectiveLinkedCategory,
-          book: ref.book,
-          page: ref.page,
-          line: ref.line || undefined,
-        };
-      } else if (linkEntry) {
-        linked = {
-          category: effectiveLinkedCategory,
-          book: linkedBook.trim(),
-          page: linkedPage.trim(),
-          line: linkedLine.trim() || undefined,
-        };
+        await createLinkedRecord();
+        onRecorded?.();
+      } else {
+        let linked: AddAnnotationInput["linked"];
+        if (linkEntry) {
+          const recordId = linkMode === "search" && selectedHitId && isRecordUuid(selectedHitId) ? selectedHitId : undefined;
+          linked = {
+            category: effectiveLinkedCategory,
+            book: linkedBook.trim(),
+            page: linkedPage.trim(),
+            line: linkedLine.trim() || undefined,
+            ...(recordId ? { recordId } : {}),
+          };
+        }
+        await onSubmit({
+          category,
+          date,
+          note: note.trim(),
+          ...(linked ? { linked } : {}),
+        });
       }
-
-      await onSubmit({
-        category,
-        date: formattedDate,
-        note: note.trim(),
-        ...(linked ? { linked } : {}),
-      });
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save this annotation.");
     } finally {
       setSubmitting(false);
     }
@@ -500,7 +507,7 @@ export function AdminAddAnnotationModal({
               <span>
                 <span className="block text-admin-body font-semibold text-admin-ink">Link to register entry</span>
                 <span className="mt-0.5 block text-admin-support leading-relaxed text-admin-ink-muted">
-                  Optional. Search an existing entry, enter book/page/line, or encode a new record at this parish.
+                  Search this parish, enter the book, page, and line from another parish, or encode a new record here.
                 </span>
               </span>
             </label>
@@ -565,6 +572,10 @@ export function AdminAddAnnotationModal({
                 )}
 
                 {linkMode === "manual" && (
+                  <div className="space-y-2.5">
+                    <p className="text-admin-support leading-relaxed text-admin-ink-muted">
+                      Use this when the sacrament was recorded in another parish.
+                    </p>
                   <div className="grid grid-cols-3 gap-2.5">
                     <AdminField label="Book" className="mb-0">
                       <AdminInput
@@ -589,6 +600,7 @@ export function AdminAddAnnotationModal({
                         onChange={(e) => setLinkedLine(e.target.value)}
                       />
                     </AdminField>
+                  </div>
                   </div>
                 )}
 
@@ -659,6 +671,16 @@ export function AdminAddAnnotationModal({
                       </div>
                     )}
 
+                    {effectiveLinkedCategory === "Confirmation" && !baptismal.middleName?.trim() && (
+                      <AdminField label="Middle name" className="mb-0">
+                        <AdminInput
+                          value={createMiddle}
+                          onChange={(e) => setCreateMiddle(e.target.value)}
+                          required
+                        />
+                      </AdminField>
+                    )}
+
                     {(effectiveLinkedCategory === "Confirmation" || effectiveLinkedCategory === "Marriage") && (
                       <AdminField
                         label={
@@ -720,6 +742,11 @@ export function AdminAddAnnotationModal({
           </div>
         </div>
 
+        {error && (
+          <p role="alert" className="px-5 pb-2 text-[0.875rem] text-admin-red-700">
+            {error}
+          </p>
+        )}
         <AdminDialogFooter>
           <AdminButton variant="secondary" type="button" onClick={onClose} disabled={submitting}>
             Cancel
@@ -836,6 +863,10 @@ function SearchLinkPanel({
       )}
     </div>
   );
+}
+
+function isRecordUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 async function searchRegisterEntries(

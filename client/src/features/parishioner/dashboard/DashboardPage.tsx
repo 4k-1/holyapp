@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { listRequests } from "@/features/parishioner/requests/api/requestsApi";
+import { listMyMarriageApplications } from "@/features/parish-admin/marriage-applications/api/marriageApplicationsApi";
 import { useAsync } from "@/hooks/useAsync";
 import { deriveStatusLabel } from "@/features/parishioner/dashboard/deriveStatusLabel";
 import { getStatusPillClasses, getSacramentIconStyle } from "@/features/parishioner/dashboard/statusStyles";
@@ -28,6 +29,7 @@ interface DashboardPageProps {
 
 export function DashboardPage({ parishId, parishSlug, userName }: DashboardPageProps) {
   const { data: requests = [] } = useAsync(() => listRequests(parishId), [parishId]);
+  const { data: marriageApps = [] } = useAsync(() => listMyMarriageApplications(), [parishId]);
   const hasRequests = requests.length > 0;
   const recentRequests = requests.slice(0, 4);
   const newRequestPath = `/${parishSlug}/portal/requests/new`;
@@ -106,6 +108,27 @@ export function DashboardPage({ parishId, parishSlug, userName }: DashboardPageP
               Make a request
             </Link>
           </div>
+        )}
+      </div>
+
+      <div className="mb-6 rounded-[18px] border border-border bg-surface p-6 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="font-serif text-xl font-semibold text-ink">Marriage Application</h2>
+          <Link
+            to={`/${parishSlug}/portal/marriage`}
+            className="shrink-0 text-sm font-semibold text-ink-muted hover:underline"
+          >
+            View status →
+          </Link>
+        </div>
+        {marriageApps.length > 0 ? (
+          <p className="text-sm text-ink-muted">
+            {marriageApps[0].groomName} & {marriageApps[0].brideName} · {marriageApps[0].status.replaceAll("_", " ")}
+          </p>
+        ) : (
+          <p className="text-sm text-ink-muted">
+            No application is on file for your account. Visit the parish office to apply in person.
+          </p>
         )}
       </div>
 

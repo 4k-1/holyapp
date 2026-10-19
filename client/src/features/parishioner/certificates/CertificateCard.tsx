@@ -20,18 +20,33 @@ interface CertificateCardProps {
   certificate: IssuedCertificate;
   onView: (certificate: IssuedCertificate) => void;
   onDownload: (certificate: IssuedCertificate) => void;
+  downloading?: boolean;
 }
 
-export function CertificateCard({ certificate, onView, onDownload }: CertificateCardProps) {
+export function CertificateCard({ certificate, onView, onDownload, downloading = false }: CertificateCardProps) {
   const Icon = sacramentIcons[certificate.sacramentType];
+  const revoked = certificate.state === "invalid";
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
+    <div
+      className={`group relative overflow-hidden rounded-2xl border bg-surface p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg ${
+        revoked ? "border-[#c9a4a0]" : "border-border"
+      }`}
+    >
       <div
         className="pointer-events-none absolute -right-6 -top-6 h-[90px] w-[100px] rounded-full bg-primary/5"
         aria-hidden="true"
       />
-      <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      {revoked && (
+        <span className="absolute right-3 top-3 rounded-full bg-[#7A3C35] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+          Revoked
+        </span>
+      )}
+      <div
+        className={`relative flex h-9 w-9 items-center justify-center rounded-lg ${
+          revoked ? "bg-[#7A3C35]/10 text-[#7A3C35]" : "bg-primary/10 text-primary"
+        }`}
+      >
         <Icon className="h-4 w-4" />
       </div>
       <p className="relative mt-3 font-serif text-[16.5px] font-bold leading-tight text-ink">
@@ -41,6 +56,11 @@ export function CertificateCard({ certificate, onView, onDownload }: Certificate
         {certificate.holderName} · Issued{" "}
         {new Date(certificate.issuedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
       </p>
+      {revoked && (
+        <p className="relative mt-1.5 text-[11.5px] font-medium text-[#7A3C35]">
+          This certificate is no longer valid.
+        </p>
+      )}
       <div className="relative mt-3.5 flex gap-1.5">
       <Button
         variant="outline"
@@ -53,8 +73,9 @@ export function CertificateCard({ certificate, onView, onDownload }: Certificate
         variant="primary"
         className="flex-1 py-2 text-xs active:scale-95"
         onClick={() => onDownload(certificate)}
+        disabled={downloading || revoked}
       >
-        Download
+        {downloading ? "Saving…" : "Download"}
       </Button>
       </div>
     </div>

@@ -63,6 +63,21 @@ export interface Payment {
   status: "unpaid" | "paid";
   amount: number;
   method?: string;
+  receiptNumber?: string;
+  receiptUrl?: string;
+  paidAt?: string;
+}
+
+export interface PaymentReceipt {
+  number: string;
+  requestId: string;
+  parishName: string;
+  subjectName: string;
+  sacramentType: SacramentType;
+  amount: number;
+  method: string;
+  paidAt: string | null;
+  paymongoUrl?: string;
 }
 
 export interface CertificateRequestDetails {
@@ -93,6 +108,11 @@ export interface CertificateRequest {
   rejectionReason?: string;
   /** Pickup only — set when staff confirms print/seal; unlocks "Ready for Pickup" status. */
   pickupReady?: boolean;
+  issuedCertificate?: {
+    id: string;
+    code: string;
+    state: CertificateState;
+  } | null;
 }
 
 /**
@@ -113,6 +133,7 @@ export interface IssuedCertificateFields {
   motherName?: string;
   fatherName?: string;
   notations?: string[];
+  verifyUrl?: string;
 }
 
 export interface IssuedCertificate {

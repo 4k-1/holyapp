@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { startGcashPayment } from "@/features/parishioner/requests/api/requestsApi";
 import { DropletIcon, DoveIcon, HeartIcon, CandleIcon } from "@/components/ui/icons/SacramentIcons";
 import { getSacramentIconStyle } from "@/features/parishioner/dashboard/statusStyles";
 import { getStatusPillClasses } from "@/features/parishioner/dashboard/statusStyles";
@@ -32,6 +34,27 @@ export function RequestDetailCard({ request, parishSlug }: RequestDetailCardProp
   const isReadyForPickup = label === "Ready for Pickup";
   const isReleased = label === "Released";
   const isRejected = label === "Rejected";
+  const isPaid = request.payment?.status === "paid";
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+
+  async function payWithGcash() {
+    if (paying) return;
+    setPaying(true);
+    setPayError(null);
+    try {
+      const result = await startGcashPayment(request.id);
+      if (result.paid) {
+        window.location.reload();
+        return;
+      }
+      if (!result.checkoutUrl) throw new Error("PayMongo did not return a checkout page.");
+      window.location.assign(result.checkoutUrl);
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Could not start GCash payment.");
+      setPaying(false);
+    }
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
@@ -94,7 +117,13 @@ export function RequestDetailCard({ request, parishSlug }: RequestDetailCardProp
 
       {isAwaitingPayment && (
         <div className="mt-4 border-t border-border pt-4">
-          <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[13.5px] font-bold text-white shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] sm:w-auto sm:ml-auto">
+          {payError && <p className="mb-3 text-sm font-medium text-red-700">{payError}</p>}
+          <button
+            type="button"
+            onClick={payWithGcash}
+            disabled={paying}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[13.5px] font-bold text-white shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-60 sm:w-auto sm:ml-auto"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -107,8 +136,19 @@ export function RequestDetailCard({ request, parishSlug }: RequestDetailCardProp
               <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
               <line x1="2.5" y1="10" x2="21.5" y2="10" />
             </svg>
-            Proceed to Payment
+            {paying ? "Opening GCash…" : "Proceed to Payment"}
           </button>
+        </div>
+      )}
+
+      {isPaid && (
+        <div className="mt-4 border-t border-border pt-4">
+          <Link
+            to={`/${parishSlug}/portal/requests/${request.id}/receipt`}
+            className="flex w-full items-center justify-center gap-1 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-semibold text-ink transition-colors hover:bg-surface-alt sm:w-auto sm:ml-auto"
+          >
+            View receipt
+          </Link>
         </div>
       )}
 

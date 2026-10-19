@@ -10,6 +10,7 @@ export const NOTIFICATION_KIND_LABEL: Record<NotificationKind, string> = {
   schedule: "Schedule",
   intention: "Mass intention",
   donation: "Donation",
+  staff: "Staff",
 };
 
 export function formatNotificationTime(iso: string, now = new Date()) {

@@ -58,6 +58,12 @@ export function CertificateViewerModal({ certificate, parish, onClose }: Certifi
           </button>
         </div>
 
+        {certificate.state === "invalid" && (
+          <p className="border-b border-[#c9a4a0] bg-[#f8eeec] px-5 py-2.5 text-sm font-medium text-[#7A3C35]">
+            This certificate has been revoked and is no longer valid.
+          </p>
+        )}
+
         <div className="overflow-y-auto overflow-x-hidden bg-[#ececec] px-4 py-5">
           {loading ? (
             <p className="text-sm text-ink-muted">Loading certificate…</p>

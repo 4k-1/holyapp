@@ -19,6 +19,7 @@ import {
 import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import { AdminIssueCertificateModal } from "@/features/parish-admin/requests/AdminIssueCertificateModal";
 import { AdminReleaseCertificateModal } from "@/features/parish-admin/requests/AdminReleaseCertificateModal";
+import { confirmRequestPayment, revokeIssuedCertificate } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import type { CertificateRequest, Parish, SacramentType } from "@/types";
 
 const sacramentLabels: Record<SacramentType, string> = {
@@ -33,6 +34,7 @@ interface AdminRequestDetailModalProps {
   parish: Parish;
   onClose: () => void;
   onReject?: (request: CertificateRequest) => void;
+  onPaymentRecorded?: (request: CertificateRequest) => void;
   onIssueComplete?: () => void;
   onReleaseComplete?: () => void;
 }
@@ -42,17 +44,25 @@ export function AdminRequestDetailModal({
   parish,
   onClose,
   onReject,
+  onPaymentRecorded,
   onIssueComplete,
   onReleaseComplete,
 }: AdminRequestDetailModalProps) {
   const [issueOpen, setIssueOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
   const statusKey = deriveStatusKey(request);
   const canReject = canRejectRequest(request);
   const subjectName = request.details?.subjectName ?? request.requesterId;
   const copies = getRequestCopyCount(request);
   const fee = request.payment?.amount ?? 100 * copies;
-  const method = request.payment?.method ?? "—";
+  const method =
+    request.payment?.method === "gcash"
+      ? "GCash"
+      : request.payment?.method === "cash"
+        ? "Cash"
+        : request.payment?.method ?? "—";
   const details = request.details;
   const { data: linked } = useAsync(
     () =>
@@ -79,6 +89,32 @@ export function AdminRequestDetailModal({
   function reject() {
     onReject?.(request);
     onClose();
+  }
+
+  async function revokeIssued() {
+    if (!request.issuedCertificate || request.issuedCertificate.state !== "valid") return;
+    const reason = window.prompt("Why is this certificate being revoked?");
+    if (!reason?.trim()) return;
+    setPayError(null);
+    try {
+      await revokeIssuedCertificate(request.issuedCertificate.id, reason.trim());
+      onIssueComplete?.();
+      onClose();
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Could not revoke this certificate.");
+    }
+  }
+  async function recordPayment() {
+    setPaying(true);
+    setPayError(null);
+    try {
+      const updated = await confirmRequestPayment(request.id);
+      onPaymentRecorded?.(updated);
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Could not record this payment.");
+    } finally {
+      setPaying(false);
+    }
   }
 
   return (
@@ -190,6 +226,14 @@ export function AdminRequestDetailModal({
                   <div className="mt-0.5 text-admin-body text-admin-ink">{method}</div>
                 </div>
               </div>
+              {request.payment?.status === "paid" && (
+                <p className="mt-3 text-admin-support text-admin-green-700">
+                  Receipt {request.payment.receiptNumber || "issued"}
+                  {request.payment.paidAt
+                    ? ` · ${new Date(request.payment.paidAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`
+                    : ""}
+                </p>
+              )}
             </div>
           </div>
 
@@ -240,12 +284,13 @@ export function AdminRequestDetailModal({
                   Reject request
                 </AdminButton>
               )}
-              <AdminButton variant="secondary" disabled>
+              <AdminButton variant="secondary" onClick={recordPayment} disabled={paying}>
                 <ClockIcon />
-                Awaiting payment
+                {paying ? "Recording payment..." : "Record cash payment"}
               </AdminButton>
             </>
           )}
+          {payError && <p className="mr-auto text-admin-body text-admin-red-700">{payError}</p>}
 
           {statusKey === "processing" && (
             <AdminButton onClick={() => setIssueOpen(true)}>
@@ -267,9 +312,16 @@ export function AdminRequestDetailModal({
           )}
 
           {(statusKey === "released" || statusKey === "rejected") && (
-            <AdminButton variant="secondary" onClick={onClose}>
-              Close
-            </AdminButton>
+            <>
+              {statusKey === "released" && request.issuedCertificate?.state === "valid" && (
+                <AdminButton variant="danger" onClick={revokeIssued}>
+                  Revoke certificate
+                </AdminButton>
+              )}
+              <AdminButton variant="secondary" onClick={onClose}>
+                Close
+              </AdminButton>
+            </>
           )}
         </div>
       </div>

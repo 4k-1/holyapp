@@ -67,17 +67,29 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
         )}
         {!loading &&
           !error &&
-          results.map((parish) => (
+          results.map((parish) => {
+            const photo = parish.backgroundImageUrl || parish.sealUrl;
+            return (
             <button
               key={parish.id}
               type="button"
               className="auth-desk__result"
               onClick={() => onSelect(parish)}
             >
-              <p className="text-[0.875rem] font-semibold text-[var(--auth-ink)]">{parish.name}</p>
-              <p className="mt-0.5 text-[0.78rem] text-[var(--auth-ink-soft)]">{parish.address}</p>
+              {photo ? (
+                <img src={photo} alt="" className="auth-desk__result-photo" />
+              ) : (
+                <span className="auth-desk__result-photo auth-desk__result-photo--letter" aria-hidden>
+                  {parish.name.charAt(0)}
+                </span>
+              )}
+              <span className="min-w-0">
+                <p className="text-[0.875rem] font-semibold text-[var(--auth-ink)]">{parish.name}</p>
+                <p className="mt-0.5 text-[0.78rem] text-[var(--auth-ink-soft)]">{parish.address}</p>
+              </span>
             </button>
-          ))}
+            );
+          })}
         {!loading && !error && results.length === 0 && (
           <p className="text-[0.84375rem] text-[var(--auth-ink-soft)]">No parishes match your search.</p>
         )}

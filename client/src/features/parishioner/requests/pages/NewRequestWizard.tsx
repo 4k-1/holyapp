@@ -27,15 +27,22 @@ export function NewRequestWizard() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [form, setForm] = useState<RequestFormState>(initialForm);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleNext() {
     if (step === 2) {
       setSubmitting(true);
-      const requesterId = getCurrentUser()?.id;
-      if (!requesterId) throw new Error("Not logged in.");
-      await submitRequest(form, parish.id, requesterId);
-      setSubmitting(false);
-      setStep(3);
+      setError(null);
+      try {
+        const requesterId = getCurrentUser()?.id;
+        if (!requesterId) throw new Error("Not logged in.");
+        await submitRequest(form, parish.id, requesterId);
+        setStep(3);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not submit this request.");
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
     if (step < 3) setStep((s) => (s + 1) as 1 | 2 | 3);
@@ -91,6 +98,8 @@ export function NewRequestWizard() {
 
         {step === 3 && <ConfirmationStep />}
       </div>
+
+      {error && <p className="mt-4 text-sm font-medium text-red-700">{error}</p>}
 
       <div className="mt-6 flex justify-between">
         <Button variant="ghost" onClick={handleBack}>

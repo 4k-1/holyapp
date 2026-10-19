@@ -24,6 +24,7 @@ import { SuperAdminTemplatesPage } from "@/features/super-admin/pages/SuperAdmin
 import { SuperAdminAuditPage } from "@/features/super-admin/pages/SuperAdminAuditPage";
 import { SuperAdminReportsPage } from "@/features/super-admin/pages/SuperAdminReportsPage";
 import { SuperAdminSettingsPage } from "@/features/super-admin/pages/SuperAdminSettingsPage";
+import { VerifyCertificatePage } from "@/features/verification/VerifyCertificatePage";
 
 
 // inside createBrowserRouter([...]) array:
@@ -68,8 +69,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/verify/:hash",
-    // stub — build VerifyPage in features/verification later
-    element: <div className="p-8">Verify page (placeholder)</div>,
+    element: <VerifyCertificatePage />,
   },
   {
     path: "/super-admin/login",

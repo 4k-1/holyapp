@@ -294,6 +294,7 @@ export function AdminRequestsPage() {
             await rejectAdminRequest(r.id);
             refetch();
           }}
+          onPaymentRecorded={() => refetch()}
           onIssueComplete={refetch}
           onReleaseComplete={refetch}
         />

@@ -73,7 +73,7 @@ export function filterConfirmationRecords(
     if (address && !(r.address ?? "").toLowerCase().includes(address)) return false;
     if (mother && !recordMotherName(r).toLowerCase().includes(mother)) return false;
     if (father && !recordFatherName(r).toLowerCase().includes(father)) return false;
-    if (minister && !r.minister.toLowerCase().includes(minister)) return false;
+    if (minister && !(r.minister ?? "").toLowerCase().includes(minister)) return false;
     if (birthdate && r.dateOfBirth !== birthdate) return false;
     return true;
   });

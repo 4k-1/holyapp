@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const { ROLES } = require('../constants/roles');
 const { hashPassword } = require('../utils/password');
 const { writeAudit } = require('../utils/audit');
+const { notifyStaffRoleChange } = require('../utils/notify');
 
 const JOB_TITLES = new Set(['Priest', 'Parish Secretary', 'Admin Staff']);
 const DEV_PASSWORD = 'password123';
@@ -197,6 +198,32 @@ async function updateStaff(req, res) {
       entityId: current.id,
       metadata: { role: nextRole, email },
     });
+
+    const accessChanged = current.role !== nextRole;
+    const titleChanged = jobTitle(current) !== roleTitle;
+    if (accessChanged || titleChanged) {
+      const actor = await pool.query(
+        'SELECT first_name, last_name FROM app_user WHERE id = $1',
+        [req.user.id]
+      );
+      const actorRow = actor.rows[0];
+      const actorName = actorRow
+        ? [actorRow.first_name, actorRow.last_name].filter(Boolean).join(' ')
+        : 'A parish admin';
+      await notifyStaffRoleChange({
+        parishId: req.parishId,
+        actorId: req.user.id,
+        actorName: actorName || 'A parish admin',
+        staffId: current.id,
+        staffName: name,
+        accessChanged,
+        fromAccess: current.role === ROLES.PARISH_ADMIN ? 'admin access' : 'staff access',
+        toAccess: accessRole === 'admin' ? 'admin access' : 'staff access',
+        titleChanged,
+        fromTitle: jobTitle(current),
+        toTitle: roleTitle,
+      });
+    }
 
     const loaded = await loadOfficeUser(req.parishId, current.id);
     res.json({ staff: toStaff(loaded) });

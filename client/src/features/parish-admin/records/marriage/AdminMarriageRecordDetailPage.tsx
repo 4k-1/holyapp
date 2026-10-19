@@ -13,7 +13,8 @@ import {
 } from "@/features/parish-admin/components/AdminRecordDetailSection";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { HeartIcon } from "@/components/ui/icons/SacramentIcons";
-import { generateMarriageCertificate, getMarriageRecord } from "@/features/parish-admin/records/api/marriageRecordsApi";
+import { archiveMarriageRecord, generateMarriageCertificate, getMarriageRecord, unarchiveMarriageRecord } from "@/features/parish-admin/records/api/marriageRecordsApi";
+import { AdminArchiveRecordModal } from "@/features/parish-admin/records/AdminArchiveRecordModal";
 import { AdminGenerateCertificateModal } from "@/features/parish-admin/records/AdminGenerateCertificateModal";
 import { IssuedCertificatesSection } from "@/features/parish-admin/records/IssuedCertificatesSection";
 import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
@@ -48,6 +49,7 @@ export function AdminMarriageRecordDetailPage() {
 
   const { data: record, loading, refetch } = useAsync(() => getMarriageRecord(parish.id, id), [parish.id, id]);
   const [certificateModal, setCertificateModal] = useState<IssuedRecordCertificate | "new" | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   const groom = record ? getMarriageParty(record, "Groom") : undefined;
   const bride = record ? getMarriageParty(record, "Bride") : undefined;
@@ -109,7 +111,7 @@ export function AdminMarriageRecordDetailPage() {
               {couple}
             </h1>
             <p className="mb-2.5 text-admin-body text-admin-ink-muted">
-              Married {formatRecordDate(record.dateOfMarriage)} at {record.placeOfMarriage}
+              Married {formatRecordDate(record.dateOfMarriage)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
@@ -137,14 +139,16 @@ export function AdminMarriageRecordDetailPage() {
                 <EditIcon />
                 Edit
               </AdminButton>
-              <AdminButton
-                variant="danger"
-                className="flex-1"
-                onClick={() => console.info("[mock] archive record", record.id)}
-              >
-                <TrashIcon />
-                Archive
-              </AdminButton>
+              {record.status === "Archived" ? (
+                <AdminButton variant="secondary" className="flex-1" onClick={() => setArchiveOpen(true)}>
+                  Restore
+                </AdminButton>
+              ) : (
+                <AdminButton variant="danger" className="flex-1" onClick={() => setArchiveOpen(true)}>
+                  <TrashIcon />
+                  Archive
+                </AdminButton>
+              )}
             </div>
           )}
         </div>
@@ -156,7 +160,6 @@ export function AdminMarriageRecordDetailPage() {
           {record.timeOfMarriage && (
             <RecordDetailInfoRow label="Time of marriage" value={formatRecordTime(record.timeOfMarriage)} />
           )}
-          <RecordDetailInfoRow label="Place of marriage" value={record.placeOfMarriage} />
           <RecordDetailInfoRow label="Marriage address" value={record.marriageAddress || "—"} />
           <RecordDetailInfoRow label="Minister" value={record.minister} last />
         </div>
@@ -216,6 +219,21 @@ export function AdminMarriageRecordDetailPage() {
         created={formatDateTime(record.createdAt)}
         updated={formatDateTime(record.updatedAt)}
       />
+
+      {archiveOpen && (
+        <AdminArchiveRecordModal
+          recordName={couple}
+          registerLabel="marriage record"
+          intent={record.status === "Archived" ? "restore" : "archive"}
+          onClose={() => setArchiveOpen(false)}
+          onConfirm={() =>
+            (record.status === "Archived"
+              ? unarchiveMarriageRecord(parish.id, record.id)
+              : archiveMarriageRecord(parish.id, record.id)
+            ).then(() => refetch())
+          }
+        />
+      )}
 
       {certificateModal && (
         <AdminGenerateCertificateModal

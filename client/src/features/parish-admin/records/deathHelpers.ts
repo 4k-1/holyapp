@@ -83,7 +83,7 @@ export function filterDeathRecords(records: DeathRecord[], criteria: DeathSearch
 
   return records.filter((r) => {
     if (name && !recordFullName(r).toLowerCase().includes(name)) return false;
-    if (minister && !r.minister.toLowerCase().includes(minister)) return false;
+    if (minister && !(r.minister ?? "").toLowerCase().includes(minister)) return false;
     if (residence && !(r.residence ?? "").toLowerCase().includes(residence)) return false;
     if (dateOfDeath && r.dateOfDeath !== dateOfDeath) return false;
     if (dateOfBurial && r.dateOfBurial !== dateOfBurial) return false;

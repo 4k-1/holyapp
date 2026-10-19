@@ -10,6 +10,12 @@ const pool = require('./config/db');
 
 const app = express();
 app.use(cors());
+const { handlePaymongoWebhook } = require('./controllers/paymongoController');
+app.post(
+  '/payments/paymongo/webhook',
+  express.raw({ type: () => true, limit: '1mb' }),
+  handlePaymongoWebhook
+);
 app.use(express.json());
 
 app.get('/health', (req, res) => {
@@ -32,6 +38,13 @@ const parishesRoutes = require('./routes/parishesRoutes');
 const staffRoutes = require('./routes/staffRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const platformRoutes = require('./routes/platformRoutes');
+const recordsRoutes = require('./routes/recordsRoutes');
+const requestRoutes = require('./routes/requestRoutes');
+const certificateRoutes = require('./routes/certificateRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const scheduleRoutes = require('./routes/scheduleRoutes');
+const intentionRoutes = require('./routes/intentionRoutes');
+const marriageApplicationRoutes = require('./routes/marriageApplicationRoutes');
 app.use('/auth', authRoutes);
 app.use('/rbac', rbacRoutes);
 app.use('/parish', parishRoutes);
@@ -39,6 +52,13 @@ app.use('/parishes', parishesRoutes);
 app.use('/staff', staffRoutes);
 app.use('/audit', auditRoutes);
 app.use('/platform', platformRoutes);
+app.use('/records', recordsRoutes);
+app.use('/requests', requestRoutes);
+app.use('/certificates', certificateRoutes);
+app.use('/notifications', notificationRoutes);
+app.use('/schedule', scheduleRoutes);
+app.use('/intentions', intentionRoutes);
+app.use('/marriage-applications', marriageApplicationRoutes);
 
 const { frontendUrl } = require('./utils/frontendUrl');
 const PORT = process.env.PORT || 5000;
