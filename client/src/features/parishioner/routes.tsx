@@ -10,6 +10,7 @@ import { SacramentalTimelinePage } from "@/features/parishioner/timeline/Sacrame
 import { DonationsPage } from "@/features/parishioner/donations/DonationsPage";
 import { MyIntentionsPage } from "./intentions/MyIntentionsPage";
 import { MassIntentionPage } from "./intentions/MassIntentionPage";
+import { MyMarriageApplicationPage } from "./marriage/MyMarriageApplicationPage";
 export const parishionerRoutes: RouteObject[] = [
   {
     element: <PortalLayout />,
@@ -24,6 +25,7 @@ export const parishionerRoutes: RouteObject[] = [
       { path: "donate", element: <DonationsPage /> },
       { path: "intention", element: <MassIntentionPage /> },
       { path: "intentions", element: <MyIntentionsPage /> },
+      { path: "marriage", element: <MyMarriageApplicationPage /> },
     ],
   },
 ];

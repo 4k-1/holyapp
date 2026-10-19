@@ -17,6 +17,7 @@ interface MassSlotTableProps {
   slot: MassSlotView;
   markingId: string | null;
   onAddRequest: () => void;
+  onConfirm: (intention: MassIntentionRequest) => void;
   onMarkSaid: (intention: MassIntentionRequest) => void;
 }
 
@@ -36,6 +37,7 @@ export function MassSlotTable({
   slot,
   markingId,
   onAddRequest,
+  onConfirm,
   onMarkSaid,
 }: MassSlotTableProps) {
   const totalOffering = useMemo(() => offeringTotal(slot.intentions), [slot.intentions]);
@@ -81,7 +83,16 @@ export function MassSlotTable({
       key: "actions",
       header: "Actions",
       render: (row) =>
-        row.status === "confirmed" ? (
+        row.status === "pending" ? (
+          <button
+            type="button"
+            onClick={() => onConfirm(row)}
+            disabled={markingId === row.id}
+            className="font-semibold text-admin-green-700 hover:underline disabled:opacity-45"
+          >
+            {markingId === row.id ? "Saving…" : "Confirm"}
+          </button>
+        ) : row.status === "confirmed" ? (
           <button
             type="button"
             onClick={() => onMarkSaid(row)}

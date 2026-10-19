@@ -22,6 +22,8 @@ import { AdminLedgersPage } from "@/features/parish-admin/ledgers/AdminLedgersPa
 import { AdminLedgerBookPage } from "@/features/parish-admin/ledgers/AdminLedgerBookPage";
 import { AdminLedgerPageViewer } from "@/features/parish-admin/ledgers/AdminLedgerPageViewer";
 import { AdminMassIntentionsPage } from "@/features/parish-admin/intentions/AdminMassIntentionsPage";
+import { AdminMarriageApplicationsPage } from "@/features/parish-admin/marriage-applications/AdminMarriageApplicationsPage";
+import { AdminMarriageApplicationDetailPage } from "@/features/parish-admin/marriage-applications/AdminMarriageApplicationDetailPage";
 import { AdminNotificationsPage } from "@/features/parish-admin/notifications/AdminNotificationsPage";
 import { AdminReportsLayout } from "@/features/parish-admin/reports/AdminReportsLayout";
 import { AdminSacramentsReportPage } from "@/features/parish-admin/reports/AdminSacramentsReportPage";
@@ -94,6 +96,8 @@ export const parishAdminRoutes: RouteObject[] = [
       { path: "records/ledgers/:bookId", element: <AdminLedgerBookPage /> },
       { path: "records/ledgers/:bookId/pages/:pageNumber", element: <AdminLedgerPageViewer /> },
       { path: "mass-intentions", element: <AdminMassIntentionsPage /> },
+      { path: "marriage-applications", element: <AdminMarriageApplicationsPage /> },
+      { path: "marriage-applications/:applicationId", element: <AdminMarriageApplicationDetailPage /> },
       {
         path: "schedule",
         element: <AdminSchedulePage />,

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { listMassSchedule } from "@/features/parishioner/intentions/api/massScheduleApi";
+import { listMassSchedule, listMassTimesForDate } from "@/features/parishioner/intentions/api/massScheduleApi";
 import { useAsync } from "@/hooks/useAsync";
 import { getAvailableTimes, getScheduleLabel } from "@/features/parishioner/intentions/massScheduleUtils";
 import { submitMassIntention } from "@/features/parishioner/intentions/intentionsApi";
@@ -21,10 +21,15 @@ export function IntentionForm({ parish, requesterId, defaultRequestedBy = "", on
   const [intentionFor, setIntentionFor] = useState("");
   const [requestedBy, setRequestedBy] = useState(defaultRequestedBy);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const { data: massSchedule = [] } = useAsync(() => listMassSchedule(), []);
-  const availableTimes = getAvailableTimes(massDate, massSchedule);
-  const scheduleLabel = getScheduleLabel(massDate, massSchedule);
+  const { data: dateTimes } = useAsync(
+    () => (massDate ? listMassTimesForDate(massDate) : Promise.resolve({ times: [], label: "" })),
+    [massDate]
+  );
+  const availableTimes = dateTimes?.times?.length ? dateTimes.times : getAvailableTimes(massDate, massSchedule);
+  const scheduleLabel = dateTimes?.label || getScheduleLabel(massDate, massSchedule);
   const canSubmit = Boolean(massDate && massTime && intentionFor.trim());
 
   function handleDateChange(value: string) {
@@ -35,9 +40,8 @@ export function IntentionForm({ parish, requesterId, defaultRequestedBy = "", on
   async function handleSubmit() {
     if (!canSubmit) return;
     setSubmitting(true);
+    setError("");
     try {
-      // TODO: parishioner/public submit a pending request only — office confirms the slot.
-      // TODO: surface remaining capacity here; do not let this form confirm a full Mass.
       await submitMassIntention({
         parishId: parish.id,
         requesterId,
@@ -49,6 +53,8 @@ export function IntentionForm({ parish, requesterId, defaultRequestedBy = "", on
         scheduleLabel,
       });
       onSubmitted?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't submit this intention.");
     } finally {
       setSubmitting(false);
     }
@@ -96,6 +102,8 @@ export function IntentionForm({ parish, requesterId, defaultRequestedBy = "", on
       <div className="mt-4">
         <Input label="Requested by" placeholder="Your full name" value={requestedBy} onChange={(e) => setRequestedBy(e.target.value)} />
       </div>
+
+      {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 flex justify-end">
         <Button variant="primary" onClick={handleSubmit} disabled={!canSubmit || submitting}>
