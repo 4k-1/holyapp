@@ -22,6 +22,7 @@ const DEFAULT_REQUIREMENTS = [
   'Marriage license',
   'Pre-Cana / marriage preparation',
   'Canonical interview',
+  'Banns published (three Sundays)',
 ];
 
 function httpError(status, message) {
@@ -45,6 +46,7 @@ function toRequirement(row) {
     submitted: row.submitted,
     verifiedBy: row.verified_by || null,
     verifiedAt: row.verified_at ? new Date(row.verified_at).toISOString() : null,
+    verifiedByName: row.verified_by_name || null,
   };
 }
 
@@ -78,26 +80,47 @@ function toApplication(row, requirements = [], event = null) {
   };
 }
 
+/**
+ * Adds any default requirement the parish doesn't have yet (e.g. the banns, added after the first release),
+ * then gives open applications a row for each new type. Confirmed and closed applications are left alone.
+ */
 async function ensureRequirementTypes(parishId, userId) {
   const existing = await pool.query(
-    'SELECT 1 FROM marriage_requirement_type WHERE parish_id = $1 LIMIT 1',
+    'SELECT requirement_name FROM marriage_requirement_type WHERE parish_id = $1',
     [parishId]
   );
-  if (existing.rowCount) return;
-  for (const name of DEFAULT_REQUIREMENTS) {
+  const have = new Set(existing.rows.map((row) => row.requirement_name));
+  const missing = DEFAULT_REQUIREMENTS.filter((name) => !have.has(name));
+  if (missing.length === 0) return;
+  for (const name of missing) {
     await pool.query(
       `INSERT INTO marriage_requirement_type (parish_id, requirement_name, is_required, created_by)
        VALUES ($1, $2, true, $3)`,
       [parishId, name, userId]
     );
   }
+  await pool.query(
+    `INSERT INTO marriage_application_requirement (marriage_application_id, requirement_type_id)
+     SELECT a.id, t.id
+     FROM marriage_application a
+     JOIN marriage_requirement_type t ON t.parish_id = a.parish_id
+     WHERE a.parish_id = $1
+       AND a.status NOT IN ('approved', 'rejected', 'completed')
+       AND NOT EXISTS (
+         SELECT 1 FROM marriage_application_requirement r
+         WHERE r.marriage_application_id = a.id AND r.requirement_type_id = t.id
+       )`,
+    [parishId]
+  );
 }
 
 async function loadRequirements(applicationId) {
   const result = await pool.query(
-    `SELECT r.*, t.requirement_name, t.is_required
+    `SELECT r.*, t.requirement_name, t.is_required,
+            NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS verified_by_name
      FROM marriage_application_requirement r
      JOIN marriage_requirement_type t ON t.id = r.requirement_type_id
+     LEFT JOIN app_user u ON u.id = r.verified_by
      WHERE r.marriage_application_id = $1
      ORDER BY t.created_at`,
     [applicationId]
@@ -164,6 +187,7 @@ async function findParishionerByEmail(parishId, email) {
 
 async function listApplications(req, res) {
   try {
+    await ensureRequirementTypes(req.parishId, req.user.id);
     const result = await pool.query(
       `SELECT * FROM marriage_application
        WHERE parish_id = $1
@@ -182,6 +206,7 @@ async function listApplications(req, res) {
 
 async function getApplication(req, res) {
   try {
+    if (req.user.role !== 'parishioner') await ensureRequirementTypes(req.parishId, req.user.id);
     const row = await loadApplication(req.parishId, req.params.id);
     if (!row) return res.status(404).json({ error: 'Application not found.' });
     if (req.user.role === 'parishioner' && row.parishioner_id !== req.user.id) {

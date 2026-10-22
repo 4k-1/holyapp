@@ -17,6 +17,8 @@ export interface MarriageRequirement {
   submitted: boolean;
   verifiedBy: string | null;
   verifiedAt: string | null;
+  /** Name of the staff member who marked it received. */
+  verifiedByName?: string | null;
 }
 
 export interface MarriageWeddingEvent {
