@@ -17,12 +17,13 @@ export function BookIntentionModal({ parishId, slot, onClose, onBooked }: BookIn
   const [contact, setContact] = useState("");
   const [intentionType, setIntentionType] = useState<string>(MASS_INTENTION_TYPES[0]);
   const [intentionText, setIntentionText] = useState("");
-  const [offering, setOffering] = useState("100");
+  const [offering, setOffering] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const full = slot.remaining <= 0;
-  const offeringAmount = Number(offering);
+  // A donation is optional; leave it empty when nothing was given.
+  const offeringAmount = offering.trim() === "" ? 0 : Number(offering);
   const canSave = Boolean(
     !full &&
       requesterName.trim() &&
@@ -101,11 +102,12 @@ export function BookIntentionModal({ parishId, slot, onClose, onBooked }: BookIn
               ))}
             </AdminSelect>
           </AdminField>
-          <AdminField label="Offering (₱)">
+          <AdminField label="Donation received (optional, ₱)">
             <AdminInput
               type="number"
               min={0}
               step="1"
+              placeholder="Leave empty if none"
               value={offering}
               onChange={(e) => setOffering(e.target.value)}
               disabled={full}

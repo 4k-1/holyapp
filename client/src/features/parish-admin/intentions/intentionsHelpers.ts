@@ -51,8 +51,9 @@ export function intentionLabel(intention: MassIntentionRequest) {
   return `${intention.intentionType} — ${intention.intentionFor}`;
 }
 
-export function offeringTotal(intentions: MassIntentionRequest[]) {
-  return intentions.reduce((sum, intention) => sum + (intention.offering ?? 0), 0);
+/** Donations actually received; pending GCash donations are not counted yet. */
+export function donationTotal(intentions: MassIntentionRequest[]) {
+  return intentions.reduce((sum, intention) => sum + (intention.payment === "paid" ? intention.offering ?? 0 : 0), 0);
 }
 
 export function formatPeso(amount: number) {

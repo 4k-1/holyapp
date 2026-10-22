@@ -171,7 +171,8 @@ export type MassIntentionTypeName = (typeof MASS_INTENTION_TYPES)[number];
 /** Online origin for now. `said` = already offered at Mass. */
 export type MassIntentionStatus = "pending" | "confirmed" | "said";
 
-export type MassIntentionPayment = "paid" | "unpaid";
+/** Donations are optional: `none`, a GCash donation still `pending`, or `paid`. */
+export type MassIntentionPayment = "paid" | "pending" | "none";
 
 export type MassSlotCapacityState = "open" | "nearly_full" | "full";
 
@@ -191,7 +192,9 @@ export interface MassIntentionRequest {
   requestedBy: string;
   contact?: string;
   status: MassIntentionStatus;
+  /** Optional donation in pesos; 0 when none was given. */
   offering: number;
+  donation?: number;
   payment: MassIntentionPayment;
   scheduleDate: string;   // ISO date, e.g. "2026-07-05"
   scheduleTime: string;   // snapshotted display string, e.g. "8:00 AM" — NOT a live reference to MassScheduleEntry

@@ -22,6 +22,7 @@ const {
   toCertificateRequest,
   receiptNumberFor,
 } = require('./certificateRequestController');
+const { markIntentionDonationPaid, announceDonation } = require('./intentionController');
 
 function sendError(res, err) {
   console.error(err);
@@ -342,6 +343,36 @@ async function getReceipt(req, res) {
   }
 }
 
+/** Webhook branch for optional Mass intention donations (metadata.intention_id). */
+async function handleIntentionDonation(res, { session, checkoutId, intentionId, evtId, type }) {
+  if (!sessionIsPaid({ data: session }) && type !== 'payment.paid') {
+    return res.json({ ok: true, ignored: true });
+  }
+  const paidPay = paidPaymentFromSession({ data: session });
+  const client = await pool.connect();
+  let marked;
+  try {
+    await client.query('BEGIN');
+    marked = await markIntentionDonationPaid(client, {
+      intentionId,
+      reference: checkoutId,
+      receiptUrl: paidPay && paidPay.attributes && (paidPay.attributes.receipt_url || paidPay.attributes.invoice_url),
+    });
+    if (evtId) {
+      await client.query('INSERT INTO paymongo_event (id) VALUES ($1) ON CONFLICT (id) DO NOTHING', [evtId]);
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await rollback(client);
+    return sendError(res, err);
+  } finally {
+    client.release();
+  }
+  if (!marked.row) return res.json({ ok: true, ignored: true });
+  if (!marked.alreadyPaid) await announceDonation(marked.row, marked.amount, null, 'paymongo');
+  return res.json({ ok: true, paid: true });
+}
+
 async function handlePaymongoWebhook(req, res) {
   const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || '');
   if (!verifyWebhookSignature(raw, req.headers['paymongo-signature'])) {
@@ -369,6 +400,9 @@ async function handlePaymongoWebhook(req, res) {
   const session = checkoutFromWebhook(payload) || payload.data;
   const checkoutId = session && session.id;
   const attrs = (session && session.attributes) || {};
+  const intentionId = attrs.metadata && attrs.metadata.intention_id;
+  if (intentionId) return handleIntentionDonation(res, { session, checkoutId, intentionId, evtId, type });
+
   const requestId = (attrs.metadata && attrs.metadata.request_id) || attrs.reference_number;
   if (!requestId) return res.json({ ok: true, ignored: true });
 

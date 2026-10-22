@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getParishBySlug } from "@/features/parish/parishApi";
-import { IntentionForm } from "@/features/parishioner/intentions/IntentionForm";
+import { IntentionSignInPrompt } from "@/features/public/IntentionSignInPrompt";
 import type { Parish } from "@/types";
 
 export function PublicIntentionPage() {
   const { parishSlug } = useParams();
   const [parish, setParish] = useState<Parish | null | undefined>(undefined);
-  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,20 +59,7 @@ export function PublicIntentionPage() {
           Offer a Mass for a special intention — thanksgiving, healing, or in memory of a loved one.
         </p>
 
-        {submitted ? (
-          <div className="rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-2xl text-primary">
-              ✓
-            </div>
-            <h2 className="font-serif text-xl font-bold text-ink">Intention submitted</h2>
-            <p className="mt-1.5 text-sm text-ink-muted">
-              The parish office has received your request. Staff will confirm it against the Mass schedule —
-              this is not a confirmed booking yet.
-            </p>
-          </div>
-        ) : (
-          <IntentionForm parish={parish} requesterId={null} onSubmitted={() => setSubmitted(true)} />
-        )}
+        <IntentionSignInPrompt parish={parish} />
       </div>
     </div>
   );

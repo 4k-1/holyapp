@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { ParishSearchStep } from "@/features/auth/components/ParishSearchStep";
 import { DonationForm } from "@/features/parishioner/donations/DonationForm";
-import { IntentionForm } from "@/features/parishioner/intentions/IntentionForm";
+import { IntentionSignInPrompt } from "@/features/public/IntentionSignInPrompt";
 import type { Parish } from "@/types";
 
-type Step = "search" | "choose" | "donate" | "intention" | "intentionDone";
+type Step = "search" | "choose" | "donate" | "intention";
 
 export function GivePage() {
   const [step, setStep] = useState<Step>("search");
@@ -27,7 +27,7 @@ export function GivePage() {
           <>
             <h1 className="mb-1 font-serif text-2xl font-bold text-ink">Support a parish</h1>
             <p className="mb-6 text-sm text-ink-muted">
-              No account needed. Find your parish to donate or request a Mass intention.
+              Find your parish to donate. Mass intentions are requested from your parish account.
             </p>
             <ParishSearchStep
               onSelect={(selected) => {
@@ -79,18 +79,8 @@ export function GivePage() {
             <p className="mb-6 text-sm leading-relaxed text-ink-muted">
               Offer a Mass for a special intention — thanksgiving, healing, or in memory of a loved one.
             </p>
-            <IntentionForm parish={parish} requesterId={null} onSubmitted={() => setStep("intentionDone")} />
+            <IntentionSignInPrompt parish={parish} />
           </>
-        )}
-
-        {step === "intentionDone" && (
-          <div className="rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-2xl text-primary">✓</div>
-            <h2 className="font-serif text-xl font-bold text-ink">Intention submitted</h2>
-            <p className="mt-1.5 text-sm text-ink-muted">
-              The parish office has received your request. No account needed — your intention is confirmed for the scheduled Mass.
-            </p>
-          </div>
         )}
       </div>
     </div>

@@ -12,7 +12,7 @@ import { BookIntentionModal } from "@/features/parish-admin/intentions/component
 import { MassCapacitySetting } from "@/features/parish-admin/intentions/components/MassCapacitySetting";
 import { MassIntentionsMonthGrid } from "@/features/parish-admin/intentions/components/MassIntentionsMonthGrid";
 import { MassSlotTable } from "@/features/parish-admin/intentions/components/MassSlotTable";
-import { formatMassDate, formatPeso, offeringTotal, todayISO } from "@/features/parish-admin/intentions/intentionsHelpers";
+import { donationTotal, formatMassDate, formatPeso, todayISO } from "@/features/parish-admin/intentions/intentionsHelpers";
 import { daysInMonth, toISO } from "@/features/parish-admin/schedule/scheduleHelpers";
 import { useAsync } from "@/hooks/useAsync";
 import type { MassIntentionRequest, MassSlotView, Parish } from "@/types";
@@ -63,8 +63,8 @@ export function AdminMassIntentionsPage() {
 
   const totals = useMemo(() => {
     const intentions = slots.reduce((sum, slot) => sum + slot.bookedCount, 0);
-    const offering = slots.reduce((sum, slot) => sum + offeringTotal(slot.intentions), 0);
-    return { intentions, offering, masses: slots.length };
+    const donations = slots.reduce((sum, slot) => sum + donationTotal(slot.intentions), 0);
+    return { intentions, donations, masses: slots.length };
   }, [slots]);
 
   const daySlots = slotsByDate[selectedDate] ?? [];
@@ -116,8 +116,8 @@ export function AdminMassIntentionsPage() {
               <span className="font-semibold tabular-nums text-admin-ink">{totals.intentions}</span>{" "}
               {totals.intentions === 1 ? "intention" : "intentions"} across{" "}
               <span className="font-semibold tabular-nums text-admin-ink">{totals.masses}</span>{" "}
-              {totals.masses === 1 ? "Mass" : "Masses"} · Total offering{" "}
-              <span className="font-semibold tabular-nums text-admin-ink">{formatPeso(totals.offering)}</span>
+              {totals.masses === 1 ? "Mass" : "Masses"} · Donations received{" "}
+              <span className="font-semibold tabular-nums text-admin-ink">{formatPeso(totals.donations)}</span>
             </p>
           )}
         </div>

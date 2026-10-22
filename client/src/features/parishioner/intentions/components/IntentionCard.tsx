@@ -43,6 +43,13 @@ export function IntentionCard({ intention }: IntentionCardProps) {
             Requested by {intention.requestedBy} ·{" "}
             {new Date(intention.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
           </p>
+
+          {intention.payment !== "none" && (
+            <p className="mt-1 text-xs text-ink-muted">
+              {intention.payment === "paid" ? "Donated" : "Donation pending"}{" "}
+              <span className="font-semibold text-ink">₱{intention.offering.toLocaleString("en-PH")}</span> through GCash
+            </p>
+          )}
         </div>
       </div>
     </div>

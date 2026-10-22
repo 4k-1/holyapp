@@ -9,7 +9,7 @@ import {
   formatRequestedOn,
   formatSlotHeading,
   intentionLabel,
-  offeringTotal,
+  donationTotal,
 } from "@/features/parish-admin/intentions/intentionsHelpers";
 import type { MassIntentionRequest, MassIntentionStatus, MassSlotView } from "@/types";
 
@@ -43,7 +43,7 @@ export function MassSlotTable({
   onConfirm,
   onMarkSaid,
 }: MassSlotTableProps) {
-  const totalOffering = useMemo(() => offeringTotal(slot.intentions), [slot.intentions]);
+  const totalDonations = useMemo(() => donationTotal(slot.intentions), [slot.intentions]);
 
   const columns: AdminTableColumn<MassIntentionRequest>[] = [
     {
@@ -64,18 +64,17 @@ export function MassSlotTable({
       ),
     },
     {
-      key: "offering",
-      header: "Offering",
-      render: (row) => <span className="tabular-nums whitespace-nowrap">{formatPeso(row.offering)}</span>,
-    },
-    {
-      key: "payment",
-      header: "Payment",
-      render: (row) => (
-        <AdminBadge tone={row.payment === "paid" ? "green" : "amber"}>
-          {row.payment === "paid" ? "Paid" : "Unpaid"}
-        </AdminBadge>
-      ),
+      key: "donation",
+      header: "Donation",
+      render: (row) =>
+        row.payment === "none" ? (
+          <span className="text-admin-ink-muted">None</span>
+        ) : (
+          <span className="inline-flex flex-wrap items-center gap-1.5 whitespace-nowrap">
+            <span className="tabular-nums">{formatPeso(row.offering)}</span>
+            {row.payment === "pending" && <AdminBadge tone="muted">GCash pending</AdminBadge>}
+          </span>
+        ),
     },
     {
       key: "status",
@@ -152,8 +151,8 @@ export function MassSlotTable({
       </div>
       {slot.intentions.length > 0 && (
         <p className="border-t border-admin-border px-4 py-2.5 text-right text-admin-support text-admin-ink-muted">
-          Total offering{" "}
-          <span className="font-semibold tabular-nums text-admin-ink">{formatPeso(totalOffering)}</span>
+          Donations received{" "}
+          <span className="font-semibold tabular-nums text-admin-ink">{formatPeso(totalDonations)}</span>
         </p>
       )}
     </AdminCard>

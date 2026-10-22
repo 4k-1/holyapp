@@ -15,13 +15,13 @@ export function MassIntentionPage() {
       </button>
       <h1 className="font-serif text-[26px] font-bold text-ink">Request a Mass Intention</h1>
       <p className="mb-6 mt-1 text-sm leading-relaxed text-ink-muted">
-        Offer a Mass for a special intention — thanksgiving, healing, or in memory of a loved one.
+        Offer a Mass for someone: in thanksgiving, for healing, or in memory of a loved one. A donation is welcome
+        but not required.
       </p>
       <IntentionForm
         parish={parish}
-        requesterId={currentUser?.id ?? null}
         defaultRequestedBy={currentUser?.fullName ?? ""}
-        onSubmitted={() => navigate(`/${parish.slug}/portal/intentions`)}
+        onSubmitted={() => navigate(`/${parish.slug}/portal/intentions?submitted=1`)}
       />
     </div>
   );
