@@ -1,12 +1,11 @@
-import { MOCK_USERS } from "@/services/mocks/users.mock";
 import type { AuditLogEntry } from "@/types";
 
-export function auditActorName(id: string) {
-  return MOCK_USERS.find((u) => u.id === id)?.fullName ?? "Someone";
+export function auditActorName(entry: AuditLogEntry) {
+  return entry.actorName?.trim() || "Someone";
 }
 
 export function auditCopy(entry: AuditLogEntry) {
-  const who = auditActorName(entry.actorId);
+  const who = auditActorName(entry);
   switch (entry.action) {
     case "certificate.issued":
       return `${who} issued a certificate`;
@@ -29,7 +28,9 @@ export function auditCopy(entry: AuditLogEntry) {
     case "app_user.password_reset":
       return `${who} sent a password reset`;
     case "auth.login_failed":
-      return `Failed sign-in on ${auditActorName(entry.entityId)}`;
+      return `Failed sign-in on ${String(entry.metadata.email || entry.entityId)}`;
+    case "profile.updated":
+      return `${who} updated their profile`;
     case "parish.created":
       return `${who} onboarded a parish`;
     case "parish.cert_theme_updated":

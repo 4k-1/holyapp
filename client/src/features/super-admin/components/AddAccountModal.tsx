@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPlatformAccount } from "@/features/super-admin/api/superAdminApi";
-import { generateTempPassword } from "@/services/mocks/superAdmin.mock";
+import { generateTempPassword } from "@/lib/tempPassword";
 import type { SuperAdminParishOverview } from "@/features/super-admin/api/superAdminApi";
 import {
   SaField,

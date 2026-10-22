@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const { ROLES } = require('../constants/roles');
 const { hashPassword } = require('../utils/password');
 const { writeAudit } = require('../utils/audit');
+const { fetchAuditEntries } = require('./auditController');
 
 const OFFICE = new Set([ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF]);
 const ACCOUNT_ROLES = new Set([ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF, ROLES.PARISHIONER]);
@@ -135,17 +136,237 @@ async function loadParish(parishId) {
   };
 }
 
+async function listOverviews() {
+  const result = await pool.query(`SELECT id FROM parish ORDER BY name`);
+  const parishes = [];
+  for (const row of result.rows) {
+    const overview = await loadParish(row.id);
+    if (overview) parishes.push(overview);
+  }
+  return parishes;
+}
+
+async function uniqueSlug(name) {
+  const base = slugify(name);
+  let slug = base;
+  let n = 2;
+  while (true) {
+    const exists = await pool.query('SELECT 1 FROM parish WHERE slug = $1', [slug]);
+    if (exists.rows.length === 0) return slug;
+    slug = `${base}-${n}`;
+    n += 1;
+  }
+}
+
+const SACRAMENT_COLORS = {
+  baptism: '#2f6b45',
+  confirmation: '#f2b632',
+  marriage: '#5b6b63',
+  death: '#c0392f',
+};
+
+function sacramentShares(counts) {
+  return ['baptism', 'confirmation', 'marriage', 'death'].map((key) => ({
+    key,
+    label: key.charAt(0).toUpperCase() + key.slice(1),
+    count: counts[key] || 0,
+    color: SACRAMENT_COLORS[key],
+  }));
+}
+
 async function listParishes(_req, res) {
   try {
-    const result = await pool.query(
-      `SELECT id FROM parish ORDER BY name`
-    );
-    const parishes = [];
-    for (const row of result.rows) {
-      const overview = await loadParish(row.id);
-      if (overview) parishes.push(overview);
+    res.json({ parishes: await listOverviews() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function dashboard(_req, res) {
+  try {
+    const parishes = await listOverviews();
+    const admins = [];
+    let parishionerCount = 0;
+    for (const row of parishes) {
+      parishionerCount += row.parishioners.length;
+      for (const user of row.admins) {
+        admins.push({
+          user,
+          parish: row.parish,
+          canEditRecords: user.canEditRecords !== false,
+        });
+      }
     }
-    res.json({ parishes });
+
+    const requestMap = { baptism: 0, confirmation: 0, marriage: 0, death: 0 };
+    try {
+      const requests = await pool.query(
+        `SELECT record_type AS key, COUNT(*)::int AS n
+         FROM certificate_request
+         GROUP BY record_type`
+      );
+      for (const row of requests.rows) {
+        if (row.key in requestMap) requestMap[row.key] = row.n;
+      }
+    } catch {
+      // certificate_request may not exist on older databases
+    }
+
+    const recordsBySacrament = sacramentShares({
+      baptism: parishes.reduce((sum, row) => sum + row.records.baptism, 0),
+      confirmation: parishes.reduce((sum, row) => sum + row.records.confirmation, 0),
+      marriage: parishes.reduce((sum, row) => sum + row.records.marriage, 0),
+      death: parishes.reduce((sum, row) => sum + row.records.death, 0),
+    });
+
+    const activeAdminCount = admins.filter((account) => account.user.status === 'active').length;
+    const parishesWithAdmin = parishes.filter((row) => row.admins.length > 0).length;
+    const audit = await fetchAuditEntries(12).catch(() => []);
+
+    res.json({
+      snapshot: {
+        parishCount: parishes.length,
+        activeAdminCount,
+        parishesWithAdmin,
+        pendingSetupCount: parishes.length - parishesWithAdmin,
+        parishionerCount,
+        recordTotal: parishes.reduce((sum, row) => sum + row.records.total, 0),
+        certificateTotal: parishes.reduce((sum, row) => sum + row.certificateCount, 0),
+        recordsBySacrament,
+        requestsBySacrament: sacramentShares(requestMap),
+        parishes,
+        admins,
+        audit,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function createParish(req, res) {
+  const name = String(req.body.name || '').trim();
+  const address = String(req.body.address || '').trim();
+  const contact = String(req.body.contact || '').trim() || '—';
+  const email = String(req.body.email || '').trim() || null;
+  const adminName = String(req.body.adminName || '').trim();
+  const adminEmail = String(req.body.adminEmail || '').trim().toLowerCase();
+  const adminPassword = String(req.body.adminPassword || '').trim() || generateTempPassword();
+
+  if (!name || !address) {
+    return res.status(400).json({ error: 'Parish name and location are required.' });
+  }
+  if (adminName && !adminEmail) {
+    return res.status(400).json({ error: 'Add an email for the admin account, or leave the admin name blank.' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const slug = await uniqueSlug(name);
+    const inserted = await client.query(
+      `INSERT INTO parish (name, address, contact, email, slug)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [name, address, contact, email, slug]
+    );
+    const parishId = inserted.rows[0].id;
+
+    let credentials;
+    if (adminName && adminEmail) {
+      const taken = await client.query('SELECT id FROM app_user WHERE lower(email) = $1', [adminEmail]);
+      if (taken.rows.length > 0) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: 'An account with this email already exists.' });
+      }
+      const { firstName, lastName } = splitName(adminName);
+      const passwordHash = await hashPassword(adminPassword);
+      await client.query(
+        `INSERT INTO app_user (
+           parish_id, role, first_name, last_name, email, password_hash, status, email_verified_at
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW())`,
+        [parishId, ROLES.PARISH_ADMIN, firstName, lastName, adminEmail, passwordHash]
+      );
+      credentials = { email: adminEmail, password: adminPassword };
+    }
+
+    await client.query('COMMIT');
+    await writeAudit({
+      parishId,
+      actorId: req.user.id,
+      action: 'parish.created',
+      entityType: 'parish',
+      entityId: parishId,
+      metadata: { name },
+    });
+    if (credentials) {
+      await writeAudit({
+        parishId,
+        actorId: req.user.id,
+        action: 'app_user.created',
+        entityType: 'app_user',
+        entityId: parishId,
+        metadata: { role: ROLES.PARISH_ADMIN, email: adminEmail },
+      });
+    }
+
+    const overview = await loadParish(parishId);
+    res.status(201).json({
+      parish: overview.parish,
+      overview,
+      credentials,
+    });
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      // ignore
+    }
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+}
+
+async function updateParish(req, res) {
+  try {
+    const current = await pool.query(
+      'SELECT id, name, address, contact, email FROM parish WHERE id = $1',
+      [req.params.parishId]
+    );
+    if (current.rows.length === 0) {
+      return res.status(404).json({ error: 'Parish not found.' });
+    }
+
+    const row = current.rows[0];
+    const name = req.body.name != null ? String(req.body.name).trim() : row.name;
+    const address = req.body.address != null ? String(req.body.address).trim() : row.address;
+    const contact = req.body.contact != null ? String(req.body.contact).trim() : row.contact;
+    const email = req.body.email != null ? String(req.body.email).trim() || null : row.email;
+
+    if (!name || !address) {
+      return res.status(400).json({ error: 'Parish name and location are required.' });
+    }
+
+    const updated = await pool.query(
+      `UPDATE parish
+       SET name = $1, address = $2, contact = $3, email = $4, updated_at = NOW()
+       WHERE id = $5
+       RETURNING id, slug, name, address, contact, email, seal_url, created_at, updated_at`,
+      [name, address, contact || '—', email, row.id]
+    );
+
+    await writeAudit({
+      parishId: row.id,
+      actorId: req.user.id,
+      action: 'parish.updated',
+      entityType: 'parish',
+      entityId: row.id,
+      metadata: { name },
+    });
+
+    res.json({ parish: toParish(updated.rows[0]) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -397,8 +618,11 @@ async function removeAccount(req, res) {
 }
 
 module.exports = {
+  dashboard,
   listParishes,
   getParish,
+  createParish,
+  updateParish,
   createAccount,
   updateAccount,
   setStatus,

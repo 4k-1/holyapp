@@ -20,7 +20,7 @@ function headingFromPath(pathname: string) {
     return { title: "System Reports", sub: "Aggregated statistics for oversight" };
   }
   if (pathname.startsWith("/super-admin/settings")) {
-    return { title: "Settings", sub: "Super Admin preferences" };
+    return { title: "Your profile", sub: "Name, contact details, and sign-in email for this platform account." };
   }
   if (/^\/super-admin\/accounts\/[^/]+/.test(pathname)) {
     return { title: "", sub: "" };
@@ -59,7 +59,7 @@ function SuperAdminShell() {
       <SuperAdminTopbar user={user} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <SuperAdminSidebar collapsed={collapsed} onSignOut={handleSignOut} />
-        <div className="min-w-0 flex-1 overflow-y-auto px-8 py-[26px]">
+        <main className="min-w-0 flex-1 overflow-y-auto px-8 py-[26px]" data-enter-fields>
           {heading.title ? (
             <header className="mb-[22px]">
               <h1 className="font-sans text-[21px] font-extrabold leading-tight text-admin-ink">{heading.title}</h1>
@@ -67,7 +67,7 @@ function SuperAdminShell() {
             </header>
           ) : null}
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   );

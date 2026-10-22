@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import { router } from "@/app/router";
 import { validateSession } from "@/features/auth/api/authApi";
+import { bindEnterAdvancesField } from "@/lib/enterAdvancesField";
 
 export function App() {
   const [ready, setReady] = useState(false);
@@ -15,6 +16,8 @@ export function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => bindEnterAdvancesField(), []);
 
   if (!ready) {
     return (

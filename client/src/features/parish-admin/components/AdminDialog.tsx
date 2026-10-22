@@ -36,7 +36,10 @@ export function AdminDialog({
     <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden p-3 sm:p-4">
       <div className="absolute inset-0 bg-black/45" onClick={busy ? undefined : onClose} aria-hidden="true" />
       <div
+        role="dialog"
+        aria-modal="true"
         data-admin-dialog-panel
+        data-enter-fields
         className={`relative z-10 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)] ${panelClassName}`}
       >
         {children}

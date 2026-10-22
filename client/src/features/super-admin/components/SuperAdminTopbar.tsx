@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "@/components/ui/icons/AdminIcons";
 import type { CurrentUser } from "@/types";
 
@@ -54,7 +55,11 @@ export function SuperAdminTopbar({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <Link
+          to="/super-admin/settings"
+          className="flex shrink-0 items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-admin-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/30"
+          title="Update profile"
+        >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-admin-green-100 text-xs font-bold text-admin-green-900">
             {initials}
           </div>
@@ -62,7 +67,7 @@ export function SuperAdminTopbar({
             <p className="text-[12.5px] font-semibold text-admin-ink">{user.fullName}</p>
             <p className="text-[10.5px] text-admin-ink-faint">Super Admin</p>
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   );

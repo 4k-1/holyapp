@@ -23,7 +23,9 @@ export function PortalLayout() {
   return (
     <div className="min-h-screen bg-[#f8f6f1]">
       <Navbar parish={parish} userInitials={userInitials} userName={userName} />
-      <Outlet context={{ parish }} />
+      <main>
+        <Outlet context={{ parish }} />
+      </main>
     </div>
   );
 }

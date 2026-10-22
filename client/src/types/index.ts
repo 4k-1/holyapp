@@ -52,6 +52,7 @@ export interface AuditLogEntry {
   id: string;
   parishId: string | null;
   actorId: string;
+  actorName?: string;
   action: string;
   entityType: string;
   entityId: string;

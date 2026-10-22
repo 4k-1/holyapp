@@ -1,7 +1,6 @@
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
-  KeyboardEvent,
   ReactNode,
   SelectHTMLAttributes,
   SVGProps,
@@ -16,48 +15,6 @@ const fieldSelectClass = `${fieldInputClass} appearance-none bg-[length:12px] bg
 
 const SELECT_CHEVRON =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%238a9a9e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")";
-
-const FIELD_SELECTOR =
-  'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
-
-function isVisibleField(el: HTMLElement) {
-  return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
-}
-
-/** Enter moves focus to the next nearest field in the same form (does not submit). */
-function focusNextFormField(current: HTMLElement) {
-  const form = current.closest("form");
-  if (!form) return;
-
-  const fields = Array.from(form.querySelectorAll<HTMLElement>(FIELD_SELECTOR)).filter(isVisibleField);
-  const index = fields.indexOf(current);
-  if (index === -1) return;
-
-  const next = fields[index + 1];
-  if (!next) return;
-
-  next.focus();
-  if (next instanceof HTMLInputElement || next instanceof HTMLTextAreaElement) {
-    const valueLength = next.value.length;
-    try {
-      next.setSelectionRange(0, valueLength);
-    } catch {
-      // date/number/etc. may not support selection
-    }
-  }
-}
-
-function handleEnterToNextField(
-  event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
-  onKeyDown?: (event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => void
-) {
-  onKeyDown?.(event);
-  if (event.defaultPrevented) return;
-  if (event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
-
-  event.preventDefault();
-  focusNextFormField(event.currentTarget);
-}
 
 export function AdminFormPage({
   children,
@@ -98,14 +55,12 @@ export function AdminTextarea({
 export function AdminSelect({
   className = "",
   style,
-  onKeyDown,
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       className={`${fieldSelectClass} ${className}`}
       style={{ backgroundImage: SELECT_CHEVRON, ...style }}
-      onKeyDown={(e) => handleEnterToNextField(e, onKeyDown)}
       {...props}
     />
   );
@@ -116,7 +71,6 @@ export function AdminInput({
   type,
   max,
   onChange,
-  onKeyDown,
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
   const isDate = type === "date";
@@ -133,7 +87,6 @@ export function AdminInput({
         }
         onChange?.(e);
       }}
-      onKeyDown={(e) => handleEnterToNextField(e, onKeyDown)}
       {...props}
     />
   );

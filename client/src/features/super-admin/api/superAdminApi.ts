@@ -1,11 +1,5 @@
-import { delay } from "@/services/delay";
 import { apiFetch, ApiError } from "@/lib/api";
 import {
-  getDashboardSnapshot,
-  getPlatformAuditLog,
-  onboardParish,
-  setParishCertTheme,
-  updateParish,
   type CreateParishAccountInput,
   type UpdateParishAccountInput,
   type DashboardSnapshot,
@@ -15,7 +9,9 @@ import {
   type PlatformAdmin,
   CERT_THEMES,
   getCertTheme,
+  setParishCertTheme,
 } from "@/services/mocks/superAdmin.mock";
+import { delay } from "@/services/delay";
 import type { AuditLogEntry, Parish, UserStatus } from "@/types";
 
 export type {
@@ -35,8 +31,12 @@ function fail(err: unknown): never {
 }
 
 export async function getPlatformDashboard(): Promise<DashboardSnapshot> {
-  await delay(200);
-  return getDashboardSnapshot();
+  try {
+    const data = await apiFetch<{ snapshot: DashboardSnapshot }>("/platform/dashboard");
+    return data.snapshot;
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function listPlatformParishes(): Promise<SuperAdminParishOverview[]> {
@@ -59,16 +59,33 @@ export async function getPlatformParish(id: string): Promise<SuperAdminParishOve
 }
 
 export async function createPlatformParish(input: OnboardParishInput) {
-  await delay(250);
-  return onboardParish(input);
+  try {
+    return await apiFetch<{
+      parish: Parish;
+      overview?: SuperAdminParishOverview;
+      credentials?: { email: string; password: string };
+    }>("/platform/parishes", {
+      method: "POST",
+      body: input,
+    });
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function updatePlatformParish(
   id: string,
   patch: Partial<Pick<Parish, "name" | "address" | "contact" | "email">>
 ) {
-  await delay(200);
-  return updateParish(id, patch);
+  try {
+    const data = await apiFetch<{ parish: Parish }>(`/platform/parishes/${id}`, {
+      method: "PATCH",
+      body: patch,
+    });
+    return data.parish;
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function createPlatformAccount(input: CreateParishAccountInput) {
@@ -155,8 +172,7 @@ export async function listPlatformAuditLog(): Promise<AuditLogEntry[]> {
   try {
     const data = await apiFetch<{ entries: AuditLogEntry[] }>("/audit");
     return data.entries ?? [];
-  } catch {
-    await delay(200);
-    return getPlatformAuditLog();
+  } catch (err) {
+    fail(err);
   }
 }

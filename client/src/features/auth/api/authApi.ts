@@ -250,6 +250,18 @@ export async function validateSession(): Promise<CurrentUser | null> {
   }
 }
 
+export async function fetchCurrentProfile(): Promise<CurrentUser> {
+  try {
+    const data = await apiFetch<{ user: BackendAuthUser }>("/auth/me");
+    const user = mapBackendUser(data.user);
+    setCurrentUser(user);
+    return user;
+  } catch (err) {
+    if (err instanceof ApiError) throw new Error(err.message);
+    throw new Error("Unable to reach the server. Is the backend running?");
+  }
+}
+
 export interface UpdateProfileInput {
   firstName: string;
   lastName: string;
@@ -257,6 +269,7 @@ export interface UpdateProfileInput {
   birthday: string;
   email: string;
   address: string;
+  contactNumber?: string;
 }
 
 export async function updateProfile(input: UpdateProfileInput): Promise<CurrentUser> {
@@ -267,10 +280,11 @@ export async function updateProfile(input: UpdateProfileInput): Promise<CurrentU
       body: {
         firstName: input.firstName,
         lastName: input.lastName,
-        middleName: input.middleName,
+        middleName: input.middleName ?? "",
         birthday: input.birthday,
         email: input.email,
         address: input.address,
+        contactNumber: input.contactNumber ?? "",
       },
     });
     const updated = mapBackendUser(data.user);
