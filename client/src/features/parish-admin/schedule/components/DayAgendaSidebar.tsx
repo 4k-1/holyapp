@@ -10,6 +10,8 @@ import type { ScheduleOccurrence } from "../types";
 interface DayAgendaSidebarProps {
   dateStr: string;
   occurrences: ScheduleOccurrence[];
+  /** Regular Mass times for the day, from Settings → Mass Schedule. Shown for context, not as events. */
+  massTimes?: string[];
   todayStr: string;
   onAdd: () => void;
   onAssign: (occurrence: ScheduleOccurrence) => void;
@@ -20,6 +22,7 @@ interface DayAgendaSidebarProps {
 export function DayAgendaSidebar({
   dateStr,
   occurrences,
+  massTimes = [],
   todayStr,
   onAdd,
   onAssign,
@@ -66,10 +69,18 @@ export function DayAgendaSidebar({
         </button>
       </div>
 
+      {massTimes.length > 0 && (
+        <p className="mb-3 rounded-lg bg-admin-surface-alt px-3 py-2 text-admin-body text-admin-ink-muted">
+          <span className="font-semibold text-admin-ink">Masses:</span> {massTimes.join(" · ")}
+        </p>
+      )}
+
       {occurrences.length === 0 ? (
         <div className="rounded-[10px] border border-dashed border-admin-border-strong px-4 py-8 text-center">
-          <p className="text-admin-body font-semibold text-admin-ink">Nothing scheduled</p>
-          <p className="mt-1 text-admin-support text-admin-ink-muted">Click + to add a Mass, blessing, or event.</p>
+          <p className="text-admin-body font-semibold text-admin-ink">
+            {massTimes.length > 0 ? "Nothing else scheduled" : "Nothing scheduled"}
+          </p>
+          <p className="mt-1 text-admin-support text-admin-ink-muted">Click + to add a baptism, blessing, special Mass, or event.</p>
         </div>
       ) : (
         <div className="space-y-2.5">

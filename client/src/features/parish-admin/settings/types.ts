@@ -73,6 +73,7 @@ export type SettingsSectionId =
   | "fees"
   | "staff"
   | "certificates"
+  | "mass-schedule"
   | "mass-rules"
   | "marriage-reqs"
   | "payment"
@@ -94,6 +95,7 @@ export const SETTINGS_SECTIONS: SettingsSectionMeta[] = [
   { id: "fees", label: "Service Fees", path: "fees", enabled: true },
   { id: "staff", label: "Staff Accounts", path: "staff", enabled: true },
   { id: "certificates", label: "Certificate Configuration", path: "certificates", enabled: true },
+  { id: "mass-schedule", label: "Mass Schedule", path: "mass-schedule", enabled: true },
   { id: "mass-rules", label: "Mass Intention Rules", path: "mass-rules", enabled: false },
   { id: "marriage-reqs", label: "Marriage Application Requirements", path: "marriage-requirements", enabled: false },
   { id: "payment", label: "Payment Configuration", path: "payment", enabled: false },

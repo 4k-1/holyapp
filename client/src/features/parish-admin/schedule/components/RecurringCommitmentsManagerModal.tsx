@@ -29,7 +29,8 @@ export function RecurringCommitmentsManagerModal({ onClose, onChanged }: Recurri
   const fetchCommitments = useCallback(
     () =>
       Promise.all([listRecurringCommitments(), listAssignableStaff()]).then(([rcs, staffList]) => {
-        setItems(rcs);
+        // Regular Masses are edited in Settings → Mass Schedule.
+        setItems(rcs.filter((rc) => rc.type !== "mass"));
         setStaff(staffList);
         setLoading(false);
       }),
@@ -59,7 +60,9 @@ export function RecurringCommitmentsManagerModal({ onClose, onChanged }: Recurri
         <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
           <div>
             <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Recurring schedule</h3>
-            <p className="mt-0.5 text-admin-support text-admin-ink-muted">Daily Mass, Sunday Mass, novenas — anything that repeats weekly.</p>
+            <p className="mt-0.5 text-admin-support text-admin-ink-muted">
+              Novenas, devotions, and anything else that repeats weekly. Regular Mass times are set in Settings → Mass Schedule.
+            </p>
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt" aria-label="Close">
             ✕
@@ -161,7 +164,7 @@ function RecurringCommitmentForm({
   onSaved: () => void;
 }) {
   const [label, setLabel] = useState(initial?.label ?? "");
-  const [type, setType] = useState<ScheduleEventType>(initial?.type ?? "mass");
+  const [type, setType] = useState<ScheduleEventType>(initial?.type ?? "novena");
   const [assignee, setAssignee] = useState(initial?.assignee ?? "");
   const [days, setDays] = useState<DayAbbrev[]>(initial?.days ?? []);
   const [slots24, setSlots24] = useState<{ start: string; end: string }[]>(
@@ -221,7 +224,7 @@ function RecurringCommitmentForm({
   return (
     <div className="rounded-[10px] border border-admin-green-700/40 bg-admin-green-050 p-4">
       <AdminField label="Label" className="mb-3">
-        <AdminInput value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Sunday Mass" />
+        <AdminInput value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Wednesday Novena" />
       </AdminField>
 
       <div className="mb-3 grid grid-cols-2 gap-3">
@@ -231,7 +234,9 @@ function RecurringCommitmentForm({
             onChange={(e) => setType(e.target.value as ScheduleEventType)}
             className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
           >
-            {Object.entries(EVENT_TYPE_LABELS).map(([val, l]) => (
+            {Object.entries(EVENT_TYPE_LABELS)
+              .filter(([val]) => val !== "mass")
+              .map(([val, l]) => (
               <option key={val} value={val}>
                 {l}
               </option>

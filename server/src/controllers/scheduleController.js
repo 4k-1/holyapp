@@ -2,9 +2,25 @@ const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { requiredText, optionalText, dateValue, sendRecordError } = require('../utils/recordFields');
 const schedule = require('../services/scheduleService');
+const { ROLES } = require('../constants/roles');
 
 function send(res, err) {
   return sendRecordError(res, err);
+}
+
+/** The regular Mass timetable lives in Settings, so only the parish admin may change it. */
+async function assertCanEditRecurring(req, nextType, id) {
+  let touchesMass = nextType === 'mass';
+  if (id) {
+    const current = await pool.query(
+      'SELECT event_type FROM parish_recurring_commitment WHERE id = $1 AND parish_id = $2',
+      [id, req.parishId]
+    );
+    if (current.rows[0]?.event_type === 'mass') touchesMass = true;
+  }
+  if (touchesMass && req.user.role !== ROLES.PARISH_ADMIN) {
+    throw schedule.httpError(403, 'Only the parish admin can change the Mass schedule.');
+  }
 }
 
 function parseBlockInput(body) {
@@ -160,6 +176,7 @@ function parseRecurring(body) {
 async function createRecurring(req, res) {
   try {
     const input = parseRecurring(req.body || {});
+    await assertCanEditRecurring(req, input.type);
     const inserted = await pool.query(
       `INSERT INTO parish_recurring_commitment
          (parish_id, label, event_type, days, slots, assignee, show_on_overview, created_by)
@@ -185,6 +202,7 @@ async function createRecurring(req, res) {
 async function updateRecurring(req, res) {
   try {
     const input = parseRecurring(req.body || {});
+    await assertCanEditRecurring(req, input.type, req.params.id);
     const updated = await pool.query(
       `UPDATE parish_recurring_commitment
        SET label = $1, event_type = $2, days = $3, slots = $4::jsonb,
@@ -211,6 +229,7 @@ async function updateRecurring(req, res) {
 
 async function removeRecurring(req, res) {
   try {
+    await assertCanEditRecurring(req, null, req.params.id);
     const deleted = await pool.query(
       `DELETE FROM parish_recurring_commitment WHERE id = $1 AND parish_id = $2 RETURNING id`,
       [req.params.id, req.parishId]

@@ -1,8 +1,8 @@
 // src/features/parish-admin/schedule/AdminSchedulePage.tsx
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { getOccurrencesForMonth } from "./api/scheduleApi";
-import { toISO } from "./scheduleHelpers";
+import { splitRegularMasses, toISO } from "./scheduleHelpers";
 import { MonthCalendarGrid } from "./components/MonthCalendarGrid";
 import { DayAgendaSidebar } from "./components/DayAgendaSidebar";
 import { EventsListView } from "./components/EventsListView";
@@ -39,6 +39,8 @@ export function AdminSchedulePage() {
     setLoading(true);
     return fetchMonth();
   }
+
+  const { events: eventsByDate, massTimes: massTimesByDate } = useMemo(() => splitRegularMasses(monthData), [monthData]);
 
   // Show the loading state as soon as the month changes.
   const [prevCursor, setPrevCursor] = useState(cursor);
@@ -82,8 +84,7 @@ export function AdminSchedulePage() {
         <div>
           <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Parish Schedule & Events</h1>
           <p className="mt-1 max-w-xl text-admin-body text-admin-ink-muted">
-            Internal tool for parish staff — tracks Masses, devotions, blessings, and interviews so nothing gets
-            double-booked. Not visible to parishioners.
+            Baptisms, weddings, funerals, and other events. Regular Masses are in Settings.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
@@ -156,7 +157,7 @@ export function AdminSchedulePage() {
         <div className={`grid grid-cols-1 gap-4 ${sidebarCollapsed ? "" : "lg:grid-cols-[1fr_400px]"}`}>
           <MonthCalendarGrid
             cursor={cursor}
-            monthData={monthData}
+            monthData={eventsByDate}
             loading={loading}
             selectedDate={selectedDate}
             todayStr={TODAY_ISO}
@@ -165,7 +166,8 @@ export function AdminSchedulePage() {
           {!sidebarCollapsed && (
             <DayAgendaSidebar
               dateStr={selectedDate}
-              occurrences={monthData[selectedDate] ?? []}
+              occurrences={eventsByDate[selectedDate] ?? []}
+              massTimes={massTimesByDate[selectedDate] ?? []}
               todayStr={TODAY_ISO}
               onAdd={() => setAddModalDate(selectedDate)}
               onAssign={setAssignTarget}
