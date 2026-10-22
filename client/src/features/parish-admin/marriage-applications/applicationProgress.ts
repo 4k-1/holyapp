@@ -176,3 +176,10 @@ export function nextStep(app: MarriageApplication, detailed = false) {
   if (app.dispensationNeeded && app.dispensationStatus === "denied") text += " The dispensation was denied.";
   return text;
 }
+
+/** The status shown to staff: the current stage, or how a closed application ended. */
+export function statusLabel(app: MarriageApplication) {
+  if (app.status === "rejected") return "Rejected";
+  if (app.status === "completed") return "Married";
+  return STAGE_LABEL[applicationStage(app)];
+}

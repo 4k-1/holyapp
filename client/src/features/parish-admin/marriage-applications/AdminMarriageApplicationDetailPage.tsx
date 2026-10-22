@@ -1,8 +1,17 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { ArrowLeftIcon, CalendarIcon, HeartIcon } from "@/components/ui/icons/AdminIcons";
+import {
+  AdminButton,
+  AdminField,
+  AdminFormSection,
+  AdminInput,
+  ChecklistIcon,
+  FileIcon,
+  type AdminSectionTone,
+} from "@/features/parish-admin/components/AdminForm";
 import {
   confirmWeddingDate,
   getMarriageApplication,
@@ -32,6 +41,21 @@ import { convert24to12, to24Hour } from "@/features/parish-admin/schedule/schedu
 
 const GROUPS: RequirementGroup[] = ["Bride", "Groom", "Couple", "Preparation"];
 
+const GROUP_HEADING: Record<RequirementGroup, string> = {
+  Bride: "Bride's documents",
+  Groom: "Groom's documents",
+  Couple: "Documents for both",
+  Preparation: "Marriage preparation",
+};
+
+/** Same tones the marriage register uses for each party, so bride and groom read the same everywhere. */
+const GROUP_TONE: Record<RequirementGroup, AdminSectionTone> = {
+  Bride: "rose",
+  Groom: "blue",
+  Couple: "green",
+  Preparation: "gold",
+};
+
 const DISPENSATION_LABEL: Record<DispensationStatus, string> = {
   none: "Not needed",
   pending: "Pending",
@@ -50,6 +74,7 @@ function fullName(first: string, middle: string, last: string) {
 
 export function AdminMarriageApplicationDetailPage() {
   const { applicationId = "" } = useParams();
+  const navigate = useNavigate();
   const [application, setApplication] = useState<MarriageApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -121,6 +146,18 @@ export function AdminMarriageApplicationDetailPage() {
     }
   }
 
+  // On narrow screens the stepper scrolls sideways; keep the current step in view.
+  const stepperRef = useRef<HTMLDivElement>(null);
+  const currentStepKey = application ? stepsFor(application).find((step) => step.state === "now")?.key : undefined;
+  useEffect(() => {
+    const box = stepperRef.current;
+    const now = box?.querySelector<HTMLElement>("[data-current-step]");
+    if (!box || !now || box.scrollWidth <= box.clientWidth) return;
+    const boxRect = box.getBoundingClientRect();
+    const nowRect = now.getBoundingClientRect();
+    box.scrollLeft += nowRect.left - boxRect.left - (boxRect.width - nowRect.width) / 2;
+  }, [currentStepKey]);
+
   if (loading && !application) {
     return <p className="text-admin-body text-admin-ink-muted">Loading application…</p>;
   }
@@ -143,39 +180,57 @@ export function AdminMarriageApplicationDetailPage() {
           : "";
 
   const steps = stepsFor(application);
+  const brideFull = fullName(application.brideFirstName, application.brideMiddleName, application.brideLastName);
+  const groomFull = fullName(application.groomFirstName, application.groomMiddleName, application.groomLastName);
 
-  const statusTone = stage === "cleared" ? "green" : application.status === "rejected" ? "red" : closed ? "muted" : "amber";
+  const statusTone = stage === "cleared" ? "green" : application.status === "rejected" ? "red" : "muted";
   const statusLabel = application.status === "rejected" ? "Rejected" : application.status === "completed" ? "Married" : STAGE_LABEL[stage];
 
   return (
     <div className="mx-auto max-w-[1040px]">
-      <Link to=".." className="mb-4 inline-block text-admin-body font-semibold text-admin-green-700 hover:underline">
-        ← Marriage applications
-      </Link>
+      <button
+        type="button"
+        onClick={() => {
+          // React Router numbers history entries; idx 0 means this page was opened directly, so fall back to the list.
+          if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+          else navigate("..", { relative: "path" });
+        }}
+        className="mb-3.5 inline-flex min-h-[44px] items-center gap-1.5 rounded-md text-admin-body text-admin-ink-muted hover:text-admin-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/40"
+      >
+        <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
+        Back
+      </button>
 
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-admin-page font-semibold text-admin-ink">
-            {application.brideName} & {application.groomName}
+      <AdminCard className="mb-4 flex flex-wrap items-start justify-between gap-4 p-5 sm:p-[26px] sm:px-7">
+        <div className="min-w-0">
+          <h1 className="sr-only">
+            Marriage application of {brideFull} and {groomFull}
           </h1>
-          <p className="mt-1 text-admin-body text-admin-ink-muted">
+          <div className="flex flex-wrap items-end gap-x-5 gap-y-2" aria-hidden="true">
+            <PersonName role="Bride" name={brideFull} />
+            <span className="pb-0.5 font-serif text-admin-page text-admin-ink-faint">&amp;</span>
+            <PersonName role="Groom" name={groomFull} />
+          </div>
+          <p className="mt-2 text-admin-body text-admin-ink-muted">
             {weddingDate
               ? `${application.weddingDateStatus === "confirmed" ? "Wedding" : "Proposed wedding"}: ${formatWeddingDate(weddingDate)}`
               : "No wedding date yet"}
           </p>
+          {application.remarks && <p className="mt-1 text-admin-body text-admin-ink-muted">Remarks: {application.remarks}</p>}
         </div>
         <AdminBadge tone={statusTone}>{statusLabel}</AdminBadge>
-      </div>
+      </AdminCard>
 
       <AdminCard className="mb-4 px-4 py-5">
-        <ol className="grid grid-cols-6" aria-label="Marriage preparation progress">
+        <div ref={stepperRef} className="-mx-1 overflow-x-auto pb-1">
+        <ol className="grid min-w-[560px] grid-cols-6" aria-label="Marriage preparation progress">
           {steps.map((step, i) => (
-            <li key={step.key} className="relative px-1 text-center">
+            <li key={step.key} className="relative px-1 text-center" data-current-step={step.state === "now" || undefined}>
               {i > 0 && (
                 <span
                   aria-hidden="true"
                   className={`absolute right-1/2 top-[15px] h-0.5 w-full ${
-                    step.state === "done" ? "bg-admin-green-700" : "bg-admin-border"
+                    step.state === "done" && steps[i - 1].state === "done" ? "bg-admin-green-700" : "bg-admin-border"
                   }`}
                 />
               )}
@@ -186,10 +241,10 @@ export function AdminMarriageApplicationDetailPage() {
                     ? "border-admin-green-700 bg-admin-green-700 text-white"
                     : step.state === "now"
                       ? "border-admin-gold-600 bg-admin-gold-100 text-admin-gold-700"
-                      : "border-admin-border-strong bg-admin-surface text-admin-ink-faint"
+                      : "border-admin-border-strong bg-admin-surface text-admin-ink-muted"
                 }`}
               >
-                {step.state === "done" ? "✓" : i + 1}
+                {step.state === "done" ? <CheckIcon className="h-4 w-4" /> : i + 1}
               </span>
               <span
                 className={`mt-2 block text-admin-support leading-snug ${
@@ -207,6 +262,7 @@ export function AdminMarriageApplicationDetailPage() {
             </li>
           ))}
         </ol>
+        </div>
       </AdminCard>
 
       <div
@@ -229,49 +285,52 @@ export function AdminMarriageApplicationDetailPage() {
         </p>
       )}
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <AdminCard className="p-5">
-          <div className="mb-1 flex items-baseline justify-between gap-3">
-            <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Requirements</h2>
-            <p className="text-admin-body tabular-nums text-admin-ink-muted">
-              {done} of {total} received
-            </p>
-          </div>
-          {GROUPS.map((group) => {
-            const items = application.requirements.filter((item) => requirementGroup(item).group === group);
-            if (items.length === 0) return null;
-            return (
-              <section key={group} className="mt-4">
-                <h3 className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-ink-muted">{group}</h3>
-                <ul>
-                  {items.map((item) => (
-                    <RequirementRow
-                      key={item.id}
-                      item={item}
-                      disabled={saving || closed}
-                      onChange={(submitted) =>
-                        run(() => verifyMarriageRequirement(application.id, item.id, submitted))
-                      }
-                    />
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
-        </AdminCard>
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Requirements</h2>
+        <p className="text-admin-body tabular-nums text-admin-ink-muted">
+          {done} of {total} received
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {GROUPS.map((group) => {
+          const items = application.requirements.filter((item) => requirementGroup(item).group === group);
+          if (items.length === 0) return null;
+          const person = group === "Bride" ? brideFull : group === "Groom" ? groomFull : null;
+          return (
+            <AdminFormSection
+              key={group}
+              tone={GROUP_TONE[group]}
+              icon={
+                group === "Bride" || group === "Groom" ? (
+                  <span className="font-serif text-admin-body font-bold">{initials(person ?? "")}</span>
+                ) : group === "Couple" ? (
+                  <HeartIcon className="h-4 w-4" />
+                ) : (
+                  <ChecklistIcon className="h-4 w-4" />
+                )
+              }
+              title={GROUP_HEADING[group]}
+              description={person ?? undefined}
+              className="mb-0 h-full"
+              bodyClassName="py-1"
+            >
+              <ul>
+                {items.map((item) => (
+                  <RequirementRow
+                    key={item.id}
+                    item={item}
+                    disabled={saving || closed}
+                    onChange={(submitted) => run(() => verifyMarriageRequirement(application.id, item.id, submitted))}
+                  />
+                ))}
+              </ul>
+            </AdminFormSection>
+          );
+        })}
+      </div>
 
-        <div className="flex flex-col gap-4">
-          <SideCard title="Couple">
-            <p className="text-admin-body text-admin-ink">
-              {fullName(application.brideFirstName, application.brideMiddleName, application.brideLastName)}
-            </p>
-            <p className="text-admin-body text-admin-ink">
-              {fullName(application.groomFirstName, application.groomMiddleName, application.groomLastName)}
-            </p>
-            {application.remarks && <p className="mt-2 text-admin-support text-admin-ink-muted">{application.remarks}</p>}
-          </SideCard>
-
-          <SideCard title="Wedding date">
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <SideCard title="Wedding date" icon={<CalendarIcon className="h-4 w-4" />}>
             {weddingDate && application.weddingDateStatus !== "none" ? (
               <>
                 <p className="text-admin-body font-semibold text-admin-ink">{formatWeddingDate(weddingDate)}</p>
@@ -374,12 +433,16 @@ export function AdminMarriageApplicationDetailPage() {
             )}
           </SideCard>
 
-          <SideCard title="Dispensation">
+          <SideCard
+            title="Dispensation"
+            icon={<FileIcon className="h-4 w-4" />}
+            description="Special permission from the diocese. Only some marriages need it, for example when the bride or groom isn't a baptized Catholic."
+          >
             {editingDispensation ? (
               <>
                 <label className="mb-3 flex min-h-[44px] items-center gap-2.5 text-admin-body text-admin-ink">
                   <input type="checkbox" className="h-5 w-5" checked={needed} onChange={(e) => setNeeded(e.target.checked)} />
-                  A dispensation is needed
+                  This marriage needs a dispensation
                 </label>
                 {needed && (
                   <>
@@ -448,7 +511,7 @@ export function AdminMarriageApplicationDetailPage() {
                   <button
                     type="button"
                     onClick={() => setEditingDispensation(true)}
-                    className="mt-2 min-h-[44px] text-admin-body font-semibold text-admin-green-700 hover:underline"
+                    className="mt-2 min-h-[44px] text-admin-body font-semibold text-admin-green-700 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/40"
                   >
                     {application.dispensationNeeded ? "Update dispensation" : "Mark as needed"}
                   </button>
@@ -456,7 +519,6 @@ export function AdminMarriageApplicationDetailPage() {
               </>
             )}
           </SideCard>
-        </div>
       </div>
 
       {!closed && stage !== "cleared" && (
@@ -490,7 +552,7 @@ export function AdminMarriageApplicationDetailPage() {
               <button
                 type="button"
                 onClick={() => setRejecting(true)}
-                className="min-h-[44px] font-semibold text-admin-red-700 hover:underline"
+                className="min-h-[44px] font-semibold text-admin-red-700 hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/40"
               >
                 Reject application…
               </button>
@@ -502,12 +564,50 @@ export function AdminMarriageApplicationDetailPage() {
   );
 }
 
-function SideCard({ title, children }: { title: string; children: ReactNode }) {
+function SideCard({
+  title,
+  description,
+  icon,
+  children,
+}: {
+  title: string;
+  description?: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <AdminCard className="p-5">
-      <h2 className="mb-2 font-serif text-admin-group font-semibold text-admin-ink">{title}</h2>
+    <AdminFormSection tone="neutral" icon={icon} title={title} description={description} className="mb-0 h-full">
       {children}
-    </AdminCard>
+    </AdminFormSection>
+  );
+}
+
+/** Text colours of the rose and blue section tones in AdminForm, so the role tags match their document cards. */
+const ROLE_COLOR = { Bride: "text-[#B85A75]", Groom: "text-[#2F6FA8]" } as const;
+
+function initials(name: string) {
+  return name
+    .split(/s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
+function CheckIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" className={className} aria-hidden="true">
+      <polyline points="5 12.5 10 17 19 7.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PersonName({ role, name }: { role: "Bride" | "Groom"; name: string }) {
+  return (
+    <div>
+      <p className={`text-admin-label font-bold uppercase tracking-admin-label ${ROLE_COLOR[role]}`}>{role}</p>
+      <p className="font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</p>
+    </div>
   );
 }
 
@@ -522,7 +622,7 @@ function RequirementRow({
 }) {
   const { label } = requirementGroup(item);
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 border-t border-admin-border py-2.5">
+    <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-admin-border py-3 first:border-t-0">
       <span className="text-admin-body text-admin-ink">
         {label}
         {!item.required && <span className="text-admin-ink-muted"> (optional)</span>}
@@ -540,7 +640,7 @@ function RequirementRow({
               onClick={() => {
                 if (window.confirm(`Mark "${item.name}" as not received?`)) onChange(false);
               }}
-              className="min-h-[36px] text-admin-support font-semibold text-admin-ink-muted underline hover:text-admin-ink"
+              className="min-h-[36px] text-admin-support font-semibold text-admin-ink-muted underline hover:text-admin-ink rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/40"
             >
               Undo
             </button>
