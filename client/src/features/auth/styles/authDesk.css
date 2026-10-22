@@ -1,4 +1,6 @@
-/* Login / auth desk — matches parish admin soft-green SaaS language */
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap");
+
+/* Sign-in pages: parish green, warm ivory, fine gold detailing, and a liturgical serif for headings. */
 .auth-desk {
   --auth-bg: #f4f6f6;
   --auth-card: #ffffff;
@@ -11,18 +13,34 @@
   --auth-green-deep: #172d31;
   --auth-green-soft: #e8f0ec;
   --auth-shadow: 0 1px 2px rgba(23, 45, 49, 0.04), 0 12px 32px rgba(23, 45, 49, 0.06);
+  --auth-ivory: #fbf9f4;
+  --auth-warm-border: #ddd6c8;
+  --auth-gold: #c9a24a;
+  --auth-gold-soft: rgba(233, 196, 120, 0.55);
+  --auth-display: "Cormorant Garamond", "EB Garamond", Georgia, "Times New Roman", serif;
   color: var(--auth-ink);
   font-family: var(--font-sans);
 }
 
-.auth-desk__title {
+/* Doubled class so it outranks the global h1-h4 font rule in index.css. */
+.auth-desk__title.auth-desk__title {
   margin: 0;
-  font-family: var(--font-serif);
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
-  color: var(--auth-ink);
+  font-family: var(--auth-display);
+  font-size: 2.375rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.1;
+  color: var(--auth-green-deep);
+}
+
+.auth-desk__title::after {
+  content: "";
+  display: block;
+  width: 7.5rem;
+  height: 0.875rem;
+  margin-top: 0.875rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 14' fill='none' stroke='%23c9a24a' stroke-width='1.2' stroke-linecap='round'%3E%3Cline x1='0' y1='7' x2='50' y2='7'/%3E%3Cline x1='70' y1='7' x2='120' y2='7'/%3E%3Cpath d='M60 1v12M55.5 5.5h9'/%3E%3C/svg%3E")
+    no-repeat left center / contain;
 }
 
 .auth-desk__subtitle {
@@ -44,7 +62,7 @@
 .auth-desk__input {
   width: 100%;
   border-radius: 10px;
-  border: 1px solid var(--auth-border-strong);
+  border: 1px solid var(--auth-warm-border);
   background: #fff;
   min-height: 2.875rem;
   padding: 0.75rem 0.95rem;
@@ -226,7 +244,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--auth-card);
+  background: var(--auth-ivory);
 }
 
 .auth-shell__frame {
@@ -234,7 +252,7 @@
   grid-template-columns: minmax(0, 1fr);
   width: 100%;
   min-height: 100dvh;
-  background: var(--auth-card);
+  background: var(--auth-ivory);
 }
 
 @media (min-width: 768px) {
@@ -258,7 +276,7 @@
 .auth-shell__mobile-brand {
   padding-bottom: 1.25rem;
   margin-bottom: 1rem;
-  border-bottom: 1px solid var(--auth-border);
+  border-bottom: 1px solid var(--auth-warm-border);
 }
 
 .auth-shell__top {
@@ -289,56 +307,101 @@
 .auth-brand {
   display: none;
   position: relative;
+  overflow: hidden;
   color: #fff;
+  /* Deep parish green with a warm light falling from above, like light through a chapel window. */
   background:
-    radial-gradient(80% 55% at 12% 8%, rgba(132, 178, 140, 0.28), transparent 62%),
-    radial-gradient(70% 50% at 95% 100%, rgba(18, 38, 33, 0.9), transparent 70%),
-    linear-gradient(165deg, #24533f 0%, #183a30 55%, #11271f 100%);
+    radial-gradient(55% 38% at 50% -4%, rgba(246, 214, 150, 0.26), transparent 72%),
+    radial-gradient(90% 60% at 50% 110%, rgba(8, 22, 17, 0.75), transparent 70%),
+    linear-gradient(180deg, #21503e 0%, #183a30 52%, #10261f 100%);
 }
 
+/* The panel stays in view at full screen height while a long form (sign-up) scrolls beside it. */
 @media (min-width: 768px) {
   .auth-brand {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 3rem;
-    padding: 2.5rem 2.75rem 3rem;
+    display: block;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
   }
+}
+
+.auth-brand__arch {
+  position: absolute;
+  inset: 2rem 2.25rem 0;
+  width: calc(100% - 4.5rem);
+  height: calc(100% - 2rem);
+  fill: none;
+  stroke: var(--auth-gold-soft);
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.auth-brand__arch path + path {
+  stroke: rgba(233, 196, 120, 0.25);
+}
+
+.auth-brand__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3rem;
+  padding: 5.5rem 4.25rem 4rem;
+  text-align: center;
 }
 
 .auth-brand__copy {
   max-width: 24rem;
 }
 
+.auth-brand__cross {
+  display: block;
+  width: 7.5rem;
+  height: 1.5rem;
+  margin: 0 auto 1.75rem;
+  fill: none;
+  stroke: var(--auth-gold-soft);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
 .auth-brand__headline {
   margin: 0;
-  font-family: var(--font-serif);
-  font-size: clamp(1.75rem, 2.4vw, 2.25rem);
-  font-weight: 700;
-  line-height: 1.18;
-  letter-spacing: -0.015em;
+  font-family: var(--auth-display);
+  font-size: clamp(2rem, 2.9vw, 2.75rem);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.005em;
   text-wrap: balance;
 }
 
 .auth-brand__quote {
-  margin: 2rem 0 0;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  margin: 2.25rem auto 0;
+  max-width: 20rem;
 }
 
 .auth-brand__quote blockquote {
   margin: 0;
-  font-family: var(--font-serif);
-  font-size: 1.0625rem;
+  font-family: var(--auth-display);
+  font-size: 1.3125rem;
   font-style: italic;
-  line-height: 1.5;
+  font-weight: 500;
+  line-height: 1.4;
   color: rgba(255, 255, 255, 0.88);
 }
 
 .auth-brand__quote figcaption {
-  margin-top: 0.4rem;
-  font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(240, 214, 160, 0.85);
 }
 
 .auth-mark {
@@ -348,45 +411,53 @@
   min-width: 0;
 }
 
+.auth-mark--dark {
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
 .auth-mark__seal {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 4.5rem;
+  height: 4.5rem;
   flex-shrink: 0;
-  border-radius: 0.75rem;
+  border-radius: 999px;
   object-fit: contain;
   background: #fff;
-  padding: 0.25rem;
+  padding: 0.4rem;
+  box-shadow: 0 0 0 1px rgba(233, 196, 120, 0.7), 0 0 0 5px rgba(233, 196, 120, 0.14), 0 10px 26px rgba(0, 0, 0, 0.25);
 }
 
 .auth-mark--light .auth-mark__seal {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.6rem;
-  box-shadow: 0 0 0 1px var(--auth-border);
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.2rem;
+  box-shadow: 0 0 0 1px var(--auth-gold);
 }
 
 .auth-mark__seal--letter {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-serif);
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-family: var(--auth-display);
+  font-size: 1.6rem;
+  font-weight: 600;
   color: var(--auth-green-deep);
 }
 
 .auth-mark__name {
-  font-family: var(--font-serif);
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.3;
+  font-family: var(--auth-display);
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .auth-mark--dark .auth-mark__name {
+  max-width: 22rem;
   color: #fff;
+  text-wrap: balance;
 }
 
 .auth-mark--light .auth-mark__name {
-  font-size: 0.9375rem;
-  color: var(--auth-ink);
+  font-size: 1.125rem;
+  color: var(--auth-green-deep);
 }
