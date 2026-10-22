@@ -1,5 +1,5 @@
 // src/features/parish-admin/schedule/components/RecurringCommitmentsManagerModal.tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import {
@@ -26,17 +26,24 @@ export function RecurringCommitmentsManagerModal({ onClose, onChanged }: Recurri
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
 
-  async function reload() {
+  const fetchCommitments = useCallback(
+    () =>
+      Promise.all([listRecurringCommitments(), listAssignableStaff()]).then(([rcs, staffList]) => {
+        setItems(rcs);
+        setStaff(staffList);
+        setLoading(false);
+      }),
+    []
+  );
+
+  function reload() {
     setLoading(true);
-    const [rcs, staffList] = await Promise.all([listRecurringCommitments(), listAssignableStaff()]);
-    setItems(rcs);
-    setStaff(staffList);
-    setLoading(false);
+    return fetchCommitments();
   }
 
   useEffect(() => {
-    reload();
-  }, []);
+    fetchCommitments();
+  }, [fetchCommitments]);
 
   async function handleRemove(id: string, label: string) {
     if (!window.confirm(`Remove "${label}" from the recurring schedule? This only stops future occurrences — past records are untouched.`)) return;

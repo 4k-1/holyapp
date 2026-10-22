@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   GridIcon,
@@ -194,10 +194,11 @@ function SidebarGroup({
   const location = useLocation();
   const panelId = useId();
   const [open, setOpen] = useState(active);
-
-  useEffect(() => {
+  const [prevActive, setPrevActive] = useState(active);
+  if (active !== prevActive) {
+    setPrevActive(active);
     if (active) setOpen(true);
-  }, [active]);
+  }
 
   const fallbackTo = links.find((l) => pathMatches(location.pathname, l.to))?.to ?? links[0]?.to ?? ".";
 

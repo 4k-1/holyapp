@@ -1,19 +1,5 @@
-import { useEffect, type ReactNode } from "react";
-
-export function useDialogDismiss(onClose: () => void, busy = false) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && !busy) onClose();
-    }
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previous;
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [onClose, busy]);
-}
+import type { ReactNode } from "react";
+import { useDialogDismiss } from "@/features/parish-admin/components/useDialogDismiss";
 
 /**
  * `data-admin-dialog-*` attributes are the contract CertificatePreviewStage uses

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { addScheduleBlock, checkConflict, listAssignableStaff } from "../api/scheduleApi";
-import { convert24to12, to24Hour } from "../scheduleHelpers";
+import { convert24to12 } from "../scheduleHelpers";
 import { EVENT_TYPE_LABELS } from "../types";
 import type { ScheduleEventType, ScheduleOccurrence } from "../types";
 

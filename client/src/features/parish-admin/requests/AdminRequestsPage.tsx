@@ -205,7 +205,7 @@ export function AdminRequestsPage() {
       </div>
 
       <div className="mb-[22px] grid grid-cols-[repeat(auto-fit,minmax(148px,1fr))] gap-3.5">
-        {(Object.keys(counts) as StatusFilter[]).map((key) => (
+        {(Object.keys(counts) as (keyof typeof counts)[]).map((key) => (
             <AdminStatCard
             key={key}
             label={key === "All statuses" ? "Total Requests" : key === "Awaiting Payment" ? "To Be Paid" : key}

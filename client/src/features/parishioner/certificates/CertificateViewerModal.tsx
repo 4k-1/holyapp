@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/Button";
 import {
   CertificateDocument,
   CertificatePreviewStage,
-  sacramentCertTitles,
 } from "@/features/parish-admin/components/CertificateDocument";
+import { sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
 import { printElement } from "@/features/parish-admin/requests/printUtils";
 import { getCertificateAppearance } from "@/features/parish-admin/settings/api/certificateConfigApi";
 import { useAsync } from "@/hooks/useAsync";

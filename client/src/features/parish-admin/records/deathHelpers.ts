@@ -4,7 +4,7 @@ import type {
   DeathSacramentName,
   DeathSearchCriteria,
 } from "@/features/parish-admin/records/types";
-import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName, initials } from "@/features/parish-admin/records/baptismalHelpers";
+import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName } from "@/features/parish-admin/records/baptismalHelpers";
 
 export { initials, certStatusTone } from "@/features/parish-admin/records/baptismalHelpers";
 

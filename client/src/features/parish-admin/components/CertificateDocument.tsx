@@ -13,7 +13,6 @@ import {
   sacramentCertTitles,
 } from "@/features/parish-admin/components/certificate/constants";
 
-export { CERT_SERIF, sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
 export { CertificatePreviewStage } from "@/features/parish-admin/components/certificate/CertificatePreviewStage";
 
 export interface CertificateFields {

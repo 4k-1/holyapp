@@ -1,6 +1,6 @@
 // src/features/parish-admin/schedule/components/MonthCalendarGrid.tsx
 import { daysInMonth, toISO } from "../scheduleHelpers";
-import { EVENT_TYPE_STYLES, EVENT_TYPE_LABELS } from "@/features/parish-admin/schedule/eventTypeStyles";
+import { EVENT_TYPE_STYLES } from "@/features/parish-admin/schedule/eventTypeStyles";
 import type { ScheduleOccurrence } from "../types";
 
 interface MonthCalendarGridProps {

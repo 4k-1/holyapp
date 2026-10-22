@@ -4,10 +4,9 @@ import { AdminButton, PrintIcon } from "@/features/parish-admin/components/Admin
 import {
   CertificateDocument,
   CertificatePreviewStage,
-  sacramentCertTitles,
   type CertificateFields,
 } from "@/features/parish-admin/components/CertificateDocument";
-import { CERT_PREVIEW_STAGE_BG } from "@/features/parish-admin/components/certificate/constants";
+import { CERT_PREVIEW_STAGE_BG, sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
 import { printElement } from "@/features/parish-admin/requests/printUtils";
 import { getCertificateAppearance } from "@/features/parish-admin/settings/api/certificateConfigApi";
 import { useAsync } from "@/hooks/useAsync";

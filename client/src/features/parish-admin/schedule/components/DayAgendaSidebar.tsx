@@ -4,7 +4,7 @@ import { AdminBadge } from "@/components/ui/AdminBadge";
 import { markRecordStatus } from "../api/scheduleApi";
 import { getRecordFormPath, getRecordFormPrefill } from "../recordLinkHelpers";
 import { ScheduleKebabMenu } from "./ScheduleKebabMenu";
-import { EVENT_TYPE_STYLES, EVENT_TYPE_LABELS } from "@/features/parish-admin/schedule/eventTypeStyles";
+import { EVENT_TYPE_STYLES } from "@/features/parish-admin/schedule/eventTypeStyles";
 import type { ScheduleOccurrence } from "../types";
 
 interface DayAgendaSidebarProps {
@@ -96,7 +96,7 @@ export function DayAgendaSidebar({
                         onClick: () => handleMarkRecorded(o),
                       },
                       { label: o.assignee ? "Reassign" : "Assign", onClick: () => onAssign(o) },
-                      o.assignee && {
+                      !!o.assignee && {
                         label: `View all for ${o.assignee}`,
                         onClick: () => onViewAssignee(o.assignee),
                       },

@@ -24,7 +24,7 @@ import {
   saBtnPrimary,
   saBtnSecondary,
 } from "@/features/super-admin/components/SuperAdminModal";
-import { useSuperAdminPageHeading } from "@/features/super-admin/SuperAdminChrome";
+import { useSuperAdminPageHeading } from "@/features/super-admin/superAdminChromeContext";
 import type { CurrentUser } from "@/types";
 
 type OfficeAccount = CurrentUser & { canEditRecords?: boolean };
@@ -76,10 +76,12 @@ export function SuperAdminParishAccountsPage() {
 
   useSuperAdminPageHeading("", "");
 
-  useEffect(() => {
+  const [view, setView] = useState({ tab, parishId });
+  if (view.tab !== tab || view.parishId !== parishId) {
+    setView({ tab, parishId });
     setQuery("");
     setPickedTheme(null);
-  }, [tab, parishId]);
+  }
 
   useEffect(() => {
     if (!toast) return;
@@ -99,7 +101,10 @@ export function SuperAdminParishAccountsPage() {
     return [...row.admins, ...row.staff];
   }, [row]);
 
-  const people = tab === "admins" ? officeAccounts : tab === "parishioners" ? (row?.parishioners ?? []) : [];
+  const people = useMemo(
+    () => (tab === "admins" ? officeAccounts : tab === "parishioners" ? (row?.parishioners ?? []) : []),
+    [tab, officeAccounts, row]
+  );
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return people;

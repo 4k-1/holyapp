@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { AdminButton, AdminInput } from "@/features/parish-admin/components/AdminForm";
 
 interface MassCapacitySettingProps {
@@ -13,9 +13,11 @@ export function MassCapacitySetting({ capacity, onSave }: MassCapacitySettingPro
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const [synced, setSynced] = useState({ capacity, editing });
+  if (synced.capacity !== capacity || synced.editing !== editing) {
+    setSynced({ capacity, editing });
     if (!editing) setValue(String(capacity));
-  }, [capacity, editing]);
+  }
 
   const next = Number(value);
   const canSave = Number.isInteger(next) && next >= 1 && !submitting;

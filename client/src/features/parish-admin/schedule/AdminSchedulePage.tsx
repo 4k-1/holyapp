@@ -1,5 +1,5 @@
 // src/features/parish-admin/schedule/AdminSchedulePage.tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { getOccurrencesForMonth } from "./api/scheduleApi";
 import { toISO } from "./scheduleHelpers";
@@ -26,17 +26,30 @@ export function AdminSchedulePage() {
   const [assignTarget, setAssignTarget] = useState<ScheduleOccurrence | null>(null);
   const [managerOpen, setManagerOpen] = useState(false);
 
-  async function reload() {
+  const fetchMonth = useCallback(
+    () =>
+      getOccurrencesForMonth(cursor.getFullYear(), cursor.getMonth()).then((data) => {
+        setMonthData(data);
+        setLoading(false);
+      }),
+    [cursor]
+  );
+
+  function reload() {
     setLoading(true);
-    const data = await getOccurrencesForMonth(cursor.getFullYear(), cursor.getMonth());
-    setMonthData(data);
-    setLoading(false);
+    return fetchMonth();
+  }
+
+  // Show the loading state as soon as the month changes.
+  const [prevCursor, setPrevCursor] = useState(cursor);
+  if (cursor !== prevCursor) {
+    setPrevCursor(cursor);
+    setLoading(true);
   }
 
   useEffect(() => {
-    reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursor]);
+    fetchMonth();
+  }, [fetchMonth]);
 
   function shiftMonth(dir: number) {
     setCursor((prev) => {

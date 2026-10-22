@@ -9,7 +9,7 @@ function book(partial: LedgerBook): LedgerBook {
 function pagesFor(
   parishId: string,
   bookId: string,
-  sacrament: SacramentType,
+  _sacrament: SacramentType,
   heading: string,
   volume: string,
   scannedAt: string,

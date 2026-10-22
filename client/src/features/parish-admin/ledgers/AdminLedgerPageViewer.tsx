@@ -35,10 +35,12 @@ export function AdminLedgerPageViewer() {
   const [jumpValue, setJumpValue] = useState(String(pageNumber || ""));
   const [jumpError, setJumpError] = useState("");
 
-  useEffect(() => {
+  const [prevPageNumber, setPrevPageNumber] = useState(pageNumber);
+  if (pageNumber !== prevPageNumber) {
+    setPrevPageNumber(pageNumber);
     setJumpValue(String(pageNumber || ""));
     setJumpError("");
-  }, [pageNumber]);
+  }
 
   function goToPageNumber(n: number) {
     navigate(`../${n}`, { relative: "path" });

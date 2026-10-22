@@ -242,18 +242,29 @@ export function AdminAddAnnotationModal({
     }
   }
 
+  // Clear results or show "Searching…" as soon as the query changes; the effect only runs the debounced search.
+  const registerQuery = searchQuery.trim();
+  const searchKey = linkEntry && linkMode === "search" ? `${effectiveLinkedCategory}:${registerQuery}` : null;
+  const [prevSearchKey, setPrevSearchKey] = useState<string | null>(null);
+  if (searchKey !== prevSearchKey) {
+    setPrevSearchKey(searchKey);
+    if (searchKey !== null) {
+      if (registerQuery.length < 2) {
+        setHits([]);
+        setSearching(false);
+      } else {
+        setSearching(true);
+      }
+    }
+  }
+
   useEffect(() => {
     if (!linkEntry || linkMode !== "search") return;
 
     const q = searchQuery.trim();
-    if (q.length < 2) {
-      setHits([]);
-      setSearching(false);
-      return;
-    }
+    if (q.length < 2) return;
 
     let cancelled = false;
-    setSearching(true);
 
     const timer = window.setTimeout(async () => {
       try {

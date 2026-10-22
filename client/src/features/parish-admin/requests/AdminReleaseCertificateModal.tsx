@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminButton, AdminField, AdminInput, PrintIcon } from "@/features/parish-admin/components/AdminForm";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
-import { sacramentCertTitles } from "@/features/parish-admin/components/CertificateDocument";
+import { sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
 import { getRequestCopyCount } from "@/features/parish-admin/requests/adminRequestHelpers";
 import { printElement } from "@/features/parish-admin/requests/printUtils";
 import { releaseCertificate } from "@/features/parish-admin/requests/api/requestsAdminApi";
@@ -265,8 +265,8 @@ export function AdminReleaseCertificateModal({
   );
 }
 
-const PickupReceiptDocument = forwardRef
- < HTMLDivElement,
+const PickupReceiptDocument = forwardRef<
+  HTMLDivElement,
   {
     parish: Parish;
     requestId: string;

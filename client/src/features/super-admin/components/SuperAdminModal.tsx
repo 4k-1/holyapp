@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useDialogDismiss } from "@/features/parish-admin/components/AdminDialog";
+import { useDialogDismiss } from "@/features/parish-admin/components/useDialogDismiss";
 
 export function SuperAdminModal({
   title,

@@ -168,7 +168,6 @@ function searchLedger(
 export function AdminFindRecordPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { requestId = "" } = useParams();
-  const navigate = useNavigate();
 
   const { data: request, loading: requestLoading } = useAsync(
     () => getAdminRequest(parish.id, requestId),
@@ -210,9 +209,9 @@ export function AdminFindRecordPage() {
 
   // Wait until request, records, AND sponsor assignments are loaded before
   // the first search. Otherwise we search an incomplete list, set
-  // seeded=true, and never retry.
-  useEffect(() => {
-    if (!request || recordsLoading || sponsorsLoading || seeded) return;
+  // seeded=true, and never retry. Runs during render so the first results
+  // appear in the same paint as the loaded request.
+  if (request && !recordsLoading && !sponsorsLoading && !seeded) {
     const details = request.details;
     const initial: MatchFilters = {
       name: details?.subjectName ?? "",
@@ -228,8 +227,9 @@ export function AdminFindRecordPage() {
     const found = searchLedger(parishRecords, initial, sponsorsByRecordId);
     setResults(found);
     setSeeded(true);
-    if (found.length > 0) setMatchFlash({ count: found.length, id: Date.now() });
-  }, [request, parishRecords, recordsLoading, sponsorsByRecordId, sponsorsLoading, seeded]);
+    // Later flashes use Date.now() ids, so 0 never collides with them.
+    if (found.length > 0) setMatchFlash({ count: found.length, id: 0 });
+  }
 
   if (requestLoading || (request && (recordsLoading || sponsorsLoading) && !seeded)) {
     return (

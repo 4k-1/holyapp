@@ -38,14 +38,19 @@ export function AdminReportPrintModal({
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    let objectUrl: string | null = null;
-
+  // A different report clears the old preview straight away while the new one builds.
+  const [shown, setShown] = useState({ kind, parish, range, period });
+  if (shown.kind !== kind || shown.parish !== parish || shown.range !== range || shown.period !== period) {
+    setShown({ kind, parish, range, period });
     setLoading(true);
     setError(null);
     setDoc(null);
     setPdfUrl(null);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
 
     buildReportDocument(kind, parish, range, period)
       .then((built) => {

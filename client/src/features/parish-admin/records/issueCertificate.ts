@@ -1,5 +1,5 @@
 import { formatCertificateCode, peekNumberingPrefix } from "@/features/parish-admin/certificates/numbering";
-import { sacramentCertTitles } from "@/features/parish-admin/components/CertificateDocument";
+import { sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
 import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
 import type { SacramentType } from "@/types";
 

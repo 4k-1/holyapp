@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
@@ -40,33 +40,41 @@ export function AdminMarriageApplicationDetailPage() {
   const [assignee, setAssignee] = useState("");
   const [rejectRemarks, setRejectRemarks] = useState("");
 
-  async function reload() {
+  const fetchApplication = useCallback(
+    () =>
+      getMarriageApplication(applicationId)
+        .then((next) => {
+          setApplication(next);
+          setNeeded(next.dispensationNeeded);
+          setDispStatus(next.dispensationStatus);
+          setDispNotes(next.dispensationNotes);
+          setDate(next.preferredWeddingDate);
+          if (next.preferredWeddingStart) {
+            setStart(to24Hour(next.preferredWeddingStart));
+            setEnd(to24Hour(next.preferredWeddingEnd || next.preferredWeddingStart));
+          }
+          setAssignee(next.weddingEvent?.assignee || "");
+        })
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : "Couldn't load this application.");
+        })
+        .finally(() => {
+          setLoading(false);
+        }),
+    [applicationId]
+  );
+
+  const [prevApplicationId, setPrevApplicationId] = useState(applicationId);
+  if (applicationId !== prevApplicationId) {
+    setPrevApplicationId(applicationId);
     setLoading(true);
     setError("");
-    try {
-      const next = await getMarriageApplication(applicationId);
-      setApplication(next);
-      setNeeded(next.dispensationNeeded);
-      setDispStatus(next.dispensationStatus);
-      setDispNotes(next.dispensationNotes);
-      setDate(next.preferredWeddingDate);
-      if (next.preferredWeddingStart) {
-        setStart(to24Hour(next.preferredWeddingStart));
-        setEnd(to24Hour(next.preferredWeddingEnd || next.preferredWeddingStart));
-      }
-      setAssignee(next.weddingEvent?.assignee || "");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't load this application.");
-    } finally {
-      setLoading(false);
-    }
   }
 
   useEffect(() => {
-    reload();
+    fetchApplication();
     listAssignableStaff().then(setStaff);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applicationId]);
+  }, [fetchApplication]);
 
   async function run(task: () => Promise<MarriageApplication>) {
     setSaving(true);

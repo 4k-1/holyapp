@@ -9,12 +9,8 @@ export function PublicDonatePage() {
   const [parish, setParish] = useState<Parish | null | undefined>(undefined);
 
   useEffect(() => {
-    if (!parishSlug) {
-      setParish(null);
-      return;
-    }
     let cancelled = false;
-    void getParishBySlug(parishSlug).then((found) => {
+    void (parishSlug ? getParishBySlug(parishSlug) : Promise.resolve(null)).then((found) => {
       if (!cancelled) setParish(found ?? null);
     });
     return () => {

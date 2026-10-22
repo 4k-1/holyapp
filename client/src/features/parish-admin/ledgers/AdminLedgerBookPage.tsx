@@ -7,8 +7,7 @@ import { RecordDetailBackLink } from "@/features/parish-admin/components/AdminRe
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { getLedgerBook, listLedgerPages, uploadLedgerPages } from "@/features/parish-admin/ledgers/api/ledgersApi";
 import { LedgerStateMessage } from "@/features/parish-admin/ledgers/LedgerCards";
-import { ledgerPageAlt, ledgerSacramentLabel, ledgerYearRange } from "@/features/parish-admin/ledgers/ledgersHelpers";
-import { ledgerSacramentBadgeTone } from "@/features/parish-admin/ledgers/ledgerVisuals";
+import { ledgerPageAlt, ledgerSacramentBadgeTone, ledgerSacramentLabel, ledgerYearRange } from "@/features/parish-admin/ledgers/ledgersHelpers";
 import { UploadLedgerPageModal } from "@/features/parish-admin/ledgers/UploadLedgerPageModal";
 import { useAsync } from "@/hooks/useAsync";
 import type { Parish } from "@/types";

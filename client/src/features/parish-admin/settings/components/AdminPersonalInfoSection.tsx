@@ -43,12 +43,12 @@ export function AdminPersonalInfoSection() {
   }
 
   function startEditing() {
-    fillFrom(user);
+    if (user) fillFrom(user);
     setEditing(true);
   }
 
   function cancelEditing() {
-    fillFrom(user);
+    if (user) fillFrom(user);
     setEditing(false);
   }
 

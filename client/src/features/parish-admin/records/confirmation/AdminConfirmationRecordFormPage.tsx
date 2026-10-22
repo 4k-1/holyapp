@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import {
   AdminButton,
@@ -87,8 +87,10 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!existing) return;
+  // Fill the form once the record being edited has loaded.
+  const [loadedRecord, setLoadedRecord] = useState<typeof existing>(undefined);
+  if (existing && existing !== loadedRecord) {
+    setLoadedRecord(existing);
     setForm({
       firstName: existing.firstName,
       middleName: existing.middleName,
@@ -113,7 +115,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
       entryNumber: existing.entryNumber,
       remarks: existing.remarks ?? "",
     });
-  }, [existing]);
+  }
 
   if (mode === "edit" && existingLoading) {
     return (

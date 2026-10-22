@@ -28,8 +28,8 @@ export interface NewDonationInput {
   remarks?: string;
 }
 
-export function donationTypeBadgeTone(type: string): "green" | "gold" | "neutral" {
+export function donationTypeBadgeTone(type: string): "green" | "gold" | "muted" {
   if (type === "GCash" || type === "Bank Transfer") return "green";
   if (type === "Cash" || type === "Check") return "gold";
-  return "neutral";
+  return "muted";
 }

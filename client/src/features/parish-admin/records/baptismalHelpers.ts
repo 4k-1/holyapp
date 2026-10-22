@@ -27,7 +27,7 @@ export function parentName(parts: { firstName: string; lastName: string }) {
   return [parts.firstName, parts.lastName].filter(Boolean).join(" ");
 }
 
-export function recordFullName(rec: BaptismalRecord) {
+export function recordFullName(rec: Pick<BaptismalRecord, "firstName" | "middleName" | "lastName">) {
   return fullName(rec);
 }
 

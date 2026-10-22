@@ -34,9 +34,7 @@ export function AccountSecuritySection() {
   const [endingSessionId, setEndingSessionId] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState("");
 
-  const loadOverview = useCallback(() => {
-    setLoading(true);
-    setLoadError("");
+  const fetchOverview = useCallback(() => {
     getSecurityOverview()
       .then((data) => {
         setTwoFactorEnabledState(data.twoFactorEnabled);
@@ -51,9 +49,15 @@ export function AccountSecuritySection() {
       });
   }, []);
 
+  const loadOverview = useCallback(() => {
+    setLoading(true);
+    setLoadError("");
+    fetchOverview();
+  }, [fetchOverview]);
+
   useEffect(() => {
-    loadOverview();
-  }, [loadOverview]);
+    fetchOverview();
+  }, [fetchOverview]);
 
   async function handleSendReset() {
     setSendingReset(true);

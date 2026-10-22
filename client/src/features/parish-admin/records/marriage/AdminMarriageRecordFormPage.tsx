@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import {
   AdminButton,
@@ -201,8 +201,10 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
   const [form, setForm] = useState<FormState>(() => emptyForm(parish.name));
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!existing) return;
+  // Fill the form once the record being edited has loaded.
+  const [loadedRecord, setLoadedRecord] = useState<typeof existing>(undefined);
+  if (existing && existing !== loadedRecord) {
+    setLoadedRecord(existing);
     setForm({
       placeOfMarriage: existing.placeOfMarriage,
       marriageAddress: existing.marriageAddress ?? "",
@@ -218,7 +220,7 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
       groom: partyToForm(getMarriageParty(existing, "Groom")),
       bride: partyToForm(getMarriageParty(existing, "Bride")),
     });
-  }, [existing]);
+  }
 
   if (mode === "edit" && existingLoading) {
     return (

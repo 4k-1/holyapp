@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
@@ -28,20 +28,24 @@ export function AdminDonationsPage() {
   const [draftFilter, setDraftFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
   const [appliedFilter, setAppliedFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
 
-  async function reload() {
+  const fetchDonations = useCallback(
+    () =>
+      Promise.all([listDonations(parish.id), getDonationTrend(parish.id)]).then(([donationsData, trendData]) => {
+        setDonations(donationsData);
+        setTrend(trendData);
+        setLoading(false);
+      }),
+    [parish.id]
+  );
+
+  function reload() {
     setLoading(true);
-    const [donationsData, trendData] = await Promise.all([
-      listDonations(parish.id),
-      getDonationTrend(parish.id),
-    ]);
-    setDonations(donationsData);
-    setTrend(trendData);
-    setLoading(false);
+    return fetchDonations();
   }
 
   useEffect(() => {
-    reload();
-  }, [parish.id]);
+    fetchDonations();
+  }, [fetchDonations]);
 
   const filtered = useMemo(
     () => filterDonationsByDate(donations, appliedFilter),

@@ -1,6 +1,6 @@
 import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type { ConfirmationRecord, ConfirmationSearchCriteria } from "@/features/parish-admin/records/types";
-import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName, initials, parentName } from "@/features/parish-admin/records/baptismalHelpers";
+import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName, parentName } from "@/features/parish-admin/records/baptismalHelpers";
 
 export { initials, certStatusTone } from "@/features/parish-admin/records/baptismalHelpers";
 

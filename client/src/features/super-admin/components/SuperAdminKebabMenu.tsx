@@ -19,12 +19,14 @@ export function SuperAdminKebabMenu({
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (!open) setPlaced(false);
+  }
 
   useLayoutEffect(() => {
-    if (!open) {
-      setPlaced(false);
-      return;
-    }
+    if (!open) return;
 
     function place() {
       const btn = buttonRef.current;

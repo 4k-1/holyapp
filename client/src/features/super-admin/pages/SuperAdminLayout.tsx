@@ -4,7 +4,8 @@ import { logout } from "@/features/auth/api/authApi";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { SuperAdminSidebar } from "@/features/super-admin/components/SuperAdminSidebar";
 import { SuperAdminTopbar } from "@/features/super-admin/components/SuperAdminTopbar";
-import { SuperAdminChromeProvider, useSuperAdminChromeHeading } from "@/features/super-admin/SuperAdminChrome";
+import { SuperAdminChromeProvider } from "@/features/super-admin/SuperAdminChrome";
+import { useSuperAdminChromeHeading } from "@/features/super-admin/superAdminChromeContext";
 
 function headingFromPath(pathname: string) {
   if (pathname.startsWith("/super-admin/parishes")) {

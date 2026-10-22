@@ -10,12 +10,8 @@ export function PublicIntentionPage() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    if (!parishSlug) {
-      setParish(null);
-      return;
-    }
     let cancelled = false;
-    void getParishBySlug(parishSlug).then((found) => {
+    void (parishSlug ? getParishBySlug(parishSlug) : Promise.resolve(null)).then((found) => {
       if (!cancelled) setParish(found ?? null);
     });
     return () => {

@@ -38,11 +38,14 @@ export function BaptismalRecordLinkField({
   const [searching, setSearching] = useState(false);
   const [linked, setLinked] = useState<BaptismalRecord | null>(null);
 
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    if (!value) setLinked(null);
+  }
+
   useEffect(() => {
-    if (!value) {
-      setLinked(null);
-      return;
-    }
+    if (!value) return;
     if (linked?.id === value) return;
     let cancelled = false;
     getBaptismalRecord(parishId, value).then((rec) => {
@@ -54,17 +57,27 @@ export function BaptismalRecordLinkField({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parishId, value]);
 
+  // Clear results or show "Searching…" as soon as the query changes; the effect only runs the debounced search.
+  const searchKey = mode === "search" ? query.trim() : null;
+  const [prevSearchKey, setPrevSearchKey] = useState<string | null>(null);
+  if (searchKey !== prevSearchKey) {
+    setPrevSearchKey(searchKey);
+    if (searchKey !== null) {
+      if (searchKey.length < 2) {
+        setHits([]);
+        setSearching(false);
+      } else {
+        setSearching(true);
+      }
+    }
+  }
+
   useEffect(() => {
     if (mode !== "search") return;
     const q = query.trim();
-    if (q.length < 2) {
-      setHits([]);
-      setSearching(false);
-      return;
-    }
+    if (q.length < 2) return;
 
     let cancelled = false;
-    setSearching(true);
     const timer = window.setTimeout(async () => {
       try {
         const all = await listBaptismalRecords(parishId);

@@ -18,7 +18,7 @@ export async function listMyTimeline(): Promise<TimelineEvent[]> {
     const data = await apiFetch<{ events: TimelineEvent[] }>("/auth/me/timeline");
     return data.events ?? [];
   } catch (err) {
-    if (err instanceof ApiError) throw new Error(err.message);
-    throw new Error("Unable to reach the server.");
+    if (err instanceof ApiError) throw new Error(err.message, { cause: err });
+    throw new Error("Unable to reach the server.", { cause: err });
   }
 }

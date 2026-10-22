@@ -29,10 +29,16 @@ export function AdminNotificationBell({
   const [recent, setRecent] = useState<ParishNotification[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // Opening the menu (or switching parish while open) shows the loading state right away.
+  const [fetchedFor, setFetchedFor] = useState({ open, parishId: parish.id });
+  if (fetchedFor.open !== open || fetchedFor.parishId !== parish.id) {
+    setFetchedFor({ open, parishId: parish.id });
+    if (open) setLoading(true);
+  }
+
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    setLoading(true);
     listNotifications(parish.id).then((all) => {
       if (cancelled) return;
       setRecent(all.slice(0, RECENT_LIMIT));

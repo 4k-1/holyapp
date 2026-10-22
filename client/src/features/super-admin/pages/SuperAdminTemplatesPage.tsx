@@ -10,9 +10,8 @@ import { AdminDialog, AdminDialogFooter, AdminDialogHeader } from "@/features/pa
 import {
   CertificateDocument,
   CertificatePreviewStage,
-  sacramentCertTitles,
 } from "@/features/parish-admin/components/CertificateDocument";
-import { CERT_PREVIEW_STAGE_BG } from "@/features/parish-admin/components/certificate/constants";
+import { CERT_PREVIEW_STAGE_BG, sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
 import { SAMPLE_CERTIFICATE } from "@/features/parish-admin/components/certificate/sampleCertificate";
 import { printElement } from "@/features/parish-admin/requests/printUtils";
 import { getCertificateAppearance } from "@/features/parish-admin/settings/api/certificateConfigApi";

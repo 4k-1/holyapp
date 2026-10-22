@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import {
   AdminButton,
@@ -115,8 +115,10 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!existing) return;
+  // Fill the form once the record being edited has loaded.
+  const [loadedRecord, setLoadedRecord] = useState<typeof existing>(undefined);
+  if (existing && existing !== loadedRecord) {
+    setLoadedRecord(existing);
     setForm({
       firstName: existing.firstName,
       middleName: existing.middleName,
@@ -147,7 +149,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       entryNumber: existing.entryNumber,
       remarks: existing.remarks ?? "",
     });
-  }, [existing]);
+  }
 
   if (mode === "edit" && existingLoading) {
     return (

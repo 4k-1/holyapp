@@ -82,7 +82,10 @@ export function UploadLedgerPageModal({
   const [activeId, setActiveId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const draftsRef = useRef<DraftScan[]>([]);
-  draftsRef.current = drafts;
+
+  useEffect(() => {
+    draftsRef.current = drafts;
+  }, [drafts]);
 
   useEffect(() => {
     return () => {
@@ -91,12 +94,8 @@ export function UploadLedgerPageModal({
   }, []);
 
   useEffect(() => {
-    if (!bookId) {
-      setTakenPages(new Set());
-      return;
-    }
     let cancelled = false;
-    listLedgerPages(parishId, bookId).then((pages) => {
+    (bookId ? listLedgerPages(parishId, bookId) : Promise.resolve([])).then((pages) => {
       if (cancelled) return;
       setTakenPages(new Set(pages.map((p) => p.pageNumber)));
     });

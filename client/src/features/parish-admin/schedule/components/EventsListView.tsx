@@ -1,5 +1,5 @@
 // src/features/parish-admin/schedule/components/EventsListView.tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminInput, AdminSelect } from "@/features/parish-admin/components/AdminForm";
@@ -25,15 +25,23 @@ export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange }: 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  async function load() {
+  const fetchBlocks = useCallback(
+    () =>
+      listAllBlocks().then((all) => {
+        setBlocks(all);
+        setLoading(false);
+      }),
+    []
+  );
+
+  function load() {
     setLoading(true);
-    setBlocks(await listAllBlocks());
-    setLoading(false);
+    return fetchBlocks();
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    fetchBlocks();
+  }, [fetchBlocks]);
 
   async function handleInputRecord(b: ScheduleBlock) {
     const path = getRecordFormPath(b);

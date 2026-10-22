@@ -13,10 +13,15 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
     setLoading(true);
     setError(null);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
     void searchParishes(query)
       .then((parishes) => {
         if (!cancelled) setResults(parishes);
