@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ParishBrandingPanel } from "@/features/auth/components/ParishBrandingPanel";
+import { AuthShell } from "@/features/auth/components/AuthShell";
 import { ParishSearchStep } from "@/features/auth/components/ParishSearchStep";
 import { RegisterForm } from "@/features/auth/components/RegisterForm";
 import { OtpStep } from "@/features/auth/components/OtpStep";
@@ -78,56 +78,28 @@ export function RegisterPage() {
   }
 
   return (
-    <div
-      data-portal="admin"
-      className="auth-desk grid h-dvh overflow-hidden grid-cols-1 md:grid-cols-2"
-    >
-      <div className="hidden min-h-0 md:block">
-        <ParishBrandingPanel parish={selectedParish} />
-      </div>
-      <div className="relative flex min-h-0 flex-col bg-[var(--auth-bg)]">
-        {showBack && (
-          <button
-            type="button"
-            onClick={handleBack}
-            className="auth-desk__ghost absolute top-5 left-5 z-20 sm:top-6 sm:left-6"
-          >
-            <span aria-hidden>←</span>
-            {backLabel}
-          </button>
-        )}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="flex min-h-full flex-col justify-center px-6 py-16 sm:px-10">
-            <div className="mx-auto w-full max-w-[28rem]">
-              {bootError && step === "search" && (
-                <p role="alert" className="auth-desk__error mb-4">
-                  {bootError}
-                </p>
-              )}
-              {step === "search" && (
-                <ParishSearchStep
-                  onSelect={(parish) => {
-                    setSelectedParish(parish);
-                    setBootError(null);
-                    setStep("register");
-                  }}
-                />
-              )}
-              {step === "register" && selectedParish && (
-                <RegisterForm parish={selectedParish} onSubmit={handleRegisterSubmit} />
-              )}
-              {step === "otp" && (
-                <OtpStep
-                  email={pendingEmail}
-                  onVerify={handleVerify}
-                  onResend={resendVerificationCode}
-                />
-              )}
-              {step === "success" && <VerificationSuccessStep />}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <AuthShell parish={selectedParish} back={showBack ? { label: backLabel, onClick: handleBack } : undefined}>
+      {bootError && step === "search" && (
+        <p role="alert" className="auth-desk__error mb-4">
+          {bootError}
+        </p>
+      )}
+      {step === "search" && (
+        <ParishSearchStep
+          onSelect={(parish) => {
+            setSelectedParish(parish);
+            setBootError(null);
+            setStep("register");
+          }}
+        />
+      )}
+      {step === "register" && selectedParish && (
+        <RegisterForm parish={selectedParish} onSubmit={handleRegisterSubmit} />
+      )}
+      {step === "otp" && (
+        <OtpStep email={pendingEmail} onVerify={handleVerify} onResend={resendVerificationCode} />
+      )}
+      {step === "success" && <VerificationSuccessStep />}
+    </AuthShell>
   );
 }

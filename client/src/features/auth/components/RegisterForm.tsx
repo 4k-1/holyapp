@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from "react";
 import { AuthPasswordField } from "@/features/auth/components/AuthPasswordField";
-import { ParishIdentityLockup } from "@/features/auth/components/ParishIdentityLockup";
 import type { Parish } from "@/types";
 import type { RegisterInput } from "@/features/auth/api/authApi";
 import "@/features/auth/styles/authDesk.css";
@@ -52,11 +51,10 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="auth-desk flex w-full flex-col gap-6 text-left">
-      <ParishIdentityLockup parish={parish} eyebrow="Registering with" />
 
       <div>
-        <h1 className="auth-desk__title">Create account</h1>
-        <p className="auth-desk__subtitle">Register as a parishioner of this parish.</p>
+        <h1 className="auth-desk__title">Create your account</h1>
+        <p className="auth-desk__subtitle">Register as a parishioner to request certificates and Mass intentions online.</p>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -191,7 +189,7 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
         {loading ? "Sending code…" : "Continue"}
       </button>
 
-      <p className="border-t border-[var(--auth-border)] pt-5 text-center text-[0.84375rem] text-[var(--auth-ink-soft)]">
+      <p className="text-center text-[0.875rem] text-[var(--auth-ink-soft)]">
         Already have an account?{" "}
         <a href={`/${parish.slug}/login`} className="auth-desk__link">
           Sign in

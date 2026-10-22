@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { login } from "@/features/auth/api/authApi";
 import { AuthPasswordField } from "@/features/auth/components/AuthPasswordField";
-import { ParishIdentityLockup } from "@/features/auth/components/ParishIdentityLockup";
 import type { Parish } from "@/types";
 import "@/features/auth/styles/authDesk.css";
 
@@ -43,11 +42,9 @@ export function LoginForm({ parish }: LoginFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="auth-desk flex w-full flex-col gap-6 text-left">
-      <ParishIdentityLockup parish={parish} eyebrow="Signing in to" />
-
       <div>
-        <h1 className="auth-desk__title">Sign in</h1>
-        <p className="auth-desk__subtitle">Continue to your parish portal.</p>
+        <h1 className="auth-desk__title">Welcome back</h1>
+        <p className="auth-desk__subtitle">Sign in to your parish account.</p>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -105,10 +102,10 @@ export function LoginForm({ parish }: LoginFormProps) {
         {loading ? "Signing in…" : "Sign in"}
       </button>
 
-      <p className="border-t border-[var(--auth-border)] pt-5 text-center text-[0.84375rem] text-[var(--auth-ink-soft)]">
-        No account?{" "}
+      <p className="text-center text-[0.875rem] text-[var(--auth-ink-soft)]">
+        New to the parish portal?{" "}
         <a href={`/${parish.slug}/register`} className="auth-desk__link">
-          Register as a parishioner
+          Create an account
         </a>
       </p>
     </form>
