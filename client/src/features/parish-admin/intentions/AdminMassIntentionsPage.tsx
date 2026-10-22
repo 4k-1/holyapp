@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import {
   confirmIntention,
   getMassIntentionCapacity,
@@ -10,9 +10,10 @@ import {
 } from "@/features/parish-admin/intentions/api/intentionsAdminApi";
 import { BookIntentionModal } from "@/features/parish-admin/intentions/components/BookIntentionModal";
 import { MassCapacitySetting } from "@/features/parish-admin/intentions/components/MassCapacitySetting";
-import { MassSlotPicker } from "@/features/parish-admin/intentions/components/MassSlotPicker";
+import { MassIntentionsMonthGrid } from "@/features/parish-admin/intentions/components/MassIntentionsMonthGrid";
 import { MassSlotTable } from "@/features/parish-admin/intentions/components/MassSlotTable";
-import { formatPeso, offeringTotal, todayISO } from "@/features/parish-admin/intentions/intentionsHelpers";
+import { formatMassDate, formatPeso, offeringTotal, todayISO } from "@/features/parish-admin/intentions/intentionsHelpers";
+import { daysInMonth, toISO } from "@/features/parish-admin/schedule/scheduleHelpers";
 import { useAsync } from "@/hooks/useAsync";
 import type { MassIntentionRequest, MassSlotView, Parish } from "@/types";
 
@@ -20,28 +21,30 @@ import type { MassIntentionRequest, MassSlotView, Parish } from "@/types";
 
 const LOCATION = "Main church";
 
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
 export function AdminMassIntentionsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const today = todayISO();
-  const [from, setFrom] = useState(today);
-  const [to, setTo] = useState(today);
+  const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
+  const [selectedDate, setSelectedDate] = useState(today);
   const [bookingSlot, setBookingSlot] = useState<MassSlotView | null>(null);
   const [markingId, setMarkingId] = useState<string | null>(null);
-  const [pickedSlotId, setPickedSlotId] = useState<string | null>(null);
 
-  const rangeFrom = from || today;
-  const rangeTo = !to ? rangeFrom : to < rangeFrom ? rangeFrom : to;
-  const isToday = rangeFrom === today && rangeTo === today;
-  const singleDay = rangeFrom === rangeTo;
+  const monthFrom = toISO(cursor);
+  const monthTo = toISO(new Date(cursor.getFullYear(), cursor.getMonth(), daysInMonth(cursor.getFullYear(), cursor.getMonth())));
+  const monthLabel = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   const { data: slots = [], loading, refetch } = useAsync(
     () =>
       listAdminMassSlots(parish.id, {
-        from: rangeFrom,
-        to: rangeTo,
+        from: monthFrom,
+        to: monthTo,
         location: LOCATION,
       }),
-    [parish.id, rangeFrom, rangeTo]
+    [parish.id, monthFrom, monthTo]
   );
 
   const { data: capacity = 5, refetch: refetchCapacity } = useAsync(() => getMassIntentionCapacity(), []);
@@ -52,20 +55,31 @@ export function AdminMassIntentionsPage() {
     refetch();
   }
 
+  const slotsByDate = useMemo(() => {
+    const byDate: Record<string, MassSlotView[]> = {};
+    for (const slot of slots) (byDate[slot.date] ??= []).push(slot);
+    return byDate;
+  }, [slots]);
+
   const totals = useMemo(() => {
     const intentions = slots.reduce((sum, slot) => sum + slot.bookedCount, 0);
     const offering = slots.reduce((sum, slot) => sum + offeringTotal(slot.intentions), 0);
     return { intentions, offering, masses: slots.length };
   }, [slots]);
 
-  // Falls back to the first Mass in the current range whenever the picked one isn't in view
-  // (first load, or the date range changed out from under it).
-  const selectedSlotId = pickedSlotId && slots.some((s) => s.id === pickedSlotId) ? pickedSlotId : slots[0]?.id ?? null;
-  const selectedSlot = slots.find((s) => s.id === selectedSlotId) ?? null;
+  const daySlots = slotsByDate[selectedDate] ?? [];
+  const selectedIsPast = selectedDate < today;
+
+  function shiftMonth(dir: number) {
+    const next = new Date(cursor.getFullYear(), cursor.getMonth() + dir, 1);
+    setCursor(next);
+    const sameMonthAsToday = next.getFullYear() === new Date().getFullYear() && next.getMonth() === new Date().getMonth();
+    setSelectedDate(sameMonthAsToday ? today : toISO(next));
+  }
 
   function goToToday() {
-    setFrom(today);
-    setTo(today);
+    setCursor(startOfMonth(new Date()));
+    setSelectedDate(today);
   }
 
   async function handleConfirm(intention: MassIntentionRequest) {
@@ -98,8 +112,9 @@ export function AdminMassIntentionsPage() {
           </p>
           {!loading && slots.length > 0 && (
             <p className="mt-2 text-admin-support text-admin-ink-muted">
+              {monthLabel} ·{" "}
               <span className="font-semibold tabular-nums text-admin-ink">{totals.intentions}</span>{" "}
-              {totals.intentions === 1 ? "intention" : "intentions"} ·{" "}
+              {totals.intentions === 1 ? "intention" : "intentions"} across{" "}
               <span className="font-semibold tabular-nums text-admin-ink">{totals.masses}</span>{" "}
               {totals.masses === 1 ? "Mass" : "Masses"} · Total offering{" "}
               <span className="font-semibold tabular-nums text-admin-ink">{formatPeso(totals.offering)}</span>
@@ -109,80 +124,72 @@ export function AdminMassIntentionsPage() {
         <MassCapacitySetting capacity={capacity} onSave={handleCapacitySave} />
       </div>
 
-      <div className="mb-3.5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-        <div role="group" aria-label="Date range shortcuts">
-          <PresetButton label="Today" active={isToday} onClick={goToToday} />
-        </div>
-        <div className="flex flex-wrap items-end gap-2.5">
-          <label className="block">
-            <span className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-              From
-            </span>
-            <AdminInput
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              aria-label="From date"
-              className="!w-full sm:!w-auto"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-              To
-            </span>
-            <AdminInput
-              type="date"
-              value={to}
-              min={from || undefined}
-              onChange={(e) => setTo(e.target.value)}
-              aria-label="To date"
-              className="!w-full sm:!w-auto"
-            />
-          </label>
-        </div>
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => shiftMonth(-1)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border bg-surface text-admin-ink-muted hover:bg-admin-surface-alt"
+          aria-label="Previous month"
+        >
+          ‹
+        </button>
+        <span className="min-w-[140px] text-center font-serif text-admin-group font-semibold text-admin-ink">
+          {monthLabel}
+        </span>
+        <button
+          type="button"
+          onClick={() => shiftMonth(1)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border bg-surface text-admin-ink-muted hover:bg-admin-surface-alt"
+          aria-label="Next month"
+        >
+          ›
+        </button>
+        <AdminButton variant="secondary" size="sm" onClick={goToToday}>
+          Today
+        </AdminButton>
       </div>
 
-      {loading && slots.length === 0 ? (
-        <p className="px-6 py-10 text-center text-admin-body text-admin-ink-muted">Loading Mass slots…</p>
-      ) : slots.length === 0 ? (
-        <p className="px-6 py-10 text-center text-admin-body text-admin-ink-muted">
-          {singleDay ? "No Masses scheduled for this date." : "No Masses scheduled in this date range."}
-        </p>
-      ) : singleDay ? (
-        <div className="flex flex-col gap-4">
-          {slots.map((slot) => (
-            <MassSlotTable
-              key={slot.id}
-              slot={slot}
-              markingId={markingId}
-              onAddRequest={() => setBookingSlot(slot)}
-              onConfirm={handleConfirm}
-              onMarkSaid={handleMarkSaid}
-            />
-          ))}
+      <MassIntentionsMonthGrid
+        cursor={cursor}
+        slotsByDate={slotsByDate}
+        loading={loading}
+        selectedDate={selectedDate}
+        todayStr={today}
+        onSelectDate={setSelectedDate}
+      />
+
+      <section className="mt-6" aria-live="polite">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-serif text-admin-group font-semibold text-admin-ink">{formatMassDate(selectedDate)}</h2>
+          {daySlots.length > 0 && (
+            <p className="text-admin-support text-admin-ink-muted">
+              {selectedIsPast
+                ? `${daySlots.reduce((sum, slot) => sum + slot.bookedCount, 0)} intentions offered`
+                : `${daySlots.reduce((sum, slot) => sum + slot.remaining, 0)} places left`}{" "}
+              · {daySlots.length} {daySlots.length === 1 ? "Mass" : "Masses"}
+            </p>
+          )}
         </div>
-      ) : (
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-          <div className="lg:w-[320px] lg:flex-shrink-0">
-            <MassSlotPicker slots={slots} selectedId={selectedSlotId} onSelect={(slot) => setPickedSlotId(slot.id)} />
-          </div>
-          <div className="min-w-0 flex-1">
-            {selectedSlot ? (
+        {loading && daySlots.length === 0 ? (
+          <p className="px-6 py-10 text-center text-admin-body text-admin-ink-muted">Loading Mass slots…</p>
+        ) : daySlots.length === 0 ? (
+          <p className="px-6 py-10 text-center text-admin-body text-admin-ink-muted">No Masses scheduled for this date.</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {daySlots.map((slot) => (
               <MassSlotTable
-                slot={selectedSlot}
+                key={slot.id}
+                slot={slot}
                 markingId={markingId}
-                onAddRequest={() => setBookingSlot(selectedSlot)}
+                isPast={selectedIsPast}
+                onAddRequest={() => setBookingSlot(slot)}
                 onConfirm={handleConfirm}
                 onMarkSaid={handleMarkSaid}
               />
-            ) : (
-              <p className="px-6 py-10 text-center text-admin-body text-admin-ink-muted">
-                Select a Mass to view its intentions.
-              </p>
-            )}
+            ))}
           </div>
-        </div>
-      )}
+        )}
+      </section>
 
       {bookingSlot && (
         <BookIntentionModal
@@ -196,29 +203,5 @@ export function AdminMassIntentionsPage() {
         />
       )}
     </div>
-  );
-}
-
-function PresetButton({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-[7px] border px-3 py-1.5 text-admin-support font-semibold transition-colors ${
-        active
-          ? "border-admin-green-700 bg-admin-green-050 text-admin-green-900"
-          : "border-admin-border-strong bg-white text-admin-ink-muted hover:border-admin-green-600"
-      }`}
-    >
-      {label}
-    </button>
   );
 }

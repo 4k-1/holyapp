@@ -16,6 +16,8 @@ import type { MassIntentionRequest, MassIntentionStatus, MassSlotView } from "@/
 interface MassSlotTableProps {
   slot: MassSlotView;
   markingId: string | null;
+  /** The Mass has already been celebrated: no new requests or confirmations, only catching up on "Said". */
+  isPast?: boolean;
   onAddRequest: () => void;
   onConfirm: (intention: MassIntentionRequest) => void;
   onMarkSaid: (intention: MassIntentionRequest) => void;
@@ -36,6 +38,7 @@ const STATUS_LABEL: Record<MassIntentionStatus, string> = {
 export function MassSlotTable({
   slot,
   markingId,
+  isPast = false,
   onAddRequest,
   onConfirm,
   onMarkSaid,
@@ -83,7 +86,7 @@ export function MassSlotTable({
       key: "actions",
       header: "Actions",
       render: (row) =>
-        row.status === "pending" ? (
+        row.status === "pending" && !isPast ? (
           <button
             type="button"
             onClick={() => onConfirm(row)}
@@ -108,31 +111,43 @@ export function MassSlotTable({
   ];
 
   return (
-    <AdminCard className="overflow-hidden">
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-admin-border px-4 py-3.5">
+    <AdminCard className={`overflow-hidden ${isPast ? "opacity-80" : ""}`}>
+      <header
+        className={`flex flex-wrap items-start justify-between gap-3 border-b border-admin-border px-4 py-3.5 ${
+          isPast ? "bg-admin-surface-alt" : ""
+        }`}
+      >
         <div className="min-w-0">
-          <h2 className="font-serif text-admin-group font-semibold text-admin-ink">
+          <h2 className={`font-serif text-admin-group font-semibold ${isPast ? "text-admin-ink-muted" : "text-admin-ink"}`}>
             {formatSlotHeading(slot.date, slot.time)}
           </h2>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <p className="text-admin-support text-admin-ink-muted">
-              {slot.bookedCount} of {slot.maxIntentions} intention slots filled
+              {isPast
+                ? `${slot.bookedCount} ${slot.bookedCount === 1 ? "intention" : "intentions"} offered`
+                : `${slot.bookedCount} of ${slot.maxIntentions} intention slots filled`}
             </p>
-            <CapacityBadge state={slot.capacityState} remaining={slot.remaining} />
+            {isPast ? (
+              <AdminBadge tone="muted">Past Mass</AdminBadge>
+            ) : (
+              <CapacityBadge state={slot.capacityState} remaining={slot.remaining} />
+            )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <AdminButton type="button" size="sm" onClick={onAddRequest} disabled={slot.remaining <= 0}>
-            {slot.remaining <= 0 ? "Slot full" : "Add request"}
-          </AdminButton>
-        </div>
+        {!isPast && (
+          <div className="flex flex-wrap items-center gap-3">
+            <AdminButton type="button" size="sm" onClick={onAddRequest} disabled={slot.remaining <= 0}>
+              {slot.remaining <= 0 ? "Slot full" : "Add request"}
+            </AdminButton>
+          </div>
+        )}
       </header>
       <div className="overflow-x-auto">
         <AdminTable
           columns={columns}
           rows={slot.intentions}
           getRowKey={(row) => row.id}
-          emptyMessage="No requests for this Mass yet."
+          emptyMessage={isPast ? "No intentions were offered at this Mass." : "No requests for this Mass yet."}
         />
       </div>
       {slot.intentions.length > 0 && (
