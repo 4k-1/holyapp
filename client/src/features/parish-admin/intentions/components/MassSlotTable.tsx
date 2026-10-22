@@ -47,20 +47,15 @@ export function MassSlotTable({
 
   const columns: AdminTableColumn<MassIntentionRequest>[] = [
     {
-      key: "requestedBy",
-      header: "Requested by",
-      render: (row) => <span className="font-medium text-admin-ink">{row.requestedBy}</span>,
-    },
-    {
       key: "intention",
       header: "Intention",
-      render: (row) => intentionLabel(row),
-    },
-    {
-      key: "requestedOn",
-      header: "Requested on",
       render: (row) => (
-        <span className="whitespace-nowrap text-admin-ink-muted">{formatRequestedOn(row.createdAt)}</span>
+        <span>
+          <span className="block text-admin-ink">{intentionLabel(row)}</span>
+          <span className="block text-admin-support text-admin-ink-muted">
+            {row.requestedBy} · {formatRequestedOn(row.createdAt)}
+          </span>
+        </span>
       ),
     },
     {

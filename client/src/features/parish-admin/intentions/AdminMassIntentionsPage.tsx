@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { AdminButton } from "@/features/parish-admin/components/AdminForm";
+import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import {
   confirmIntention,
   getMassIntentionCapacity,
@@ -10,7 +10,7 @@ import {
 } from "@/features/parish-admin/intentions/api/intentionsAdminApi";
 import { BookIntentionModal } from "@/features/parish-admin/intentions/components/BookIntentionModal";
 import { MassCapacitySetting } from "@/features/parish-admin/intentions/components/MassCapacitySetting";
-import { MassIntentionsMonthGrid } from "@/features/parish-admin/intentions/components/MassIntentionsMonthGrid";
+import { MassIntentionsMiniCalendar } from "@/features/parish-admin/intentions/components/MassIntentionsMiniCalendar";
 import { MassSlotTable } from "@/features/parish-admin/intentions/components/MassSlotTable";
 import { donationTotal, formatMassDate, formatPeso, todayISO } from "@/features/parish-admin/intentions/intentionsHelpers";
 import { daysInMonth, toISO } from "@/features/parish-admin/schedule/scheduleHelpers";
@@ -104,65 +104,53 @@ export function AdminMassIntentionsPage() {
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="mb-1 font-serif text-admin-page font-semibold text-admin-ink">Mass Intentions</h1>
-          <p className="text-admin-body text-admin-ink-muted">
-            Online intention requests against scheduled Masses. Every Mass shares the same intention capacity.
-          </p>
-          {!loading && slots.length > 0 && (
-            <p className="mt-2 text-admin-support text-admin-ink-muted">
-              {monthLabel} ·{" "}
-              <span className="font-semibold tabular-nums text-admin-ink">{totals.intentions}</span>{" "}
-              {totals.intentions === 1 ? "intention" : "intentions"} across{" "}
-              <span className="font-semibold tabular-nums text-admin-ink">{totals.masses}</span>{" "}
-              {totals.masses === 1 ? "Mass" : "Masses"} · Donations received{" "}
-              <span className="font-semibold tabular-nums text-admin-ink">{formatPeso(totals.donations)}</span>
-            </p>
-          )}
-        </div>
-        <MassCapacitySetting capacity={capacity} onSave={handleCapacitySave} />
+      <div className="mb-5">
+        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Mass Intentions</h1>
+        <p className="text-admin-body text-admin-ink-muted">
+          Intentions requested for each Mass. Pick a day to see its Masses; donations are optional.
+        </p>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => shiftMonth(-1)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border bg-surface text-admin-ink-muted hover:bg-admin-surface-alt"
-          aria-label="Previous month"
-        >
-          ‹
-        </button>
-        <span className="min-w-[140px] text-center font-serif text-admin-group font-semibold text-admin-ink">
-          {monthLabel}
-        </span>
-        <button
-          type="button"
-          onClick={() => shiftMonth(1)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border bg-surface text-admin-ink-muted hover:bg-admin-surface-alt"
-          aria-label="Next month"
-        >
-          ›
-        </button>
-        <AdminButton variant="secondary" size="sm" onClick={goToToday}>
-          Today
-        </AdminButton>
-      </div>
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-4">
+          <MassIntentionsMiniCalendar
+            cursor={cursor}
+            slotsByDate={slotsByDate}
+            loading={loading}
+            selectedDate={selectedDate}
+            todayStr={today}
+            onSelectDate={setSelectedDate}
+            onPrevMonth={() => shiftMonth(-1)}
+            onNextMonth={() => shiftMonth(1)}
+            onToday={goToToday}
+          />
+          <AdminCard className="px-4 py-3.5">
+            <h2 className="mb-2 text-admin-label font-bold uppercase tracking-admin-label text-admin-ink-muted">
+              {monthLabel}
+            </h2>
+            <dl className="grid grid-cols-2 gap-3">
+              <div>
+                <dt className="text-admin-support text-admin-ink-muted">Intentions</dt>
+                <dd className="font-serif text-admin-section font-semibold tabular-nums text-admin-ink">
+                  {loading && slots.length === 0 ? "—" : totals.intentions}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-admin-support text-admin-ink-muted">Donations received</dt>
+                <dd className="font-serif text-admin-section font-semibold tabular-nums text-admin-ink">
+                  {loading && slots.length === 0 ? "—" : formatPeso(totals.donations)}
+                </dd>
+              </div>
+            </dl>
+          </AdminCard>
+          <MassCapacitySetting capacity={capacity} onSave={handleCapacitySave} />
+        </aside>
 
-      <MassIntentionsMonthGrid
-        cursor={cursor}
-        slotsByDate={slotsByDate}
-        loading={loading}
-        selectedDate={selectedDate}
-        todayStr={today}
-        onSelectDate={setSelectedDate}
-      />
-
-      <section className="mt-6" aria-live="polite">
+      <section className="min-w-0" aria-live="polite">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-serif text-admin-group font-semibold text-admin-ink">{formatMassDate(selectedDate)}</h2>
+          <h2 className="font-serif text-admin-section font-semibold text-admin-ink">{formatMassDate(selectedDate)}</h2>
           {daySlots.length > 0 && (
-            <p className="text-admin-support text-admin-ink-muted">
+            <p className="text-admin-body text-admin-ink-muted">
               {selectedIsPast
                 ? `${daySlots.reduce((sum, slot) => sum + slot.bookedCount, 0)} intentions offered`
                 : `${daySlots.reduce((sum, slot) => sum + slot.remaining, 0)} places left`}{" "}
@@ -190,6 +178,7 @@ export function AdminMassIntentionsPage() {
           </div>
         )}
       </section>
+      </div>
 
       {bookingSlot && (
         <BookIntentionModal
