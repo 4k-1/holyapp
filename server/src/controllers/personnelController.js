@@ -115,4 +115,45 @@ async function updatePerson(req, res) {
   }
 }
 
-module.exports = { listPersonnel, createPerson, updatePerson };
+/**
+ * Removes someone without a staff account. Events they were assigned to keep their name as text, so past
+ * schedules still show who served; only the link to this row is cleared.
+ */
+async function removePerson(req, res) {
+  const client = await pool.connect();
+  try {
+    const current = await client.query('SELECT * FROM parish_personnel WHERE id = $1 AND parish_id = $2', [
+      req.params.id,
+      req.parishId,
+    ]);
+    const row = current.rows[0];
+    if (!row) return res.status(404).json({ error: 'Person not found.' });
+    if (row.user_id) {
+      throw httpError(400, 'This person has a staff account. Deactivate it under Settings → Staff Accounts instead.');
+    }
+    await client.query('BEGIN');
+    await client.query('UPDATE event SET assigned_to = NULL WHERE assigned_to = $1', [row.id]);
+    await client.query('DELETE FROM parish_personnel WHERE id = $1', [row.id]);
+    await client.query('COMMIT');
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'personnel.removed',
+      entityType: 'parish_personnel',
+      entityId: row.id,
+      metadata: { name: row.full_name, role: row.role_title },
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      // nothing to roll back
+    }
+    sendRecordError(res, err);
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { listPersonnel, createPerson, updatePerson, removePerson };

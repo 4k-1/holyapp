@@ -9,6 +9,7 @@ import {
   ChartIcon,
   GearIcon,
   BellIcon,
+  UsersIcon,
   ChevronDownIcon,
 } from "@/components/ui/icons/AdminIcons";
 import type { Role } from "@/types";
@@ -90,6 +91,7 @@ export function AdminSidebar({ role, collapsed, unreadCount = 0 }: AdminSidebarP
 
         <SidebarLink to="schedule" icon={<CalendarIcon />} label="Schedule" collapsed={collapsed} />
         <SidebarLink to="donations" icon={<HeartIcon />} label="Donations" collapsed={collapsed} />
+        <SidebarLink to="staff" icon={<UsersIcon />} label="Staff" collapsed={collapsed} />
         <SidebarGroup
           icon={<ChartIcon />}
           label="Reports"

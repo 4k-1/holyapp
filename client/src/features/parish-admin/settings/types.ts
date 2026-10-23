@@ -72,7 +72,6 @@ export type SettingsSectionId =
   | "profile"
   | "fees"
   | "staff"
-  | "directory"
   | "certificates"
   | "mass-schedule"
   | "mass-rules"
@@ -95,7 +94,6 @@ export const SETTINGS_SECTIONS: SettingsSectionMeta[] = [
   { id: "profile", label: "Parish Profile", path: "parish-profile", enabled: true },
   { id: "fees", label: "Service Fees", path: "fees", enabled: true },
   { id: "staff", label: "Staff Accounts", path: "staff", enabled: true },
-  { id: "directory", label: "Staff Directory", path: "staff-directory", enabled: true },
   { id: "certificates", label: "Certificate Configuration", path: "certificates", enabled: true },
   { id: "mass-schedule", label: "Mass Schedule", path: "mass-schedule", enabled: true },
   { id: "mass-rules", label: "Mass Intention Rules", path: "mass-rules", enabled: false },

@@ -35,7 +35,7 @@ import { SettingsHomeRedirect } from "@/features/parish-admin/settings/SettingsH
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
 import { ServiceFeesSection } from "@/features/parish-admin/settings/components/ServiceFeesSection";
 import { StaffAccountsSection } from "@/features/parish-admin/settings/components/StaffAccountsSection";
-import { StaffDirectorySection } from "@/features/parish-admin/settings/components/StaffDirectorySection";
+import { AdminStaffPage } from "@/features/parish-admin/staff/AdminStaffPage";
 import { CertificateConfigSection } from "@/features/parish-admin/settings/components/CertificateConfigSection";
 import { MassScheduleSection } from "@/features/parish-admin/settings/components/MassScheduleSection";
 import { AccountSecuritySection } from "@/features/parish-admin/settings/components/AccountSecuritySection";
@@ -105,6 +105,7 @@ export const parishAdminRoutes: RouteObject[] = [
         element: <AdminSchedulePage />,
       },
       { path: "donations", element: <AdminDonationsPage /> },
+      { path: "staff", element: <AdminStaffPage /> },
       {
         path: "reports",
         element: <AdminReportsLayout />,
@@ -127,7 +128,6 @@ export const parishAdminRoutes: RouteObject[] = [
               { path: "parish-profile", element: <ParishProfileSection /> },
               { path: "fees", element: <ServiceFeesSection /> },
               { path: "staff", element: <StaffAccountsSection /> },
-              { path: "staff-directory", element: <StaffDirectorySection /> },
               { path: "certificates", element: <CertificateConfigSection /> },
               { path: "mass-schedule", element: <MassScheduleSection /> },
             ],

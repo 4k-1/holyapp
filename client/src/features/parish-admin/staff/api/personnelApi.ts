@@ -53,3 +53,12 @@ export async function updatePerson(id: string, input: PersonInput): Promise<Pari
     fail(err);
   }
 }
+
+/** Deletes someone without a staff account; their past events keep their name. */
+export async function removePerson(id: string): Promise<void> {
+  try {
+    await apiFetch(`/personnel/${encodeURIComponent(id)}`, { method: "DELETE" });
+  } catch (err) {
+    fail(err);
+  }
+}
