@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import {
   getAttentionItems,
   getDashboardStats,
@@ -12,12 +13,6 @@ import {
 } from "./api/dashboardApi";
 import type { DashboardStat, DotTone, QuickAction } from "./types";
 import "./AdminDashboardPage.css";
-
-const CHIP_TONE_CLASSES: Record<"amber" | "gold" | "green", string> = {
-  amber: "admin-dash__chip admin-dash__chip--amber",
-  gold: "admin-dash__chip admin-dash__chip--gold",
-  green: "admin-dash__chip admin-dash__chip--green",
-};
 
 const PILL_TONE: Record<DotTone, string> = {
   amber: "admin-dash__pill admin-dash__pill--amber",
@@ -104,18 +99,13 @@ export function AdminDashboardPage() {
 
       <section className="mb-5 grid grid-cols-2 gap-3 lg:mb-6 lg:grid-cols-4 lg:gap-4" aria-label="Overview counts">
         {stats.map((s) => (
-          <div key={s.id} className="admin-dash__card admin-dash__stat p-4 sm:p-5">
-            <div className="mb-4 flex items-start justify-between gap-2">
-              <p className="admin-dash__muted text-admin-support font-medium">{s.label}</p>
-              <span className={CHIP_TONE_CLASSES[s.chipTone]}>
-                <StatIconGlyph icon={s.icon} className="h-4 w-4" />
-              </span>
-            </div>
-            <p className="font-sans text-[1.75rem] font-semibold leading-none tabular-nums tracking-[-0.03em] text-[var(--dash-ink)]">
-              {s.value}
-            </p>
-            <p className="admin-dash__faint mt-2 text-admin-label">{s.delta}</p>
-          </div>
+          <AdminStatCard
+            key={s.id}
+            label={s.label}
+            value={s.value}
+            hint={s.delta}
+            icon={<StatIconGlyph icon={s.icon} className="h-4 w-4" />}
+          />
         ))}
       </section>
 

@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { getDonationTrend, listDonations } from "./api/donationsApi";
 import { DonationSparkline } from "./components/DonationSparkline";
 import { RecordDonationModal } from "./components/RecordDonationModal";
@@ -157,7 +158,7 @@ export function AdminDonationsPage() {
                 {filterActive ? "Total in selected range" : "Total donations (all time)"}
               </p>
               <div className="mb-4 flex items-baseline gap-2.5">
-                <p className="font-serif text-admin-metric font-semibold tabular-nums text-admin-green-900">
+                <p className="font-sans text-[1.75rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-admin-ink">
                   {formatAmount(stats.totalRecorded)}
                 </p>
               </div>
@@ -167,9 +168,9 @@ export function AdminDonationsPage() {
             </div>
 
             <div className="flex flex-col gap-4">
-              <StatCard label="Named Donors" value={String(stats.namedDonors)} />
-              <StatCard label="Entries" value={String(stats.entryCount)} />
-              <StatCard label="Average Donation" value={formatAmount(stats.avgDonation)} />
+              <AdminStatCard label="Named donors" value={stats.namedDonors} />
+              <AdminStatCard label="Entries" value={stats.entryCount} />
+              <AdminStatCard label="Average donation" value={formatAmount(stats.avgDonation)} />
             </div>
           </div>
 
@@ -252,15 +253,6 @@ export function AdminDonationsPage() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-1 flex-col justify-center rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4">
-      <p className="text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">{label}</p>
-      <p className="mt-1 font-serif text-admin-metric font-semibold tabular-nums text-admin-ink">{value}</p>
     </div>
   );
 }

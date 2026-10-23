@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
+import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import {
   confirmIntention,
   getMassIntentionCapacity,
@@ -124,25 +124,16 @@ export function AdminMassIntentionsPage() {
             onNextMonth={() => shiftMonth(1)}
             onToday={goToToday}
           />
-          <AdminCard className="px-4 py-3.5">
-            <h2 className="mb-2 text-admin-label font-bold uppercase tracking-admin-label text-admin-ink-muted">
-              {monthLabel}
-            </h2>
-            <dl className="grid grid-cols-2 gap-3">
-              <div>
-                <dt className="text-admin-support text-admin-ink-muted">Intentions</dt>
-                <dd className="font-serif text-admin-section font-semibold tabular-nums text-admin-ink">
-                  {loading && slots.length === 0 ? "—" : totals.intentions}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-admin-support text-admin-ink-muted">Donations received</dt>
-                <dd className="font-serif text-admin-section font-semibold tabular-nums text-admin-ink">
-                  {loading && slots.length === 0 ? "—" : formatPeso(totals.donations)}
-                </dd>
-              </div>
-            </dl>
-          </AdminCard>
+          <div className="grid grid-cols-2 gap-3" aria-label={`${monthLabel} totals`}>
+            <AdminStatCard
+              label={`Intentions in ${cursor.toLocaleDateString("en-US", { month: "long" })}`}
+              value={loading && slots.length === 0 ? "—" : totals.intentions}
+            />
+            <AdminStatCard
+              label="Donations received"
+              value={loading && slots.length === 0 ? "—" : formatPeso(totals.donations)}
+            />
+          </div>
           <MassCapacitySetting capacity={capacity} onSave={handleCapacitySave} />
         </aside>
 

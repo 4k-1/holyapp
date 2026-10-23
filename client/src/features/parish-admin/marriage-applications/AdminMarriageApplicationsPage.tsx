@@ -164,7 +164,7 @@ export function AdminMarriageApplicationsPage() {
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
         <div>
           <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Marriage Applications</h1>
           <p className="text-admin-body text-admin-ink-muted">

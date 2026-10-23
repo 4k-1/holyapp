@@ -28,10 +28,10 @@ import type {
   ];
   
   export const DASHBOARD_STATS: DashboardStat[] = [
-    { id: "pending", icon: "inbox", chipTone: "amber", label: "Pending Requests", value: "15", delta: "+3 since yesterday" },
-    { id: "topay", icon: "wallet", chipTone: "gold", label: "To Be Paid", value: "4", delta: "Ready once confirmed" },
-    { id: "released", icon: "check", chipTone: "green", label: "Released This Month", value: "26", delta: "+6 vs. last month" },
-    { id: "events", icon: "calendar", chipTone: "green", label: "Events This Week", value: "3", delta: "1 needs recording" },
+    { id: "pending", icon: "inbox", chipTone: "amber", label: "Pending requests", value: "15", delta: "+3 since yesterday" },
+    { id: "topay", icon: "wallet", chipTone: "gold", label: "To be paid", value: "4", delta: "Ready once confirmed" },
+    { id: "released", icon: "check", chipTone: "green", label: "Released this month", value: "26", delta: "+6 vs. last month" },
+    { id: "events", icon: "calendar", chipTone: "green", label: "Events this week", value: "3", delta: "1 needs recording" },
   ];
   
   export const QUICK_ACTIONS: QuickAction[] = [

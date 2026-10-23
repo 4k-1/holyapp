@@ -208,7 +208,7 @@ export function AdminRequestsPage() {
         {(Object.keys(counts) as (keyof typeof counts)[]).map((key) => (
             <AdminStatCard
             key={key}
-            label={key === "All statuses" ? "Total Requests" : key === "Awaiting Payment" ? "To Be Paid" : key}
+            label={key === "All statuses" ? "Total requests" : key === "Awaiting Payment" ? "To be paid" : key}
             value={counts[key]}
             active={statusFilter === key}
             onClick={() => setStatusFilter(key)}
