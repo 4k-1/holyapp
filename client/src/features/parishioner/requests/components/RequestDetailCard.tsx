@@ -156,7 +156,7 @@ export function RequestDetailCard({ request, parishSlug }: RequestDetailCardProp
         <div className="mt-4 border-t border-border pt-4">
           <Link
             to={`/${parishSlug}/portal/wallet`}
-            className="flex w-full items-center justify-center gap-1 rounded-xl border border-accent/40 px-4 py-2.5 text-[13.5px] font-semibold text-accent transition-colors hover:bg-accent/10 sm:w-auto sm:ml-auto sm:border-0 sm:px-0 sm:py-0 sm:hover:bg-transparent sm:hover:underline"
+            className="flex w-full items-center justify-center gap-1 rounded-xl border border-primary/30 px-4 py-2.5 text-[13.5px] font-semibold text-primary transition-colors hover:bg-primary/5 sm:w-auto sm:ml-auto sm:border-0 sm:px-0 sm:py-0 sm:hover:bg-transparent sm:hover:underline"
           >
             View in wallet →
           </Link>

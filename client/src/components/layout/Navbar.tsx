@@ -58,7 +58,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
               end={item.end}
               className={({ isActive }) =>
                 `shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
-                  isActive ? "bg-accent/20 font-semibold text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
+                  isActive ? "bg-white/15 font-semibold text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
                 }`
               }
             >
@@ -70,7 +70,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <NavLink
             to="verify"
-            className="hidden items-center gap-1.5 rounded-full border border-accent/40 px-3 py-1.5 text-xs text-accent transition-colors hover:border-accent hover:bg-accent/10 sm:flex"
+            className="hidden items-center gap-1.5 rounded-full border border-white/30 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-white/60 hover:bg-white/10 sm:flex"
           >
             🛡 Verify
           </NavLink>
@@ -106,7 +106,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
               onClick={() => setMenuOpen(false)}
               className={({ isActive }) =>
                 `rounded-lg px-4 py-2.5 text-sm ${
-                  isActive ? "bg-accent/20 font-semibold text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
+                  isActive ? "bg-white/15 font-semibold text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
                 }`
               }
             >
@@ -116,7 +116,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
           <NavLink
             to="verify"
             onClick={() => setMenuOpen(false)}
-            className="mt-1 rounded-lg px-4 py-2.5 text-sm text-accent hover:bg-white/10"
+            className="mt-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10"
           >
             🛡 Verify a Certificate
           </NavLink>

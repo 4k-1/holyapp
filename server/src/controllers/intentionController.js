@@ -390,7 +390,8 @@ async function submitIntention(req, res) {
       );
       const slug = await client.query('SELECT slug FROM parish WHERE id = $1', [req.parishId]);
       const account = await client.query('SELECT email FROM app_user WHERE id = $1', [req.user.id]);
-      const back = `${frontendUrl()}/${slug.rows[0].slug}/portal/intentions`;
+      // Back to the request page, which confirms the donation and shows the thank-you screen.
+      const back = `${frontendUrl()}/${slug.rows[0].slug}/portal/intention`;
       const session = await createGcashCheckout({
         amountCentavos: Math.round(donation * 100),
         description: 'Mass intention donation',

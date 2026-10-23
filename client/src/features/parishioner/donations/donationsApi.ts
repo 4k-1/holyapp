@@ -41,9 +41,11 @@ export async function giveDonation(input: GiveInput): Promise<{ checkoutUrl: str
   }
 }
 
-export async function syncMyDonation(id: string): Promise<{ paid: boolean }> {
+export async function syncMyDonation(id: string): Promise<{ paid: boolean; donation?: MyDonation }> {
   try {
-    return await apiFetch<{ paid: boolean }>(`/donations/${encodeURIComponent(id)}/sync`, { method: "POST" });
+    return await apiFetch<{ paid: boolean; donation?: MyDonation }>(`/donations/${encodeURIComponent(id)}/sync`, {
+      method: "POST",
+    });
   } catch (err) {
     fail(err);
   }

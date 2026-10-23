@@ -58,12 +58,12 @@ export function MyIntentionsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-[26px] font-bold text-ink">My Mass Intentions</h1>
+        <h1 className="font-serif text-[26px] font-bold text-ink">My Mass intentions</h1>
         <Link
           to={`/${parish.slug}/portal/intention`}
-          className="rounded-lg bg-accent px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:opacity-90"
+          className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary/90"
         >
-          + New Intention
+          + New intention
         </Link>
       </div>
 

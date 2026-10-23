@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from "react";
+import { useEffect, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 /** Shared building blocks for parishioner portal forms (giving, Mass intentions), so they read as one system. */
@@ -249,3 +249,60 @@ export function PrimarySubmit({
   );
 }
 
+/** Shown while the server checks a payment with GCash after the parishioner returns. */
+export function PortalPending({ children }: { children: ReactNode }) {
+  return (
+    <div
+      role="status"
+      className="flex flex-col items-center rounded-2xl border border-border bg-surface px-6 py-12 text-center shadow-sm"
+    >
+      <span
+        className="h-8 w-8 animate-spin rounded-full border-[3px] border-primary/20 border-t-primary motion-reduce:animate-none"
+        aria-hidden="true"
+      />
+      <p className="mt-4 text-sm text-ink-muted">{children}</p>
+    </div>
+  );
+}
+
+const REDIRECT_SECONDS = 5;
+
+/** Replaces a finished form: a thank-you message, then an automatic return to the dashboard. */
+export function PortalSuccess({ title, children, to }: { title: string; children: ReactNode; to: string }) {
+  const navigate = useNavigate();
+  const [seconds, setSeconds] = useState(REDIRECT_SECONDS);
+
+  useEffect(() => {
+    if (seconds <= 0) {
+      navigate(to, { replace: true });
+      return;
+    }
+    const timer = window.setTimeout(() => setSeconds((s) => s - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [seconds, navigate, to]);
+
+  return (
+    <div
+      role="status"
+      className="flex flex-col items-center rounded-2xl border border-border bg-surface px-6 py-12 text-center shadow-[0_1px_2px_rgba(20,24,26,0.04),0_8px_24px_rgba(20,24,26,0.05)]"
+    >
+      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-7 w-7">
+          <polyline points="5 12.5 10 17.5 19 7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+      <h2 className="mt-5 font-serif text-[1.375rem] font-bold text-ink">{title}</h2>
+      <div className="mx-auto mt-2 max-w-sm text-[0.9375rem] leading-relaxed text-ink-muted">{children}</div>
+      <p className="mt-6 text-[0.8125rem] text-ink-muted" aria-live="polite">
+        Taking you to your dashboard in {Math.max(seconds, 0)}…
+      </p>
+      <button
+        type="button"
+        onClick={() => navigate(to, { replace: true })}
+        className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+      >
+        Go to dashboard now
+      </button>
+    </div>
+  );
+}

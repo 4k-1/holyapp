@@ -1,29 +1,41 @@
 import { useEffect, useState } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
 import { getCurrentUser } from "@/features/auth/api/authApi";
-import { PortalFormPage, PortalNotice } from "@/features/parishioner/components/PortalForm";
+import {
+  PortalFormPage,
+  PortalNotice,
+  PortalPending,
+  PortalSuccess,
+} from "@/features/parishioner/components/PortalForm";
 import { DonationForm } from "@/features/parishioner/donations/DonationForm";
 import { listMyDonations, syncMyDonation, type MyDonation } from "@/features/parishioner/donations/donationsApi";
 import { useAsync } from "@/hooks/useAsync";
 import type { Parish } from "@/types";
 
-type Notice = { tone: "success" | "info"; text: string } | null;
+/** "checking" while GCash confirms a returning payment; "received" once it has, which replaces the form. */
+type Phase = "form" | "checking" | "received";
 
 function formatDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function peso(amount: number) {
+  return `₱${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 }
 
 export function DonationsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const currentUser = getCurrentUser();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data, loading, refetch } = useAsync(() => listMyDonations(), [parish.id]);
+  const { data, loading } = useAsync(() => listMyDonations(), [parish.id]);
 
   const result = searchParams.get("donation");
   const returnedId = searchParams.get("id");
-  const [notice, setNotice] = useState<Notice>(
-    result === "cancelled" ? { tone: "info", text: "The donation was cancelled. Nothing was charged." } : null
+  const [phase, setPhase] = useState<Phase>(result === "done" && returnedId ? "checking" : "form");
+  const [notice, setNotice] = useState<string | null>(
+    result === "cancelled" ? "The donation was cancelled. Nothing was charged." : null
   );
+  const [receivedAmount, setReceivedAmount] = useState<number | null>(null);
 
   // Coming back from GCash: confirm the gift with the server, then tidy the address bar.
   useEffect(() => {
@@ -34,17 +46,40 @@ export function DonationsPage() {
       return;
     }
     syncMyDonation(returnedId)
-      .then(({ paid }) => {
-        setNotice(
-          paid
-            ? { tone: "success", text: "Thank you. Your gift was received by the parish." }
-            : { tone: "info", text: "Your gift is still being confirmed by GCash. It will show as received shortly." }
-        );
-        refetch();
+      .then(({ paid, donation }) => {
+        if (paid) {
+          setReceivedAmount(donation?.amount ?? null);
+          setPhase("received");
+        } else {
+          setNotice("Your gift is still being confirmed by GCash. It will show as received shortly.");
+          setPhase("form");
+        }
       })
-      .catch(() => setNotice({ tone: "info", text: "We couldn't confirm your gift yet. Please check again later." }))
+      .catch(() => {
+        setNotice("We couldn't confirm your gift yet. Please check again later.");
+        setPhase("form");
+      })
       .finally(clearParams);
-  }, [result, returnedId, setSearchParams, refetch]);
+  }, [result, returnedId, setSearchParams]);
+
+  if (phase === "checking") {
+    return (
+      <PortalFormPage title="Support the parish" description={`Give to ${parish.name} securely through GCash.`}>
+        <PortalPending>Confirming your gift with GCash…</PortalPending>
+      </PortalFormPage>
+    );
+  }
+
+  if (phase === "received") {
+    return (
+      <PortalFormPage title="Support the parish" description={`Give to ${parish.name} securely through GCash.`}>
+        <PortalSuccess title="Thank you for your gift" to={`/${parish.slug}/portal`}>
+          {receivedAmount !== null ? `${parish.name} received your gift of ${peso(receivedAmount)}.` : "Your gift was received by the parish."}{" "}
+          May God bless your generosity.
+        </PortalSuccess>
+      </PortalFormPage>
+    );
+  }
 
   const donations = data?.donations ?? [];
 
@@ -52,7 +87,7 @@ export function DonationsPage() {
     <PortalFormPage title="Support the parish" description={`Give to ${parish.name} securely through GCash.`}>
       {notice && (
         <div className="mb-5">
-          <PortalNotice tone={notice.tone}>{notice.text}</PortalNotice>
+          <PortalNotice tone="info">{notice}</PortalNotice>
         </div>
       )}
 
@@ -89,9 +124,7 @@ function GiftHistory({ donations }: { donations: MyDonation[] }) {
               >
                 {gift.status === "paid" ? "Received" : "Not completed"}
               </span>
-              <span className="w-24 text-right text-sm font-semibold tabular-nums text-ink">
-                ₱{gift.amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-              </span>
+              <span className="w-24 text-right text-sm font-semibold tabular-nums text-ink">{peso(gift.amount)}</span>
             </div>
           </li>
         ))}

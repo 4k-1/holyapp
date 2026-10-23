@@ -79,7 +79,7 @@ export function DetailsStepExtras({
                 key={name}
                 className="flex items-center gap-2.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm shadow-sm"
               >
-                <span className="text-accent">📎</span>
+                <span className="text-accent-ink">📎</span>
                 <span className="flex-1 truncate">{name}</span>
                 <button
                   type="button"

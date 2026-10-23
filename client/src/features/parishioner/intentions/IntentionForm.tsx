@@ -1,6 +1,14 @@
-import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { useMemo, useState, type ReactNode } from "react";
+import {
+  AmountPicker,
+  ChoiceButton,
+  PortalFormCard,
+  PortalFormSection,
+  PortalNotice,
+  PrimarySubmit,
+  RadioCard,
+  TextField,
+} from "@/features/parishioner/components/PortalForm";
 import {
   listOpenMassSlots,
   submitMassIntention,
@@ -107,25 +115,17 @@ export function IntentionForm({ parish, defaultRequestedBy = "", onSubmitted }: 
   }
 
   if (loading && slots.length === 0) {
-    return <FormCard><p className="text-sm text-ink-muted">Loading the Mass schedule…</p></FormCard>;
+    return <MessageCard>Loading the Mass schedule…</MessageCard>;
   }
   if (loadError) {
-    return (
-      <FormCard>
-        <p className="text-sm text-red-700" role="alert">
-          {loadError.message}
-        </p>
-      </FormCard>
-    );
+    return <PortalNotice tone="error">{loadError.message}</PortalNotice>;
   }
   if (slots.length === 0) {
     return (
-      <FormCard>
-        <p className="font-semibold text-ink">No open Masses right now</p>
-        <p className="mt-1 text-sm text-ink-muted">
-          Every Mass in the next two months is already full. Please contact the parish office.
-        </p>
-      </FormCard>
+      <MessageCard>
+        <span className="block font-semibold text-ink">No open Masses right now</span>
+        Every Mass in the next two months is already full. Please contact the parish office.
+      </MessageCard>
     );
   }
 
@@ -136,264 +136,214 @@ export function IntentionForm({ parish, defaultRequestedBy = "", onSubmitted }: 
   const monthLabel = new Date(year, monthNum - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
-    <FormCard>
-      <Section step={1} title="Choose a Mass date" hint="Only dates with room for another intention can be chosen.">
-        <div className="mb-3 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setMonthIndex((i) => Math.max(0, i - 1))}
-            disabled={monthIndex === 0}
-            aria-label="Previous month"
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-ink-muted hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40"
-          >
-            <Chevron direction="left" />
-          </button>
-          <p className="font-serif text-base font-bold text-ink" aria-live="polite">
-            {monthLabel}
-          </p>
-          <button
-            type="button"
-            onClick={() => setMonthIndex((i) => Math.min(months.length - 1, i + 1))}
-            disabled={monthIndex >= months.length - 1}
-            aria-label="Next month"
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-ink-muted hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-40"
-          >
-            <Chevron direction="right" />
-          </button>
+    <PortalFormCard>
+      <PortalFormSection step={1} title="Mass date" hint="Highlighted dates still have room for another intention.">
+        <div className="rounded-xl border border-border p-3 sm:p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <MonthButton
+              label="Previous month"
+              direction="left"
+              disabled={monthIndex === 0}
+              onClick={() => setMonthIndex((i) => Math.max(0, i - 1))}
+            />
+            <p className="text-[0.9375rem] font-semibold text-ink" aria-live="polite">
+              {monthLabel}
+            </p>
+            <MonthButton
+              label="Next month"
+              direction="right"
+              disabled={monthIndex >= months.length - 1}
+              onClick={() => setMonthIndex((i) => Math.min(months.length - 1, i + 1))}
+            />
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center">
+            {WEEKDAYS.map((d) => (
+              <span key={d} className="pb-1 text-xs font-medium text-ink-muted">
+                {d}
+              </span>
+            ))}
+            {Array.from({ length: firstDow }, (_, i) => (
+              <span key={`blank-${i}`} aria-hidden="true" />
+            ))}
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const day = i + 1;
+              const iso = `${month}-${String(day).padStart(2, "0")}`;
+              const open = slotsByDate.has(iso);
+              const selected = iso === massDate;
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  disabled={!open}
+                  onClick={() => chooseDate(iso)}
+                  aria-pressed={selected}
+                  aria-label={`${formatLongDate(iso)}${open ? "" : ", not available"}`}
+                  className={`flex h-10 items-center justify-center rounded-lg text-sm tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                    selected
+                      ? "bg-primary font-semibold text-white"
+                      : open
+                        ? "bg-primary/[0.07] font-semibold text-primary hover:bg-primary/[0.14]"
+                        : "cursor-not-allowed text-ink-muted/45"
+                  }`}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center">
-          {WEEKDAYS.map((d) => (
-            <span key={d} className="pb-1 text-[11px] font-bold uppercase tracking-wide text-ink-muted">
-              {d}
-            </span>
-          ))}
-          {Array.from({ length: firstDow }, (_, i) => (
-            <span key={`blank-${i}`} aria-hidden="true" />
-          ))}
-          {Array.from({ length: daysInMonth }, (_, i) => {
-            const day = i + 1;
-            const iso = `${month}-${String(day).padStart(2, "0")}`;
-            const open = slotsByDate.has(iso);
-            const selected = iso === massDate;
-            return (
-              <button
-                key={iso}
-                type="button"
-                disabled={!open}
-                onClick={() => chooseDate(iso)}
-                aria-pressed={selected}
-                aria-label={`${formatLongDate(iso)}${open ? "" : ", not available"}`}
-                className={`flex h-10 items-center justify-center rounded-lg text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                  selected
-                    ? "bg-accent text-white shadow-sm"
-                    : open
-                      ? "border border-accent/40 bg-accent/5 text-ink hover:bg-accent/15"
-                      : "cursor-not-allowed text-ink-muted/50"
-                }`}
-              >
-                {day}
-              </button>
-            );
-          })}
-        </div>
-      </Section>
+      </PortalFormSection>
 
-      <Section step={2} title="Choose a Mass time">
+      <PortalFormSection step={2} title="Mass time" hint={massDate ? formatLongDate(massDate) : undefined}>
         {!massDate ? (
-          <p className="rounded-lg border border-dashed border-border bg-surface-alt px-3.5 py-3 text-sm text-ink-muted">
+          <p className="rounded-xl border border-dashed border-border bg-surface-alt/60 px-4 py-3 text-sm text-ink-muted">
             Choose a date first.
           </p>
         ) : (
-          <>
-            <p className="mb-2 text-sm text-ink">{formatLongDate(massDate)}</p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {daySlots.map((item) => {
-                const selected = item.id === slotId;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setSlotId(item.id)}
-                    aria-pressed={selected}
-                    className={`flex min-h-[48px] items-center justify-between rounded-lg border-2 px-3.5 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                      selected ? "border-accent bg-accent/10" : "border-border bg-surface hover:border-accent/40"
-                    }`}
-                  >
-                    <span className="text-sm font-bold text-ink">{item.time}</span>
-                    <span className="text-xs text-ink-muted">
-                      {item.remaining} {item.remaining === 1 ? "place" : "places"} left
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </Section>
-
-      <Section step={3} title="Reason for the intention">
-        <fieldset>
-          <legend className="sr-only">Reason for the intention</legend>
-          <div className="grid grid-cols-1 gap-2">
-            {MASS_INTENTION_TYPES.map((type) => (
-              <label
-                key={type}
-                className={`flex min-h-[48px] cursor-pointer items-center gap-3 rounded-lg border-2 px-3.5 py-2.5 transition ${
-                  intentionType === type ? "border-accent bg-accent/10" : "border-border bg-surface hover:border-accent/40"
-                }`}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {daySlots.map((item) => (
+              <ChoiceButton
+                key={item.id}
+                selected={item.id === slotId}
+                onClick={() => setSlotId(item.id)}
+                className="flex min-h-[52px] items-center justify-between px-4 py-2.5 text-left"
               >
-                <input
-                  type="radio"
-                  name="intention-reason"
-                  value={type}
-                  checked={intentionType === type}
-                  onChange={() => setIntentionType(type)}
-                  className="h-4 w-4 accent-[var(--color-accent)]"
-                />
-                <span>
-                  <span className="block text-sm font-semibold text-ink">{type}</span>
-                  <span className="block text-xs text-ink-muted">{REASON_HINT[type]}</span>
+                <span className="text-[0.9375rem] font-semibold tabular-nums text-ink">{item.time}</span>
+                <span className="text-[0.8125rem] text-ink-muted">
+                  {item.remaining} {item.remaining === 1 ? "place" : "places"} left
                 </span>
-              </label>
+              </ChoiceButton>
             ))}
           </div>
-        </fieldset>
-      </Section>
+        )}
+      </PortalFormSection>
 
-      <Section step={4} title="Who is this Mass for?" hint="One person per request. Submit another request for someone else.">
-        <Input
+      <PortalFormSection step={3} title="Reason for the intention">
+        <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <legend className="sr-only">Reason for the intention</legend>
+          {MASS_INTENTION_TYPES.map((type) => (
+            <RadioCard
+              key={type}
+              name="intention-reason"
+              checked={intentionType === type}
+              onChange={() => setIntentionType(type)}
+              title={type}
+              description={REASON_HINT[type]}
+            />
+          ))}
+        </fieldset>
+      </PortalFormSection>
+
+      <PortalFormSection
+        step={4}
+        title="Who is this Mass for?"
+        hint="One person per request. Submit another request for someone else."
+      >
+        <TextField
           id="intention-for"
-          aria-label="Name of the person"
+          label="Name of the person"
           placeholder="Full name, e.g. Maria Santos"
           value={intentionFor}
           onChange={(e) => setIntentionFor(e.target.value)}
         />
-        <div className="mt-3">
-          <Input
-            id="requested-by"
-            label="Requested by"
-            placeholder="Your full name"
-            value={requestedBy}
-            onChange={(e) => setRequestedBy(e.target.value)}
-          />
-        </div>
-      </Section>
+        <TextField
+          id="requested-by"
+          className="mt-3"
+          label="Requested by"
+          placeholder="Your full name"
+          value={requestedBy}
+          onChange={(e) => setRequestedBy(e.target.value)}
+        />
+      </PortalFormSection>
 
-      <Section step={5} title="Donation (optional)" hint="Your intention is offered whether or not you donate.">
+      <PortalFormSection step={5} title="Donation (optional)" hint="Your intention is offered whether or not you donate.">
         {gcashDonations ? (
           <>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <ChoiceRadio checked={!donate} onChange={() => setDonate(false)} label="No donation" />
-              <ChoiceRadio checked={donate} onChange={() => setDonate(true)} label="Donate through GCash" />
-            </div>
+            <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <legend className="sr-only">Donation</legend>
+              <RadioCard name="donation-choice" checked={!donate} onChange={() => setDonate(false)} title="No donation" />
+              <RadioCard
+                name="donation-choice"
+                checked={donate}
+                onChange={() => setDonate(true)}
+                title="Donate through GCash"
+              />
+            </fieldset>
             {donate && (
-              <div className="mt-3">
-                <div className="mb-2 flex flex-wrap gap-2">
-                  {QUICK_AMOUNTS.map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setAmount(String(value))}
-                      aria-pressed={amount === String(value)}
-                      className={`min-h-[40px] rounded-lg border-2 px-3.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                        amount === String(value) ? "border-accent bg-accent/10 text-ink" : "border-border text-ink-muted hover:border-accent/40"
-                      }`}
-                    >
-                      {peso(value)}
-                    </button>
-                  ))}
-                </div>
-                <Input
+              <div className="mt-4">
+                <AmountPicker
                   id="donation-amount"
-                  label="Amount (₱)"
-                  type="number"
-                  inputMode="decimal"
-                  min={1}
-                  placeholder="Any amount"
+                  presets={QUICK_AMOUNTS}
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={setAmount}
                   error={amount && !donationValid ? "Enter at least ₱1." : undefined}
                 />
-                <p className="mt-2 text-xs text-ink-muted">
-                  After you submit, you&apos;ll go to GCash to complete the donation. If you cancel there, your intention
-                  stays requested.
+                <p className="mt-2 text-[0.8125rem] text-ink-muted">
+                  After you submit, you&apos;ll finish the donation on GCash. If you cancel there, your intention stays
+                  requested.
                 </p>
               </div>
             )}
           </>
         ) : (
-          <p className="rounded-lg bg-surface-alt px-3.5 py-3 text-sm text-ink-muted">
+          <p className="rounded-xl bg-surface-alt px-4 py-3 text-sm text-ink-muted">
             Online GCash donations aren&apos;t available yet. You can give at the parish office if you wish.
           </p>
         )}
-      </Section>
+      </PortalFormSection>
 
-      {error && (
-        <p className="mt-4 text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      )}
-
-      <div className="mt-6 flex justify-end">
-        <Button variant="primary" onClick={handleSubmit} disabled={!canSubmit || submitting}>
-          {submitting ? "Submitting…" : donate && donationValid && donation > 0 ? `Submit and donate ${peso(donation)}` : "Submit request"}
-        </Button>
+      <div className="px-5 py-5 sm:px-6">
+        {error && (
+          <div className="mb-3">
+            <PortalNotice tone="error">{error}</PortalNotice>
+          </div>
+        )}
+        <PrimarySubmit onClick={handleSubmit} disabled={!canSubmit || submitting}>
+          {submitting
+            ? "Submitting…"
+            : donate && donationValid && donation > 0
+              ? `Submit and donate ${peso(donation)}`
+              : "Submit request"}
+        </PrimarySubmit>
       </div>
-    </FormCard>
+    </PortalFormCard>
   );
 }
 
-function FormCard({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-7">{children}</div>;
+function MessageCard({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface px-6 py-8 text-center text-sm text-ink-muted shadow-sm">
+      {children}
+    </div>
+  );
 }
 
-function Section({
-  step,
-  title,
-  hint,
-  children,
+function MonthButton({
+  label,
+  direction,
+  disabled,
+  onClick,
 }: {
-  step: number;
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
+  label: string;
+  direction: "left" | "right";
+  disabled: boolean;
+  onClick: () => void;
 }) {
   return (
-    <section className="border-t border-border pt-5 first:border-t-0 first:pt-0 [&+section]:mt-5">
-      <h2 className="flex items-center gap-2.5 font-serif text-lg font-bold text-ink">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 font-sans text-sm text-primary">
-          {step}
-        </span>
-        {title}
-      </h2>
-      {hint && <p className="mb-3 mt-1 text-sm text-ink-muted">{hint}</p>}
-      {!hint && <div className="mb-3" />}
-      {children}
-    </section>
-  );
-}
-
-function ChoiceRadio({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
-  return (
-    <label
-      className={`flex min-h-[48px] cursor-pointer items-center gap-3 rounded-lg border-2 px-3.5 py-2.5 text-sm font-semibold text-ink transition ${
-        checked ? "border-accent bg-accent/10" : "border-border bg-surface hover:border-accent/40"
-      }`}
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-alt hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-35"
     >
-      <input type="radio" name="donation-choice" checked={checked} onChange={onChange} className="h-4 w-4" />
-      {label}
-    </label>
-  );
-}
-
-function Chevron({ direction }: { direction: "left" | "right" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
-      <polyline
-        points={direction === "left" ? "15 18 9 12 15 6" : "9 18 15 12 9 6"}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+        <polyline
+          points={direction === "left" ? "15 18 9 12 15 6" : "9 18 15 12 9 6"}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
   );
 }
