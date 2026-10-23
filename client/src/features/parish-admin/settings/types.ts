@@ -1,5 +1,5 @@
 // src/features/parish-admin/settings/types.ts
-
+import { PERSONNEL_ROLES } from "@/features/parish-admin/staff/staffRoles";
 import type { SacramentType } from "@/types";
 
 export interface ParishProfile {
@@ -30,9 +30,10 @@ export interface CertificateAppearance {
 
 export type CertificateConfigBySacrament = Record<SacramentType, CertificateAppearance>;
 
-export type StaffRole = "Priest" | "Parish Secretary" | "Admin Staff";
+/** A role from the Staff list, e.g. "Parish Priest" or "Parish Secretary". */
+export type StaffRole = string;
 
-export const STAFF_ROLES: StaffRole[] = ["Priest", "Parish Secretary", "Admin Staff"];
+export const STAFF_ROLES: StaffRole[] = PERSONNEL_ROLES;
 
 /** "admin" also grants Settings, Service Fees, and Staff Accounts — same split as CurrentUser["role"]. */
 export type StaffAccessRole = "staff" | "admin";
@@ -48,7 +49,10 @@ export interface StaffAccount {
   accessRole: StaffAccessRole;
 }
 
-export type NewStaffInput = Pick<StaffAccount, "name" | "email" | "role" | "accessRole">;
+export type NewStaffInput = Pick<StaffAccount, "name" | "email" | "role" | "accessRole"> & {
+  /** Someone already on the Staff list to attach the sign-in to; their name and role are kept. */
+  personnelId?: string;
+};
 
 export interface LoginSession {
   id: string;

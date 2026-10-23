@@ -98,17 +98,34 @@ async function listStaff(req, res) {
   }
 }
 
+/**
+ * Creates a sign-in. With `personnelId` the account is attached to someone already on the Staff list, who keeps
+ * their name, role and schedule; without it a new person is added to the list along with the account.
+ */
 async function createStaff(req, res) {
-  const name = String(req.body.name || '').trim();
+  let name = String(req.body.name || '').trim();
   const email = String(req.body.email || '').trim().toLowerCase();
-  const roleTitle = JOB_TITLES.has(req.body.role) ? req.body.role : 'Admin Staff';
+  let roleTitle = JOB_TITLES.has(req.body.role) ? req.body.role : 'Admin Staff';
   const accessRole = req.body.accessRole === 'admin' ? 'admin' : 'staff';
-
-  if (!name || !email) {
-    return res.status(400).json({ error: 'Name and email are required.' });
-  }
+  const personnelId = req.body.personnelId ? String(req.body.personnelId) : null;
 
   try {
+    let person = null;
+    if (personnelId) {
+      const found = await pool.query(
+        'SELECT id, full_name, role_title, user_id FROM parish_personnel WHERE id = $1 AND parish_id = $2',
+        [personnelId, req.parishId]
+      );
+      person = found.rows[0];
+      if (!person) return res.status(404).json({ error: 'That person is not on the Staff list.' });
+      if (person.user_id) return res.status(409).json({ error: `${person.full_name} already has a sign-in.` });
+      name = person.full_name;
+      roleTitle = person.role_title;
+    }
+
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Name and email are required.' });
+    }
     const taken = await pool.query('SELECT id FROM app_user WHERE lower(email) = $1', [email]);
     if (taken.rows.length > 0) {
       return res.status(409).json({ error: 'An account with this email already exists.' });
@@ -126,20 +143,27 @@ async function createStaff(req, res) {
       [req.parishId, userRole, firstName, lastName, email, passwordHash]
     );
     const user = inserted.rows[0];
-    await upsertPersonnel({
-      parishId: req.parishId,
-      userId: user.id,
-      fullName: name,
-      roleTitle,
-      status: 'active',
-    });
+    if (person) {
+      await pool.query(
+        `UPDATE parish_personnel SET user_id = $1, status = 'active', updated_at = NOW() WHERE id = $2`,
+        [user.id, person.id]
+      );
+    } else {
+      await upsertPersonnel({
+        parishId: req.parishId,
+        userId: user.id,
+        fullName: name,
+        roleTitle,
+        status: 'active',
+      });
+    }
     await writeAudit({
       parishId: req.parishId,
       actorId: req.user.id,
       action: 'app_user.created',
       entityType: 'app_user',
       entityId: user.id,
-      metadata: { role: userRole, email },
+      metadata: { role: userRole, email, linkedPersonnelId: person ? person.id : null },
     });
 
     const loaded = await loadOfficeUser(req.parishId, user.id);

@@ -7,6 +7,7 @@ import { AdminButton, AdminInput } from "@/features/parish-admin/components/Admi
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { isParishAdminRole } from "@/features/parish-admin/permissions";
 import { listPersonnel, type ParishPerson } from "./api/personnelApi";
+import { GiveSignInModal } from "./components/GiveSignInModal";
 import { RemoveStaffModal } from "./components/RemoveStaffModal";
 import { StaffPersonModal } from "./components/StaffPersonModal";
 
@@ -42,6 +43,7 @@ export function AdminStaffPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<ParishPerson | "new" | null>(null);
   const [removing, setRemoving] = useState<ParishPerson | null>(null);
+  const [givingSignIn, setGivingSignIn] = useState<ParishPerson | null>(null);
 
   const load = useCallback(
     () =>
@@ -112,6 +114,11 @@ export function AdminStaffPage() {
           <button type="button" onClick={() => setEditing(p)} className="admin-table__action">
             Edit
           </button>
+          {!p.hasAccount && p.status === "active" && (
+            <button type="button" onClick={() => setGivingSignIn(p)} className="admin-table__action">
+              Give sign-in
+            </button>
+          )}
           {!p.hasAccount && (
             <button
               type="button"
@@ -205,6 +212,17 @@ export function AdminStaffPage() {
           onRemoved={() => {
             setPeople((prev) => prev.filter((p) => p.id !== removing.id));
             setRemoving(null);
+          }}
+        />
+      )}
+
+      {givingSignIn && (
+        <GiveSignInModal
+          person={givingSignIn}
+          onClose={() => setGivingSignIn(null)}
+          onDone={() => {
+            setGivingSignIn(null);
+            load();
           }}
         />
       )}

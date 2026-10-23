@@ -56,7 +56,7 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
           <p className="mt-0.5 text-admin-support text-admin-ink-muted">
             {person?.hasAccount
               ? "Their name and status follow their staff account. Change those under Settings → Staff Accounts."
-              : "This doesn't create a sign-in. Add a staff account in Settings if they need one."}
+              : "This doesn't create a sign-in. If they need to use the system, choose Give sign-in on their row."}
           </p>
         </div>
         <div className="space-y-3.5 px-6 py-5">

@@ -1,6 +1,8 @@
 // src/features/parish-admin/settings/components/StaffAccountModal.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { listPersonnel, type ParishPerson } from "@/features/parish-admin/staff/api/personnelApi";
+import { AccessOption } from "@/features/parish-admin/staff/components/AccessOption";
 import { STAFF_ROLES } from "../types";
 import type { NewStaffInput, StaffAccessRole, StaffAccount, StaffRole } from "../types";
 
@@ -26,12 +28,32 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
   const [accessRole, setAccessRole] = useState<StaffAccessRole>(account?.accessRole ?? "staff");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  /** New sign-ins usually go to someone already on the Staff list, so nobody ends up listed twice. */
+  const [unlinked, setUnlinked] = useState<ParishPerson[]>([]);
+  const [source, setSource] = useState<"list" | "new">("list");
+  const [personId, setPersonId] = useState("");
+  const linkedPerson = source === "list" ? unlinked.find((p) => p.id === personId) : undefined;
+
+  useEffect(() => {
+    if (isEditing) return;
+    listPersonnel()
+      .then(({ personnel }) => {
+        const available = personnel.filter((p) => !p.hasAccount && p.status === "active");
+        setUnlinked(available);
+        if (available.length === 0) setSource("new");
+      })
+      .catch(() => setSource("new"));
+  }, [isEditing]);
 
   const accessChanged = isEditing && accessRole !== account!.accessRole;
   const lockAdminAccess = isSelf && account?.accessRole === "admin";
 
   async function handleSave() {
-    if (!name.trim() || !email.trim()) {
+    if (!isEditing && source === "list" && !linkedPerson) {
+      setError("Choose who this sign-in is for.");
+      return;
+    }
+    if ((!linkedPerson && !name.trim()) || !email.trim()) {
       setError("Name and email are required.");
       return;
     }
@@ -42,9 +64,13 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
     setSaving(true);
     setError("");
     try {
-      await onSave({ name: name.trim(), email: email.trim(), role, accessRole });
-    } catch {
-      setError("Something went wrong. Please try again.");
+      await onSave(
+        linkedPerson
+          ? { personnelId: linkedPerson.id, name: linkedPerson.name, role: linkedPerson.role, email: email.trim(), accessRole }
+          : { name: name.trim(), email: email.trim(), role, accessRole }
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setSaving(false);
     }
   }
@@ -68,17 +94,58 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
         </div>
 
         <div className="space-y-3.5 px-6 py-5">
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <AdminField label="Full name" className="mb-0">
-              <AdminInput
-                value={name}
+          {!isEditing && unlinked.length > 0 && (
+            <AdminField label="Who is this sign-in for?" className="mb-0">
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <AccessOption
+                  selected={source === "list"}
+                  title="Someone on the Staff list"
+                  description="Keeps their name, role, and assigned events."
+                  onSelect={() => setSource("list")}
+                />
+                <AccessOption
+                  selected={source === "new"}
+                  title="Someone new"
+                  description="Adds them to the Staff list too."
+                  onSelect={() => setSource("new")}
+                />
+              </div>
+            </AdminField>
+          )}
+
+          {!isEditing && source === "list" && unlinked.length > 0 && (
+            <AdminField label="Person" className="mb-0">
+              <select
+                value={personId}
                 onChange={(e) => {
-                  setName(e.target.value);
+                  setPersonId(e.target.value);
                   setError("");
                 }}
-                placeholder="e.g. Fr. Juan Santos"
-              />
+                className={selectClass}
+              >
+                <option value="">Choose from the Staff list</option>
+                {unlinked.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} · {p.role}
+                  </option>
+                ))}
+              </select>
             </AdminField>
+          )}
+
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            {(isEditing || source === "new") && (
+              <AdminField label="Full name" className="mb-0">
+                <AdminInput
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setError("");
+                  }}
+                  placeholder="e.g. Fr. Juan Santos"
+                />
+              </AdminField>
+            )}
             <AdminField label="Email address" className="mb-0">
               <AdminInput
                 type="email"
@@ -92,15 +159,17 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
             </AdminField>
           </div>
 
-          <AdminField label="Role" className="mb-0">
-            <select value={role} onChange={(e) => setRole(e.target.value as StaffRole)} className={selectClass}>
-              {STAFF_ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </AdminField>
+          {(isEditing || source === "new") && (
+            <AdminField label="Role" className="mb-0">
+              <select value={role} onChange={(e) => setRole(e.target.value as StaffRole)} className={selectClass}>
+                {STAFF_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </AdminField>
+          )}
 
           <AdminField label="Access level" className="mb-0">
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -158,44 +227,5 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
         </div>
       </div>
     </div>
-  );
-}
-
-function AccessOption({
-  selected,
-  disabled = false,
-  title,
-  description,
-  onSelect,
-}: {
-  selected: boolean;
-  disabled?: boolean;
-  title: string;
-  description: string;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      disabled={disabled}
-      className={`rounded-[10px] border px-3.5 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-        selected
-          ? "border-admin-green-600 bg-admin-green-050 ring-1 ring-inset ring-admin-green-600/30"
-          : "border-admin-border-strong bg-white hover:bg-admin-surface-alt"
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span
-          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
-            selected ? "border-admin-green-700 bg-admin-green-700" : "border-admin-border-strong"
-          }`}
-        >
-          {selected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
-        </span>
-        <span className="text-admin-body font-semibold text-admin-ink">{title}</span>
-      </div>
-      <p className="mt-1 pl-6 text-admin-label leading-snug text-admin-ink-muted">{description}</p>
-    </button>
   );
 }
