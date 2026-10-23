@@ -301,6 +301,28 @@ function occurrenceDate(occurrenceId) {
   return match ? match[1] : null;
 }
 
+async function updateEvent(parishId, eventId, input) {
+  const assignedTo = await resolvePersonnelId(parishId, input.assignee);
+  await pool.query(
+    `UPDATE event
+     SET title = $1, event_type = $2, start_datetime = $3, end_datetime = $4, location = $5,
+         assigned_to = $6, assignee_name = $7, show_on_overview = $8, updated_at = NOW()
+     WHERE id = $9 AND parish_id = $10`,
+    [
+      input.title,
+      input.type,
+      toTimestamp(input.date, input.start),
+      toTimestamp(input.date, input.end),
+      input.location || null,
+      assignedTo,
+      input.assignee || '',
+      input.showOnOverview !== false,
+      eventId,
+      parishId,
+    ]
+  );
+}
+
 async function assignOccurrence(parishId, occurrenceId, assignee) {
   const uuid =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(occurrenceId);
@@ -365,6 +387,7 @@ module.exports = {
   massScheduleFromCommitments,
   scheduleLabelForDate,
   createEvent,
+  updateEvent,
   assignOccurrence,
   EVENT_SELECT,
   findConflict,

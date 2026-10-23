@@ -108,6 +108,36 @@ async function createBlock(req, res) {
   }
 }
 
+/** Edits an event added by hand. Weddings and other events made by another module change from their source. */
+async function updateBlock(req, res) {
+  try {
+    const current = await pool.query('SELECT id, source FROM event WHERE id = $1 AND parish_id = $2', [
+      req.params.id,
+      req.parishId,
+    ]);
+    const row = current.rows[0];
+    if (!row) return res.status(404).json({ error: 'Event not found.' });
+    if ((row.source || 'manual') !== 'manual') {
+      throw schedule.httpError(400, `This event comes from ${row.source}. Change it there instead.`);
+    }
+    const input = parseBlockInput(req.body || {});
+    await schedule.assertNoConflict(req.parishId, { ...input, excludeId: row.id });
+    await schedule.updateEvent(req.parishId, row.id, input);
+    const block = (await schedule.loadBlocks(req.parishId)).find((item) => item.id === row.id);
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'schedule.event_updated',
+      entityType: 'event',
+      entityId: row.id,
+      metadata: { title: input.title, date: input.date, location: input.location, assignee: input.assignee },
+    });
+    res.json({ block });
+  } catch (err) {
+    return send(res, err);
+  }
+}
+
 async function assignOccurrence(req, res) {
   try {
     const occurrenceId = requiredText(req.body?.occurrenceId, 'Occurrence');
@@ -272,6 +302,7 @@ module.exports = {
   listStaffNames,
   checkConflict,
   createBlock,
+  updateBlock,
   assignOccurrence,
   markRecord,
   listRecurring,

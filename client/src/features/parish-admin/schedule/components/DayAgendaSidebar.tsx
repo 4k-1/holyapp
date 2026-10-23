@@ -15,6 +15,8 @@ interface DayAgendaSidebarProps {
   todayStr: string;
   onAdd: () => void;
   onAssign: (occurrence: ScheduleOccurrence) => void;
+  /** Opens the edit dialog; only offered for events added by hand. */
+  onEdit: (occurrence: ScheduleOccurrence) => void;
   onChanged: () => void;
   onViewAssignee: (assignee: string) => void;
 }
@@ -26,6 +28,7 @@ export function DayAgendaSidebar({
   todayStr,
   onAdd,
   onAssign,
+  onEdit,
   onChanged,
   onViewAssignee,
 }: DayAgendaSidebarProps) {
@@ -107,6 +110,7 @@ export function DayAgendaSidebar({
                         label: "Already recorded",
                         onClick: () => handleMarkRecorded(o),
                       },
+                      !o.isRecurringOccurrence && o.source === "manual" && { label: "Edit", onClick: () => onEdit(o) },
                       { label: o.assignee ? "Reassign" : "Assign", onClick: () => onAssign(o) },
                       !!o.assignee && {
                         label: `View all for ${o.assignee}`,

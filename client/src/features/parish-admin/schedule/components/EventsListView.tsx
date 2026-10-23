@@ -15,9 +15,13 @@ interface EventsListViewProps {
   onViewDay: (dateStr: string) => void;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
+  /** Opens the edit dialog for an event added by hand. */
+  onEdit: (block: ScheduleBlock) => void;
+  /** Changes when the parent saved an event, so the list fetches again. */
+  reloadKey: number;
 }
 
-export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange }: EventsListViewProps) {
+export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange, onEdit, reloadKey }: EventsListViewProps) {
   const navigate = useNavigate();
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +45,7 @@ export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange }: 
 
   useEffect(() => {
     fetchBlocks();
-  }, [fetchBlocks]);
+  }, [fetchBlocks, reloadKey]);
 
   async function handleInputRecord(b: ScheduleBlock) {
     const path = getRecordFormPath(b);
@@ -231,6 +235,14 @@ export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange }: 
                         >
                           View day
                         </button>
+                        {b.source === "manual" && (
+                          <button
+                            onClick={() => onEdit(b)}
+                            className="whitespace-nowrap shrink-0 text-admin-support font-semibold text-admin-green-700 hover:underline"
+                          >
+                            Edit
+                          </button>
+                        )}
                         {b.recordStatus === "Pending" && (
                           <button
                             onClick={() => handleInputRecord(b)}

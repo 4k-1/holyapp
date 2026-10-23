@@ -8,6 +8,7 @@ const {
   listStaffNames,
   checkConflict,
   createBlock,
+  updateBlock,
   assignOccurrence,
   markRecord,
   listRecurring,
@@ -32,6 +33,7 @@ router.get('/blocks', ...office, listBlocks);
 router.get('/staff', ...office, listStaffNames);
 router.post('/conflicts', ...office, checkConflict);
 router.post('/events', ...office, createBlock);
+router.patch('/events/:id', ...office, updateBlock);
 router.post('/assign', ...office, assignOccurrence);
 router.patch('/events/:id/record-status', ...office, markRecord);
 router.get('/recurring', ...office, listRecurring);

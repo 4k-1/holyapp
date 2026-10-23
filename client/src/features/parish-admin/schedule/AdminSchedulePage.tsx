@@ -6,10 +6,10 @@ import { splitRegularMasses, toISO } from "./scheduleHelpers";
 import { MonthCalendarGrid } from "./components/MonthCalendarGrid";
 import { DayAgendaSidebar } from "./components/DayAgendaSidebar";
 import { EventsListView } from "./components/EventsListView";
-import { AddScheduleBlockModal } from "./components/AddScheduleBlockModal";
+import { ScheduleEventModal } from "./components/ScheduleEventModal";
 import { AssignBlockModal } from "./components/AssignBlockModal";
 import { RecurringCommitmentsManagerModal } from "./components/RecurringCommitmentsManagerModal";
-import type { ScheduleOccurrence } from "./types";
+import type { ScheduleBlock, ScheduleOccurrence } from "./types";
 
 const TODAY_ISO = toISO(new Date());
 
@@ -24,6 +24,9 @@ export function AdminSchedulePage() {
 
   const [addModalDate, setAddModalDate] = useState<string | null>(null);
   const [assignTarget, setAssignTarget] = useState<ScheduleOccurrence | null>(null);
+  const [editTarget, setEditTarget] = useState<ScheduleBlock | null>(null);
+  /** Bumped after an edit so the list view fetches again. */
+  const [listVersion, setListVersion] = useState(0);
   const [managerOpen, setManagerOpen] = useState(false);
 
   const fetchMonth = useCallback(
@@ -152,6 +155,8 @@ export function AdminSchedulePage() {
           onViewDay={jumpToDay}
           searchQuery={listSearch}
           onSearchQueryChange={setListSearch}
+          onEdit={setEditTarget}
+          reloadKey={listVersion}
         />
       ) : (
         <div className={`grid grid-cols-1 gap-4 ${sidebarCollapsed ? "" : "lg:grid-cols-[1fr_400px]"}`}>
@@ -171,6 +176,7 @@ export function AdminSchedulePage() {
               todayStr={TODAY_ISO}
               onAdd={() => setAddModalDate(selectedDate)}
               onAssign={setAssignTarget}
+              onEdit={setEditTarget}
               onChanged={reload}
               onViewAssignee={viewAssigneeSchedule}
             />
@@ -179,12 +185,26 @@ export function AdminSchedulePage() {
       )}
 
       {addModalDate && (
-        <AddScheduleBlockModal
+        <ScheduleEventModal
           defaultDate={addModalDate}
           onClose={() => setAddModalDate(null)}
-          onCreated={() => {
+          onSaved={() => {
             setAddModalDate(null);
             reload();
+            setListVersion((v) => v + 1);
+          }}
+        />
+      )}
+
+      {editTarget && (
+        <ScheduleEventModal
+          event={editTarget}
+          defaultDate={editTarget.date}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => {
+            setEditTarget(null);
+            reload();
+            setListVersion((v) => v + 1);
           }}
         />
       )}

@@ -76,6 +76,19 @@ export async function addScheduleBlock(input: Omit<ScheduleBlock, "id">): Promis
   }
 }
 
+/** Edits an event that was added by hand. */
+export async function updateScheduleBlock(id: string, input: Omit<ScheduleBlock, "id">): Promise<ScheduleBlock> {
+  try {
+    const data = await apiFetch<{ block: ScheduleBlock }>(`/schedule/events/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: input,
+    });
+    return data.block;
+  } catch (err) {
+    fail(err);
+  }
+}
+
 export async function reassignOccurrence(occurrenceId: string, assignee: string): Promise<void> {
   try {
     await apiFetch("/schedule/assign", {
