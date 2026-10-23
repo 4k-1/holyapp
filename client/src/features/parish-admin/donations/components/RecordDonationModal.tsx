@@ -5,16 +5,17 @@ import { DONATION_TYPES } from "../types";
 
 interface RecordDonationModalProps {
   parishId: string;
-  recordedBy?: string;
   onClose: () => void;
   onRecorded: () => void;
 }
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+function todayISO() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
 
 export function RecordDonationModal({
   parishId,
-  recordedBy = "u-admin",
   onClose,
   onRecorded,
 }: RecordDonationModalProps) {
@@ -45,19 +46,17 @@ export function RecordDonationModal({
     setError("");
     setSubmitting(true);
     try {
-      await recordDonation(
-        parishId,
-        {
-          donorName: anonymous ? undefined : donorName.trim(),
-          donationType,
-          amount: amt,
-          donationDate,
-          purpose: purpose.trim() || undefined,
-          remarks: remarks.trim() || undefined,
-        },
-        recordedBy
-      );
+      await recordDonation(parishId, {
+        donorName: anonymous ? undefined : donorName.trim(),
+        donationType,
+        amount: amt,
+        donationDate,
+        purpose: purpose.trim() || undefined,
+        remarks: remarks.trim() || undefined,
+      });
       onRecorded();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't record this donation.");
     } finally {
       setSubmitting(false);
     }

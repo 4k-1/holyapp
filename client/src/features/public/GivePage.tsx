@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ParishSearchStep } from "@/features/auth/components/ParishSearchStep";
-import { DonationForm } from "@/features/parishioner/donations/DonationForm";
 import { IntentionSignInPrompt } from "@/features/public/IntentionSignInPrompt";
 import type { Parish } from "@/types";
 
@@ -46,7 +45,7 @@ export function GivePage() {
               <button
                 type="button"
                 onClick={() => setStep("donate")}
-                className="flex flex-col items-start gap-2 rounded-2xl border-2 border-border bg-surface p-6 text-left transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-sm"
+                className="flex flex-col items-start gap-2 rounded-2xl border-2 border-border bg-surface p-6 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-xl text-primary">🤲</span>
                 <span className="font-serif text-lg font-bold text-ink">Donate</span>
@@ -55,7 +54,7 @@ export function GivePage() {
               <button
                 type="button"
                 onClick={() => setStep("intention")}
-                className="flex flex-col items-start gap-2 rounded-2xl border-2 border-border bg-surface p-6 text-left transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-sm"
+                className="flex flex-col items-start gap-2 rounded-2xl border-2 border-border bg-surface p-6 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-xl text-primary">🕯</span>
                 <span className="font-serif text-lg font-bold text-ink">Mass Intention</span>
@@ -67,15 +66,15 @@ export function GivePage() {
 
         {step === "donate" && parish && (
           <>
-            <h1 className="mb-1 font-serif text-2xl font-bold text-ink">Support the Parish</h1>
+            <h1 className="mb-1 font-serif text-2xl font-bold text-ink">Support the parish</h1>
             <p className="mb-6 text-sm text-ink-muted">{parish.name}</p>
-            <DonationForm parish={parish} />
+            <IntentionSignInPrompt parish={parish} purpose="donation" />
           </>
         )}
 
         {step === "intention" && parish && (
           <>
-            <h1 className="mb-1 font-serif text-2xl font-bold text-ink">Request a Mass Intention</h1>
+            <h1 className="mb-1 font-serif text-2xl font-bold text-ink">Request a Mass intention</h1>
             <p className="mb-6 text-sm leading-relaxed text-ink-muted">
               Offer a Mass for a special intention — thanksgiving, healing, or in memory of a loved one.
             </p>

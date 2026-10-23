@@ -1,12 +1,16 @@
-import type { Donation } from "@/features/parish-admin/donations/types";
+import type { Donation, DonationTrendPoint } from "@/features/parish-admin/donations/types";
 
-const STAFF_NAMES: Record<string, string> = {
-  "u-admin": "Admin Immaculada",
-  "u-super": "Super Admin",
-};
-
-export function recordedByLabel(userId: string) {
-  return STAFF_NAMES[userId] ?? userId;
+/** Totals for each of the last `months` months, oldest first, for the trend line. */
+export function monthlyTrend(donations: Donation[], months = 6): DonationTrendPoint[] {
+  const now = new Date();
+  const points: DonationTrendPoint[] = [];
+  for (let i = months - 1; i >= 0; i -= 1) {
+    const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
+    const value = donations.filter((d) => d.donationDate.startsWith(key)).reduce((sum, d) => sum + d.amount, 0);
+    points.push({ label: month.toLocaleDateString("en-US", { month: "short" }), value });
+  }
+  return points;
 }
 
 export function formatDonationDate(iso: string) {

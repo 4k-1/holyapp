@@ -1,0 +1,308 @@
+const pool = require('../config/db');
+const { writeAudit } = require('../utils/audit');
+const { createNotification } = require('../utils/notify');
+const { requiredText, optionalText, dateValue, dateOnly, sendRecordError } = require('../utils/recordFields');
+const { frontendUrl } = require('../utils/frontendUrl');
+const {
+  configured: gcashConfigured,
+  createGcashCheckout,
+  retrieveCheckout,
+  checkoutUrlFrom,
+  checkoutIdFrom,
+  sessionIsPaid,
+  paidPaymentFromSession,
+} = require('../utils/paymongo');
+
+/** Upper bound for a single donation, to catch typos like an extra zero. */
+const MAX_DONATION = 1000000;
+const OFFICE_TYPES = ['Cash', 'GCash', 'Check', 'Bank Transfer'];
+
+function httpError(status, message) {
+  const err = new Error(message);
+  err.status = status;
+  return err;
+}
+
+function parseAmount(value, { min = 1 } = {}) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < min) throw httpError(400, `Enter an amount of at least ₱${min}.`);
+  if (amount > MAX_DONATION) throw httpError(400, 'Donation amount is too large.');
+  return Math.round(amount * 100) / 100;
+}
+
+async function rollback(client) {
+  try {
+    await client.query('ROLLBACK');
+  } catch {
+    // nothing to roll back
+  }
+}
+
+function personName(first, last) {
+  return [first, last].filter(Boolean).join(' ').trim();
+}
+
+/**
+ * Every donation the parish has received: gifts recorded at the office, online GCash gifts that went through,
+ * and paid Mass intention donations. Online gifts still waiting on GCash are left out.
+ */
+async function listParishDonations(req, res) {
+  try {
+    const result = await pool.query(
+      `SELECT d.id, d.parish_id, d.donor_name, d.donation_type, d.amount, d.donation_date, d.purpose, d.remarks,
+              d.created_at, u.first_name, u.last_name,
+              CASE WHEN p.id IS NULL THEN 'office' ELSE 'online' END AS source
+       FROM donation d
+       LEFT JOIN app_user u ON u.id = d.recorded_by
+       LEFT JOIN payment p ON p.donation_id = d.id
+       WHERE d.parish_id = $1 AND (p.id IS NULL OR p.status = 'paid')
+       UNION ALL
+       SELECT p.id, i.parish_id, i.requester_name, 'GCash', p.amount_due, COALESCE(p.paid_at, p.created_at)::date,
+              'Mass intention', 'For ' || i.intention_for, p.created_at, NULL, NULL, 'mass_intention'
+       FROM payment p
+       JOIN mass_intention i ON i.id = p.mass_intention_id
+       WHERE i.parish_id = $1 AND p.status = 'paid'
+       ORDER BY donation_date DESC, created_at DESC`,
+      [req.parishId]
+    );
+    res.json({
+      donations: result.rows.map((row) => ({
+        id: row.id,
+        parishId: row.parish_id,
+        donorName: row.donor_name || undefined,
+        donationType: row.donation_type,
+        amount: Number(row.amount),
+        donationDate: dateOnly(row.donation_date),
+        purpose: row.purpose || undefined,
+        remarks: row.remarks || undefined,
+        recordedBy:
+          row.source === 'office' ? personName(row.first_name, row.last_name) || 'Parish office' : 'Online (GCash)',
+        source: row.source,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+      })),
+    });
+  } catch (err) {
+    sendRecordError(res, err);
+  }
+}
+
+async function recordDonation(req, res) {
+  try {
+    const amount = parseAmount(req.body?.amount);
+    const type = requiredText(req.body?.donationType, 'Donation type');
+    if (!OFFICE_TYPES.includes(type)) throw httpError(400, 'Donation type is not valid.');
+    const date = dateValue(req.body?.donationDate, 'Donation date');
+    const inserted = await pool.query(
+      `INSERT INTO donation (parish_id, donor_name, donation_type, amount, donation_date, purpose, remarks, recorded_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id`,
+      [
+        req.parishId,
+        optionalText(req.body?.donorName),
+        type,
+        amount,
+        date,
+        optionalText(req.body?.purpose),
+        optionalText(req.body?.remarks),
+        req.user.id,
+      ]
+    );
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'donation.recorded',
+      entityType: 'donation',
+      entityId: inserted.rows[0].id,
+      metadata: { amount, type },
+    });
+    res.status(201).json({ id: inserted.rows[0].id });
+  } catch (err) {
+    sendRecordError(res, err);
+  }
+}
+
+function toMyDonation(row) {
+  return {
+    id: row.id,
+    amount: Number(row.amount),
+    purpose: row.purpose || undefined,
+    donorName: row.donor_name || undefined,
+    donationDate: dateOnly(row.donation_date),
+    status: row.payment_status === 'paid' ? 'paid' : 'pending',
+    receiptUrl: row.receipt_url || undefined,
+  };
+}
+
+/** A parishioner's own online gifts, newest first. */
+async function listMyDonations(req, res) {
+  try {
+    const result = await pool.query(
+      `SELECT d.*, p.status AS payment_status, p.receipt_url
+       FROM donation d
+       JOIN payment p ON p.donation_id = d.id
+       WHERE d.parish_id = $1 AND d.recorded_by = $2
+       ORDER BY d.created_at DESC
+       LIMIT 50`,
+      [req.parishId, req.user.id]
+    );
+    res.json({ donations: result.rows.map(toMyDonation), gcashDonations: gcashConfigured() });
+  } catch (err) {
+    sendRecordError(res, err);
+  }
+}
+
+/** Starts an online gift: saves it as pending and hands back the GCash checkout page. */
+async function giveDonation(req, res) {
+  if (!gcashConfigured()) {
+    return res.status(503).json({ error: 'Online GCash giving is not available yet. You can give at the parish office.' });
+  }
+  const client = await pool.connect();
+  try {
+    const amount = parseAmount(req.body?.amount, { min: 20 });
+    const purpose = requiredText(req.body?.purpose, 'Purpose');
+    const donorName = optionalText(req.body?.donorName);
+    const message = optionalText(req.body?.message);
+
+    await client.query('BEGIN');
+    const inserted = await client.query(
+      `INSERT INTO donation (parish_id, donor_name, donation_type, amount, donation_date, purpose, remarks, recorded_by)
+       VALUES ($1, $2, 'GCash', $3, CURRENT_DATE, $4, $5, $6)
+       RETURNING *`,
+      [req.parishId, donorName, amount, purpose, message, req.user.id]
+    );
+    const donation = inserted.rows[0];
+    const payment = await client.query(
+      `INSERT INTO payment (payment_type, amount_due, status, donation_id)
+       VALUES ('gcash', $1, 'unpaid', $2)
+       RETURNING id`,
+      [amount, donation.id]
+    );
+    const slug = await client.query('SELECT slug FROM parish WHERE id = $1', [req.parishId]);
+    const account = await client.query('SELECT first_name, last_name, email FROM app_user WHERE id = $1', [req.user.id]);
+    const person = account.rows[0] || {};
+    const back = `${frontendUrl()}/${slug.rows[0].slug}/portal/donate`;
+    const session = await createGcashCheckout({
+      amountCentavos: Math.round(amount * 100),
+      description: `Donation: ${purpose}`,
+      referenceNumber: donation.id,
+      successUrl: `${back}?donation=done&id=${donation.id}`,
+      cancelUrl: `${back}?donation=cancelled&id=${donation.id}`,
+      metadata: { donation_id: donation.id, parish_id: req.parishId },
+      billing: person.email
+        ? { name: personName(person.first_name, person.last_name) || person.email, email: person.email }
+        : undefined,
+    });
+    const checkoutUrl = checkoutUrlFrom(session);
+    if (!checkoutUrl) throw httpError(502, 'GCash did not return a checkout page. Please try again.');
+    await client.query('UPDATE payment SET paymongo_reference = $1, checkout_url = $2 WHERE id = $3', [
+      checkoutIdFrom(session),
+      checkoutUrl,
+      payment.rows[0].id,
+    ]);
+    await client.query('COMMIT');
+    res.status(201).json({ donation: toMyDonation({ ...donation, payment_status: 'unpaid' }), checkoutUrl });
+  } catch (err) {
+    await rollback(client);
+    sendRecordError(res, err);
+  } finally {
+    client.release();
+  }
+}
+
+/** Marks an online gift paid. Shared by the return-from-GCash sync and the PayMongo webhook. */
+async function markDonationPaid(client, { donationId, reference, receiptUrl }) {
+  const payment = await client.query(
+    `UPDATE payment
+     SET status = 'paid', paid_at = NOW(), paymongo_reference = COALESCE($2, paymongo_reference),
+         receipt_url = COALESCE($3, receipt_url)
+     WHERE donation_id = $1 AND status = 'unpaid'
+     RETURNING amount_due`,
+    [donationId, reference || null, receiptUrl || null]
+  );
+  if (payment.rowCount > 0) {
+    await client.query('UPDATE donation SET donation_date = CURRENT_DATE WHERE id = $1', [donationId]);
+  }
+  const row = await client.query('SELECT * FROM donation WHERE id = $1', [donationId]);
+  return {
+    alreadyPaid: payment.rowCount === 0,
+    amount: payment.rows[0] ? Number(payment.rows[0].amount_due) : 0,
+    row: row.rows[0] || null,
+  };
+}
+
+async function announceGift(row, amount, actorId, source) {
+  try {
+    const office = await pool.query(
+      `SELECT id FROM app_user
+       WHERE parish_id = $1 AND role IN ('parish_admin', 'parish_staff') AND status = 'active'`,
+      [row.parish_id]
+    );
+    for (const person of office.rows) {
+      await createNotification({
+        parishId: row.parish_id,
+        recipientId: person.id,
+        kind: 'payment',
+        title: 'Online donation received',
+        body: `${row.donor_name || 'An anonymous parishioner'} gave ₱${amount.toLocaleString('en-PH')} through GCash for ${row.purpose || 'the parish'}.`,
+        href: 'donations',
+      });
+    }
+  } catch (err) {
+    console.error('announceGift failed:', err.message);
+  }
+  await writeAudit({
+    parishId: row.parish_id,
+    actorId,
+    action: 'donation.received',
+    entityType: 'donation',
+    entityId: row.id,
+    metadata: { amount, method: 'gcash', source },
+  });
+}
+
+/** After returning from GCash: ask PayMongo whether the gift went through. */
+async function syncMyDonation(req, res) {
+  const client = await pool.connect();
+  try {
+    const found = await client.query(
+      `SELECT d.*, p.paymongo_reference, p.status AS payment_status, p.receipt_url
+       FROM donation d
+       JOIN payment p ON p.donation_id = d.id
+       WHERE d.id = $1 AND d.parish_id = $2 AND d.recorded_by = $3`,
+      [req.params.id, req.parishId, req.user.id]
+    );
+    const row = found.rows[0];
+    if (!row) return res.status(404).json({ error: 'Donation not found.' });
+    if (row.payment_status === 'paid' || !row.paymongo_reference || !gcashConfigured()) {
+      return res.json({ donation: toMyDonation(row), paid: row.payment_status === 'paid' });
+    }
+    const session = await retrieveCheckout(row.paymongo_reference);
+    if (!sessionIsPaid(session)) return res.json({ donation: toMyDonation(row), paid: false });
+
+    const paidPay = paidPaymentFromSession(session);
+    await client.query('BEGIN');
+    const marked = await markDonationPaid(client, {
+      donationId: row.id,
+      reference: checkoutIdFrom(session),
+      receiptUrl: paidPay?.attributes?.receipt_url || paidPay?.attributes?.invoice_url,
+    });
+    await client.query('COMMIT');
+    if (!marked.alreadyPaid) await announceGift(marked.row, marked.amount, req.user.id, 'sync');
+    res.json({ donation: toMyDonation({ ...marked.row, payment_status: 'paid' }), paid: true });
+  } catch (err) {
+    await rollback(client);
+    sendRecordError(res, err);
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = {
+  listParishDonations,
+  recordDonation,
+  listMyDonations,
+  giveDonation,
+  syncMyDonation,
+  markDonationPaid,
+  announceGift,
+};

@@ -4,7 +4,7 @@ import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
-import { getDonationTrend, listDonations } from "./api/donationsApi";
+import { listDonations } from "./api/donationsApi";
 import { DonationSparkline } from "./components/DonationSparkline";
 import { RecordDonationModal } from "./components/RecordDonationModal";
 import {
@@ -13,29 +13,31 @@ import {
   filterDonationsByDate,
   formatAmount,
   formatDonationDate,
-  recordedByLabel,
+  monthlyTrend,
   type DonationDateFilter,
 } from "./donationsHelpers";
 import { donationTypeBadgeTone } from "./types";
-import type { Donation, DonationTrendPoint } from "./types";
+import type { Donation } from "./types";
 import type { Parish } from "@/types";
 
 export function AdminDonationsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const [donations, setDonations] = useState<Donation[]>([]);
-  const [trend, setTrend] = useState<DonationTrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [draftFilter, setDraftFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
   const [appliedFilter, setAppliedFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
 
   const fetchDonations = useCallback(
     () =>
-      Promise.all([listDonations(parish.id), getDonationTrend(parish.id)]).then(([donationsData, trendData]) => {
-        setDonations(donationsData);
-        setTrend(trendData);
-        setLoading(false);
-      }),
+      listDonations(parish.id)
+        .then((data) => {
+          setDonations(data);
+          setLoadError("");
+        })
+        .catch((err: unknown) => setLoadError(err instanceof Error ? err.message : "Couldn't load donations."))
+        .finally(() => setLoading(false)),
     [parish.id]
   );
 
@@ -47,6 +49,9 @@ export function AdminDonationsPage() {
   useEffect(() => {
     fetchDonations();
   }, [fetchDonations]);
+
+  const trend = useMemo(() => monthlyTrend(donations), [donations]);
+  const hasTrend = trend.some((point) => point.value > 0);
 
   const filtered = useMemo(
     () => filterDonationsByDate(donations, appliedFilter),
@@ -103,7 +108,7 @@ export function AdminDonationsPage() {
         <div>
           <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Donations</h1>
           <p className="mt-1 text-admin-body text-admin-ink-muted">
-            Donations recorded for this parish register.
+            Gifts recorded at the office and given online through GCash.
           </p>
         </div>
         <AdminButton onClick={() => setModalOpen(true)}>+ Record donation</AdminButton>
@@ -150,6 +155,10 @@ export function AdminDonationsPage() {
 
       {loading ? (
         <p className="text-admin-body text-admin-ink-muted">Loading…</p>
+      ) : loadError ? (
+        <p className="text-admin-body text-red-700" role="alert">
+          {loadError}
+        </p>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
@@ -162,7 +171,7 @@ export function AdminDonationsPage() {
                   {formatAmount(stats.totalRecorded)}
                 </p>
               </div>
-              {!filterActive && trend.length > 0 && (
+              {!filterActive && hasTrend && (
                 <DonationSparkline data={trend} highlightIndex={trend.length - 1} />
               )}
             </div>
@@ -222,7 +231,7 @@ export function AdminDonationsPage() {
                         {d.purpose || "—"}
                       </td>
                       <td className="px-5 py-2.5 text-admin-ink-muted">
-                        {recordedByLabel(d.recordedBy)}
+                        {d.recordedBy}
                       </td>
                       <td className="px-5 py-2.5 text-right font-semibold text-admin-ink">
                         {formatAmount(d.amount)}
@@ -236,7 +245,7 @@ export function AdminDonationsPage() {
               <p className="px-5 py-6 text-admin-body text-admin-ink-muted">
                 {filterActive
                   ? "No donations match this date range."
-                  : "No donations recorded yet."}
+                  : "No donations yet. Gifts made in the parishioner portal and ones you record here will appear in this list."}
               </p>
             )}
           </div>

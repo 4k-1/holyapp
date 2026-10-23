@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getParishBySlug } from "@/features/parish/parishApi";
-import { DonationForm } from "@/features/parishioner/donations/DonationForm";
+import { IntentionSignInPrompt } from "@/features/public/IntentionSignInPrompt";
 import type { Parish } from "@/types";
 
 export function PublicDonatePage() {
@@ -50,10 +50,10 @@ export function PublicDonatePage() {
             </div>
           )}
           <p className="font-serif text-xl font-bold leading-snug text-ink sm:text-2xl">{parish.name}</p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">Support the Parish</p>
+          <p className="mt-1 text-sm text-ink-muted">Support the parish</p>
         </div>
 
-        <DonationForm parish={parish} />
+        <IntentionSignInPrompt parish={parish} purpose="donation" />
       </div>
     </div>
   );

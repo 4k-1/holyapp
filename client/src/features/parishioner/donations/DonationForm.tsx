@@ -1,130 +1,138 @@
 import { useState } from "react";
-import { Input } from "@/components/ui/Input";
-import type { Parish } from "@/types";
+import {
+  AmountPicker,
+  PortalFormCard,
+  PortalFormSection,
+  PortalNotice,
+  PrimarySubmit,
+  RadioCard,
+  TextField,
+} from "@/features/parishioner/components/PortalForm";
+import { giveDonation } from "@/features/parishioner/donations/donationsApi";
 
-const presetAmounts = [100, 300, 500, 1000];
+const PRESET_AMOUNTS = [100, 300, 500, 1000];
+/** PayMongo's smallest GCash charge. */
+const MIN_AMOUNT = 20;
 
-const donationPurposes = [
-  "General Fund",
-  "Church Repair & Maintenance",
-  "Outreach & Charity Program",
-  "Feast Day Celebration",
-  "Other",
+const PURPOSES = [
+  { title: "General fund", description: "Where the parish needs it most" },
+  { title: "Church repair and maintenance", description: "Upkeep of the church and grounds" },
+  { title: "Outreach and charity", description: "Help for families in need" },
+  { title: "Feast day celebration", description: "The parish fiesta and liturgies" },
 ];
 
 interface DonationFormProps {
-  parish: Parish;
   defaultFullName?: string;
+  gcashAvailable: boolean;
 }
 
-export function DonationForm({ parish, defaultFullName = "" }: DonationFormProps) {
-  const [amount, setAmount] = useState<string>("500");
-  const [isCustom, setIsCustom] = useState(false);
-  const [purpose, setPurpose] = useState(donationPurposes[0]);
+export function DonationForm({ defaultFullName = "", gcashAvailable }: DonationFormProps) {
+  const [amount, setAmount] = useState("500");
+  const [purpose, setPurpose] = useState(PURPOSES[0].title);
+  const [anonymous, setAnonymous] = useState(false);
   const [fullName, setFullName] = useState(defaultFullName);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const effectiveAmount = amount ? Number(amount) : null;
-  const canDonate = Boolean(effectiveAmount && effectiveAmount > 0);
+  const value = Number(amount);
+  const amountError = amount && value < MIN_AMOUNT ? `The smallest GCash gift is ₱${MIN_AMOUNT}.` : undefined;
+  const canGive = gcashAvailable && value >= MIN_AMOUNT && (anonymous || fullName.trim().length > 0);
 
-  function handlePresetClick(preset: number) {
-    setIsCustom(false);
-    setAmount(String(preset));
-  }
-
-  function handleCustomAmountChange(value: string) {
-    const digitsOnly = value.replace(/[^\d]/g, "");
-    setIsCustom(true);
-    setAmount(digitsOnly);
-  }
-
-  async function handleDonate() {
-    if (!canDonate) return;
+  async function handleGive() {
+    if (!canGive) return;
     setSubmitting(true);
-    console.info("[mock] Redirecting to GCash", {
-      amount: effectiveAmount,
-      purpose,
-      fullName: fullName || "Anonymous",
-      message,
-      parishId: parish.id,
-    });
-    await new Promise((r) => setTimeout(r, 600));
-    setSubmitting(false);
+    setError("");
+    try {
+      const { checkoutUrl } = await giveDonation({
+        amount: value,
+        purpose,
+        donorName: anonymous ? undefined : fullName.trim(),
+        message: message.trim() || undefined,
+      });
+      window.location.assign(checkoutUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't start the donation.");
+      setSubmitting(false);
+    }
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-7">
-      <label className="mb-3 block text-[11.5px] font-bold uppercase tracking-widest text-ink-muted">
-        Choose an amount
-      </label>
-      <div className="mb-3 grid grid-cols-4 gap-2.5">
-        {presetAmounts.map((preset) => {
-          const selected = !isCustom && amount === String(preset);
-          return (
-            <button
-              key={preset}
-              type="button"
-              onClick={() => handlePresetClick(preset)}
-              className={`rounded-xl border-2 py-3 text-sm font-bold transition-all ${
-                selected
-                  ? "border-accent bg-accent/10 text-ink shadow-sm"
-                  : "border-border bg-surface text-ink-muted hover:border-accent/40 hover:bg-surface-alt/50"
-              }`}
-            >
-              ₱{preset}
-            </button>
-          );
-        })}
-      </div>
+    <PortalFormCard>
+      <PortalFormSection step={1} title="Amount">
+        <AmountPicker id="gift-amount" presets={PRESET_AMOUNTS} value={amount} onChange={setAmount} error={amountError} />
+      </PortalFormSection>
 
-      <input
-        type="text"
-        inputMode="numeric"
-        placeholder="Other amount"
-        value={isCustom && amount ? `₱${amount}` : ""}
-        onChange={(e) => handleCustomAmountChange(e.target.value)}
-        onFocus={() => setIsCustom(true)}
-        className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none focus:ring-2 focus:ring-primary/25 ${
-          isCustom ? "border-accent bg-accent/[0.04]" : "border-border bg-surface"
-        }`}
-      />
-
-      <div className="mt-5">
-        <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-wide text-ink-muted">
-          Purpose
-        </label>
-        <select
-          value={purpose}
-          onChange={(e) => setPurpose(e.target.value)}
-          className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/25"
-        >
-          {donationPurposes.map((p) => (
-            <option key={p}>{p}</option>
+      <PortalFormSection step={2} title="Purpose">
+        <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <legend className="sr-only">Purpose of the gift</legend>
+          {PURPOSES.map((item) => (
+            <RadioCard
+              key={item.title}
+              name="gift-purpose"
+              checked={purpose === item.title}
+              onChange={() => setPurpose(item.title)}
+              title={item.title}
+              description={item.description}
+            />
           ))}
-        </select>
-      </div>
+        </fieldset>
+      </PortalFormSection>
 
-      <div className="mt-4">
-        <Input label="Full name" placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-        <p className="mt-1 text-xs text-ink-muted">Optional — leave blank to donate anonymously.</p>
-      </div>
+      <PortalFormSection step={3} title="Your details">
+        <label className="mb-3 flex min-h-[40px] cursor-pointer items-center gap-2.5 text-sm text-ink">
+          <input
+            type="checkbox"
+            checked={anonymous}
+            onChange={(e) => setAnonymous(e.target.checked)}
+            className="h-4 w-4 rounded accent-[var(--color-primary)]"
+          />
+          Give anonymously
+        </label>
+        {!anonymous && (
+          <TextField
+            id="gift-name"
+            label="Name shown to the parish office"
+            placeholder="Your full name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+        )}
+        <TextField
+          id="gift-message"
+          className="mt-3"
+          label="Message (optional)"
+          placeholder="e.g. In thanksgiving for my family"
+          value={message}
+          maxLength={200}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+      </PortalFormSection>
 
-      <div className="mt-4">
-        <Input label="Message (optional)" placeholder="Leave a message" value={message} onChange={(e) => setMessage(e.target.value)} />
+      <div className="px-5 py-5 sm:px-6">
+        {!gcashAvailable && (
+          <div className="mb-3">
+            <PortalNotice tone="info">
+              Online GCash giving isn&apos;t available yet. You can give at the parish office.
+            </PortalNotice>
+          </div>
+        )}
+        {error && (
+          <div className="mb-3">
+            <PortalNotice tone="error">{error}</PortalNotice>
+          </div>
+        )}
+        <PrimarySubmit onClick={handleGive} disabled={!canGive || submitting}>
+          {submitting
+            ? "Opening GCash…"
+            : value >= MIN_AMOUNT
+              ? `Give ₱${value.toLocaleString("en-PH")} through GCash`
+              : "Give through GCash"}
+        </PrimarySubmit>
+        <p className="mt-2.5 text-center text-[0.8125rem] text-ink-muted">
+          You&apos;ll finish on GCash&apos;s secure page, then return here.
+        </p>
       </div>
-
-      <button
-        type="button"
-        onClick={handleDonate}
-        disabled={!canDonate || submitting}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0074e4] py-3.5 text-[15px] font-bold text-white shadow-[0_6px_18px_rgba(0,116,228,0.28)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(0,116,228,0.34)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-      >
-        {submitting ? "Redirecting..." : `Donate ${effectiveAmount ? `₱${effectiveAmount}` : ""} via GCash`}
-      </button>
-      <p className="mt-2.5 text-center text-[11.5px] text-ink-muted">
-        You'll be redirected to GCash to complete payment securely.
-      </p>
-    </div>
+    </PortalFormCard>
   );
 }

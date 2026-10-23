@@ -10,8 +10,10 @@ export interface Donation {
   donationDate: string;
   purpose?: string;
   remarks?: string;
+  /** Staff member's name, or "Online (GCash)" for gifts made in the portal. */
   recordedBy: string;
-  createdAt: string;
+  source: "office" | "online" | "mass_intention";
+  createdAt: string | null;
 }
 
 export interface DonationTrendPoint {
