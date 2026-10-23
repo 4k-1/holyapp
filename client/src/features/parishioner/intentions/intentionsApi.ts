@@ -12,6 +12,8 @@ export interface SubmitIntentionInput {
   scheduleLabel: string;
   /** Optional GCash donation in pesos; 0 or missing means none. */
   donation?: number;
+  /** Mobile number or email so the office can reach the requester; required for guests. */
+  contact?: string;
 }
 
 /** A Mass that still has room for another intention. */
@@ -64,6 +66,7 @@ export async function submitMassIntention(
         scheduleTime: input.scheduleTime,
         scheduleLabel: input.scheduleLabel,
         donation: input.donation ?? 0,
+        contact: input.contact,
       },
     });
     return { intention: data.intention, checkoutUrl: data.checkoutUrl ?? null };

@@ -162,13 +162,16 @@ async function giveDonation(req, res) {
     const purpose = requiredText(req.body?.purpose, 'Purpose');
     const donorName = optionalText(req.body?.donorName);
     const message = optionalText(req.body?.message);
+    const guest = !req.user;
+    const guestEmail = optionalText(req.body?.email);
+    if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) throw httpError(400, 'Enter a valid email address.');
 
     await client.query('BEGIN');
     const inserted = await client.query(
       `INSERT INTO donation (parish_id, donor_name, donation_type, amount, donation_date, purpose, remarks, recorded_by)
        VALUES ($1, $2, 'GCash', $3, CURRENT_DATE, $4, $5, $6)
        RETURNING *`,
-      [req.parishId, donorName, amount, purpose, message, req.user.id]
+      [req.parishId, donorName, amount, purpose, message, req.user?.id || null]
     );
     const donation = inserted.rows[0];
     const payment = await client.query(
@@ -178,9 +181,12 @@ async function giveDonation(req, res) {
       [amount, donation.id]
     );
     const slug = await client.query('SELECT slug FROM parish WHERE id = $1', [req.parishId]);
-    const account = await client.query('SELECT first_name, last_name, email FROM app_user WHERE id = $1', [req.user.id]);
-    const person = account.rows[0] || {};
-    const back = `${frontendUrl()}/${slug.rows[0].slug}/portal/donate`;
+    const person = guest
+      ? { first_name: donorName, email: guestEmail }
+      : (await client.query('SELECT first_name, last_name, email FROM app_user WHERE id = $1', [req.user.id])).rows[0] || {};
+    const back = guest
+      ? `${frontendUrl()}/give/${slug.rows[0].slug}/donate`
+      : `${frontendUrl()}/${slug.rows[0].slug}/portal/donate`;
     const session = await createGcashCheckout({
       amountCentavos: Math.round(amount * 100),
       description: `Donation: ${purpose}`,
@@ -268,8 +274,8 @@ async function syncMyDonation(req, res) {
       `SELECT d.*, p.paymongo_reference, p.status AS payment_status, p.receipt_url
        FROM donation d
        JOIN payment p ON p.donation_id = d.id
-       WHERE d.id = $1 AND d.parish_id = $2 AND d.recorded_by = $3`,
-      [req.params.id, req.parishId, req.user.id]
+       WHERE d.id = $1 AND d.parish_id = $2 AND d.recorded_by IS NOT DISTINCT FROM $3`,
+      [req.params.id, req.parishId, req.user?.id || null]
     );
     const row = found.rows[0];
     if (!row) return res.status(404).json({ error: 'Donation not found.' });
@@ -287,7 +293,7 @@ async function syncMyDonation(req, res) {
       receiptUrl: paidPay?.attributes?.receipt_url || paidPay?.attributes?.invoice_url,
     });
     await client.query('COMMIT');
-    if (!marked.alreadyPaid) await announceGift(marked.row, marked.amount, req.user.id, 'sync');
+    if (!marked.alreadyPaid) await announceGift(marked.row, marked.amount, req.user?.id || null, 'sync');
     res.json({ donation: toMyDonation({ ...marked.row, payment_status: 'paid' }), paid: true });
   } catch (err) {
     await rollback(client);

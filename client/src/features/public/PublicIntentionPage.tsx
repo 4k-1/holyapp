@@ -1,66 +1,90 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getParishBySlug } from "@/features/parish/parishApi";
-import { IntentionSignInPrompt } from "@/features/public/IntentionSignInPrompt";
-import type { Parish } from "@/types";
+import { useParams, useSearchParams } from "react-router-dom";
+import { PortalNotice, PortalPending, PortalSuccess } from "@/features/parishioner/components/PortalForm";
+import { IntentionForm } from "@/features/parishioner/intentions/IntentionForm";
+import { PublicGiveShell } from "@/features/public/PublicGiveShell";
+import {
+  guestOpenMassSlots,
+  guestSubmitIntention,
+  guestSyncIntentionDonation,
+} from "@/features/public/publicGivingApi";
 
+type Phase = "form" | "checking" | "sent" | "donated";
+
+const THANKS =
+  "Thank you. The parish office will confirm your Mass intention and may contact you using the details you gave.";
+
+/** Request a Mass intention without an account; a GCash donation is optional. */
 export function PublicIntentionPage() {
-  const { parishSlug } = useParams();
-  const [parish, setParish] = useState<Parish | null | undefined>(undefined);
+  const { parishSlug = "" } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
+  const result = searchParams.get("donation");
+  const returnedId = searchParams.get("intention");
+  const [phase, setPhase] = useState<Phase>(result === "done" && returnedId ? "checking" : "form");
+  const [notice, setNotice] = useState<string | null>(
+    result === "cancelled"
+      ? "The donation was cancelled, so nothing was charged. Your intention is still requested; you don't need to submit it again."
+      : null
+  );
+
+  // Coming back from GCash: confirm the donation with the server, then tidy the address bar.
   useEffect(() => {
-    let cancelled = false;
-    void (parishSlug ? getParishBySlug(parishSlug) : Promise.resolve(null)).then((found) => {
-      if (!cancelled) setParish(found ?? null);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [parishSlug]);
-
-  if (parish === undefined) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center">
-        <p className="text-sm text-ink-muted">Loading…</p>
-      </div>
-    );
-  }
-
-  if (!parish) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center">
-        <p className="text-sm text-ink-muted">Parish not found. Check the link and try again.</p>
-      </div>
-    );
-  }
+    if (!result || !returnedId) return;
+    const clearParams = () => setSearchParams({}, { replace: true });
+    if (result === "cancelled") {
+      clearParams();
+      return;
+    }
+    guestSyncIntentionDonation(parishSlug, returnedId)
+      .then(({ paid }) => {
+        if (paid) {
+          setPhase("donated");
+        } else {
+          setNotice("Your intention was received. The donation is still being confirmed by GCash.");
+          setPhase("form");
+        }
+      })
+      .catch(() => {
+        setNotice("Your intention was received. We couldn't confirm the donation yet.");
+        setPhase("form");
+      })
+      .finally(clearParams);
+  }, [result, returnedId, parishSlug, setSearchParams]);
 
   return (
-    <div className="min-h-screen bg-surface-alt px-4 py-10 sm:px-6 ">
-      <div className="mx-auto max-w-lg">
-        <div className="mb-6 flex flex-col items-center text-center">
-          {parish.sealUrl ? (
-            <img
-              src={parish.sealUrl}
-              alt={`${parish.name} seal`}
-              className="mb-3 h-16 w-16 rounded-full border border-border object-contain shadow-sm bg-white"
+    <PublicGiveShell
+      title="Request a Mass intention"
+      description="Offer a Mass for someone: in thanksgiving, for healing, or in memory of a loved one. No account needed, and a donation is welcome but not required."
+    >
+      {(parish) =>
+        phase === "checking" ? (
+          <PortalPending>Confirming your donation with GCash…</PortalPending>
+        ) : phase === "donated" ? (
+          <PortalSuccess title="Your intention and donation were received" to="/give" destination="the giving page">
+            {THANKS}
+          </PortalSuccess>
+        ) : phase === "sent" ? (
+          <PortalSuccess title="Your intention was sent" to="/give" destination="the giving page">
+            {THANKS}
+          </PortalSuccess>
+        ) : (
+          <>
+            {notice && (
+              <div className="mb-5">
+                <PortalNotice tone="info">{notice}</PortalNotice>
+              </div>
+            )}
+            <IntentionForm
+              guest
+              parish={parish}
+              loadSlots={() => guestOpenMassSlots(parish.slug)}
+              submit={(input) => guestSubmitIntention(parish.slug, input)}
+              onSubmitted={() => setPhase("sent")}
             />
-          ) : (
-            <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 font-serif text-2xl font-bold text-primary shadow-sm">
-              {parish.name.charAt(0)}
-            </div>
-          )}
-          <p className="font-serif text-xl font-bold leading-snug text-ink sm:text-2xl">{parish.name}</p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-            Request a Mass Intention
-          </p>
-        </div>
-
-        <p className="mb-6 text-center text-sm leading-relaxed text-ink-muted">
-          Offer a Mass for a special intention — thanksgiving, healing, or in memory of a loved one.
-        </p>
-
-        <IntentionSignInPrompt parish={parish} />
-      </div>
-    </div>
+          </>
+        )
+      }
+    </PublicGiveShell>
   );
 }

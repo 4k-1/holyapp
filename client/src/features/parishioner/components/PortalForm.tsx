@@ -268,7 +268,18 @@ export function PortalPending({ children }: { children: ReactNode }) {
 const REDIRECT_SECONDS = 5;
 
 /** Replaces a finished form: a thank-you message, then an automatic return to the dashboard. */
-export function PortalSuccess({ title, children, to }: { title: string; children: ReactNode; to: string }) {
+export function PortalSuccess({
+  title,
+  children,
+  to,
+  destination = "your dashboard",
+}: {
+  title: string;
+  children: ReactNode;
+  to: string;
+  /** How the place it returns to is named, e.g. "your dashboard". */
+  destination?: string;
+}) {
   const navigate = useNavigate();
   const [seconds, setSeconds] = useState(REDIRECT_SECONDS);
 
@@ -294,14 +305,14 @@ export function PortalSuccess({ title, children, to }: { title: string; children
       <h2 className="mt-5 font-serif text-[1.375rem] font-bold text-ink">{title}</h2>
       <div className="mx-auto mt-2 max-w-sm text-[0.9375rem] leading-relaxed text-ink-muted">{children}</div>
       <p className="mt-6 text-[0.8125rem] text-ink-muted" aria-live="polite">
-        Taking you to your dashboard in {Math.max(seconds, 0)}…
+        Taking you to {destination} in {Math.max(seconds, 0)}…
       </p>
       <button
         type="button"
         onClick={() => navigate(to, { replace: true })}
         className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
       >
-        Go to dashboard now
+        Go now
       </button>
     </div>
   );

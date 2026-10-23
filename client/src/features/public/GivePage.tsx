@@ -1,87 +1,65 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ParishSearchStep } from "@/features/auth/components/ParishSearchStep";
-import { IntentionSignInPrompt } from "@/features/public/IntentionSignInPrompt";
 import type { Parish } from "@/types";
 
-type Step = "search" | "choose" | "donate" | "intention";
-
+/** Find a parish, then give or request a Mass intention. No account needed for either. */
 export function GivePage() {
-  const [step, setStep] = useState<Step>("search");
   const [parish, setParish] = useState<Parish | null>(null);
 
   return (
     <div className="min-h-screen bg-surface-alt px-4 py-10 sm:px-6">
-      <div className="mx-auto max-w-lg">
-        {step !== "search" && (
-          <button
-            type="button"
-            onClick={() => setStep(step === "choose" ? "search" : "choose")}
-            className="mb-6 flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink"
-          >
-            ← Back
-          </button>
-        )}
-
-        {step === "search" && (
+      <div className="mx-auto max-w-xl">
+        {!parish ? (
           <>
-            <h1 className="mb-1 font-serif text-2xl font-bold text-ink">Support a parish</h1>
-            <p className="mb-6 text-sm text-ink-muted">
-              Find your parish to donate. Mass intentions are requested from your parish account.
+            <h1 className="mb-1 font-serif text-[1.75rem] font-bold text-ink">Support a parish</h1>
+            <p className="mb-6 text-[0.9375rem] text-ink-muted">
+              Find your parish to give or to request a Mass intention. No account needed.
             </p>
-            <ParishSearchStep
-              onSelect={(selected) => {
-                setParish(selected);
-                setStep("choose");
-              }}
-            />
+            <ParishSearchStep onSelect={setParish} />
           </>
-        )}
-
-        {step === "choose" && parish && (
+        ) : (
           <>
-            <h1 className="mb-1 font-serif text-2xl font-bold text-ink">{parish.name}</h1>
-            <p className="mb-6 text-sm text-ink-muted">What would you like to do?</p>
+            <button
+              type="button"
+              onClick={() => setParish(null)}
+              className="mb-5 inline-flex min-h-[40px] items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Choose another parish
+            </button>
+            <h1 className="mb-1 font-serif text-[1.75rem] font-bold text-ink">{parish.name}</h1>
+            <p className="mb-6 text-[0.9375rem] text-ink-muted">What would you like to do?</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setStep("donate")}
-                className="flex flex-col items-start gap-2 rounded-2xl border-2 border-border bg-surface p-6 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
-              >
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-xl text-primary">🤲</span>
-                <span className="font-serif text-lg font-bold text-ink">Donate</span>
-                <span className="text-xs text-ink-muted">Support the parish's mission via GCash.</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep("intention")}
-                className="flex flex-col items-start gap-2 rounded-2xl border-2 border-border bg-surface p-6 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
-              >
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-xl text-primary">🕯</span>
-                <span className="font-serif text-lg font-bold text-ink">Mass Intention</span>
-                <span className="text-xs text-ink-muted">Offer a Mass for thanksgiving, healing, or memory.</span>
-              </button>
+              <ChoiceCard
+                to={`/give/${parish.slug}/donate`}
+                title="Give a donation"
+                body="Support the parish through GCash."
+              />
+              <ChoiceCard
+                to={`/give/${parish.slug}/intention`}
+                title="Request a Mass intention"
+                body="Offer a Mass for thanksgiving, healing, or in memory of someone."
+              />
             </div>
-          </>
-        )}
-
-        {step === "donate" && parish && (
-          <>
-            <h1 className="mb-1 font-serif text-2xl font-bold text-ink">Support the parish</h1>
-            <p className="mb-6 text-sm text-ink-muted">{parish.name}</p>
-            <IntentionSignInPrompt parish={parish} purpose="donation" />
-          </>
-        )}
-
-        {step === "intention" && parish && (
-          <>
-            <h1 className="mb-1 font-serif text-2xl font-bold text-ink">Request a Mass intention</h1>
-            <p className="mb-6 text-sm leading-relaxed text-ink-muted">
-              Offer a Mass for a special intention — thanksgiving, healing, or in memory of a loved one.
-            </p>
-            <IntentionSignInPrompt parish={parish} />
           </>
         )}
       </div>
     </div>
+  );
+}
+
+function ChoiceCard({ to, title, body }: { to: string; title: string; body: string }) {
+  return (
+    <Link
+      to={to}
+      className="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface p-6 text-left shadow-sm transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+    >
+      <span className="font-serif text-lg font-semibold text-ink">{title}</span>
+      <span className="text-sm text-ink-muted">{body}</span>
+      <span className="mt-2 text-sm font-semibold text-primary">Continue →</span>
+    </Link>
   );
 }

@@ -8,7 +8,7 @@ import {
   RadioCard,
   TextField,
 } from "@/features/parishioner/components/PortalForm";
-import { giveDonation } from "@/features/parishioner/donations/donationsApi";
+import { giveDonation, type GiveInput } from "@/features/parishioner/donations/donationsApi";
 
 const PRESET_AMOUNTS = [100, 300, 500, 1000];
 /** PayMongo's smallest GCash charge. */
@@ -24,31 +24,41 @@ const PURPOSES = [
 interface DonationFormProps {
   defaultFullName?: string;
   gcashAvailable: boolean;
+  /** Starts the GCash checkout; defaults to the signed-in parishioner's. */
+  onGive?: (input: GiveInput) => Promise<{ checkoutUrl: string }>;
+  /** A visitor without an account: asks for an email for the receipt. */
+  guest?: boolean;
 }
 
-export function DonationForm({ defaultFullName = "", gcashAvailable }: DonationFormProps) {
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function DonationForm({ defaultFullName = "", gcashAvailable, onGive = giveDonation, guest = false }: DonationFormProps) {
   const [amount, setAmount] = useState("500");
   const [purpose, setPurpose] = useState(PURPOSES[0].title);
   const [anonymous, setAnonymous] = useState(false);
   const [fullName, setFullName] = useState(defaultFullName);
   const [message, setMessage] = useState("");
+  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const value = Number(amount);
   const amountError = amount && value < MIN_AMOUNT ? `The smallest GCash gift is ₱${MIN_AMOUNT}.` : undefined;
-  const canGive = gcashAvailable && value >= MIN_AMOUNT && (anonymous || fullName.trim().length > 0);
+  const emailError = email.trim() && !EMAIL_PATTERN.test(email.trim()) ? "Enter a valid email address." : undefined;
+  const canGive =
+    gcashAvailable && value >= MIN_AMOUNT && (anonymous || fullName.trim().length > 0) && !emailError;
 
   async function handleGive() {
     if (!canGive) return;
     setSubmitting(true);
     setError("");
     try {
-      const { checkoutUrl } = await giveDonation({
+      const { checkoutUrl } = await onGive({
         amount: value,
         purpose,
         donorName: anonymous ? undefined : fullName.trim(),
         message: message.trim() || undefined,
+        email: guest ? email.trim() || undefined : undefined,
       });
       window.location.assign(checkoutUrl);
     } catch (err) {
@@ -96,6 +106,18 @@ export function DonationForm({ defaultFullName = "", gcashAvailable }: DonationF
             placeholder="Your full name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+          />
+        )}
+        {guest && (
+          <TextField
+            id="gift-email"
+            className="mt-3"
+            type="email"
+            label="Email for your receipt (optional)"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={emailError}
           />
         )}
         <TextField

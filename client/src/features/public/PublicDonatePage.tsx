@@ -1,60 +1,83 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getParishBySlug } from "@/features/parish/parishApi";
-import { IntentionSignInPrompt } from "@/features/public/IntentionSignInPrompt";
-import type { Parish } from "@/types";
+import { useParams, useSearchParams } from "react-router-dom";
+import { PortalNotice, PortalPending, PortalSuccess } from "@/features/parishioner/components/PortalForm";
+import { DonationForm } from "@/features/parishioner/donations/DonationForm";
+import { PublicGiveShell } from "@/features/public/PublicGiveShell";
+import { guestGive, guestGivingOptions, guestSyncDonation } from "@/features/public/publicGivingApi";
+import { useAsync } from "@/hooks/useAsync";
 
+type Phase = "form" | "checking" | "received";
+
+/** Give to a parish through GCash without an account. */
 export function PublicDonatePage() {
-  const { parishSlug } = useParams();
-  const [parish, setParish] = useState<Parish | null | undefined>(undefined);
+  const { parishSlug = "" } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { data: options } = useAsync(() => guestGivingOptions(parishSlug), [parishSlug]);
 
+  const result = searchParams.get("donation");
+  const returnedId = searchParams.get("id");
+  const [phase, setPhase] = useState<Phase>(result === "done" && returnedId ? "checking" : "form");
+  const [notice, setNotice] = useState<string | null>(
+    result === "cancelled" ? "The donation was cancelled. Nothing was charged." : null
+  );
+  const [amount, setAmount] = useState<number | null>(null);
+
+  // Coming back from GCash: confirm the gift with the server, then tidy the address bar.
   useEffect(() => {
-    let cancelled = false;
-    void (parishSlug ? getParishBySlug(parishSlug) : Promise.resolve(null)).then((found) => {
-      if (!cancelled) setParish(found ?? null);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [parishSlug]);
-
-  if (parish === undefined) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center">
-        <p className="text-sm text-ink-muted">Loading…</p>
-      </div>
-    );
-  }
-
-  if (!parish) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center">
-        <p className="text-sm text-ink-muted">Parish not found. Check the link and try again.</p>
-      </div>
-    );
-  }
+    if (!result || !returnedId) return;
+    const clearParams = () => setSearchParams({}, { replace: true });
+    if (result === "cancelled") {
+      clearParams();
+      return;
+    }
+    guestSyncDonation(parishSlug, returnedId)
+      .then(({ paid, donation }) => {
+        if (paid) {
+          setAmount(donation?.amount ?? null);
+          setPhase("received");
+        } else {
+          setNotice("Your gift is still being confirmed by GCash. It will reach the parish shortly.");
+          setPhase("form");
+        }
+      })
+      .catch(() => {
+        setNotice("We couldn't confirm your gift yet. If you completed payment, it will reach the parish shortly.");
+        setPhase("form");
+      })
+      .finally(clearParams);
+  }, [result, returnedId, parishSlug, setSearchParams]);
 
   return (
-    <div className="min-h-screen bg-surface-alt px-4 py-10 sm:px-6 ">
-      <div className="mx-auto max-w-lg">
-        <div className="mb-6 flex flex-col items-center text-center">
-          {parish.sealUrl ? (
-            <img
-              src={parish.sealUrl}
-              alt={`${parish.name} seal`}
-              className="mb-3 h-16 w-16 rounded-full border border-border object-contain shadow-sm bg-white"
-            />
-          ) : (
-            <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 font-serif text-2xl font-bold text-primary shadow-sm">
-              {parish.name.charAt(0)}
-            </div>
-          )}
-          <p className="font-serif text-xl font-bold leading-snug text-ink sm:text-2xl">{parish.name}</p>
-          <p className="mt-1 text-sm text-ink-muted">Support the parish</p>
-        </div>
-
-        <IntentionSignInPrompt parish={parish} purpose="donation" />
-      </div>
-    </div>
+    <PublicGiveShell title="Support the parish" description="Give securely through GCash. No account needed.">
+      {(parish) =>
+        phase === "checking" ? (
+          <PortalPending>Confirming your gift with GCash…</PortalPending>
+        ) : phase === "received" ? (
+          <PortalSuccess title="Thank you for your gift" to="/give" destination="the giving page">
+            {amount !== null
+              ? `${parish.name} received your gift of ₱${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}.`
+              : "Your gift was received by the parish."}{" "}
+            May God bless your generosity.
+          </PortalSuccess>
+        ) : (
+          <>
+            {notice && (
+              <div className="mb-5">
+                <PortalNotice tone="info">{notice}</PortalNotice>
+              </div>
+            )}
+            {options ? (
+              <DonationForm
+                guest
+                gcashAvailable={options.gcashDonations}
+                onGive={(input) => guestGive(parish.slug, input)}
+              />
+            ) : (
+              <p className="text-center text-sm text-ink-muted">Loading…</p>
+            )}
+          </>
+        )
+      }
+    </PublicGiveShell>
   );
 }

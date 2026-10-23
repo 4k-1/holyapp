@@ -13,6 +13,7 @@ import {
   listOpenMassSlots,
   submitMassIntention,
   type OpenMassSlot,
+  type SubmitIntentionInput,
 } from "@/features/parishioner/intentions/intentionsApi";
 import { useAsync } from "@/hooks/useAsync";
 import { MASS_INTENTION_TYPES, type Parish } from "@/types";
@@ -22,6 +23,11 @@ interface IntentionFormProps {
   defaultRequestedBy?: string;
   /** Called after a request without a donation; a donation continues to GCash instead. */
   onSubmitted?: () => void;
+  /** Where open Masses come from and where the request goes; default to the signed-in parishioner's. */
+  loadSlots?: () => Promise<{ slots: OpenMassSlot[]; gcashDonations: boolean }>;
+  submit?: (input: SubmitIntentionInput) => Promise<{ checkoutUrl: string | null }>;
+  /** A visitor without an account: asks for a mobile number or email so the office can reach them. */
+  guest?: boolean;
 }
 
 const QUICK_AMOUNTS = [50, 100, 200, 500];
@@ -52,8 +58,16 @@ function peso(amount: number) {
   return `₱${amount.toLocaleString("en-PH")}`;
 }
 
-export function IntentionForm({ parish, defaultRequestedBy = "", onSubmitted }: IntentionFormProps) {
-  const { data, loading, error: loadError } = useAsync(() => listOpenMassSlots(), [parish.id]);
+export function IntentionForm({
+  parish,
+  defaultRequestedBy = "",
+  onSubmitted,
+  loadSlots = listOpenMassSlots,
+  submit = submitMassIntention,
+  guest = false,
+}: IntentionFormProps) {
+  // The loader is fixed for the life of the form, so only the parish re-runs it.
+  const { data, loading, error: loadError } = useAsync(() => loadSlots(), [parish.id]);
   const slots = useMemo(() => data?.slots ?? [], [data]);
   const gcashDonations = data?.gcashDonations ?? false;
 
@@ -70,6 +84,7 @@ export function IntentionForm({ parish, defaultRequestedBy = "", onSubmitted }: 
   const [intentionType, setIntentionType] = useState<string>(MASS_INTENTION_TYPES[0]);
   const [intentionFor, setIntentionFor] = useState("");
   const [requestedBy, setRequestedBy] = useState(defaultRequestedBy);
+  const [contact, setContact] = useState("");
   const [donate, setDonate] = useState(false);
   const [amount, setAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -79,7 +94,9 @@ export function IntentionForm({ parish, defaultRequestedBy = "", onSubmitted }: 
   const slot = daySlots.find((item) => item.id === slotId) ?? null;
   const donation = donate ? Number(amount) : 0;
   const donationValid = !donate || (Number.isFinite(donation) && donation >= 1);
-  const canSubmit = Boolean(slot && intentionFor.trim() && requestedBy.trim() && donationValid);
+  const canSubmit = Boolean(
+    slot && intentionFor.trim() && requestedBy.trim() && donationValid && (!guest || contact.trim())
+  );
 
   function chooseDate(iso: string) {
     setMassDate(iso);
@@ -91,7 +108,7 @@ export function IntentionForm({ parish, defaultRequestedBy = "", onSubmitted }: 
     setSubmitting(true);
     setError("");
     try {
-      const result = await submitMassIntention({
+      const result = await submit({
         parishId: parish.id,
         requesterId: null,
         intentionType,
@@ -101,6 +118,7 @@ export function IntentionForm({ parish, defaultRequestedBy = "", onSubmitted }: 
         scheduleTime: slot.time,
         scheduleLabel: slot.scheduleLabel,
         donation: donate ? donation : 0,
+        contact: contact.trim() || undefined,
       });
       if (result.checkoutUrl) {
         window.location.assign(result.checkoutUrl);
@@ -254,6 +272,17 @@ export function IntentionForm({ parish, defaultRequestedBy = "", onSubmitted }: 
           value={requestedBy}
           onChange={(e) => setRequestedBy(e.target.value)}
         />
+        {guest && (
+          <TextField
+            id="requester-contact"
+            className="mt-3"
+            label="Your mobile number or email"
+            hint="So the parish office can reach you about this Mass."
+            placeholder="e.g. 0917 123 4567"
+            value={contact}
+            onChange={(e) => setContact(e.target.value)}
+          />
+        )}
       </PortalFormSection>
 
       <PortalFormSection step={5} title="Donation (optional)" hint="Your intention is offered whether or not you donate.">

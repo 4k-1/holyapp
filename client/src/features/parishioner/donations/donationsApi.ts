@@ -16,6 +16,8 @@ export interface GiveInput {
   /** Leave out to give anonymously; the office then sees no name. */
   donorName?: string;
   message?: string;
+  /** Guests only: where PayMongo sends the receipt. */
+  email?: string;
 }
 
 function fail(err: unknown): never {

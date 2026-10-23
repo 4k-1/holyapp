@@ -10,6 +10,7 @@ const {
 } = require('../utils/recordFields');
 const schedule = require('../services/scheduleService');
 const { frontendUrl } = require('../utils/frontendUrl');
+const { parishSetupActor } = require('../utils/parishActor');
 const {
   configured: gcashConfigured,
   createGcashCheckout,
@@ -240,7 +241,8 @@ async function listOpenSlots(req, res) {
     start.setDate(start.getDate() + 1);
     const end = new Date(start);
     end.setDate(end.getDate() + OPEN_SLOT_DAYS - 1);
-    const slots = await computeSlots(req.parishId, req.user.id, localISO(start), localISO(end), 'Main church');
+    const actor = req.user?.id || (await parishSetupActor(req.parishId));
+    const slots = await computeSlots(req.parishId, actor, localISO(start), localISO(end), 'Main church');
     res.json({
       slots: slots
         .filter((slot) => slot.remaining > 0)
@@ -336,6 +338,10 @@ async function submitIntention(req, res) {
       throw httpError(400, 'Name one person per request. Submit another request for someone else.');
     }
     const requestedBy = requiredText(req.body?.requestedBy, 'Requested by');
+    const guest = !req.user;
+    const contact = guest
+      ? requiredText(req.body?.contact, 'Mobile number or email')
+      : optionalText(req.body?.contact);
     const type = intentionTypeToDb(req.body?.intentionType);
     const donation = parseDonation(req.body?.donation);
     if (date <= localISO(new Date())) {
@@ -347,7 +353,7 @@ async function submitIntention(req, res) {
     if (donation > 0 && donation < 1) {
       throw httpError(400, 'A GCash donation must be at least ₱1.');
     }
-    const maxIntentions = await getCapacity(req.parishId, req.user.id);
+    const maxIntentions = await getCapacity(req.parishId, req.user?.id || (await parishSetupActor(req.parishId)));
     if ((await slotCount(req.parishId, date, time)) >= maxIntentions) {
       throw httpError(409, 'This Mass is already full. Please choose another time.');
     }
@@ -370,12 +376,12 @@ async function submitIntention(req, res) {
         type,
         intentionFor,
         date,
-        req.user.id,
+        req.user?.id || null,
         time,
         label,
         donation,
         donation > 0 ? 'pending' : 'none',
-        optionalText(req.body?.contact),
+        contact,
       ]
     );
     const row = inserted.rows[0];
@@ -389,9 +395,13 @@ async function submitIntention(req, res) {
         [donation, row.id]
       );
       const slug = await client.query('SELECT slug FROM parish WHERE id = $1', [req.parishId]);
-      const account = await client.query('SELECT email FROM app_user WHERE id = $1', [req.user.id]);
+      const account = guest
+        ? { rows: [{ email: contact && contact.includes('@') ? contact : undefined }] }
+        : await client.query('SELECT email FROM app_user WHERE id = $1', [req.user.id]);
       // Back to the request page, which confirms the donation and shows the thank-you screen.
-      const back = `${frontendUrl()}/${slug.rows[0].slug}/portal/intention`;
+      const back = guest
+        ? `${frontendUrl()}/give/${slug.rows[0].slug}/intention`
+        : `${frontendUrl()}/${slug.rows[0].slug}/portal/intention`;
       const session = await createGcashCheckout({
         amountCentavos: Math.round(donation * 100),
         description: 'Mass intention donation',
@@ -417,11 +427,11 @@ async function submitIntention(req, res) {
     );
     await writeAudit({
       parishId: req.parishId,
-      actorId: req.user.id,
+      actorId: req.user?.id || null,
       action: 'mass_intention.requested',
       entityType: 'mass_intention',
       entityId: row.id,
-      metadata: { date, time, donation },
+      metadata: { date, time, donation, guest },
     });
     res.status(201).json({ intention: toIntention(row), checkoutUrl });
   } catch (err) {
@@ -481,10 +491,10 @@ async function syncDonation(req, res) {
       `SELECT i.*, p.paymongo_reference, p.status AS donation_status
        FROM mass_intention i
        JOIN payment p ON p.mass_intention_id = i.id
-       WHERE i.id = $1 AND i.parish_id = $2 AND i.requester_id = $3
+       WHERE i.id = $1 AND i.parish_id = $2 AND i.requester_id IS NOT DISTINCT FROM $3
        ORDER BY p.created_at DESC
        LIMIT 1`,
-      [req.params.id, req.parishId, req.user.id]
+      [req.params.id, req.parishId, req.user?.id || null]
     );
     const row = found.rows[0];
     if (!row) return res.status(404).json({ error: 'No donation found for this intention.' });
@@ -502,7 +512,7 @@ async function syncDonation(req, res) {
       receiptUrl: paidPay?.attributes?.receipt_url || paidPay?.attributes?.invoice_url,
     });
     await client.query('COMMIT');
-    if (!marked.alreadyPaid) await announceDonation(marked.row, marked.amount, req.user.id, 'sync');
+    if (!marked.alreadyPaid) await announceDonation(marked.row, marked.amount, req.user?.id || null, 'sync');
     res.json({ intention: toIntention(marked.row), paid: true });
   } catch (err) {
     try {
