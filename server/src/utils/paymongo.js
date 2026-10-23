@@ -14,6 +14,29 @@ function configured() {
   return Boolean(secretKey());
 }
 
+const RETRY_DELAYS_MS = [400, 1200];
+
+/**
+ * The connection to PayMongo sometimes drops before a response arrives ("fetch failed"), especially from Docker
+ * on Windows. Retry those a couple of times; an answer from PayMongo, even an error, is never retried. An unused
+ * extra checkout session from a retried create is harmless: only the returned one is ever opened.
+ */
+async function fetchWithRetry(url, options) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await fetch(url, { ...options, signal: AbortSignal.timeout(20000) });
+    } catch (cause) {
+      if (attempt >= RETRY_DELAYS_MS.length) {
+        console.error('PayMongo unreachable:', cause.cause?.code || cause.message);
+        const err = new Error("Couldn't reach GCash just now. Please try again in a moment.", { cause });
+        err.status = 502;
+        throw err;
+      }
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+    }
+  }
+}
+
 async function paymongoFetch(path, { method = 'GET', body } = {}) {
   const key = secretKey();
   if (!key) {
@@ -22,7 +45,7 @@ async function paymongoFetch(path, { method = 'GET', body } = {}) {
     throw err;
   }
 
-  const response = await fetch(`${PAYMONGO_HOST}${path}`, {
+  const response = await fetchWithRetry(`${PAYMONGO_HOST}${path}`, {
     method,
     headers: {
       Authorization: `Basic ${Buffer.from(`${key}:`).toString('base64')}`,
