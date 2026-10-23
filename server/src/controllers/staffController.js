@@ -4,7 +4,9 @@ const { hashPassword } = require('../utils/password');
 const { writeAudit } = require('../utils/audit');
 const { notifyStaffRoleChange } = require('../utils/notify');
 
-const JOB_TITLES = new Set(['Priest', 'Parish Secretary', 'Admin Staff']);
+const { PERSONNEL_ROLES } = require('../constants/personnelRoles');
+
+const JOB_TITLES = new Set(PERSONNEL_ROLES);
 const DEV_PASSWORD = 'password123';
 
 function displayName(row) {

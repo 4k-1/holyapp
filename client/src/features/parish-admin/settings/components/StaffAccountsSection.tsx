@@ -101,7 +101,7 @@ export function StaffAccountsSection() {
       render: (s) => (
         <div className="flex items-center gap-3">
           <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-serif text-admin-support font-bold ${ROLE_AVATAR_STYLES[s.role]}`}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-serif text-admin-support font-bold ${ROLE_AVATAR_STYLES[s.role] ?? "bg-admin-gold-100 text-admin-gold-700"}`}
           >
             {initials(s.name)}
           </span>

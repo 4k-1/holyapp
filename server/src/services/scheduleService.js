@@ -1,8 +1,10 @@
 const pool = require('../config/db');
+const { isClergy } = require('../constants/personnelRoles');
 const {
   convert24to12,
   dayAbbrev,
   daysInMonth,
+  conflictMessage,
   findConflict,
   parseTimeToMinutes,
   toISO,
@@ -41,6 +43,9 @@ const DEFAULT_MASS = [
   },
 ];
 
+/** Regular Masses and other standing commitments are held in the church itself. */
+const DEFAULT_LOCATION = 'Main church';
+
 function httpError(status, message) {
   const err = new Error(message);
   err.status = status;
@@ -69,6 +74,7 @@ function toBlock(row) {
     type: row.event_type,
     source: row.source || 'manual',
     assignee: row.assignee_name || row.assigned_personnel_name || '',
+    location: row.location || '',
     recordStatus: row.record_status || undefined,
     showOnOverview: row.show_on_overview !== false,
   };
@@ -91,6 +97,7 @@ function getOccurrencesForDate(dateStr, recurring, blocks, overrides) {
         type: rc.type,
         source: 'recurring',
         assignee: overrides[occId] || rc.assignee || '',
+        location: DEFAULT_LOCATION,
         showOnOverview: rc.showOnOverview !== false,
         isRecurringOccurrence: true,
       });
@@ -179,14 +186,25 @@ async function resolvePersonnelId(parishId, name) {
   return result.rows[0]?.id || null;
 }
 
+/** Clergy first so priests are easy to find when assigning; everyone carries their role for identification. */
 async function listAssignableStaff(parishId) {
   const result = await pool.query(
-    `SELECT full_name FROM parish_personnel
+    `SELECT id, full_name, role_title FROM parish_personnel
      WHERE parish_id = $1 AND status = 'active'
      ORDER BY full_name`,
     [parishId]
   );
-  return result.rows.map((row) => row.full_name).filter(Boolean);
+  return result.rows
+    .filter((row) => row.full_name)
+    .map((row) => ({ id: row.id, name: row.full_name, role: row.role_title, clergy: isClergy(row.role_title) }))
+    .sort((a, b) => Number(b.clergy) - Number(a.clergy) || a.name.localeCompare(b.name));
+}
+
+/** Throws 409 when the new time clashes with an event in the same place or with the same priest. */
+async function assertNoConflict(parishId, { date, start, end, assignee, location, excludeId }) {
+  const occurrences = await occurrencesForDate(parishId, date);
+  const conflict = findConflict(occurrences, start, end, { excludeId, assignee, location });
+  if (conflict) throw httpError(409, conflictMessage(conflict));
 }
 
 async function occurrencesForDate(parishId, dateStr) {
@@ -277,9 +295,37 @@ async function createEvent(parishId, userId, input) {
   return inserted.rows[0].id;
 }
 
+/** Recurring occurrence ids end in "-YYYY-MM-DD-h:mm AM"; event ids are UUIDs. */
+function occurrenceDate(occurrenceId) {
+  const match = /(\d{4}-\d{2}-\d{2})-\d{1,2}:\d{2} [AP]M$/.exec(occurrenceId);
+  return match ? match[1] : null;
+}
+
 async function assignOccurrence(parishId, occurrenceId, assignee) {
   const uuid =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(occurrenceId);
+  if (assignee) {
+    let date = occurrenceDate(occurrenceId);
+    if (uuid) {
+      const found = await pool.query(
+        "SELECT to_char(start_datetime, 'YYYY-MM-DD') AS d FROM event WHERE id = $1 AND parish_id = $2",
+        [occurrenceId, parishId]
+      );
+      date = found.rows[0]?.d || null;
+    }
+    if (date) {
+      const occurrence = (await occurrencesForDate(parishId, date)).find((o) => o.id === occurrenceId);
+      if (occurrence) {
+        await assertNoConflict(parishId, {
+          date,
+          start: occurrence.start,
+          end: occurrence.end,
+          assignee,
+          excludeId: occurrenceId,
+        });
+      }
+    }
+  }
   const assignedTo = await resolvePersonnelId(parishId, assignee);
   if (uuid) {
     const updated = await pool.query(
@@ -312,6 +358,8 @@ module.exports = {
   ensureDefaultMassSchedule,
   resolvePersonnelId,
   listAssignableStaff,
+  assertNoConflict,
+  DEFAULT_LOCATION,
   occurrencesForDate,
   occurrencesForMonth,
   massScheduleFromCommitments,
@@ -320,4 +368,5 @@ module.exports = {
   assignOccurrence,
   EVENT_SELECT,
   findConflict,
+  conflictMessage,
 };

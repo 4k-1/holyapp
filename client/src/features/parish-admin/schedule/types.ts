@@ -37,9 +37,28 @@ export interface ScheduleBlock {
   /** "manual" | "recurring" | or the originating module, e.g. "Sacrament", "Marriage Process" */
   source: string;
   assignee: string;
+  /** Where it happens; regular Masses are in the main church. Blank on older entries. */
+  location?: string;
   recordStatus?: "Pending" | "Recorded";
   showOnOverview?: boolean;
 }
+
+/** Someone from the parish staff directory who can be assigned to events. */
+export interface AssignableStaff {
+  id: string;
+  name: string;
+  role: string;
+  clergy: boolean;
+}
+
+/** A clash found when scheduling: same priest or same place at an overlapping time. */
+export interface ScheduleConflict {
+  occurrence: ScheduleOccurrence;
+  message: string;
+}
+
+/** Places offered when adding an event; any other place can be typed. */
+export const COMMON_LOCATIONS = ["Main church", "Adoration chapel", "Parish hall", "Parish office"];
 
 /** A ScheduleBlock, OR a materialized occurrence of a RecurringCommitment for one date. */
 export interface ScheduleOccurrence extends ScheduleBlock {

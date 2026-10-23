@@ -37,6 +37,8 @@ import type {
   MarriageRequirement,
 } from "@/features/parish-admin/marriage-applications/types";
 import { listAssignableStaff } from "@/features/parish-admin/schedule/api/scheduleApi";
+import { StaffSelect } from "@/features/parish-admin/schedule/components/StaffSelect";
+import type { AssignableStaff } from "@/features/parish-admin/schedule/types";
 import { convert24to12, to24Hour } from "@/features/parish-admin/schedule/scheduleHelpers";
 
 const GROUPS: RequirementGroup[] = ["Bride", "Groom", "Couple", "Preparation"];
@@ -78,7 +80,7 @@ export function AdminMarriageApplicationDetailPage() {
   const [application, setApplication] = useState<MarriageApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [staff, setStaff] = useState<string[]>([]);
+  const [staff, setStaff] = useState<AssignableStaff[]>([]);
   const [saving, setSaving] = useState(false);
 
   const [needed, setNeeded] = useState(false);
@@ -382,18 +384,13 @@ export function AdminMarriageApplicationDetailPage() {
                       </AdminField>
                     </div>
                     <AdminField label="Priest">
-                      <select
+                      <StaffSelect
+                        staff={staff}
                         value={assignee}
-                        onChange={(e) => setAssignee(e.target.value)}
+                        onChange={setAssignee}
+                        emptyLabel="Not assigned yet"
                         className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2.5 text-admin-body text-admin-ink"
-                      >
-                        <option value="">Not assigned yet</option>
-                        {staff.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </AdminField>
                     <div className="flex justify-end gap-2">
                       <AdminButton type="button" variant="secondary" onClick={() => setEditingDate(false)} disabled={saving}>

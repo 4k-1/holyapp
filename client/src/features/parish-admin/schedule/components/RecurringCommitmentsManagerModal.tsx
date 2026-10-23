@@ -11,7 +11,8 @@ import {
 } from "../api/scheduleApi";
 import { convert24to12, to24Hour } from "../scheduleHelpers";
 import { EVENT_TYPE_LABELS } from "../types";
-import type { DayAbbrev, RecurringCommitment, ScheduleEventType } from "../types";
+import type { AssignableStaff, DayAbbrev, RecurringCommitment, ScheduleEventType } from "../types";
+import { StaffSelect } from "./StaffSelect";
 
 const DAYS: DayAbbrev[] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -22,7 +23,7 @@ interface RecurringCommitmentsManagerModalProps {
 
 export function RecurringCommitmentsManagerModal({ onClose, onChanged }: RecurringCommitmentsManagerModalProps) {
   const [items, setItems] = useState<RecurringCommitment[]>([]);
-  const [staff, setStaff] = useState<string[]>([]);
+  const [staff, setStaff] = useState<AssignableStaff[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
 
@@ -158,7 +159,7 @@ function RecurringCommitmentForm({
   onCancel,
   onSaved,
 }: {
-  staff: string[];
+  staff: AssignableStaff[];
   initial?: RecurringCommitment;
   onCancel: () => void;
   onSaved: () => void;
@@ -244,18 +245,7 @@ function RecurringCommitmentForm({
           </select>
         </AdminField>
         <AdminField label="Assign to" className="mb-0">
-          <select
-            value={assignee}
-            onChange={(e) => setAssignee(e.target.value)}
-            className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
-          >
-            <option value="">Unassigned</option>
-            {staff.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+          <StaffSelect staff={staff} value={assignee} onChange={setAssignee} />
         </AdminField>
       </div>
 

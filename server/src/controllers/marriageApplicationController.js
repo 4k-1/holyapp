@@ -401,14 +401,15 @@ async function reserveWeddingDate(req, res) {
     const start = requiredText(req.body?.start, 'Start time');
     const end = requiredText(req.body?.end, 'End time');
     const assignee = optionalText(req.body?.assignee) || '';
-    const occurrences = await schedule.occurrencesForDate(req.parishId, date);
-    const conflict = schedule.findConflict(occurrences, start, end, row.wedding_event_id || undefined, assignee || undefined);
-    if (conflict) {
-      throw httpError(
-        409,
-        `${conflict.assignee ? `${conflict.assignee} already has` : "There's already"} ${conflict.title} at ${conflict.start}–${conflict.end} on this date.`
-      );
-    }
+    // Weddings are celebrated in the church, so they clash with anything else there or with the same priest.
+    await schedule.assertNoConflict(req.parishId, {
+      date,
+      start,
+      end,
+      assignee,
+      location: schedule.DEFAULT_LOCATION,
+      excludeId: row.wedding_event_id || undefined,
+    });
 
     let eventId = row.wedding_event_id;
     const title = `Wedding — ${partyName(row, 'groom')} & ${partyName(row, 'bride')}`;
@@ -418,10 +419,11 @@ async function reserveWeddingDate(req, res) {
       const updatedEvent = await pool.query(
         `UPDATE event
          SET title = $1, start_datetime = $2, end_datetime = $3,
-             assigned_to = $4, assignee_name = $5, updated_at = NOW(), status = 'upcoming'
+             assigned_to = $4, assignee_name = $5, updated_at = NOW(), status = 'upcoming',
+             location = COALESCE(location, $8)
          WHERE id = $6 AND parish_id = $7
          RETURNING id`,
-        [title, toTimestamp(date, start), toTimestamp(date, end), assignedTo, assignee, eventId, req.parishId]
+        [title, toTimestamp(date, start), toTimestamp(date, end), assignedTo, assignee, eventId, req.parishId, schedule.DEFAULT_LOCATION]
       );
       if (!updatedEvent.rowCount) eventId = null;
     }
@@ -434,6 +436,7 @@ async function reserveWeddingDate(req, res) {
         type: 'wedding',
         source: 'Marriage Process',
         assignee,
+        location: schedule.DEFAULT_LOCATION,
         marriageApplicationId: row.id,
       });
     }

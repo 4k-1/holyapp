@@ -76,14 +76,12 @@ async function checkConflict(req, res) {
     const start = requiredText(req.body?.start, 'Start time');
     const end = requiredText(req.body?.end, 'End time');
     const occurrences = await schedule.occurrencesForDate(req.parishId, date);
-    const conflict = schedule.findConflict(
-      occurrences,
-      start,
-      end,
-      optionalText(req.body?.excludeId) || undefined,
-      optionalText(req.body?.assignee) || undefined
-    );
-    res.json({ conflict: conflict || null });
+    const conflict = schedule.findConflict(occurrences, start, end, {
+      excludeId: optionalText(req.body?.excludeId) || undefined,
+      assignee: optionalText(req.body?.assignee) || undefined,
+      location: optionalText(req.body?.location) || undefined,
+    });
+    res.json({ conflict: conflict || null, message: conflict ? schedule.conflictMessage(conflict) : null });
   } catch (err) {
     return send(res, err);
   }
@@ -92,6 +90,7 @@ async function checkConflict(req, res) {
 async function createBlock(req, res) {
   try {
     const input = parseBlockInput(req.body || {});
+    await schedule.assertNoConflict(req.parishId, input);
     const id = await schedule.createEvent(req.parishId, req.user.id, input);
     const blocks = await schedule.loadBlocks(req.parishId);
     const block = blocks.find((item) => item.id === id);

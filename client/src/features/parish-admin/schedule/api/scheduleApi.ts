@@ -1,5 +1,5 @@
 import { apiFetch, ApiError } from "@/lib/api";
-import type { RecurringCommitment, ScheduleBlock, ScheduleOccurrence } from "../types";
+import type { AssignableStaff, RecurringCommitment, ScheduleBlock, ScheduleConflict, ScheduleOccurrence } from "../types";
 
 function fail(err: unknown): never {
   if (err instanceof ApiError) throw new Error(err.message);
@@ -15,9 +15,9 @@ export async function listRecurringCommitments(): Promise<RecurringCommitment[]>
   }
 }
 
-export async function listAssignableStaff(): Promise<string[]> {
+export async function listAssignableStaff(): Promise<AssignableStaff[]> {
   try {
-    const data = await apiFetch<{ staff: string[] }>("/schedule/staff");
+    const data = await apiFetch<{ staff: AssignableStaff[] }>("/schedule/staff");
     return data.staff ?? [];
   } catch (err) {
     fail(err);
@@ -51,14 +51,14 @@ export async function checkConflict(
   date: string,
   start: string,
   end: string,
-  opts: { excludeId?: string; assignee?: string } = {}
-): Promise<ScheduleOccurrence | undefined> {
+  opts: { excludeId?: string; assignee?: string; location?: string } = {}
+): Promise<ScheduleConflict | undefined> {
   try {
-    const data = await apiFetch<{ conflict: ScheduleOccurrence | null }>("/schedule/conflicts", {
+    const data = await apiFetch<{ conflict: ScheduleOccurrence | null; message: string | null }>("/schedule/conflicts", {
       method: "POST",
-      body: { date, start, end, excludeId: opts.excludeId, assignee: opts.assignee },
+      body: { date, start, end, excludeId: opts.excludeId, assignee: opts.assignee, location: opts.location },
     });
-    return data.conflict || undefined;
+    return data.conflict ? { occurrence: data.conflict, message: data.message ?? "" } : undefined;
   } catch (err) {
     fail(err);
   }

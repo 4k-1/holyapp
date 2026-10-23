@@ -46,6 +46,7 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const intentionRoutes = require('./routes/intentionRoutes');
 const marriageApplicationRoutes = require('./routes/marriageApplicationRoutes');
 const donationRoutes = require('./routes/donationRoutes');
+const personnelRoutes = require('./routes/personnelRoutes');
 app.use('/auth', authRoutes);
 app.use('/rbac', rbacRoutes);
 app.use('/parish', parishRoutes);
@@ -61,6 +62,7 @@ app.use('/schedule', scheduleRoutes);
 app.use('/intentions', intentionRoutes);
 app.use('/marriage-applications', marriageApplicationRoutes);
 app.use('/donations', donationRoutes);
+app.use('/personnel', personnelRoutes);
 
 const { frontendUrl } = require('./utils/frontendUrl');
 const PORT = process.env.PORT || 5000;

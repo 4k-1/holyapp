@@ -94,6 +94,7 @@ export function DayAgendaSidebar({
                       {o.start} – {o.end}
                     </p>
                     <p className="mt-0.5 text-admin-body font-semibold text-admin-ink">{o.title}</p>
+                    {o.location && <p className="text-admin-support text-admin-ink-muted">{o.location}</p>}
                   </div>
                   <ScheduleKebabMenu
                     items={[
