@@ -5,6 +5,7 @@ import { markRecordStatus } from "../api/scheduleApi";
 import { getRecordFormPath, getRecordFormPrefill } from "../recordLinkHelpers";
 import { ScheduleKebabMenu } from "./ScheduleKebabMenu";
 import { EVENT_TYPE_STYLES } from "@/features/parish-admin/schedule/eventTypeStyles";
+import { EVENT_TYPE_LABELS } from "../types";
 import type { ScheduleOccurrence } from "../types";
 
 interface DayAgendaSidebarProps {
@@ -52,99 +53,113 @@ export function DayAgendaSidebar({
   }
 
   return (
-    <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4 shadow-md">
-      <div className="mb-3 flex items-start justify-between gap-2">
+    <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-md">
+      <div className="flex items-start justify-between gap-3 border-b border-admin-border px-5 py-4">
         <div>
-          <p className="font-serif text-admin-page font-semibold text-admin-ink">
-            {d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+          <p className="text-admin-support font-medium text-admin-ink-muted">
+            {isToday ? "Today" : d.toLocaleDateString("en-US", { weekday: "long" })}
           </p>
-          <p className="mt-0.5 text-admin-support text-admin-ink-muted">
-            {isToday ? "Today · " : ""}
+          <p className="mt-0.5 text-[1.25rem] font-semibold leading-tight text-admin-ink">
+            {d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}
+          </p>
+          <p className="mt-1 text-admin-support text-admin-ink-muted">
             {occurrences.length} event{occurrences.length !== 1 ? "s" : ""}
+            {massTimes.length > 0 && ` · ${massTimes.length} ${massTimes.length === 1 ? "Mass" : "Masses"}`}
           </p>
         </div>
         <button
           onClick={onAdd}
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-2xl bg-admin-green-700 text-white hover:bg-admin-green-800"
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-admin-green-700 text-white shadow-sm hover:bg-admin-green-900"
           title="Add to this date"
+          aria-label="Add to this date"
         >
-          +
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" className="h-4 w-4" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19" strokeLinecap="round" />
+            <line x1="5" y1="12" x2="19" y2="12" strokeLinecap="round" />
+          </svg>
         </button>
       </div>
 
-      {massTimes.length > 0 && (
-        <p className="mb-3 rounded-lg bg-admin-surface-alt px-3 py-2 text-admin-body text-admin-ink-muted">
-          <span className="font-semibold text-admin-ink">Masses:</span> {massTimes.join(" · ")}
-        </p>
-      )}
+      <div className="px-5 py-4">
+        {massTimes.length > 0 && (
+          <div className="mb-4 rounded-[10px] bg-admin-green-050 px-3.5 py-2.5">
+            <p className="text-admin-label font-semibold text-admin-green-900">Regular Masses</p>
+            <p className="mt-0.5 text-admin-body tabular-nums text-admin-ink">{massTimes.join(" · ")}</p>
+          </div>
+        )}
 
-      {occurrences.length === 0 ? (
-        <div className="rounded-[10px] border border-dashed border-admin-border-strong px-4 py-8 text-center">
-          <p className="text-admin-body font-semibold text-admin-ink">
-            {massTimes.length > 0 ? "Nothing else scheduled" : "Nothing scheduled"}
-          </p>
-          <p className="mt-1 text-admin-support text-admin-ink-muted">Click + to add a baptism, blessing, special Mass, or event.</p>
-        </div>
-      ) : (
-        <div className="space-y-2.5">
-          {occurrences.map((o) => {
-            const sourceLabel = o.source === "recurring" ? "Recurring" : o.source === "manual" ? "Manual" : `Auto · ${o.source}`;
-            return (
-              <div key={o.id} className={`rounded-[10px] p-3 ${EVENT_TYPE_STYLES[o.type].card}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-admin-label font-semibold text-admin-ink-muted">
+        {occurrences.length === 0 ? (
+          <div className="rounded-[10px] border border-dashed border-admin-border-strong px-4 py-8 text-center">
+            <p className="text-admin-body font-semibold text-admin-ink">
+              {massTimes.length > 0 ? "Nothing else scheduled" : "Nothing scheduled"}
+            </p>
+            <p className="mt-1 text-admin-support text-admin-ink-muted">Click + to add a baptism, blessing, special Mass, or event.</p>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-2.5">
+            {occurrences.map((o) => {
+              const style = EVENT_TYPE_STYLES[o.type];
+              const sourceLabel =
+                o.source === "recurring" ? "Recurring" : o.source === "manual" ? "Added by hand" : `From ${o.source}`;
+              return (
+                <li key={o.id} className={`rounded-[10px] px-3 py-2.5 ${style.card}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-admin-label font-semibold tabular-nums text-admin-ink-muted">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <polyline points="12 7 12 12 15 14" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                       {o.start} – {o.end}
-                    </p>
-                    <p className="mt-0.5 text-admin-body font-semibold text-admin-ink">{o.title}</p>
-                    {o.location && <p className="text-admin-support text-admin-ink-muted">{o.location}</p>}
+                    </span>
+                    <ScheduleKebabMenu
+                      items={[
+                        o.recordStatus === "Pending" && {
+                          label: "Input record",
+                          primary: true,
+                          onClick: () => handleInputRecord(o),
+                        },
+                        o.recordStatus === "Pending" && {
+                          label: "Already recorded",
+                          onClick: () => handleMarkRecorded(o),
+                        },
+                        !o.isRecurringOccurrence && o.source === "manual" && { label: "Edit", onClick: () => onEdit(o) },
+                        { label: o.assignee ? "Reassign" : "Assign", onClick: () => onAssign(o) },
+                        !!o.assignee && {
+                          label: `View all for ${o.assignee}`,
+                          onClick: () => onViewAssignee(o.assignee),
+                        },
+                      ]}
+                    />
                   </div>
-                  <ScheduleKebabMenu
-                    items={[
-                      o.recordStatus === "Pending" && {
-                        label: "Input record",
-                        primary: true,
-                        onClick: () => handleInputRecord(o),
-                      },
-                      o.recordStatus === "Pending" && {
-                        label: "Already recorded",
-                        onClick: () => handleMarkRecorded(o),
-                      },
-                      !o.isRecurringOccurrence && o.source === "manual" && { label: "Edit", onClick: () => onEdit(o) },
-                      { label: o.assignee ? "Reassign" : "Assign", onClick: () => onAssign(o) },
-                      !!o.assignee && {
-                        label: `View all for ${o.assignee}`,
-                        onClick: () => onViewAssignee(o.assignee),
-                      },
-                    ]}
-                  />
-                </div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                  <span className="text-admin-support text-admin-ink-muted">{sourceLabel}</span>
-                  <span className="text-admin-support text-admin-ink-muted">·</span>
-                  {o.assignee ? (
-                    <button
-                      type="button"
-                      onClick={() => onViewAssignee(o.assignee)}
-                      className="text-admin-support font-semibold text-admin-green-700 hover:underline"
-                      title={`View all events for ${o.assignee}`}
-                    >
-                      {o.assignee}
-                    </button>
-                  ) : (
-                    <span className="text-admin-support text-admin-ink-muted">Unassigned</span>
-                  )}
-                </div>
-                {o.recordStatus && (
-                  <div className="mt-2">
-                    <AdminBadge tone={o.recordStatus === "Pending" ? "gold" : "green"}>{o.recordStatus}</AdminBadge>
+                  <p className="mt-0.5 text-admin-body font-semibold text-admin-ink">{o.title}</p>
+                  {o.location && <p className="text-admin-support text-admin-ink-muted">{o.location}</p>}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                    <span className={`rounded px-1.5 py-0.5 text-[0.6875rem] font-semibold ${style.pill ?? `${style.dot} text-white`}`}>
+                      {EVENT_TYPE_LABELS[o.type]}
+                    </span>
+                    {o.recordStatus && (
+                      <AdminBadge tone={o.recordStatus === "Pending" ? "gold" : "green"}>{o.recordStatus}</AdminBadge>
+                    )}
+                    {o.assignee ? (
+                      <button
+                        type="button"
+                        onClick={() => onViewAssignee(o.assignee)}
+                        className="text-admin-support font-semibold text-admin-green-700 hover:underline"
+                        title={`View all events for ${o.assignee}`}
+                      >
+                        {o.assignee}
+                      </button>
+                    ) : (
+                      <span className="text-admin-support font-medium text-admin-amber-700">Unassigned</span>
+                    )}
+                    <span className="text-admin-support text-admin-ink-faint">· {sourceLabel}</span>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

@@ -79,8 +79,6 @@ export function AdminSchedulePage() {
     setView("list");
   }
 
-  const monthLabel = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
@@ -123,26 +121,6 @@ export function AdminSchedulePage() {
 
         {view === "calendar" && (
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => shiftMonth(-1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border bg-surface text-admin-ink-muted hover:bg-admin-surface-alt"
-              aria-label="Previous month"
-            >
-              ‹
-            </button>
-            <span className="min-w-[140px] text-center font-serif text-admin-group font-semibold text-admin-ink">
-              {monthLabel}
-            </span>
-            <button
-              onClick={() => shiftMonth(1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border bg-surface text-admin-ink-muted hover:bg-admin-surface-alt"
-              aria-label="Next month"
-            >
-              ›
-            </button>
-            <AdminButton variant="secondary" size="sm" onClick={goToday}>
-              Today
-            </AdminButton>
             <AdminButton variant="secondary" size="sm" onClick={() => setSidebarCollapsed((v) => !v)}>
               {sidebarCollapsed ? "Show details" : "Hide details"}
             </AdminButton>
@@ -159,7 +137,7 @@ export function AdminSchedulePage() {
           reloadKey={listVersion}
         />
       ) : (
-        <div className={`grid grid-cols-1 gap-4 ${sidebarCollapsed ? "" : "lg:grid-cols-[1fr_400px]"}`}>
+        <div className={`grid grid-cols-1 items-start gap-4 ${sidebarCollapsed ? "" : "lg:grid-cols-[minmax(0,1fr)_360px]"}`}>
           <MonthCalendarGrid
             cursor={cursor}
             monthData={eventsByDate}
@@ -167,6 +145,9 @@ export function AdminSchedulePage() {
             selectedDate={selectedDate}
             todayStr={TODAY_ISO}
             onSelectDate={setSelectedDate}
+            onPrevMonth={() => shiftMonth(-1)}
+            onNextMonth={() => shiftMonth(1)}
+            onToday={goToday}
           />
           {!sidebarCollapsed && (
             <DayAgendaSidebar

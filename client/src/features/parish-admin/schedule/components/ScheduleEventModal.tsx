@@ -27,7 +27,8 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
   const [date, setDate] = useState(event?.date ?? defaultDate);
   const [start, setStart] = useState(event ? to24Hour(event.start) : "09:00");
   const [end, setEnd] = useState(event ? to24Hour(event.end) : "10:00");
-  const [type, setType] = useState<ScheduleEventType>(event?.type ?? "manual");
+  // No default for new events: the type sets the event's colour, so it should be a deliberate choice.
+  const [type, setType] = useState<ScheduleEventType | "">(event?.type ?? "");
   const [placeKind, setPlaceKind] = useState<PlaceKind>(startsOutside ? "outside" : "parish");
   const [parishPlace, setParishPlace] = useState(
     event?.location && !startsOutside ? event.location : COMMON_LOCATIONS[0]
@@ -59,10 +60,10 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
   }, [date, start, end, assignee, location, event?.id]);
 
   const timeInvalid = Boolean(start && end && start >= end);
-  const canSubmit = Boolean(title.trim() && date && location && !timeInvalid && !conflict);
+  const canSubmit = Boolean(title.trim() && date && type && location && !timeInvalid && !conflict);
 
   async function handleSubmit() {
-    if (!canSubmit) return;
+    if (!canSubmit || !type) return;
     setSubmitting(true);
     setError("");
     const input = {
@@ -126,8 +127,14 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
             <select
               value={type}
               onChange={(e) => setType(e.target.value as ScheduleEventType)}
-              className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
+              aria-required="true"
+              className={`w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body ${
+                type ? "text-admin-ink" : "text-admin-ink-faint"
+              }`}
             >
+              <option value="" disabled>
+                Choose a type
+              </option>
               {Object.entries(EVENT_TYPE_LABELS).map(([val, label]) => (
                 <option key={val} value={val}>
                   {label}
