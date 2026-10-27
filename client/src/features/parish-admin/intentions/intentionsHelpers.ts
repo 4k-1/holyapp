@@ -30,16 +30,6 @@ export function formatMassDate(iso: string) {
   });
 }
 
-export function formatSlotHeading(date: string, time: string) {
-  if (!date) return time;
-  const day = new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-  return `${day} • ${time}`;
-}
-
 export function formatRequestedOn(iso: string) {
   if (!iso) return "—";
   const d = new Date(iso);

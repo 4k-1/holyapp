@@ -21,7 +21,7 @@ export function BookIntentionModal({ parishId, slot, onClose, onBooked }: BookIn
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const full = slot.remaining <= 0;
+  const full = slot.remaining === 0;
   // A donation is optional; leave it empty when nothing was given.
   const offeringAmount = offering.trim() === "" ? 0 : Number(offering);
   const canSave = Boolean(
@@ -70,7 +70,9 @@ export function BookIntentionModal({ parishId, slot, onClose, onBooked }: BookIn
             </p>
           ) : (
             <p className="mb-4 text-admin-support text-admin-ink-muted">
-              {slot.remaining} of {slot.maxIntentions} places remaining on this Mass.
+              {slot.remaining === null
+                ? "There's no limit on intentions for this Mass."
+                : `${slot.remaining} of ${slot.maxIntentions} places remaining on this Mass.`}
             </p>
           )}
 

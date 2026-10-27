@@ -84,15 +84,18 @@ export function MassIntentionsMiniCalendar({
           const isToday = iso === todayStr;
           const isSelected = iso === selectedDate;
           const state = isPast ? null : dayState(slots);
-          const left = slots.reduce((sum, slot) => sum + slot.remaining, 0);
-          const capacity = slots.reduce((sum, slot) => sum + slot.maxIntentions, 0);
+          const unlimited = slots.some((slot) => slot.maxIntentions === null);
+          const left = slots.reduce((sum, slot) => sum + (slot.remaining ?? 0), 0);
+          const capacity = slots.reduce((sum, slot) => sum + (slot.maxIntentions ?? 0), 0);
           const booked = slots.reduce((sum, slot) => sum + slot.bookedCount, 0);
           const label = new Date(year, month, day).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
           const detail = isPast
             ? `${booked} intention${booked === 1 ? "" : "s"}`
             : slots.length === 0
               ? "no Masses"
-              : `${left} of ${capacity} places left`;
+              : unlimited
+                ? `${booked} intention${booked === 1 ? "" : "s"}, no limit`
+                : `${left} of ${capacity} places left`;
           return (
             <button
               key={iso}

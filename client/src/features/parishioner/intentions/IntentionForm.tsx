@@ -228,7 +228,9 @@ export function IntentionForm({
               >
                 <span className="text-[0.9375rem] font-semibold tabular-nums text-ink">{item.time}</span>
                 <span className="text-[0.8125rem] text-ink-muted">
-                  {item.remaining} {item.remaining === 1 ? "place" : "places"} left
+                  {item.remaining === null
+                    ? "Open"
+                    : `${item.remaining} ${item.remaining === 1 ? "place" : "places"} left`}
                 </span>
               </ChoiceButton>
             ))}

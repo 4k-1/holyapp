@@ -210,9 +210,11 @@ export interface MassSlotView {
   time: string;
   scheduleLabel: string;
   location: string;
-  maxIntentions: number;
+  /** null when the parish sets no limit on intentions per Mass. */
+  maxIntentions: number | null;
   bookedCount: number;
-  remaining: number;
+  /** null when there is no limit. */
+  remaining: number | null;
   capacityState: MassSlotCapacityState;
   intentions: MassIntentionRequest[];
 }

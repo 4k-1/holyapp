@@ -22,8 +22,9 @@ export interface OpenMassSlot {
   date: string;
   time: string;
   scheduleLabel: string;
-  remaining: number;
-  maxIntentions: number;
+  /** null when the parish sets no limit on intentions per Mass. */
+  remaining: number | null;
+  maxIntentions: number | null;
 }
 
 function fail(err: unknown): never {

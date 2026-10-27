@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import { usePrintJob } from "@/components/print/usePrintJob";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import {
   confirmIntention,
@@ -8,7 +9,9 @@ import {
   markIntentionSaid,
   updateMassIntentionCapacity,
 } from "@/features/parish-admin/intentions/api/intentionsAdminApi";
+import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { BookIntentionModal } from "@/features/parish-admin/intentions/components/BookIntentionModal";
+import { IntentionsPrintSheet } from "@/features/parish-admin/intentions/components/IntentionsPrintSheet";
 import { MassCapacitySetting } from "@/features/parish-admin/intentions/components/MassCapacitySetting";
 import { MassIntentionsMiniCalendar } from "@/features/parish-admin/intentions/components/MassIntentionsMiniCalendar";
 import { MassSlotTable } from "@/features/parish-admin/intentions/components/MassSlotTable";
@@ -21,6 +24,10 @@ import type { MassIntentionRequest, MassSlotView, Parish } from "@/types";
 
 const LOCATION = "Main church";
 
+function plural(n: number, word: string) {
+  return `${n} ${n === 1 ? word : `${word}s`}`;
+}
+
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
@@ -32,6 +39,8 @@ export function AdminMassIntentionsPage() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [bookingSlot, setBookingSlot] = useState<MassSlotView | null>(null);
   const [markingId, setMarkingId] = useState<string | null>(null);
+  /** The Masses being printed; the sheet renders, the browser prints, then this clears. */
+  const [printing, setPrinting] = usePrintJob<MassSlotView[]>();
 
   const monthFrom = toISO(cursor);
   const monthTo = toISO(new Date(cursor.getFullYear(), cursor.getMonth(), daysInMonth(cursor.getFullYear(), cursor.getMonth())));
@@ -47,9 +56,10 @@ export function AdminMassIntentionsPage() {
     [parish.id, monthFrom, monthTo]
   );
 
-  const { data: capacity = 5, refetch: refetchCapacity } = useAsync(() => getMassIntentionCapacity(), []);
+  const { data: capacityData, refetch: refetchCapacity } = useAsync(() => getMassIntentionCapacity(), []);
+  const capacity = capacityData === undefined ? 5 : capacityData;
 
-  async function handleCapacitySave(next: number) {
+  async function handleCapacitySave(next: number | null) {
     await updateMassIntentionCapacity(next);
     refetchCapacity();
     refetch();
@@ -68,6 +78,7 @@ export function AdminMassIntentionsPage() {
   }, [slots]);
 
   const daySlots = slotsByDate[selectedDate] ?? [];
+  const dayBooked = daySlots.reduce((sum, slot) => sum + slot.bookedCount, 0);
   const selectedIsPast = selectedDate < today;
 
   function shiftMonth(dir: number) {
@@ -141,12 +152,27 @@ export function AdminMassIntentionsPage() {
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="font-serif text-admin-section font-semibold text-admin-ink">{formatMassDate(selectedDate)}</h2>
           {daySlots.length > 0 && (
-            <p className="text-admin-body text-admin-ink-muted">
-              {selectedIsPast
-                ? `${daySlots.reduce((sum, slot) => sum + slot.bookedCount, 0)} intentions offered`
-                : `${daySlots.reduce((sum, slot) => sum + slot.remaining, 0)} places left`}{" "}
-              · {daySlots.length} {daySlots.length === 1 ? "Mass" : "Masses"}
-            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-admin-body text-admin-ink-muted">
+                {selectedIsPast
+                  ? `${plural(dayBooked, "intention")} offered`
+                  : daySlots.some((slot) => slot.remaining === null)
+                    ? plural(dayBooked, "intention")
+                    : `${daySlots.reduce((sum, slot) => sum + (slot.remaining ?? 0), 0)} places left`}{" "}
+                · {daySlots.length} {daySlots.length === 1 ? "Mass" : "Masses"}
+              </p>
+              {daySlots.length > 1 && (
+                <AdminButton
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPrinting(daySlots)}
+                  disabled={daySlots.every((slot) => slot.intentions.length === 0)}
+                >
+                  Print all Masses
+                </AdminButton>
+              )}
+            </div>
           )}
         </div>
         {loading && daySlots.length === 0 ? (
@@ -162,6 +188,7 @@ export function AdminMassIntentionsPage() {
                 markingId={markingId}
                 isPast={selectedIsPast}
                 onAddRequest={() => setBookingSlot(slot)}
+                onPrint={() => setPrinting([slot])}
                 onConfirm={handleConfirm}
                 onMarkSaid={handleMarkSaid}
               />
@@ -170,6 +197,14 @@ export function AdminMassIntentionsPage() {
         )}
       </section>
       </div>
+
+      {printing && (
+        <IntentionsPrintSheet
+          parishName={parish.name}
+          date={selectedDate}
+          slots={printing.filter((slot) => slot.intentions.length > 0)}
+        />
+      )}
 
       {bookingSlot && (
         <BookIntentionModal

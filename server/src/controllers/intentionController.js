@@ -101,7 +101,9 @@ function toIntention(row) {
   };
 }
 
+/** `max` is null when the parish sets no limit on intentions per Mass. */
 function capacityState(booked, max) {
+  if (max === null) return 'open';
   if (booked >= max) return 'full';
   if (max - booked === 1) return 'nearly_full';
   return 'open';
@@ -132,13 +134,20 @@ async function ensureSettings(parishId, userId) {
   );
 }
 
+/** Intentions allowed per Mass, or null for no limit (stored as 0). */
 async function getCapacity(parishId, userId) {
   await ensureSettings(parishId, userId);
   const result = await pool.query(
     'SELECT mass_intention_capacity FROM parish_settings WHERE parish_id = $1',
     [parishId]
   );
-  return result.rows[0]?.mass_intention_capacity || 5;
+  const stored = result.rows[0]?.mass_intention_capacity;
+  if (stored === 0) return null;
+  return stored || 5;
+}
+
+function isFull(booked, max) {
+  return max !== null && booked >= max;
 }
 
 async function offeringAmount(parishId) {
@@ -211,7 +220,7 @@ async function computeSlots(parishId, userId, from, to, location) {
         location,
         maxIntentions,
         bookedCount,
-        remaining: Math.max(0, maxIntentions - bookedCount),
+        remaining: maxIntentions === null ? null : Math.max(0, maxIntentions - bookedCount),
         capacityState: capacityState(bookedCount, maxIntentions),
         intentions: booked,
       });
@@ -245,7 +254,7 @@ async function listOpenSlots(req, res) {
     const slots = await computeSlots(req.parishId, actor, localISO(start), localISO(end), 'Main church');
     res.json({
       slots: slots
-        .filter((slot) => slot.remaining > 0)
+        .filter((slot) => slot.remaining === null || slot.remaining > 0)
         .map(({ id, date, time, scheduleLabel, remaining, maxIntentions }) => ({
           id,
           date,
@@ -354,7 +363,7 @@ async function submitIntention(req, res) {
       throw httpError(400, 'A GCash donation must be at least ₱1.');
     }
     const maxIntentions = await getCapacity(req.parishId, req.user?.id || (await parishSetupActor(req.parishId)));
-    if ((await slotCount(req.parishId, date, time)) >= maxIntentions) {
+    if (isFull(await slotCount(req.parishId, date, time), maxIntentions)) {
       throw httpError(409, 'This Mass is already full. Please choose another time.');
     }
     const recurring = await schedule.loadRecurring(req.parishId);
@@ -535,7 +544,7 @@ async function bookIntention(req, res) {
     const type = intentionTypeToDb(req.body?.intentionType);
     const offering = parseDonation(req.body?.offering);
     const maxIntentions = await getCapacity(req.parishId, req.user.id);
-    if ((await slotCount(req.parishId, date, time)) >= maxIntentions) {
+    if (isFull(await slotCount(req.parishId, date, time), maxIntentions)) {
       throw httpError(409, 'This Mass is at full capacity.');
     }
     const recurring = await schedule.loadRecurring(req.parishId);
@@ -693,8 +702,11 @@ async function getCapacitySetting(req, res) {
 
 async function updateCapacitySetting(req, res) {
   try {
-    const next = Number(req.body?.massIntentionCapacity ?? req.body?.capacity);
-    if (!Number.isInteger(next) || next < 1) {
+    // null means no limit, stored as 0.
+    const requested = req.body?.massIntentionCapacity ?? req.body?.capacity;
+    const unlimited = requested === null;
+    const next = unlimited ? 0 : Number(requested);
+    if (!unlimited && (!Number.isInteger(next) || next < 1)) {
       throw httpError(400, 'Capacity must be a whole number of at least 1.');
     }
     const fullest = await pool.query(
@@ -707,7 +719,7 @@ async function updateCapacitySetting(req, res) {
       [req.parishId]
     );
     const bookedMax = fullest.rows[0]?.n || 0;
-    if (next < bookedMax) {
+    if (!unlimited && next < bookedMax) {
       throw httpError(
         400,
         `Capacity can't go below ${bookedMax} — the fullest Mass already has that many intentions.`
@@ -720,7 +732,7 @@ async function updateCapacitySetting(req, res) {
        WHERE parish_id = $3`,
       [next, req.user.id, req.parishId]
     );
-    res.json({ capacity: next });
+    res.json({ capacity: unlimited ? null : next });
   } catch (err) {
     return sendRecordError(res, err);
   }

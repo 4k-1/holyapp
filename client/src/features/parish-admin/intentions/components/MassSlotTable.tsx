@@ -7,7 +7,6 @@ import { CapacityBadge } from "@/features/parish-admin/intentions/components/Cap
 import {
   formatPeso,
   formatRequestedOn,
-  formatSlotHeading,
   intentionLabel,
   donationTotal,
 } from "@/features/parish-admin/intentions/intentionsHelpers";
@@ -19,6 +18,8 @@ interface MassSlotTableProps {
   /** The Mass has already been celebrated: no new requests or confirmations, only catching up on "Said". */
   isPast?: boolean;
   onAddRequest: () => void;
+  /** Prints this Mass's intentions for the presider. */
+  onPrint: () => void;
   onConfirm: (intention: MassIntentionRequest) => void;
   onMarkSaid: (intention: MassIntentionRequest) => void;
 }
@@ -40,6 +41,7 @@ export function MassSlotTable({
   markingId,
   isPast = false,
   onAddRequest,
+  onPrint,
   onConfirm,
   onMarkSaid,
 }: MassSlotTableProps) {
@@ -113,13 +115,15 @@ export function MassSlotTable({
       >
         <div className="min-w-0">
           <h2 className={`font-serif text-admin-group font-semibold ${isPast ? "text-admin-ink-muted" : "text-admin-ink"}`}>
-            {formatSlotHeading(slot.date, slot.time)}
+            {slot.time}
           </h2>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <p className="text-admin-support text-admin-ink-muted">
               {isPast
                 ? `${slot.bookedCount} ${slot.bookedCount === 1 ? "intention" : "intentions"} offered`
-                : `${slot.bookedCount} of ${slot.maxIntentions} intention slots filled`}
+                : slot.maxIntentions === null
+                  ? `${slot.bookedCount} ${slot.bookedCount === 1 ? "intention" : "intentions"}`
+                  : `${slot.bookedCount} of ${slot.maxIntentions} intention slots filled`}
             </p>
             {isPast ? (
               <AdminBadge tone="muted">Past Mass</AdminBadge>
@@ -128,13 +132,23 @@ export function MassSlotTable({
             )}
           </div>
         </div>
-        {!isPast && (
-          <div className="flex flex-wrap items-center gap-3">
-            <AdminButton type="button" size="sm" onClick={onAddRequest} disabled={slot.remaining <= 0}>
-              {slot.remaining <= 0 ? "Slot full" : "Add request"}
+        <div className="flex flex-wrap items-center gap-2">
+          <AdminButton
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onPrint}
+            disabled={slot.intentions.length === 0}
+            title={slot.intentions.length === 0 ? "No intentions to print yet" : undefined}
+          >
+            Print
+          </AdminButton>
+          {!isPast && (
+            <AdminButton type="button" size="sm" onClick={onAddRequest} disabled={slot.remaining === 0}>
+              {slot.remaining === 0 ? "Slot full" : "Add request"}
             </AdminButton>
-          </div>
-        )}
+          )}
+        </div>
       </header>
       <div className="overflow-x-auto">
         <AdminTable
