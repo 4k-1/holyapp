@@ -67,6 +67,8 @@ export interface Payment {
   receiptNumber?: string;
   receiptUrl?: string;
   paidAt?: string;
+  /** Staff member who took the payment at the office; absent for GCash. */
+  collectedBy?: string;
 }
 
 export interface PaymentReceipt {

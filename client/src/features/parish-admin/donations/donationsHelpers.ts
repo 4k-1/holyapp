@@ -1,3 +1,4 @@
+import type { ReceiptData } from "@/components/print/ReceiptSheet";
 import type { Donation, DonationTrendPoint } from "@/features/parish-admin/donations/types";
 
 /** Totals for each of the last `months` months, oldest first, for the trend line. */
@@ -49,4 +50,24 @@ export function donationDateFilterLabel(filter: DonationDateFilter) {
   }
   if (filter.from) return `From ${formatDonationDate(filter.from)}`;
   return `Through ${formatDonationDate(filter.to)}`;
+}
+
+/** Receipt numbers come from the donation's id, so reprinting gives the same number. */
+export function donationReceiptNumber(id: string) {
+  return `DN-${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+}
+
+/** What goes on a donation's printed receipt; who handed it over is confirmed at print time. */
+export function donationReceipt(d: Donation): Omit<ReceiptData, "receivedFrom"> {
+  const forMass = d.source === "mass_intention";
+  return {
+    title: "Acknowledgment Receipt",
+    number: donationReceiptNumber(d.id),
+    date: d.donationDate,
+    amount: d.amount,
+    forText: forMass ? "Mass intention donation" : `Donation — ${d.purpose || "General fund"}`,
+    note: forMass ? d.remarks : undefined,
+    method: d.donationType,
+    receivedBy: d.source === "office" ? d.recordedBy : undefined,
+  };
 }

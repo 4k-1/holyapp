@@ -21,6 +21,7 @@ const REQUEST_COLUMNS = `
   pay.receipt_number,
   pay.receipt_url,
   pay.paid_at,
+  pay.collected_by_name,
   cert.id AS issued_certificate_id,
   cert.certificate_code AS issued_certificate_code,
   cert.status AS issued_certificate_status
@@ -29,10 +30,14 @@ const REQUEST_COLUMNS = `
 const REQUEST_FROM = `
   FROM certificate_request r
   LEFT JOIN LATERAL (
-    SELECT status, amount_due, payment_type, receipt_number, receipt_url, paid_at
-    FROM payment
-    WHERE certificate_request_id = r.id
-    ORDER BY created_at DESC
+    SELECT p.status, p.amount_due, p.payment_type, p.receipt_number, p.receipt_url, p.paid_at,
+           -- Only office cash has a staff collector; for GCash, collected_by holds the paying parishioner.
+           CASE WHEN p.payment_type = 'cash' THEN NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '') END
+             AS collected_by_name
+    FROM payment p
+    LEFT JOIN app_user u ON u.id = p.collected_by
+    WHERE p.certificate_request_id = r.id
+    ORDER BY p.created_at DESC
     LIMIT 1
   ) pay ON true
   LEFT JOIN certificate cert ON cert.id = r.certificate_id
@@ -167,6 +172,8 @@ function toCertificateRequest(row) {
         receiptNumber: row.receipt_number || undefined,
         receiptUrl: row.receipt_url || undefined,
         paidAt: row.paid_at ? new Date(row.paid_at).toISOString() : undefined,
+        /** Staff member who took a payment at the office; absent for GCash. */
+        collectedBy: row.collected_by_name || undefined,
       }
     : null;
 

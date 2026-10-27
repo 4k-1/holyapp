@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
+import { PrintReceiptDialog } from "@/features/parish-admin/components/PrintReceiptDialog";
 import {
   canRejectRequest,
   deriveAdminStatusLabel,
@@ -52,6 +53,7 @@ export function AdminRequestDetailModal({
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const statusKey = deriveStatusKey(request);
   const canReject = canRejectRequest(request);
   const subjectName = request.details?.subjectName ?? request.requesterId;
@@ -227,12 +229,17 @@ export function AdminRequestDetailModal({
                 </div>
               </div>
               {request.payment?.status === "paid" && (
-                <p className="mt-3 text-admin-support text-admin-green-700">
-                  Receipt {request.payment.receiptNumber || "issued"}
-                  {request.payment.paidAt
-                    ? ` · ${new Date(request.payment.paidAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`
-                    : ""}
-                </p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-admin-support text-admin-green-700">
+                    Receipt {request.payment.receiptNumber || "issued"}
+                    {request.payment.paidAt
+                      ? ` · ${new Date(request.payment.paidAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`
+                      : ""}
+                  </p>
+                  <AdminButton variant="secondary" size="sm" onClick={() => setReceiptOpen(true)}>
+                    Print receipt
+                  </AdminButton>
+                </div>
               )}
             </div>
           </div>
@@ -349,6 +356,24 @@ export function AdminRequestDetailModal({
             onReleaseComplete?.();
             onClose();
           }}
+        />
+      )}
+
+      {receiptOpen && request.payment?.status === "paid" && (
+        <PrintReceiptDialog
+          parish={parish}
+          receipt={{
+            title: "Payment Receipt",
+            number: request.payment.receiptNumber || request.id.replace(/-/g, "").slice(0, 10).toUpperCase(),
+            date: request.payment.paidAt ?? request.createdAt,
+            amount: fee,
+            forText: `${sacramentLabels[request.sacramentType]} certificate${copies > 1 ? ` × ${copies}` : ""}`,
+            note: request.details?.subjectName ? `Certificate of ${request.details.subjectName}` : undefined,
+            method,
+            receivedBy: request.payment.collectedBy,
+          }}
+          defaultReceivedFrom={request.origin === "walkin" ? "" : request.details?.subjectName ?? ""}
+          onClose={() => setReceiptOpen(false)}
         />
       )}
     </div>

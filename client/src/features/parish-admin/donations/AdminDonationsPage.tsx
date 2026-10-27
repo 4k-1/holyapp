@@ -4,6 +4,7 @@ import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
+import { PrintReceiptDialog } from "@/features/parish-admin/components/PrintReceiptDialog";
 import { listDonations } from "./api/donationsApi";
 import { DonationSparkline } from "./components/DonationSparkline";
 import { RecordDonationModal } from "./components/RecordDonationModal";
@@ -12,6 +13,7 @@ import {
   emptyDonationDateFilter,
   filterDonationsByDate,
   formatAmount,
+  donationReceipt,
   formatDonationDate,
   monthlyTrend,
   type DonationDateFilter,
@@ -26,6 +28,7 @@ export function AdminDonationsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [receiptFor, setReceiptFor] = useState<Donation | null>(null);
   const [draftFilter, setDraftFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
   const [appliedFilter, setAppliedFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
 
@@ -199,6 +202,9 @@ export function AdminDonationsPage() {
                   <th className="px-5 py-2.5">Purpose</th>
                   <th className="px-5 py-2.5">Recorded by</th>
                   <th className="px-5 py-2.5 text-right">Amount</th>
+                  <th className="px-5 py-2.5">
+                    <span className="sr-only">Receipt</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -236,6 +242,15 @@ export function AdminDonationsPage() {
                       <td className="px-5 py-2.5 text-right font-semibold text-admin-ink">
                         {formatAmount(d.amount)}
                       </td>
+                      <td className="px-5 py-2.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setReceiptFor(d)}
+                          className="whitespace-nowrap text-admin-support font-semibold text-admin-green-700 hover:underline"
+                        >
+                          Receipt
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -250,6 +265,15 @@ export function AdminDonationsPage() {
             )}
           </div>
         </>
+      )}
+
+      {receiptFor && (
+        <PrintReceiptDialog
+          parish={parish}
+          receipt={donationReceipt(receiptFor)}
+          defaultReceivedFrom={receiptFor.donorName ?? ""}
+          onClose={() => setReceiptFor(null)}
+        />
       )}
 
       {modalOpen && (
