@@ -3,15 +3,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
-import {
-  getAttentionItems,
-  getDashboardStats,
-  getQuickActions,
-  getRecentActivity,
-  getTodayMasses,
-  getUpcomingEvents,
-} from "./api/dashboardApi";
-import type { DashboardStat, DotTone, QuickAction } from "./types";
+import { getDashboardView } from "./api/dashboardApi";
+import type { ActivityItem, AttentionItem, DashboardStat, DotTone, QuickAction, TodayMass, UpcomingEvent } from "./types";
 import "./AdminDashboardPage.css";
 
 const PILL_TONE: Record<DotTone, string> = {
@@ -29,31 +22,27 @@ function greeting() {
 
 export function AdminDashboardPage() {
   const user = useCurrentUser();
-  const [attention, setAttention] = useState<Awaited<ReturnType<typeof getAttentionItems>>>([]);
+  const [attention, setAttention] = useState<AttentionItem[]>([]);
   const [stats, setStats] = useState<DashboardStat[]>([]);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
-  const [todayMasses, setTodayMasses] = useState<Awaited<ReturnType<typeof getTodayMasses>>>([]);
-  const [activity, setActivity] = useState<Awaited<ReturnType<typeof getRecentActivity>>>([]);
-  const [upcoming, setUpcoming] = useState<Awaited<ReturnType<typeof getUpcomingEvents>>>([]);
+  const [todayMasses, setTodayMasses] = useState<TodayMass[]>([]);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [upcoming, setUpcoming] = useState<UpcomingEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      getAttentionItems(),
-      getDashboardStats(),
-      getQuickActions(),
-      getTodayMasses(),
-      getRecentActivity(),
-      getUpcomingEvents(),
-    ]).then(([a, s, q, tm, act, up]) => {
-      setAttention(a);
-      setStats(s);
-      setQuickActions(q);
-      setTodayMasses(tm);
-      setActivity(act);
-      setUpcoming(up);
-      setLoading(false);
-    });
+    getDashboardView()
+      .then((view) => {
+        setAttention(view.attention);
+        setStats(view.stats);
+        setQuickActions(view.quickActions);
+        setTodayMasses(view.todayMasses);
+        setActivity(view.activity);
+        setUpcoming(view.upcoming);
+      })
+      .catch((err: unknown) => setLoadError(err instanceof Error ? err.message : "Couldn't load the dashboard."))
+      .finally(() => setLoading(false));
   }, []);
 
   const todayLabel = new Date().toLocaleDateString("en-US", {
@@ -69,6 +58,13 @@ export function AdminDashboardPage() {
 
   if (loading) {
     return <p className="admin-dash__muted text-admin-body">Loading dashboard…</p>;
+  }
+  if (loadError) {
+    return (
+      <p className="text-admin-body text-red-700" role="alert">
+        {loadError}
+      </p>
+    );
   }
 
   return (
@@ -159,6 +155,7 @@ export function AdminDashboardPage() {
             <h2 className="text-[0.95rem] font-semibold text-[var(--dash-ink)]">Recent activity</h2>
             <span className="admin-dash__pill admin-dash__pill--ok">Latest</span>
           </div>
+          {activity.length === 0 && <p className="admin-dash__faint text-admin-support">Nothing recorded yet.</p>}
           <ul className="divide-y divide-[var(--dash-border)]">
             {activity.map((item) => (
               <li key={item.id} className="flex gap-3 py-3.5 first:pt-0 last:pb-0">
@@ -206,6 +203,9 @@ export function AdminDashboardPage() {
                 Calendar
               </Link>
             </div>
+            {upcoming.length === 0 && (
+              <p className="admin-dash__faint text-admin-support">No events in the next 7 days.</p>
+            )}
             <ul className="space-y-3">
               {upcoming.map((ev) => (
                 <li key={ev.id} className="admin-dash__nested flex items-start justify-between gap-3">
