@@ -13,6 +13,9 @@ import { convert24to12, to24Hour } from "../scheduleHelpers";
 import { EVENT_TYPE_LABELS } from "../types";
 import type { AssignableStaff, DayAbbrev, RecurringCommitment, ScheduleEventType } from "../types";
 import { StaffSelect } from "./StaffSelect";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
+import { askConfirm } from "@/lib/notify";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 const DAYS: DayAbbrev[] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -48,82 +51,49 @@ export function RecurringCommitmentsManagerModal({ onClose, onChanged }: Recurri
   }, [fetchCommitments]);
 
   async function handleRemove(id: string, label: string) {
-    if (!window.confirm(`Remove "${label}" from the recurring schedule? This only stops future occurrences — past records are untouched.`)) return;
+    if (
+      !(await askConfirm({
+        title: `Remove "${label}"?`,
+        message: "It stops future occurrences on the recurring schedule. Past records are untouched.",
+        confirmLabel: "Remove",
+        danger: true,
+      }))
+    )
+      return;
     await removeRecurringCommitment(id);
     await reload();
     onChanged();
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto p-4 pt-8 sm:pt-12">
-      <div className="absolute inset-0 bg-black/45" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 flex max-h-[92vh] w-full max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
-        <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
-          <div>
-            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Recurring schedule</h3>
-            <p className="mt-0.5 text-admin-support text-admin-ink-muted">
-              Novenas, devotions, and anything else that repeats weekly. Regular Mass times are set in Settings → Mass Schedule.
-            </p>
-          </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt" aria-label="Close">
-            ✕
-          </button>
+    <AdminModalFrame
+      onClose={onClose}
+      layer="z-[70]"
+      panelClassName="flex max-h-[92vh] max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+    >
+      <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
+        <div>
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Recurring schedule</h3>
+          <p className="mt-0.5 text-admin-support text-admin-ink-muted">
+            Novenas, devotions, and anything else that repeats weekly. Regular Mass times are set in Settings → Mass Schedule.
+          </p>
         </div>
+        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt" aria-label="Close">
+          ✕
+        </button>
+      </div>
 
-        <div className="overflow-y-auto px-6 py-5">
-          {loading ? (
-            <p className="text-admin-body text-admin-ink-muted">Loading…</p>
-          ) : (
-            <div className="space-y-2.5">
-              {items.map((rc) =>
-                editingId === rc.id ? (
-                  <RecurringCommitmentForm
-                    key={rc.id}
-                    staff={staff}
-                    initial={rc}
-                    onCancel={() => setEditingId(null)}
-                    onSaved={async () => {
-                      setEditingId(null);
-                      await reload();
-                      onChanged();
-                    }}
-                  />
-                ) : (
-                  <div key={rc.id} className="rounded-[10px] border border-admin-border bg-admin-surface-alt p-3.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-serif text-admin-body font-semibold text-admin-ink">{rc.label}</p>
-                          <AdminBadge tone="green">{EVENT_TYPE_LABELS[rc.type]}</AdminBadge>
-                        </div>
-                        <p className="mt-1 text-admin-support text-admin-ink-muted">
-                          {rc.days.join(", ")} ·{" "}
-                          {rc.slots.map((s) => `${s.start} – ${s.end}`).join(", ")}
-                        </p>
-                        <p className="mt-0.5 text-admin-support text-admin-ink-faint">{rc.assignee || "Unassigned"}</p>
-                      </div>
-                      <div className="flex shrink-0 gap-1.5">
-                        <button
-                          onClick={() => setEditingId(rc.id)}
-                          className="rounded-md border border-admin-border px-2.5 py-1 text-admin-label font-semibold text-admin-ink-muted hover:bg-admin-surface"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleRemove(rc.id, rc.label)}
-                          className="rounded-md border border-admin-border px-2.5 py-1 text-admin-label font-semibold text-red-700 hover:bg-red-50"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              )}
-
-              {editingId === "new" ? (
+      <div className="overflow-y-auto px-6 py-5">
+        {loading ? (
+          <SkeletonList rows={4} className="px-0" />
+        ) : (
+          <div className="space-y-2.5">
+            {items.map((rc) =>
+              editingId === rc.id ? (
                 <RecurringCommitmentForm
+                  key={rc.id}
                   staff={staff}
+                  initial={rc}
                   onCancel={() => setEditingId(null)}
                   onSaved={async () => {
                     setEditingId(null);
@@ -132,24 +102,66 @@ export function RecurringCommitmentsManagerModal({ onClose, onChanged }: Recurri
                   }}
                 />
               ) : (
-                <button
-                  onClick={() => setEditingId("new")}
-                  className="w-full rounded-[10px] border border-dashed border-admin-border-strong py-3 text-admin-body font-semibold text-admin-ink-muted hover:border-admin-green-600 hover:bg-admin-green-050 hover:text-admin-green-800"
-                >
-                  + Add recurring commitment
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+                <div key={rc.id} className="rounded-[10px] border border-admin-border bg-admin-surface-alt p-3.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-serif text-admin-body font-semibold text-admin-ink">{rc.label}</p>
+                        <AdminBadge tone="green">{EVENT_TYPE_LABELS[rc.type]}</AdminBadge>
+                      </div>
+                      <p className="mt-1 text-admin-support text-admin-ink-muted">
+                        {rc.days.join(", ")} ·{" "}
+                        {rc.slots.map((s) => `${s.start} – ${s.end}`).join(", ")}
+                      </p>
+                      <p className="mt-0.5 text-admin-support text-admin-ink-faint">{rc.assignee || "Unassigned"}</p>
+                    </div>
+                    <div className="flex shrink-0 gap-1.5">
+                      <button
+                        onClick={() => setEditingId(rc.id)}
+                        className="rounded-md border border-admin-border px-2.5 py-1 text-admin-label font-semibold text-admin-ink-muted hover:bg-admin-surface"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleRemove(rc.id, rc.label)}
+                        className="rounded-md border border-admin-border px-2.5 py-1 text-admin-label font-semibold text-red-700 hover:bg-red-50"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
 
-        <div className="flex justify-end border-t border-admin-border px-6 py-4">
-          <AdminButton variant="secondary" onClick={onClose}>
-            Done
-          </AdminButton>
-        </div>
+            {editingId === "new" ? (
+              <RecurringCommitmentForm
+                staff={staff}
+                onCancel={() => setEditingId(null)}
+                onSaved={async () => {
+                  setEditingId(null);
+                  await reload();
+                  onChanged();
+                }}
+              />
+            ) : (
+              <button
+                onClick={() => setEditingId("new")}
+                className="w-full rounded-[10px] border border-dashed border-admin-border-strong py-3 text-admin-body font-semibold text-admin-ink-muted hover:border-admin-green-600 hover:bg-admin-green-050 hover:text-admin-green-800"
+              >
+                + Add recurring commitment
+              </button>
+            )}
+          </div>
+        )}
       </div>
-    </div>
+
+      <div className="flex justify-end border-t border-admin-border px-6 py-4">
+        <AdminButton variant="secondary" onClick={onClose}>
+          Done
+        </AdminButton>
+      </div>
+    </AdminModalFrame>
   );
 }
 

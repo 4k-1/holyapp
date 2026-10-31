@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SkeletonRows } from "@/components/ui/Skeleton";
 import "./AdminTable.css";
 
 export interface AdminTableColumn<T> {
@@ -17,6 +18,8 @@ interface AdminTableProps<T> {
   title?: string;
   subtitle?: string;
   toolbar?: ReactNode;
+  /** While true and there are no rows yet, grey placeholder rows show instead of the empty message. */
+  loading?: boolean;
 }
 
 export function AdminTable<T>({
@@ -27,8 +30,10 @@ export function AdminTable<T>({
   title,
   subtitle,
   toolbar,
+  loading = false,
 }: AdminTableProps<T>) {
-  const table = rows.length === 0 ? (
+  const showSkeleton = loading && rows.length === 0;
+  const table = rows.length === 0 && !showSkeleton ? (
     <div className="admin-table__empty">{emptyMessage}</div>
   ) : (
     <div className="admin-table__scroll">
@@ -43,6 +48,7 @@ export function AdminTable<T>({
           </tr>
         </thead>
         <tbody>
+          {showSkeleton && <SkeletonRows cols={columns.length} />}
           {rows.map((row) => (
             <tr key={getRowKey(row)}>
               {columns.map((col) => (

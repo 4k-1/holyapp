@@ -26,7 +26,7 @@ export function AdminBaptismalRecordsPage() {
 
   const [showArchived, setShowArchived] = useState(false);
 
-  const { data: parishRecords = [] } = useAsync(
+  const { data: parishRecords = [], loading } = useAsync(
     () => listBaptismalRecords(parish.id, { archived: showArchived }),
     [parish.id, showArchived]
   );
@@ -137,6 +137,8 @@ export function AdminBaptismalRecordsPage() {
       </SearchCriteriaCard>
 
       <AdminTable
+
+        loading={loading}
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}

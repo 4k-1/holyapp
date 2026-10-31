@@ -12,6 +12,8 @@ import { normalizeNumberingPrefix, previewCertificateCode } from "@/features/par
 import { getCertificateConfig, updateCertificateConfig } from "../api/certificateConfigApi";
 import type { CertificateAppearance, CertificateConfigBySacrament } from "../types";
 import type { Parish, SacramentType } from "@/types";
+import { notifyError } from "@/lib/notify";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 const SACRAMENTS: {
   type: SacramentType;
@@ -72,7 +74,7 @@ export function CertificateConfigSection() {
         setDraft(cloneConfig(config));
       })
       .catch((err: unknown) => {
-        window.alert(err instanceof Error ? err.message : "Could not load certificate settings.");
+        notifyError(err, "Could not load certificate settings.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -142,7 +144,7 @@ export function CertificateConfigSection() {
   }
 
   if (loading || !draft || !saved || !appearance) {
-    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
+    return <SkeletonList rows={4} className="px-0" />;
   }
 
   const sample = SAMPLE_CERTIFICATE[activeType];

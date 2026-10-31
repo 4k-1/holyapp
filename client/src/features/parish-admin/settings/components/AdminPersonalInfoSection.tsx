@@ -4,6 +4,7 @@ import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/com
 import { getCurrentUser, updateProfile } from "@/features/auth/api/authApi";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import type { CurrentUser } from "@/types";
+import { notifyError } from "@/lib/notify";
 
 function dateInputValue(value: string | undefined) {
   if (!value) return "";
@@ -67,7 +68,7 @@ export function AdminPersonalInfoSection() {
       fillFrom(updated);
       setEditing(false);
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Could not save profile.");
+      notifyError(err, "Could not save profile.");
     } finally {
       setSaving(false);
     }

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useDialogDismiss } from "@/features/parish-admin/components/useDialogDismiss";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
 /**
  * `data-admin-dialog-*` attributes are the contract CertificatePreviewStage uses
@@ -16,21 +16,16 @@ export function AdminDialog({
   busy?: boolean;
   panelClassName?: string;
 }) {
-  useDialogDismiss(onClose, busy);
-
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden p-3 sm:p-4">
-      <div className="absolute inset-0 bg-black/45" onClick={busy ? undefined : onClose} aria-hidden="true" />
-      <div
-        role="dialog"
-        aria-modal="true"
-        data-admin-dialog-panel
-        data-enter-fields
-        className={`relative z-10 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)] ${panelClassName}`}
-      >
-        {children}
-      </div>
-    </div>
+    <AdminModalFrame
+      onClose={onClose}
+      busy={busy}
+      align="center"
+      panelProps={{ "data-admin-dialog-panel": "", "data-enter-fields": "" }}
+      panelClassName={`flex max-h-[92dvh] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)] ${panelClassName}`}
+    >
+      {children}
+    </AdminModalFrame>
   );
 }
 

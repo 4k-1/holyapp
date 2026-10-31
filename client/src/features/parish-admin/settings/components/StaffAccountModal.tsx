@@ -5,6 +5,7 @@ import { listPersonnel, type ParishPerson } from "@/features/parish-admin/staff/
 import { AccessOption } from "@/features/parish-admin/staff/components/AccessOption";
 import { STAFF_ROLES } from "../types";
 import type { NewStaffInput, StaffAccessRole, StaffAccount, StaffRole } from "../types";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
 const selectClass =
   "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
@@ -76,156 +77,157 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 pt-8 sm:pt-12">
-      <div className="absolute inset-0 bg-black/45" onClick={saving ? undefined : onClose} aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-[500px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
-        <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
-          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
-            {isEditing ? "Edit staff account" : "Add staff account"}
-          </h3>
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
+    <AdminModalFrame
+      onClose={onClose}
+      busy={saving}
+      panelClassName="max-w-[500px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+    >
+      <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
+        <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
+          {isEditing ? "Edit staff account" : "Add staff account"}
+        </h3>
+        <button
+          onClick={onClose}
+          disabled={saving}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
 
-        <div className="space-y-3.5 px-6 py-5">
-          {!isEditing && unlinked.length > 0 && (
-            <AdminField label="Who is this sign-in for?" className="mb-0">
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                <AccessOption
-                  selected={source === "list"}
-                  title="Someone on the Staff list"
-                  description="Keeps their name, role, and assigned events."
-                  onSelect={() => setSource("list")}
-                />
-                <AccessOption
-                  selected={source === "new"}
-                  title="Someone new"
-                  description="Adds them to the Staff list too."
-                  onSelect={() => setSource("new")}
-                />
-              </div>
-            </AdminField>
-          )}
-
-          {!isEditing && source === "list" && unlinked.length > 0 && (
-            <AdminField label="Person" className="mb-0">
-              <select
-                value={personId}
-                onChange={(e) => {
-                  setPersonId(e.target.value);
-                  setError("");
-                }}
-                className={selectClass}
-              >
-                <option value="">Choose from the Staff list</option>
-                {unlinked.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} · {p.role}
-                  </option>
-                ))}
-              </select>
-            </AdminField>
-          )}
-
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            {(isEditing || source === "new") && (
-              <AdminField label="Full name" className="mb-0">
-                <AdminInput
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setError("");
-                  }}
-                  placeholder="e.g. Fr. Juan Santos"
-                />
-              </AdminField>
-            )}
-            <AdminField label="Email address" className="mb-0">
-              <AdminInput
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError("");
-                }}
-                placeholder="name@parish.ph"
-              />
-            </AdminField>
-          </div>
-
-          {(isEditing || source === "new") && (
-            <AdminField label="Role" className="mb-0">
-              <select value={role} onChange={(e) => setRole(e.target.value as StaffRole)} className={selectClass}>
-                {STAFF_ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </AdminField>
-          )}
-
-          <AdminField label="Access level" className="mb-0">
+      <div className="space-y-3.5 px-6 py-5">
+        {!isEditing && unlinked.length > 0 && (
+          <AdminField label="Who is this sign-in for?" className="mb-0">
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               <AccessOption
-                selected={accessRole === "staff"}
-                disabled={lockAdminAccess}
-                title="Staff access"
-                description="Records, requests, donations, and schedule."
-                onSelect={() => setAccessRole("staff")}
+                selected={source === "list"}
+                title="Someone on the Staff list"
+                description="Keeps their name, role, and assigned events."
+                onSelect={() => setSource("list")}
               />
               <AccessOption
-                selected={accessRole === "admin"}
-                title="Admin access"
-                description="Everything in Staff, plus Settings, Service Fees, and Staff Accounts."
-                onSelect={() => setAccessRole("admin")}
+                selected={source === "new"}
+                title="Someone new"
+                description="Adds them to the Staff list too."
+                onSelect={() => setSource("new")}
               />
             </div>
-            {lockAdminAccess && (
-              <p className="mt-1.5 text-admin-label text-admin-ink-faint">
-                You can't remove your own admin access.
-              </p>
-            )}
           </AdminField>
+        )}
 
-          {accessChanged && (
-            <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">
-              <p className="font-semibold">
-                {account!.accessRole === "admin" ? "Admin" : "Staff"} access{" "}
-                <span className="opacity-70">→</span> {accessRole === "admin" ? "Admin" : "Staff"} access
-              </p>
-              <p className="mt-0.5 leading-relaxed opacity-90">
-                {accessRole === "admin"
-                  ? `${name.trim() || "This account"} will immediately gain access to Settings, Service Fees, and Staff Accounts — including the ability to manage other staff and admins.`
-                  : `${name.trim() || "This account"} will immediately lose access to Settings, Service Fees, and Staff Accounts.`}
-              </p>
-            </div>
+        {!isEditing && source === "list" && unlinked.length > 0 && (
+          <AdminField label="Person" className="mb-0">
+            <select
+              value={personId}
+              onChange={(e) => {
+                setPersonId(e.target.value);
+                setError("");
+              }}
+              className={selectClass}
+            >
+              <option value="">Choose from the Staff list</option>
+              {unlinked.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} · {p.role}
+                </option>
+              ))}
+            </select>
+          </AdminField>
+        )}
+
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          {(isEditing || source === "new") && (
+            <AdminField label="Full name" className="mb-0">
+              <AdminInput
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setError("");
+                }}
+                placeholder="e.g. Fr. Juan Santos"
+              />
+            </AdminField>
           )}
-
-          {error && <p className="text-admin-support font-semibold text-red-700">{error}</p>}
+          <AdminField label="Email address" className="mb-0">
+            <AdminInput
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError("");
+              }}
+              placeholder="name@parish.ph"
+            />
+          </AdminField>
         </div>
 
-        <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">
-          <AdminButton variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
-          </AdminButton>
-          <AdminButton onClick={handleSave} disabled={saving}>
-            {saving
-              ? "Saving…"
-              : accessChanged
-                ? "Confirm & save changes"
-                : isEditing
-                  ? "Save changes"
-                  : "Add staff member"}
-          </AdminButton>
-        </div>
+        {(isEditing || source === "new") && (
+          <AdminField label="Role" className="mb-0">
+            <select value={role} onChange={(e) => setRole(e.target.value as StaffRole)} className={selectClass}>
+              {STAFF_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </AdminField>
+        )}
+
+        <AdminField label="Access level" className="mb-0">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            <AccessOption
+              selected={accessRole === "staff"}
+              disabled={lockAdminAccess}
+              title="Staff access"
+              description="Records, requests, donations, and schedule."
+              onSelect={() => setAccessRole("staff")}
+            />
+            <AccessOption
+              selected={accessRole === "admin"}
+              title="Admin access"
+              description="Everything in Staff, plus Settings, Service Fees, and Staff Accounts."
+              onSelect={() => setAccessRole("admin")}
+            />
+          </div>
+          {lockAdminAccess && (
+            <p className="mt-1.5 text-admin-label text-admin-ink-faint">
+              You can't remove your own admin access.
+            </p>
+          )}
+        </AdminField>
+
+        {accessChanged && (
+          <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">
+            <p className="font-semibold">
+              {account!.accessRole === "admin" ? "Admin" : "Staff"} access{" "}
+              <span className="opacity-70">→</span> {accessRole === "admin" ? "Admin" : "Staff"} access
+            </p>
+            <p className="mt-0.5 leading-relaxed opacity-90">
+              {accessRole === "admin"
+                ? `${name.trim() || "This account"} will immediately gain access to Settings, Service Fees, and Staff Accounts — including the ability to manage other staff and admins.`
+                : `${name.trim() || "This account"} will immediately lose access to Settings, Service Fees, and Staff Accounts.`}
+            </p>
+          </div>
+        )}
+
+        {error && <p className="text-admin-support font-semibold text-red-700">{error}</p>}
       </div>
-    </div>
+
+      <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        <AdminButton variant="secondary" onClick={onClose} disabled={saving}>
+          Cancel
+        </AdminButton>
+        <AdminButton onClick={handleSave} disabled={saving}>
+          {saving
+            ? "Saving…"
+            : accessChanged
+              ? "Confirm & save changes"
+              : isEditing
+                ? "Save changes"
+                : "Add staff member"}
+        </AdminButton>
+      </div>
+    </AdminModalFrame>
   );
 }

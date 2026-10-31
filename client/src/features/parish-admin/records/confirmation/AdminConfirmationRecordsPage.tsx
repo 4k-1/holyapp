@@ -26,7 +26,7 @@ export function AdminConfirmationRecordsPage() {
 
   const [showArchived, setShowArchived] = useState(false);
 
-  const { data: parishRecords = [], error } = useAsync(
+  const { data: parishRecords = [], error, loading } = useAsync(
     () => listConfirmationRecords(parish.id, { archived: showArchived }),
     [parish.id, showArchived]
   );
@@ -137,6 +137,8 @@ export function AdminConfirmationRecordsPage() {
       </SearchCriteriaCard>
 
       <AdminTable
+
+        loading={loading}
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}

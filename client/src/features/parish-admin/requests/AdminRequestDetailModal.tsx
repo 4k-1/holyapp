@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 import { PrintReceiptDialog } from "@/features/parish-admin/components/PrintReceiptDialog";
 import {
   canRejectRequest,
@@ -74,13 +75,6 @@ export function AdminRequestDetailModal({
     [request.parishId, request.linkedRecordId]
   );
 
-  useEffect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [onClose]);
 
   const submitted = new Date(request.createdAt + "T00:00:00").toLocaleDateString("en-US", {
     month: "long",
@@ -120,9 +114,13 @@ export function AdminRequestDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_8px_28px_-6px_rgba(10,40,30,0.15)]">
+    <>
+      <AdminModalFrame
+        onClose={onClose}
+        align="center"
+        layer="z-50"
+        panelClassName="flex max-h-[90vh] max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_8px_28px_-6px_rgba(10,40,30,0.15)]"
+      >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
           <div>
@@ -331,7 +329,7 @@ export function AdminRequestDetailModal({
             </>
           )}
         </div>
-      </div>
+      </AdminModalFrame>
 
       {issueOpen && (
         <AdminIssueCertificateModal
@@ -376,7 +374,7 @@ export function AdminRequestDetailModal({
           onClose={() => setReceiptOpen(false)}
         />
       )}
-    </div>
+    </>
   );
 }
 

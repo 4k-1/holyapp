@@ -11,6 +11,7 @@ import {
 import type { ParishNotification } from "@/features/parish-admin/notifications/types";
 import { BellIcon } from "@/components/ui/icons/AdminIcons";
 import type { Parish } from "@/types";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 const RECENT_LIMIT = 5;
 
@@ -116,7 +117,7 @@ export function AdminNotificationBell({
 
           <div className="max-h-[min(420px,70vh)] overflow-y-auto">
             {loading && recent.length === 0 ? (
-              <p className="px-4 py-6 text-admin-support text-admin-ink-muted">Loading…</p>
+              <SkeletonList rows={3} className="px-4" />
             ) : recent.length === 0 ? (
               <p className="px-4 py-6 text-admin-support text-admin-ink-muted">No notifications yet.</p>
             ) : (

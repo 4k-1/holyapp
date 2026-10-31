@@ -52,7 +52,7 @@ export function AdminRequestsPage() {
   const [issueRequestId, setIssueRequestId] = useState<string | null>(null);
   const [releaseRequestId, setReleaseRequestId] = useState<string | null>(null);
 
-  const { data: parishRequests = [], refetch } = useAsync(
+  const { data: parishRequests = [], refetch, loading } = useAsync(
     () => listAdminRequests(parish.id),
     [parish.id]
   );
@@ -278,6 +278,7 @@ export function AdminRequestsPage() {
 
       <AdminCard>
         <AdminTable
+          loading={loading}
           columns={columns}
           rows={filtered}
           getRowKey={(r) => r.id}

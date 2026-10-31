@@ -9,6 +9,8 @@ import { addStaffAccount, listStaffAccounts, setStaffAccountStatus, updateStaffA
 import { DeactivateStaffModal } from "./DeactivateStaffModal";
 import { StaffAccountModal } from "./StaffAccountModal";
 import type { NewStaffInput, StaffAccount, StaffRole } from "../types";
+import { notifyError } from "@/lib/notify";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 const ROLE_AVATAR_STYLES: Record<StaffRole, string> = {
   Priest: "bg-admin-gold-100 text-admin-gold-700",
@@ -40,7 +42,7 @@ export function StaffAccountsSection() {
     listStaffAccounts()
       .then(setAccounts)
       .catch((err: unknown) => {
-        window.alert(err instanceof Error ? err.message : "Could not load staff accounts.");
+        notifyError(err, "Could not load staff accounts.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -71,7 +73,7 @@ export function StaffAccountsSection() {
       }
       closeModal();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Could not save staff account.");
+      notifyError(err, "Could not save staff account.");
     }
   }
 
@@ -88,7 +90,7 @@ export function StaffAccountsSection() {
   }
 
   if (loading) {
-    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
+    return <SkeletonList rows={4} className="px-0" />;
   }
 
   const adminCount = accounts.filter((a) => a.accessRole === "admin").length;

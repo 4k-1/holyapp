@@ -10,6 +10,7 @@ import { listPersonnel, type ParishPerson } from "./api/personnelApi";
 import { GiveSignInModal } from "./components/GiveSignInModal";
 import { RemoveStaffModal } from "./components/RemoveStaffModal";
 import { StaffPersonModal } from "./components/StaffPersonModal";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 type Filter = "all" | "clergy" | "staff" | "inactive";
 
@@ -172,7 +173,7 @@ export function AdminStaffPage() {
 
       <AdminCard>
         {loading ? (
-          <p className="px-6 py-10 text-center text-admin-body text-admin-ink-muted">Loading staff…</p>
+          <SkeletonList rows={5} />
         ) : loadError ? (
           <p className="px-6 py-10 text-center text-admin-body text-red-700" role="alert">
             {loadError}

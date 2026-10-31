@@ -75,7 +75,25 @@ export async function refreshAccessToken(): Promise<boolean> {
   return refreshInflight;
 }
 
+/** Fired with the number of requests still on their way, for the loading bar at the top. */
+export const API_ACTIVITY_EVENT = "holyapp-api-activity";
+let inFlight = 0;
+
+function reportActivity(change: number) {
+  inFlight += change;
+  window.dispatchEvent(new CustomEvent<number>(API_ACTIVITY_EVENT, { detail: inFlight }));
+}
+
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
+  reportActivity(1);
+  try {
+    return await request<T>(path, options);
+  } finally {
+    reportActivity(-1);
+  }
+}
+
+async function request<T>(path: string, options: ApiFetchOptions): Promise<T> {
   if (!API_URL) {
     throw new ApiError("VITE_API_URL is not configured.", 500);
   }

@@ -2,6 +2,7 @@ import { Link, useOutletContext } from "react-router-dom";
 import { listMyMarriageApplications } from "@/features/parish-admin/marriage-applications/api/marriageApplicationsApi";
 import { useAsync } from "@/hooks/useAsync";
 import type { Parish } from "@/types";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Pending",
@@ -23,7 +24,7 @@ export function MyMarriageApplicationPage() {
       </p>
 
       {loading ? (
-        <p className="text-sm text-ink-muted">Loading…</p>
+        <SkeletonList rows={3} className="px-0" />
       ) : applications.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center text-sm text-ink-muted">
           No marriage application is on file for your account. Visit the parish office to apply in person.

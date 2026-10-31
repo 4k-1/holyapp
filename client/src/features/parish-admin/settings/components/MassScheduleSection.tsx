@@ -11,6 +11,7 @@ import {
 import { convert24to12, parseTimeToMinutes, to24Hour } from "@/features/parish-admin/schedule/scheduleHelpers";
 import type { DayAbbrev, RecurringCommitment } from "@/features/parish-admin/schedule/types";
 import { useAsync } from "@/hooks/useAsync";
+import { askConfirm, notifyError } from "@/lib/notify";
 
 const DAYS: { key: DayAbbrev; label: string }[] = [
   { key: "Sun", label: "Sunday" },
@@ -54,13 +55,21 @@ export function MassScheduleSection() {
   const [notice, setNotice] = useState("");
 
   async function handleRemove(rc: RecurringCommitment) {
-    if (!window.confirm(`Remove "${rc.label}" (${daysText(rc.days)}, ${timesText(rc)}) from the Mass schedule?`)) return;
+    if (
+      !(await askConfirm({
+        title: `Remove ${rc.label}?`,
+        message: `${daysText(rc.days)}, ${timesText(rc)} will no longer be on the Mass schedule.`,
+        confirmLabel: "Remove",
+        danger: true,
+      }))
+    )
+      return;
     try {
       await removeRecurringCommitment(rc.id);
       setNotice(`${rc.label} removed.`);
       refetch();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Could not remove this Mass.");
+      notifyError(err, "Could not remove this Mass.");
     }
   }
 

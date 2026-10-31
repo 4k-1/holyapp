@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import {
   getAdminRequest,
@@ -590,120 +591,121 @@ function ReviewMatchModal({
   const strongMatch = misses === 0 && partials === 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 pt-10">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
-        <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
-          <div>
-            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Review candidate record</h3>
-            <p className="mt-0.5 text-admin-support text-admin-ink-muted">{baptismRecordRef(record)}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
-            aria-label="Close"
-          >
-            ✕
-          </button>
+    <AdminModalFrame
+      onClose={onClose}
+      layer="z-50"
+      panelClassName="flex max-h-[90vh] max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+    >
+      <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
+        <div>
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Review candidate record</h3>
+          <p className="mt-0.5 text-admin-support text-admin-ink-muted">{baptismRecordRef(record)}</p>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
 
-        <div className="flex gap-2 px-6 pt-4">
-          <span className="rounded-full bg-admin-ink px-2.5 py-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-surface">
-            Request
-          </span>
-          <span className="rounded-full border border-admin-gold-700/30 bg-admin-gold-700/10 px-2.5 py-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">
-            Ledger record
-          </span>
-        </div>
+      <div className="flex gap-2 px-6 pt-4">
+        <span className="rounded-full bg-admin-ink px-2.5 py-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-surface">
+          Request
+        </span>
+        <span className="rounded-full border border-admin-gold-700/30 bg-admin-gold-700/10 px-2.5 py-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">
+          Ledger record
+        </span>
+      </div>
 
-        <div className="overflow-y-auto px-6 py-[14px]">
-          {fields.map(([label, left, right], i) => (
-            <div
-              key={label}
-              className="grid grid-cols-[1fr_20px_1fr] items-start gap-2.5 border-b border-admin-border py-2.5 last:border-b-0"
-            >
-              <div>
-                <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                  {label}
-                </div>
-                <div className="text-admin-body text-admin-ink">
-                  {left || <span className="italic text-admin-ink-muted">—</span>}
-                </div>
-              </div>
-              <MatchIcon state={states[i]} />
-              <div className="text-admin-body text-admin-ink">
-                {right || <span className="italic text-admin-ink-muted">—</span>}
-              </div>
-            </div>
-          ))}
-
+      <div className="overflow-y-auto px-6 py-[14px]">
+        {fields.map(([label, left, right], i) => (
           <div
-            className={`mt-4 rounded-[var(--radius)] border px-3.5 py-2.5 text-admin-support ${
-              strongMatch
-                ? "border-admin-green-700/30 bg-admin-green-100 text-admin-green-900"
-                : "border-admin-gold-700/30 bg-admin-gold-700/10 text-admin-gold-700"
-            }`}
+            key={label}
+            className="grid grid-cols-[1fr_20px_1fr] items-start gap-2.5 border-b border-admin-border py-2.5 last:border-b-0"
           >
-            {strongMatch ? (
-              <>
-                <strong>
-                  {matches} of {states.length} fields match exactly.
-                </strong>{" "}
-                Strong candidate.
-              </>
-            ) : misses === 0 ? (
-              <>
-                {matches} exact, {partials} similar, 0 mismatched — likely the same entry with minor
-                recording differences.
-              </>
-            ) : (
-              <>
-                {matches} exact, {partials} similar, <strong>{misses} mismatched</strong> — review
-                carefully before confirming.
-              </>
-            )}
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-2 border-t border-dashed border-admin-border pt-3.5 sm:grid-cols-2">
             <div>
               <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                Baptismal date
+                {label}
               </div>
               <div className="text-admin-body text-admin-ink">
-                {formatRecordDate(record.dateOfBaptism)}{" "}
-                <span className="text-admin-label text-admin-ink-muted">
-                  {requestBaptismDate
-                    ? sameCalendarDay(requestBaptismDate, record.dateOfBaptism)
-                      ? `(request: ${displayDate(requestBaptismDate)})`
-                      : `(request says ${displayDate(requestBaptismDate)})`
-                    : "(not stated in request)"}
-                </span>
+                {left || <span className="italic text-admin-ink-muted">—</span>}
               </div>
             </div>
-            {record.minister && (
-              <div>
-                <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                  Minister
-                </div>
-                <div className="text-admin-body text-admin-ink">{record.minister}</div>
-              </div>
-            )}
+            <MatchIcon state={states[i]} />
+            <div className="text-admin-body text-admin-ink">
+              {right || <span className="italic text-admin-ink-muted">—</span>}
+            </div>
           </div>
+        ))}
+
+        <div
+          className={`mt-4 rounded-[var(--radius)] border px-3.5 py-2.5 text-admin-support ${
+            strongMatch
+              ? "border-admin-green-700/30 bg-admin-green-100 text-admin-green-900"
+              : "border-admin-gold-700/30 bg-admin-gold-700/10 text-admin-gold-700"
+          }`}
+        >
+          {strongMatch ? (
+            <>
+              <strong>
+                {matches} of {states.length} fields match exactly.
+              </strong>{" "}
+              Strong candidate.
+            </>
+          ) : misses === 0 ? (
+            <>
+              {matches} exact, {partials} similar, 0 mismatched — likely the same entry with minor
+              recording differences.
+            </>
+          ) : (
+            <>
+              {matches} exact, {partials} similar, <strong>{misses} mismatched</strong> — review
+              carefully before confirming.
+            </>
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
-          {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
-          <AdminButton variant="secondary" onClick={onClose}>
-            Back to results
-          </AdminButton>
-          <AdminButton onClick={onLink}>
-            <LinkIcon />
-            Confirm this record
-          </AdminButton>
+        <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-2 border-t border-dashed border-admin-border pt-3.5 sm:grid-cols-2">
+          <div>
+            <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+              Baptismal date
+            </div>
+            <div className="text-admin-body text-admin-ink">
+              {formatRecordDate(record.dateOfBaptism)}{" "}
+              <span className="text-admin-label text-admin-ink-muted">
+                {requestBaptismDate
+                  ? sameCalendarDay(requestBaptismDate, record.dateOfBaptism)
+                    ? `(request: ${displayDate(requestBaptismDate)})`
+                    : `(request says ${displayDate(requestBaptismDate)})`
+                  : "(not stated in request)"}
+              </span>
+            </div>
+          </div>
+          {record.minister && (
+            <div>
+              <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+                Minister
+              </div>
+              <div className="text-admin-body text-admin-ink">{record.minister}</div>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+
+      <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
+        <AdminButton variant="secondary" onClick={onClose}>
+          Back to results
+        </AdminButton>
+        <AdminButton onClick={onLink}>
+          <LinkIcon />
+          Confirm this record
+        </AdminButton>
+      </div>
+    </AdminModalFrame>
   );
 }
 
@@ -721,46 +723,47 @@ function RejectModal({
   error?: string | null;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 pt-10">
-      <div className="absolute inset-0 bg-black/40" onClick={onCancel} aria-hidden="true" />
-      <div className="relative z-10 flex w-full max-w-[460px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
-        <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
-          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Reject this request</h3>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="px-6 py-4">
-          <p className="mb-3 text-admin-body text-admin-ink-muted">
-            Use this when no matching entry can be found in the baptismal ledger. The requester will be
-            notified that their certificate could not be issued.
-          </p>
-          <label className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-            Note for the record (optional)
-          </label>
-          <textarea
-            value={reason}
-            onChange={(e) => onReasonChange(e.target.value)}
-            placeholder="e.g. Searched Books 09, 14 and 21 for 1993–1995; no entry matches the details submitted."
-            className="min-h-[80px] w-full resize-y rounded-[var(--radius)] border border-admin-border bg-admin-surface-alt px-2.5 py-2 text-admin-body text-admin-ink"
-          />
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
-          {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
-          <AdminButton variant="secondary" onClick={onCancel}>
-            Cancel
-          </AdminButton>
-          <AdminButton variant="danger" onClick={onConfirm}>
-            Reject request
-          </AdminButton>
-        </div>
+    <AdminModalFrame
+      onClose={onCancel}
+      layer="z-50"
+      panelClassName="flex max-w-[460px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+    >
+      <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
+        <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Reject this request</h3>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
+          aria-label="Close"
+        >
+          ✕
+        </button>
       </div>
-    </div>
+      <div className="px-6 py-4">
+        <p className="mb-3 text-admin-body text-admin-ink-muted">
+          Use this when no matching entry can be found in the baptismal ledger. The requester will be
+          notified that their certificate could not be issued.
+        </p>
+        <label className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+          Note for the record (optional)
+        </label>
+        <textarea
+          value={reason}
+          onChange={(e) => onReasonChange(e.target.value)}
+          placeholder="e.g. Searched Books 09, 14 and 21 for 1993–1995; no entry matches the details submitted."
+          className="min-h-[80px] w-full resize-y rounded-[var(--radius)] border border-admin-border bg-admin-surface-alt px-2.5 py-2 text-admin-body text-admin-ink"
+        />
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
+        <AdminButton variant="secondary" onClick={onCancel}>
+          Cancel
+        </AdminButton>
+        <AdminButton variant="danger" onClick={onConfirm}>
+          Reject request
+        </AdminButton>
+      </div>
+    </AdminModalFrame>
   );
 }
 

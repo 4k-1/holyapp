@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { ReceiptSheet, type ReceiptData } from "@/components/print/ReceiptSheet";
 import { usePrintJob } from "@/components/print/usePrintJob";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
 interface PrintReceiptDialogProps {
   parish: { name: string; address?: string; contact?: string };
@@ -22,17 +23,14 @@ export function PrintReceiptDialog({ parish, receipt, defaultReceivedFrom, onClo
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto p-4 pt-8 sm:pt-12">
-      <div className="absolute inset-0 bg-black/45" onClick={onClose} aria-hidden="true" />
-      <form
-        onSubmit={handlePrint}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="print-receipt-title"
-        className="relative z-10 w-full max-w-[420px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
-      >
+    <AdminModalFrame
+      onClose={onClose}
+      layer="z-[70]"
+      panelClassName="max-w-[420px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+    >
+      <form onSubmit={handlePrint}>
         <div className="border-b border-admin-border px-6 py-4">
-          <h3 id="print-receipt-title" className="font-serif text-admin-section font-semibold text-admin-ink">
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
             Print receipt
           </h3>
           <p className="mt-0.5 text-admin-support text-admin-ink-muted">
@@ -60,6 +58,6 @@ export function PrintReceiptDialog({ parish, receipt, defaultReceivedFrom, onClo
         </div>
       </form>
       {job && <ReceiptSheet parish={parish} receipt={job} />}
-    </div>
+    </AdminModalFrame>
   );
 }

@@ -14,6 +14,7 @@ import {
 import { Disable2FAModal } from "./Disable2FAModal";
 import { SignOutAllSessionsModal } from "./SignOutAllSessionsModal";
 import type { LoginActivityEntry, LoginSession } from "../types";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 export function AccountSecuritySection() {
   const user = useCurrentUser();
@@ -132,7 +133,7 @@ export function AccountSecuritySection() {
   }
 
   if (loading || !user) {
-    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
+    return <SkeletonList rows={4} className="px-0" />;
   }
 
   if (loadError) {

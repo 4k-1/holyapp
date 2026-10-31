@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useDialogDismiss } from "@/features/parish-admin/components/useDialogDismiss";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
 export function SuperAdminModal({
   title,
@@ -16,23 +16,17 @@ export function SuperAdminModal({
   busy?: boolean;
   widthClass?: string;
 }) {
-  useDialogDismiss(onClose, busy);
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-[rgba(20,30,25,0.35)]"
-        onClick={busy ? undefined : onClose}
-        aria-hidden
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sa-modal-title"
-        className={`relative z-10 w-full overflow-hidden rounded-xl bg-admin-surface shadow-[0_20px_50px_rgba(0,0,0,0.2)] ${widthClass}`}
-      >
+    <AdminModalFrame
+      onClose={onClose}
+      busy={busy}
+      align="center"
+      layer="z-[100]"
+      backdropClassName="bg-[rgba(20,30,25,0.35)]"
+      panelClassName={`overflow-hidden rounded-xl bg-admin-surface shadow-[0_20px_50px_rgba(0,0,0,0.2)] ${widthClass}`}
+    >
         <div className="flex items-center justify-between border-b border-admin-border px-5 py-4">
-          <h3 id="sa-modal-title" className="font-sans text-[15px] font-bold text-admin-ink">
+          <h3 className="font-sans text-[15px] font-bold text-admin-ink">
             {title}
           </h3>
           <button
@@ -47,8 +41,7 @@ export function SuperAdminModal({
         </div>
         <div className="flex flex-col gap-3 px-5 py-[18px]">{children}</div>
         <div className="flex justify-end gap-2 border-t border-admin-border px-5 py-3.5">{footer}</div>
-      </div>
-    </div>
+    </AdminModalFrame>
   );
 }
 

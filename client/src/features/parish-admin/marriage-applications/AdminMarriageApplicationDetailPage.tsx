@@ -40,6 +40,7 @@ import { listAssignableStaff } from "@/features/parish-admin/schedule/api/schedu
 import { StaffSelect } from "@/features/parish-admin/schedule/components/StaffSelect";
 import type { AssignableStaff } from "@/features/parish-admin/schedule/types";
 import { convert24to12, to24Hour } from "@/features/parish-admin/schedule/scheduleHelpers";
+import { askConfirm } from "@/lib/notify";
 
 const GROUPS: RequirementGroup[] = ["Bride", "Groom", "Couple", "Preparation"];
 
@@ -534,8 +535,14 @@ export function AdminMarriageApplicationDetailPage() {
                 <AdminButton
                   type="button"
                   disabled={saving || !rejectRemarks.trim()}
-                  onClick={() => {
-                    if (!window.confirm(`Reject the application of ${application.groomName} & ${application.brideName}?`)) return;
+                  onClick={async () => {
+                    const ok = await askConfirm({
+                      title: "Reject this application?",
+                      message: `The application of ${application.groomName} & ${application.brideName} will be closed.`,
+                      confirmLabel: "Reject application",
+                      danger: true,
+                    });
+                    if (!ok) return;
                     run(() => rejectMarriageApplication(application.id, rejectRemarks.trim()), () => setRejecting(false));
                   }}
                 >
@@ -634,8 +641,9 @@ function RequirementRow({
           {!disabled && (
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm(`Mark "${item.name}" as not received?`)) onChange(false);
+              onClick={async () => {
+                if (await askConfirm({ title: `Mark "${item.name}" as not received?`, confirmLabel: "Mark not received" }))
+                  onChange(false);
               }}
               className="min-h-[36px] text-admin-support font-semibold text-admin-ink-muted underline hover:text-admin-ink rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/40"
             >

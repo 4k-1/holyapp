@@ -4,6 +4,8 @@ import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { listServiceFees, updateServiceFeeAmount } from "../api/feesApi";
 import { EditServiceFeeModal } from "./EditServiceFeeModal";
 import type { ServiceFee } from "../types";
+import { notifyError } from "@/lib/notify";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 export function ServiceFeesSection() {
   const [fees, setFees] = useState<ServiceFee[]>([]);
@@ -14,7 +16,7 @@ export function ServiceFeesSection() {
     listServiceFees()
       .then(setFees)
       .catch((err: unknown) => {
-        window.alert(err instanceof Error ? err.message : "Could not load service fees.");
+        notifyError(err, "Could not load service fees.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -26,12 +28,12 @@ export function ServiceFeesSection() {
       setFees((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
       setEditingFee(null);
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Could not update fee.");
+      notifyError(err, "Could not update fee.");
     }
   }
 
   if (loading) {
-    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
+    return <SkeletonList rows={4} className="px-0" />;
   }
 
   return (

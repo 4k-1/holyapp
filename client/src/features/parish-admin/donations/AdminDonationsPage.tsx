@@ -21,6 +21,7 @@ import {
 import { donationTypeBadgeTone } from "./types";
 import type { Donation } from "./types";
 import type { Parish } from "@/types";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 export function AdminDonationsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -157,7 +158,7 @@ export function AdminDonationsPage() {
       </AdminCard>
 
       {loading ? (
-        <p className="text-admin-body text-admin-ink-muted">Loading…</p>
+        <SkeletonList rows={4} className="px-0" />
       ) : loadError ? (
         <p className="text-admin-body text-red-700" role="alert">
           {loadError}

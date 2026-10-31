@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminButton, PrintIcon } from "@/features/parish-admin/components/AdminForm";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
@@ -19,6 +19,7 @@ import { baptismCertificateFields, recordFullName } from "@/features/parish-admi
 import { getCertificateAppearance } from "@/features/parish-admin/settings/api/certificateConfigApi";
 import { useAsync } from "@/hooks/useAsync";
 import type { CertificateRequest, Parish } from "@/types";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
 interface AdminIssueCertificateModalProps {
   request: CertificateRequest;
@@ -58,13 +59,6 @@ export function AdminIssueCertificateModal({
   const [verifyUrl, setVerifyUrl] = useState("");
   const [issueError, setIssueError] = useState<string | null>(null);
 
-  useEffect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape" && !submitting) onClose();
-    }
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [onClose, submitting]);
 
   async function handleConfirm() {
     if (!verified || !linked) return;
@@ -114,182 +108,183 @@ export function AdminIssueCertificateModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 pt-8 sm:pt-12">
-      <div className="absolute inset-0 bg-black/45" onClick={submitting ? undefined : onClose} aria-hidden="true" />
-      <div className="relative z-10 flex max-h-[92vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
-          <div>
-            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
-              {done
-                ? isDigital
-                  ? "Certificate issued"
-                  : "Ready for pickup"
-                : isDigital
-                  ? "Issue certificate"
-                  : "Mark ready for pickup"}
-            </h3>
-            <p className="mt-0.5 text-admin-support text-admin-ink-muted">
-              Request {request.id} · {sacramentCertTitles[request.sacramentType]}
-            </p>
-          </div>
-          {!submitting && (
-            <button
-              type="button"
-              onClick={done ? handleDone : onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
-              aria-label="Close"
-            >
-              ✕
-            </button>
-          )}
+    <AdminModalFrame
+      onClose={onClose}
+      busy={submitting}
+      panelClassName="flex max-h-[92vh] max-w-[760px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
+        <div>
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
+            {done
+              ? isDigital
+                ? "Certificate issued"
+                : "Ready for pickup"
+              : isDigital
+                ? "Issue certificate"
+                : "Mark ready for pickup"}
+          </h3>
+          <p className="mt-0.5 text-admin-support text-admin-ink-muted">
+            Request {request.id} · {sacramentCertTitles[request.sacramentType]}
+          </p>
         </div>
+        {!submitting && (
+          <button
+            type="button"
+            onClick={done ? handleDone : onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        )}
+      </div>
 
-        <div className="overflow-y-auto px-6 py-5">
-          {loading ? (
-            <p className="text-admin-body text-admin-ink-muted">Loading record data…</p>
-          ) : !linked ? (
-            <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-4 py-3.5 text-admin-body text-admin-gold-700">
-              This request has no linked sacramental record. Link a record before issuing a certificate.
+      <div className="overflow-y-auto px-6 py-5">
+        {loading ? (
+          <p className="text-admin-body text-admin-ink-muted">Loading record data…</p>
+        ) : !linked ? (
+          <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-4 py-3.5 text-admin-body text-admin-gold-700">
+            This request has no linked sacramental record. Link a record before issuing a certificate.
+          </div>
+        ) : (
+          <>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <AdminDeliveryTag method={request.deliveryMethod} />
+              <AdminBadge tone="green">Paid</AdminBadge>
+              <span className="text-admin-support text-admin-ink-muted">
+                {copies} {copies > 1 ? "copies" : "copy"} · {request.purpose ?? "General purpose"}
+              </span>
             </div>
-          ) : (
-            <>
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <AdminDeliveryTag method={request.deliveryMethod} />
-                <AdminBadge tone="green">Paid</AdminBadge>
-                <span className="text-admin-support text-admin-ink-muted">
-                  {copies} {copies > 1 ? "copies" : "copy"} · {request.purpose ?? "General purpose"}
-                </span>
-              </div>
 
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_240px]">
-                {/* Certificate */}
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <h4 className="font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                      Certificate preview
-                    </h4>
-                    {!isDigital && (
-                      <AdminButton variant="ghost" size="sm" className="py-0.5" onClick={handlePrintCertificate}>
-                        <PrintIcon />
-                        Print certificate
-                      </AdminButton>
-                    )}
-                  </div>
-                  <div
-                    className="relative h-[min(70vh,560px)] overflow-hidden rounded-[10px]"
-                    style={{ background: CERT_PREVIEW_STAGE_BG }}
-                  >
-                    <CertificatePreviewStage>
-                      <CertificateDocument
-                        ref={printRef}
-                        parish={parish}
-                        sacramentType={request.sacramentType}
-                        subjectName={previewName}
-                        fields={fields}
-                        appearance={appearance}
-                      />
-                    </CertificatePreviewStage>
-                  </div>
-                </div>
-
-                {/* Right column: checklist (pre-done) or success state */}
-                <div>
-                  {done ? (
-                    <SuccessPanel
-                      isDigital={isDigital}
-                      subjectName={previewName}
-                      certCode={certCode}
-                      copies={copies}
-                      onPrint={!isDigital ? handlePrintCertificate : undefined}
-                    />
-                  ) : (
-                    <div className="rounded-[10px] border border-admin-border bg-admin-surface-alt p-4">
-                      <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                        Register data
-                      </h4>
-                      <VerifyRow label="Name" value={previewName} />
-                      <VerifyRow label="Birthdate" value={fields.birthdate ?? "—"} />
-                      <VerifyRow label="Birthplace" value={fields.birthplace ?? "—"} />
-                      {request.sacramentType === "baptism" && (
-                        <VerifyRow label="Baptism date" value={fields.baptismDate ?? "—"} />
-                      )}
-                      <VerifyRow label="Mother" value={fields.motherName ?? "—"} />
-                      <VerifyRow label="Father" value={fields.fatherName ?? "—"} />
-                      <VerifyRow label="Register ref" value={fields.registerRef ?? "—"} last />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {!done && (
-                <>
-                  <label className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-admin-border bg-admin-surface-alt px-3.5 py-3">
-                    <input
-                      type="checkbox"
-                      checked={verified}
-                      onChange={(e) => setVerified(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-admin-border-strong accent-admin-green-700"
-                    />
-                    <span className="text-admin-body leading-relaxed text-admin-ink">
-                      {isDigital
-                        ? "I have verified that the certificate information matches the parish register. Issue to the parishioner's digital wallet."
-                        : "I confirm the certificate information matches the parish register. Mark this request ready for parishioner pickup."}
-                    </span>
-                  </label>
-
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_240px]">
+              {/* Certificate */}
+              <div>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h4 className="font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+                    Certificate preview
+                  </h4>
                   {!isDigital && (
-                    <p className="mt-2 text-admin-support text-admin-ink-muted">
-                      Once marked ready, you can print the certificate above and have it signed and sealed for pickup.
-                    </p>
+                    <AdminButton variant="ghost" size="sm" className="py-0.5" onClick={handlePrintCertificate}>
+                      <PrintIcon />
+                      Print certificate
+                    </AdminButton>
                   )}
+                </div>
+                <div
+                  className="relative h-[min(70vh,560px)] overflow-hidden rounded-[10px]"
+                  style={{ background: CERT_PREVIEW_STAGE_BG }}
+                >
+                  <CertificatePreviewStage>
+                    <CertificateDocument
+                      ref={printRef}
+                      parish={parish}
+                      sacramentType={request.sacramentType}
+                      subjectName={previewName}
+                      fields={fields}
+                      appearance={appearance}
+                    />
+                  </CertificatePreviewStage>
+                </div>
+              </div>
+
+              {/* Right column: checklist (pre-done) or success state */}
+              <div>
+                {done ? (
+                  <SuccessPanel
+                    isDigital={isDigital}
+                    subjectName={previewName}
+                    certCode={certCode}
+                    copies={copies}
+                    onPrint={!isDigital ? handlePrintCertificate : undefined}
+                  />
+                ) : (
+                  <div className="rounded-[10px] border border-admin-border bg-admin-surface-alt p-4">
+                    <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+                      Register data
+                    </h4>
+                    <VerifyRow label="Name" value={previewName} />
+                    <VerifyRow label="Birthdate" value={fields.birthdate ?? "—"} />
+                    <VerifyRow label="Birthplace" value={fields.birthplace ?? "—"} />
+                    {request.sacramentType === "baptism" && (
+                      <VerifyRow label="Baptism date" value={fields.baptismDate ?? "—"} />
+                    )}
+                    <VerifyRow label="Mother" value={fields.motherName ?? "—"} />
+                    <VerifyRow label="Father" value={fields.fatherName ?? "—"} />
+                    <VerifyRow label="Register ref" value={fields.registerRef ?? "—"} last />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {!done && (
+              <>
+                <label className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-admin-border bg-admin-surface-alt px-3.5 py-3">
+                  <input
+                    type="checkbox"
+                    checked={verified}
+                    onChange={(e) => setVerified(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-admin-border-strong accent-admin-green-700"
+                  />
+                  <span className="text-admin-body leading-relaxed text-admin-ink">
+                    {isDigital
+                      ? "I have verified that the certificate information matches the parish register. Issue to the parishioner's digital wallet."
+                      : "I confirm the certificate information matches the parish register. Mark this request ready for parishioner pickup."}
+                  </span>
+                </label>
+
+                {!isDigital && (
+                  <p className="mt-2 text-admin-support text-admin-ink-muted">
+                    Once marked ready, you can print the certificate above and have it signed and sealed for pickup.
+                  </p>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        {issueError && <p className="mr-auto text-admin-body text-admin-red-700">{issueError}</p>}
+        {done ? (
+          <>
+            {!isDigital && (
+              <AdminButton variant="secondary" onClick={handlePrintCertificate}>
+                <PrintIcon />
+                Print certificate
+              </AdminButton>
+            )}
+            <AdminButton onClick={handleDone}>
+              <CheckIcon />
+              Done
+            </AdminButton>
+          </>
+        ) : (
+          <>
+            <AdminButton variant="secondary" onClick={onClose} disabled={submitting}>
+              Cancel
+            </AdminButton>
+            <AdminButton onClick={handleConfirm} disabled={!verified || !linked || submitting}>
+              {submitting ? (
+                "Processing…"
+              ) : isDigital ? (
+                <>
+                  <FileIcon />
+                  Issue to wallet
+                </>
+              ) : (
+                <>
+                  <CheckIcon />
+                  Mark ready for pickup
                 </>
               )}
-            </>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
-          {issueError && <p className="mr-auto text-admin-body text-admin-red-700">{issueError}</p>}
-          {done ? (
-            <>
-              {!isDigital && (
-                <AdminButton variant="secondary" onClick={handlePrintCertificate}>
-                  <PrintIcon />
-                  Print certificate
-                </AdminButton>
-              )}
-              <AdminButton onClick={handleDone}>
-                <CheckIcon />
-                Done
-              </AdminButton>
-            </>
-          ) : (
-            <>
-              <AdminButton variant="secondary" onClick={onClose} disabled={submitting}>
-                Cancel
-              </AdminButton>
-              <AdminButton onClick={handleConfirm} disabled={!verified || !linked || submitting}>
-                {submitting ? (
-                  "Processing…"
-                ) : isDigital ? (
-                  <>
-                    <FileIcon />
-                    Issue to wallet
-                  </>
-                ) : (
-                  <>
-                    <CheckIcon />
-                    Mark ready for pickup
-                  </>
-                )}
-              </AdminButton>
-            </>
-          )}
-        </div>
+            </AdminButton>
+          </>
+        )}
       </div>
-    </div>
+    </AdminModalFrame>
   );
 }
 

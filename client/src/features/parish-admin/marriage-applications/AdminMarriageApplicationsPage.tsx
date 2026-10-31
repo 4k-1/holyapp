@@ -19,6 +19,7 @@ import {
 import type { MarriageApplication } from "@/features/parish-admin/marriage-applications/types";
 import { useAsync } from "@/hooks/useAsync";
 import "@/features/parish-admin/styles/adminDesk.css";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 const PREPARATION: ApplicationStage[] = ["documents", "interview", "precana", "banns"];
 
@@ -225,7 +226,7 @@ export function AdminMarriageApplicationsPage() {
 
       <AdminCard>
         {loading && applications.length === 0 ? (
-          <p className="px-6 py-10 text-center text-admin-body text-admin-ink-muted">Loading applications…</p>
+          <SkeletonList rows={5} />
         ) : (
           <AdminTable
             columns={columns}

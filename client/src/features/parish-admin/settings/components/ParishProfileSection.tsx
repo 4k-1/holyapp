@@ -4,6 +4,8 @@ import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { getParishProfile, updateParishProfile } from "../api/settingsApi";
 import type { ParishProfile } from "../types";
+import { notifyError } from "@/lib/notify";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 const emptyProfile = (): ParishProfile => ({
   name: "",
@@ -29,7 +31,7 @@ export function ParishProfileSection() {
         setDraft(p);
       })
       .catch((err: unknown) => {
-        window.alert(err instanceof Error ? err.message : "Could not load parish profile.");
+        notifyError(err, "Could not load parish profile.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -58,14 +60,14 @@ export function ParishProfileSection() {
       setEditing(false);
       setJustSaved(true);
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Could not save parish profile.");
+      notifyError(err, "Could not save parish profile.");
     } finally {
       setSaving(false);
     }
   }
 
   if (loading) {
-    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
+    return <SkeletonList rows={4} className="px-0" />;
   }
 
   return (

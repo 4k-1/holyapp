@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { updateProfile } from "@/features/auth/api/authApi";
 import type { CurrentUser } from "@/types";
+import { notifyError } from "@/lib/notify";
 
 interface PersonalInfoPanelProps {
   user: CurrentUser;
@@ -26,7 +27,7 @@ export function PersonalInfoPanel({ user, onUpdated }: PersonalInfoPanelProps) {
       onUpdated(updated);
       setEditing(false);
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Could not save profile.");
+      notifyError(err, "Could not save profile.");
     } finally {
       setSaving(false);
     }

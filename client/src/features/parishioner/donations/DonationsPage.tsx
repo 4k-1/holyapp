@@ -11,6 +11,7 @@ import { DonationForm } from "@/features/parishioner/donations/DonationForm";
 import { listMyDonations, syncMyDonation, type MyDonation } from "@/features/parishioner/donations/donationsApi";
 import { useAsync } from "@/hooks/useAsync";
 import type { Parish } from "@/types";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 /** "checking" while GCash confirms a returning payment; "received" once it has, which replaces the form. */
 type Phase = "form" | "checking" | "received";
@@ -92,7 +93,7 @@ export function DonationsPage() {
       )}
 
       {loading && !data ? (
-        <p className="text-sm text-ink-muted">Loading…</p>
+        <SkeletonList rows={3} className="px-0" />
       ) : (
         <DonationForm defaultFullName={currentUser?.fullName ?? ""} gcashAvailable={data?.gcashDonations ?? false} />
       )}
