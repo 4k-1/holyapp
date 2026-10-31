@@ -157,3 +157,43 @@
   border-color: color-mix(in srgb, var(--at-green) 40%, var(--at-border));
   color: var(--at-green-deep);
 }
+
+/* Sortable headers: the whole label is the button; the arrow brightens on the sorted column. */
+.admin-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: -0.25rem -0.4rem;
+  padding: 0.25rem 0.4rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+.admin-table__sort:hover {
+  color: var(--at-ink);
+  background: var(--at-hover);
+}
+.admin-table__sort:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px #cfeaea;
+}
+[aria-sort] > .admin-table__sort {
+  color: var(--at-ink);
+}
+.admin-table__sort-arrow {
+  width: 0.7rem;
+  height: 0.7rem;
+  fill: currentColor;
+  opacity: 0.35;
+}
+.admin-table__sort-arrow.is-on {
+  opacity: 1;
+  color: var(--at-green);
+}
+.admin-table__sort-arrow .is-dim {
+  opacity: 0.25;
+}

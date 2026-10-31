@@ -37,7 +37,7 @@
 
 h2.match-card__title {
   margin: 0;
-  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-serif);
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.035em;
@@ -52,7 +52,7 @@ h2.match-card__title {
   flex-shrink: 0;
   border-radius: 999px;
   padding: 0.28rem 0.7rem;
-  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-serif);
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -70,7 +70,7 @@ h2.match-card__title {
 
 .match-card__meta {
   flex-shrink: 0;
-  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-serif);
   font-size: 0.625rem;
   font-weight: 650;
   letter-spacing: 0.1em;
@@ -198,7 +198,7 @@ h2.match-card__title {
   border-radius: 0.7rem;
   background: #e7f6ee;
   color: #1f5c38;
-  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-serif);
   font-size: 0.78rem;
   font-weight: 650;
   letter-spacing: -0.01em;

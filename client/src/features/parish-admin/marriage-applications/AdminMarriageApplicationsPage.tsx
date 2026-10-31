@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
+import { AdminFilterBar, QuickSelect } from "@/components/ui/AdminFilterBar";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { CreateWalkInApplicationModal } from "@/features/parish-admin/marriage-applications/CreateWalkInApplicationModal";
 import { listMarriageApplications } from "@/features/parish-admin/marriage-applications/api/marriageApplicationsApi";
@@ -107,6 +108,7 @@ export function AdminMarriageApplicationsPage() {
     {
       key: "couple",
       header: "Couple",
+      sortValue: (row) => `${row.brideName} ${row.groomName}`,
       render: (row) => (
         <Link
           to={encodeURIComponent(row.id)}
@@ -119,6 +121,7 @@ export function AdminMarriageApplicationsPage() {
     {
       key: "wedding",
       header: "Wedding date",
+      sortValue: (row) => weddingDateOf(row) ?? null,
       render: (row) => {
         const date = weddingDateOf(row);
         return date ? (
@@ -131,6 +134,7 @@ export function AdminMarriageApplicationsPage() {
     {
       key: "status",
       header: "Status",
+      sortValue: (row) => statusLabel(row),
       render: (row) => {
         const stage = applicationStage(row);
         const tone = stage === "cleared" ? "green" : row.status === "rejected" ? "red" : "muted";
@@ -189,42 +193,19 @@ export function AdminMarriageApplicationsPage() {
         ))}
       </div>
 
-      <div className="mb-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-        <div className="relative min-w-0 sm:max-w-[320px]">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            className="pointer-events-none absolute left-[11px] top-1/2 z-10 h-[15px] w-[15px] -translate-y-1/2 text-admin-ink-faint"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <AdminInput
-            placeholder="Search by bride or groom name"
-            aria-label="Search by bride or groom name"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-[34px]"
-          />
-        </div>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as Filter)}
-          aria-label="Filter by status"
-          className="w-full rounded-[7px] border border-admin-border-strong bg-white py-[9px] pl-3 pr-[30px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25 sm:w-auto"
-        >
-          {DROPDOWN.map((key) => (
-            <option key={key} value={key}>
-              {FILTER_LABEL[key]}
-            </option>
-          ))}
-        </select>
-      </div>
-
       <AdminCard>
+        <AdminFilterBar
+          search={{ value: search, onChange: setSearch, placeholder: "Search by bride or groom name", label: "Search applications" }}
+          chips={filter === "all" ? [] : [{ key: "status", label: FILTER_LABEL[filter], onRemove: () => setFilter("all") }]}
+          summary={`${rows.length} shown`}
+        >
+          <QuickSelect
+            label="Status"
+            value={filter}
+            onChange={setFilter}
+            options={DROPDOWN.map((key) => [key, FILTER_LABEL[key]] as const)}
+          />
+        </AdminFilterBar>
         {loading && applications.length === 0 ? (
           <SkeletonList rows={5} />
         ) : (
@@ -232,6 +213,7 @@ export function AdminMarriageApplicationsPage() {
             columns={columns}
             rows={rows}
             getRowKey={(row) => row.id}
+            pageKey="marriage-applications"
             emptyMessage={
               applications.length === 0
                 ? "No marriage applications yet. Use “New application” when a couple applies at the office."

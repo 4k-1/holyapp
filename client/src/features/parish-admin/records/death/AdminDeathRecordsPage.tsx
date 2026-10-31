@@ -35,20 +35,23 @@ export function AdminDeathRecordsPage() {
     {
       key: "ref",
       header: "Bk:Page:Entry",
+      sortValue: (r) => deathRecordRef(r),
       render: (r) => <span className="admin-table__primary">{deathRecordRef(r)}</span>,
     },
-    { key: "name", header: "Name", render: (r) => recordFullName(r) },
+    { key: "name", header: "Name", sortValue: (r) => recordFullName(r), render: (r) => recordFullName(r) },
     {
       key: "dateOfDeath",
       header: "Date of death",
+      sortValue: (r) => r.dateOfDeath,
       render: (r) => formatRecordDate(r.dateOfDeath),
     },
     {
       key: "dateOfBurial",
       header: "Date of burial",
+      sortValue: (r) => r.dateOfBurial,
       render: (r) => formatRecordDate(r.dateOfBurial),
     },
-    { key: "age", header: "Age", render: (r) => formatAge(r) },
+    { key: "age", header: "Age", sortValue: (r) => formatAge(r), render: (r) => formatAge(r) },
     {
       key: "actions",
       header: "",
@@ -128,8 +131,8 @@ export function AdminDeathRecordsPage() {
       </SearchCriteriaCard>
 
       <AdminTable
-
         loading={loading}
+        pageKey="records"
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}

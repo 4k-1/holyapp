@@ -36,21 +36,24 @@ export function AdminConfirmationRecordsPage() {
     {
       key: "ref",
       header: "Bk:Page:Entry",
+      sortValue: (r) => confirmationRecordRef(r),
       render: (r) => <span className="admin-table__primary">{confirmationRecordRef(r)}</span>,
     },
-    { key: "name", header: "Name", render: (r) => recordFullName(r) },
+    { key: "name", header: "Name", sortValue: (r) => recordFullName(r), render: (r) => recordFullName(r) },
     {
       key: "dateOfConfirmation",
       header: "Conf. date",
+      sortValue: (r) => r.dateOfConfirmation,
       render: (r) => formatRecordDate(r.dateOfConfirmation),
     },
     {
       key: "dateOfBirth",
       header: "Birthdate",
+      sortValue: (r) => r.dateOfBirth,
       render: (r) => (r.dateOfBirth ? formatRecordDate(r.dateOfBirth) : "—"),
     },
-    { key: "mother", header: "Mother", render: (r) => recordMotherName(r) || "—" },
-    { key: "father", header: "Father", render: (r) => recordFatherName(r) || "—" },
+    { key: "mother", header: "Mother", sortValue: (r) => recordMotherName(r), render: (r) => recordMotherName(r) || "—" },
+    { key: "father", header: "Father", sortValue: (r) => recordFatherName(r), render: (r) => recordFatherName(r) || "—" },
     {
       key: "actions",
       header: "",
@@ -137,8 +140,8 @@ export function AdminConfirmationRecordsPage() {
       </SearchCriteriaCard>
 
       <AdminTable
-
         loading={loading}
+        pageKey="records"
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}

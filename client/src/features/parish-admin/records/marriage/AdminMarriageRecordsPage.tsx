@@ -35,13 +35,15 @@ export function AdminMarriageRecordsPage() {
     {
       key: "ref",
       header: "Bk:Page:Entry",
+      sortValue: (r) => marriageRecordRef(r),
       render: (r) => <span className="admin-table__primary">{marriageRecordRef(r)}</span>,
     },
-    { key: "groom", header: "Groom", render: (r) => groomFullName(r) },
-    { key: "bride", header: "Bride", render: (r) => brideFullName(r) },
+    { key: "groom", header: "Groom", sortValue: (r) => groomFullName(r), render: (r) => groomFullName(r) },
+    { key: "bride", header: "Bride", sortValue: (r) => brideFullName(r), render: (r) => brideFullName(r) },
     {
       key: "dateOfMarriage",
       header: "Marriage date",
+      sortValue: (r) => r.dateOfMarriage,
       render: (r) => formatRecordDate(r.dateOfMarriage),
     },
     {
@@ -123,8 +125,8 @@ export function AdminMarriageRecordsPage() {
       </SearchCriteriaCard>
 
       <AdminTable
-
         loading={loading}
+        pageKey="records"
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}

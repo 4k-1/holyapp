@@ -22,6 +22,7 @@ import { donationTypeBadgeTone } from "./types";
 import type { Donation } from "./types";
 import type { Parish } from "@/types";
 import { SkeletonList } from "@/components/ui/Skeleton";
+import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 
 export function AdminDonationsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -82,10 +83,70 @@ export function AdminDonationsPage() {
     return map;
   }, [filtered]);
 
-  const rows = useMemo(
-    () => [...filtered].sort((a, b) => (a.donationDate < b.donationDate ? 1 : -1)),
-    [filtered]
-  );
+  const rows = filtered;
+
+  const columns: AdminTableColumn<Donation>[] = [
+    { key: "date", header: "Date", sortValue: (d) => d.donationDate, render: (d) => formatDonationDate(d.donationDate) },
+    {
+      key: "donor",
+      header: "Donor",
+      sortValue: (d) => d.donorName,
+      render: (d) => (
+        <>
+          {d.donorName ? (
+            <span className="text-admin-ink">{d.donorName}</span>
+          ) : (
+            <span className="italic text-admin-ink-faint">Anonymous</span>
+          )}
+          {d.donorName && donorFirstSeen[d.donorName] === d.donationDate && (
+            <span className="ml-1.5">
+              <AdminBadge tone="gold">New donor</AdminBadge>
+            </span>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "type",
+      header: "Type",
+      sortValue: (d) => d.donationType,
+      render: (d) => <AdminBadge tone={donationTypeBadgeTone(d.donationType)}>{d.donationType}</AdminBadge>,
+    },
+    {
+      key: "purpose",
+      header: "Purpose",
+      sortValue: (d) => d.purpose,
+      className: "max-w-[180px]",
+      render: (d) => (
+        <span className="block truncate text-admin-ink-muted" title={d.remarks || d.purpose || undefined}>
+          {d.purpose || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "recordedBy",
+      header: "Recorded by",
+      sortValue: (d) => d.recordedBy,
+      render: (d) => <span className="text-admin-ink-muted">{d.recordedBy}</span>,
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      sortValue: (d) => d.amount,
+      className: "text-right",
+      render: (d) => <span className="font-semibold text-admin-ink">{formatAmount(d.amount)}</span>,
+    },
+    {
+      key: "receipt",
+      header: "",
+      className: "text-right",
+      render: (d) => (
+        <button type="button" onClick={() => setReceiptFor(d)} className="admin-table__action">
+          Receipt
+        </button>
+      ),
+    },
+  ];
 
   function setDraftField(key: keyof DonationDateFilter, value: string) {
     setDraftFilter((prev) => ({ ...prev, [key]: value }));
@@ -187,84 +248,20 @@ export function AdminDonationsPage() {
             </div>
           </div>
 
-          <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface">
-            <div className="flex items-baseline justify-between px-5 pt-4 pb-1">
-              <p className="font-serif text-admin-section font-semibold text-admin-ink">
-                {filterActive ? "Filtered donations" : "All donations"}
-              </p>
-              <span className="text-admin-support text-admin-ink-muted">{rows.length} entries</span>
-            </div>
-            <table className="w-full text-left text-admin-body">
-              <thead>
-                <tr className="text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">
-                  <th className="px-5 py-2.5">Date</th>
-                  <th className="px-5 py-2.5">Donor</th>
-                  <th className="px-5 py-2.5">Type</th>
-                  <th className="px-5 py-2.5">Purpose</th>
-                  <th className="px-5 py-2.5">Recorded by</th>
-                  <th className="px-5 py-2.5 text-right">Amount</th>
-                  <th className="px-5 py-2.5">
-                    <span className="sr-only">Receipt</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((d) => {
-                  const isNew = d.donorName && donorFirstSeen[d.donorName] === d.donationDate;
-                  return (
-                    <tr key={d.id} className="border-t border-admin-border">
-                      <td className="px-5 py-2.5 text-admin-ink">{formatDonationDate(d.donationDate)}</td>
-                      <td className="px-5 py-2.5">
-                        {d.donorName ? (
-                          <span className="text-admin-ink">{d.donorName}</span>
-                        ) : (
-                          <span className="italic text-admin-ink-faint">Anonymous</span>
-                        )}
-                        {isNew && (
-                          <span className="ml-1.5">
-                            <AdminBadge tone="gold">New donor</AdminBadge>
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-2.5">
-                        <AdminBadge tone={donationTypeBadgeTone(d.donationType)}>
-                          {d.donationType}
-                        </AdminBadge>
-                      </td>
-                      <td
-                        className="max-w-[180px] truncate px-5 py-2.5 text-admin-ink-muted"
-                        title={d.remarks || d.purpose || undefined}
-                      >
-                        {d.purpose || "—"}
-                      </td>
-                      <td className="px-5 py-2.5 text-admin-ink-muted">
-                        {d.recordedBy}
-                      </td>
-                      <td className="px-5 py-2.5 text-right font-semibold text-admin-ink">
-                        {formatAmount(d.amount)}
-                      </td>
-                      <td className="px-5 py-2.5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setReceiptFor(d)}
-                          className="whitespace-nowrap text-admin-support font-semibold text-admin-green-700 hover:underline"
-                        >
-                          Receipt
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {rows.length === 0 && (
-              <p className="px-5 py-6 text-admin-body text-admin-ink-muted">
-                {filterActive
-                  ? "No donations match this date range."
-                  : "No donations yet. Gifts made in the parishioner portal and ones you record here will appear in this list."}
-              </p>
-            )}
-          </div>
+          <AdminTable
+            title={filterActive ? "Filtered donations" : "All donations"}
+            subtitle={`${rows.length} ${rows.length === 1 ? "entry" : "entries"}`}
+            columns={columns}
+            rows={rows}
+            getRowKey={(d) => d.id}
+            defaultSort={{ key: "date", dir: "desc" }}
+            pageKey="donations"
+            emptyMessage={
+              filterActive
+                ? "No donations match this date range."
+                : "No donations yet. Gifts made in the parishioner portal and ones you record here will appear in this list."
+            }
+          />
         </>
       )}
 

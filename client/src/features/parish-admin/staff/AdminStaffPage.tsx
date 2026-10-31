@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
+import { AdminFilterBar } from "@/components/ui/AdminFilterBar";
+import { AdminRowActions } from "@/components/ui/AdminRowActions";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { isParishAdminRole } from "@/features/parish-admin/permissions";
 import { listPersonnel, type ParishPerson } from "./api/personnelApi";
@@ -79,6 +81,7 @@ export function AdminStaffPage() {
     {
       key: "name",
       header: "Name",
+      sortValue: (p) => p.name,
       render: (p) => (
         <div className="max-w-[260px] min-w-0">
           <p className={`truncate font-medium ${p.status === "active" ? "text-admin-ink" : "text-admin-ink-faint"}`}>{p.name}</p>
@@ -91,6 +94,7 @@ export function AdminStaffPage() {
     {
       key: "role",
       header: "Role",
+      sortValue: (p) => p.role,
       render: (p) => (
         <span className="whitespace-nowrap">
           <AdminBadge tone={p.clergy ? "gold" : "muted"}>{p.role}</AdminBadge>
@@ -100,6 +104,7 @@ export function AdminStaffPage() {
     {
       key: "status",
       header: "Status",
+      sortValue: (p) => p.status,
       render: (p) => (
         <AdminBadge tone={p.status === "active" ? "green" : "muted"}>{p.status === "active" ? "Active" : "Inactive"}</AdminBadge>
       ),
@@ -109,27 +114,17 @@ export function AdminStaffPage() {
   if (canManage) {
     columns.push({
       key: "actions",
-      header: "Actions",
+      header: "",
+      className: "w-12 text-right",
       render: (p) => (
-        <div className="inline-flex items-center gap-3 whitespace-nowrap">
-          <button type="button" onClick={() => setEditing(p)} className="admin-table__action">
-            Edit
-          </button>
-          {!p.hasAccount && p.status === "active" && (
-            <button type="button" onClick={() => setGivingSignIn(p)} className="admin-table__action">
-              Give sign-in
-            </button>
-          )}
-          {!p.hasAccount && (
-            <button
-              type="button"
-              onClick={() => setRemoving(p)}
-              className="text-admin-support font-semibold text-red-700 hover:underline"
-            >
-              Remove
-            </button>
-          )}
-        </div>
+        <AdminRowActions
+          label={`Actions for ${p.name}`}
+          actions={[
+            { label: "Edit", onSelect: () => setEditing(p) },
+            { label: "Give sign-in", onSelect: () => setGivingSignIn(p), hidden: p.hasAccount || p.status !== "active" },
+            { label: "Remove", onSelect: () => setRemoving(p), danger: true, hidden: p.hasAccount },
+          ]}
+        />
       ),
     });
   }
@@ -162,16 +157,16 @@ export function AdminStaffPage() {
         ))}
       </div>
 
-      <div className="mb-3.5 sm:max-w-[320px]">
-        <AdminInput
-          placeholder="Search by name, role, or contact"
-          aria-label="Search staff"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
       <AdminCard>
+        <AdminFilterBar
+          search={{ value: search, onChange: setSearch, placeholder: "Search by name, role, or contact", label: "Search staff" }}
+          chips={
+            filter === "all"
+              ? []
+              : [{ key: "group", label: STAT_CARDS.find((c) => c.key === filter)!.label, onRemove: () => setFilter("all") }]
+          }
+          summary={loading ? undefined : `${rows.length} shown`}
+        />
         {loading ? (
           <SkeletonList rows={5} />
         ) : loadError ? (
@@ -183,6 +178,7 @@ export function AdminStaffPage() {
             columns={columns}
             rows={rows}
             getRowKey={(p) => p.id}
+            pageKey="staff"
             emptyMessage={
               people.length === 0
                 ? "No staff yet. Add your parish priest first."

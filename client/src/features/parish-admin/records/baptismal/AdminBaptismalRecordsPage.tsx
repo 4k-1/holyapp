@@ -36,21 +36,24 @@ export function AdminBaptismalRecordsPage() {
     {
       key: "ref",
       header: "Bk:Page:Entry",
+      sortValue: (r) => baptismRecordRef(r),
       render: (r) => <span className="admin-table__primary">{baptismRecordRef(r)}</span>,
     },
-    { key: "name", header: "Name", render: (r) => recordFullName(r) },
+    { key: "name", header: "Name", sortValue: (r) => recordFullName(r), render: (r) => recordFullName(r) },
     {
       key: "dateOfBaptism",
       header: "Bapt. date",
+      sortValue: (r) => r.dateOfBaptism,
       render: (r) => formatRecordDate(r.dateOfBaptism),
     },
     {
       key: "dateOfBirth",
       header: "Birthdate",
+      sortValue: (r) => r.dateOfBirth,
       render: (r) => formatRecordDate(r.dateOfBirth),
     },
-    { key: "mother", header: "Mother", render: (r) => recordMotherName(r) },
-    { key: "father", header: "Father", render: (r) => recordFatherName(r) },
+    { key: "mother", header: "Mother", sortValue: (r) => recordMotherName(r), render: (r) => recordMotherName(r) },
+    { key: "father", header: "Father", sortValue: (r) => recordFatherName(r), render: (r) => recordFatherName(r) },
     {
       key: "actions",
       header: "",
@@ -137,8 +140,8 @@ export function AdminBaptismalRecordsPage() {
       </SearchCriteriaCard>
 
       <AdminTable
-
         loading={loading}
+        pageKey="records"
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}

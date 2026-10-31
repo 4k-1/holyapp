@@ -3,15 +3,18 @@
 @import "../theme/themes/light.css";
 @import "../theme/themes/dark.css";
 @import "../theme/themes/admin.css";
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&family=Source+Sans+3:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Default fonts — parishioner-facing pages */
+/* Parishioner portal and public pages: Inter throughout, as in Healix and the admin console.
+   The sign-in pages keep their own display serif for headings (authDesk.css). */
 :root {
-  --font-serif: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* One soft shadow for cards and the lift under solid buttons, tinted with the deep teal. */
+  --shadow-card: 0 1px 2px 0 rgb(14 59 70 / 0.06), 0 4px 14px -2px rgb(14 59 70 / 0.1);
+  --shadow-button: 0 4px 10px -3px rgb(14 59 70 / 0.35);
 }
 
 /* Admin/staff portal — Inter throughout, titles included, as in Healix */

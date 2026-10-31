@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
+import { AdminRowActions } from "@/components/ui/AdminRowActions";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { addStaffAccount, listStaffAccounts, setStaffAccountStatus, updateStaffAccount } from "../api/staffApi";
@@ -100,6 +101,7 @@ export function StaffAccountsSection() {
     {
       key: "staff",
       header: "Staff member",
+      sortValue: (s) => s.name,
       render: (s) => (
         <div className="flex items-center gap-3">
           <span
@@ -119,10 +121,11 @@ export function StaffAccountsSection() {
         </div>
       ),
     },
-    { key: "role", header: "Role", render: (s) => s.role },
+    { key: "role", header: "Role", sortValue: (s) => s.role, render: (s) => s.role },
     {
       key: "access",
       header: "Access",
+      sortValue: (s) => s.accessRole,
       render: (s) => (
         <AdminBadge tone={s.accessRole === "admin" ? "gold" : "muted"}>
           {s.accessRole === "admin" ? "Admin access" : "Staff access"}
@@ -132,39 +135,25 @@ export function StaffAccountsSection() {
     {
       key: "status",
       header: "Status",
+      sortValue: (s) => s.status,
       render: (s) => <AdminBadge tone={s.status === "Active" ? "green" : "muted"}>{s.status}</AdminBadge>,
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "",
+      className: "w-12 text-right",
       render: (s) => {
         const isSelf = s.email === currentUser?.email;
         return (
-          <div className="inline-flex gap-3">
-            <button
-              onClick={() => openEdit(s)}
-              className="text-admin-support font-semibold text-admin-green-700 hover:underline"
-            >
-              Edit
-            </button>
-            {s.status === "Active" ? (
-              <button
-                onClick={() => setDeactivateTarget(s)}
-                disabled={isSelf}
-                title={isSelf ? "You can't deactivate your own account." : undefined}
-                className="text-admin-support font-semibold text-red-700 hover:underline disabled:cursor-not-allowed disabled:text-admin-ink-faint disabled:no-underline"
-              >
-                Deactivate
-              </button>
-            ) : (
-              <button
-                onClick={() => handleReactivate(s)}
-                className="text-admin-support font-semibold text-admin-green-700 hover:underline"
-              >
-                Reactivate
-              </button>
-            )}
-          </div>
+          <AdminRowActions
+            label={`Actions for ${s.name}`}
+            actions={[
+              { label: "Edit", onSelect: () => openEdit(s) },
+              { label: "Reactivate", onSelect: () => handleReactivate(s), hidden: s.status === "Active" },
+              // You can't lock yourself out, so your own row has no Deactivate.
+              { label: "Deactivate", onSelect: () => setDeactivateTarget(s), danger: true, hidden: s.status !== "Active" || isSelf },
+            ]}
+          />
         );
       },
     },
@@ -194,6 +183,7 @@ export function StaffAccountsSection() {
           columns={columns}
           rows={accounts}
           getRowKey={(s) => s.id}
+          pageKey="staff-accounts"
           emptyMessage="No staff accounts yet. Add your first staff member to get started."
         />
       </AdminCard>
