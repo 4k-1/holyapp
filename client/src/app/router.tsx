@@ -9,6 +9,7 @@ import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 import { GivePage } from "@/features/public/GivePage";
+import { LandingPage } from "@/features/public/LandingPage";
 import { PublicDonatePage } from "@/features/public/PublicDonatePage";
 import { PublicIntentionPage } from "@/features/public/PublicIntentionPage";
 import { ParishLoginPage } from "@/features/auth/pages/ParishLoginPage";
@@ -31,6 +32,10 @@ import { VerifyCertificatePage } from "@/features/verification/VerifyCertificate
 
 
 export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <LandingPage />,
+  },
   {
     path: "/give",
     element: <GivePage />,

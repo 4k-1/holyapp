@@ -1,0 +1,83 @@
+@import url("https://fonts.googleapis.com/css2?family=Young+Serif&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap");
+
+/* HolyApp landing page: logo teal with candle gold. Young Serif for headlines, sturdy and warm;
+   Atkinson Hyperlegible for text, drawn for readers with low vision, which suits older parishioners. */
+.landing {
+  --l-ink: #13262b;
+  --l-muted: #55707a;
+  --l-teal-deep: #0e3b46;
+  --l-teal: #16798c;
+  --l-teal-mid: #2a9d9c;
+  --l-teal-light: #8ed8d2;
+  --l-mist: #e8f5f5;
+  --l-cream: #fbf8f1;
+  --l-gold: #eeb531;
+  --l-gold-soft: #fbefcf;
+  --l-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-sans);
+  background: #ffffff;
+  color: var(--l-ink);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Scoped under .landing so it outranks the app's base h1–h4 font rule. */
+.landing .landing-display {
+  font-family: var(--l-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+/* A soft wash of logo teal and candle gold behind the hero, fading to white. */
+.landing-hero {
+  background:
+    radial-gradient(ellipse 60% 45% at 30% 0%, rgba(142, 216, 210, 0.45), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 75% 5%, rgba(238, 181, 49, 0.18), transparent 70%),
+    #ffffff;
+}
+
+/* The arch behind the laptop, ringed like a chapel window. */
+.landing-arch {
+  background: linear-gradient(180deg, #e8f5f5 0%, #f4fafa 45%, #fdf6e3 100%);
+  box-shadow:
+    0 0 0 18px rgba(232, 245, 245, 0.55),
+    0 0 0 36px rgba(232, 245, 245, 0.3);
+}
+
+/* "cloud." sits on a teal block, set slightly off square like a hand-placed label. */
+.landing-mark {
+  display: inline-block;
+  padding: 0 0.22em 0.04em;
+  background: var(--l-teal);
+  color: #ffffff;
+  border-radius: 0.12em;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 10px 28px -10px rgb(14 59 70 / 0.55);
+}
+
+/* Small scattered marks: crosses, sparkles and rings. */
+.landing-deco {
+  position: absolute;
+  pointer-events: none;
+  animation: landing-float 7s ease-in-out infinite;
+}
+
+.landing-card {
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+.landing-card:hover {
+  transform: translateY(-6px) rotate(0deg) !important;
+}
+
+
+@keyframes landing-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-deco { animation: none; }
+  .landing-card { transition: none; }
+}
