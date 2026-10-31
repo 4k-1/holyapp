@@ -7,7 +7,7 @@ interface AdminCardProps extends HTMLAttributes<HTMLDivElement> {
 export function AdminCard({ children, className = "", ...props }: AdminCardProps) {
   return (
     <div
-      className={`rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_2px_8px_rgba(10,40,30,0.06),0_0_0_1px_rgba(10,40,30,0.03)] ${className}`}
+      className={`rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[var(--shadow-card)] ${className}`}
       {...props}
     >
       {children}

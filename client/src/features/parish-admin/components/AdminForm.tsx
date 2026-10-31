@@ -9,7 +9,7 @@ import type {
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 
 const fieldInputClass =
-  "w-full rounded-[10px] border border-admin-border-strong bg-white px-3.5 py-[11px] text-[0.84375rem] leading-normal text-admin-ink placeholder:text-admin-ink-faint transition-[border-color,box-shadow] focus:border-admin-green-700 focus:outline-none focus:ring-2 focus:ring-admin-green-700/15";
+  "w-full rounded-xl border border-admin-border-strong bg-white px-3.5 py-[10px] text-[0.875rem] leading-normal text-admin-ink placeholder:text-admin-ink-faint transition-[border-color,box-shadow] focus:border-admin-green-700 focus:outline-none focus:ring-[3px] focus:ring-admin-green-100";
 
 const fieldSelectClass = `${fieldInputClass} appearance-none bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-9`;
 
@@ -95,8 +95,8 @@ export function AdminInput({
 type AdminBtnVariant = "primary" | "secondary" | "danger" | "ghost";
 
 const btnVariants: Record<AdminBtnVariant, string> = {
-  primary: "border-transparent bg-admin-green-700 text-white hover:bg-admin-green-600",
-  secondary: "border-admin-border-strong bg-admin-surface text-admin-ink hover:bg-admin-surface-alt",
+  primary: "border-transparent bg-admin-green-700 text-white shadow-[var(--shadow-button)] hover:bg-admin-green-600",
+  secondary: "border-admin-border bg-admin-surface text-admin-ink shadow-[0_1px_2px_rgb(14_59_70/0.05)] hover:border-admin-border-strong hover:bg-admin-surface-alt",
   danger: "border-[#E3C3BC] bg-admin-surface text-admin-red-700 hover:bg-admin-red-100",
   ghost: "border-transparent bg-transparent px-1.5 text-admin-green-700 hover:underline",
 };
@@ -324,11 +324,11 @@ export function AdminButton({
   size?: "sm" | "md";
   children: ReactNode;
 }) {
-  const sizeClass = size === "sm" ? "px-[11px] py-1.5 text-admin-support" : "px-4 py-[9px] text-admin-body";
+  const sizeClass = size === "sm" ? "px-3 py-1.5 text-admin-support" : "px-4 py-2.5 text-admin-body";
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-lg border font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${btnVariants[variant]} ${sizeClass} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-[10px] border font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-admin-green-100 disabled:cursor-not-allowed disabled:opacity-45 ${btnVariants[variant]} ${sizeClass} ${className}`}
       {...props}
     >
       {children}

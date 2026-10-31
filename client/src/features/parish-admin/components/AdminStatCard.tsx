@@ -43,7 +43,7 @@ export function AdminStatCard({ label, value, hint, icon, active = false, onClic
     </>
   );
 
-  const base = "flex w-full flex-col rounded-[var(--radius)] border bg-admin-surface px-4 py-3.5 text-left";
+  const base = "flex w-full flex-col rounded-[var(--radius)] border bg-admin-surface px-4 py-4 text-left shadow-[var(--shadow-card)]";
   if (!onClick) {
     return <div className={`${base} border-admin-border`}>{body}</div>;
   }

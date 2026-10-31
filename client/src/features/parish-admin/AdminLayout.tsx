@@ -10,7 +10,7 @@ import type { Parish } from "@/types";
 export function AdminLayout() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const user = useCurrentUser();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
   const { data: unreadCount = 0, refetch: refetchUnreadNotifications } = useAsync(
     () => getUnreadNotificationCount(parish.id),
     [parish.id]

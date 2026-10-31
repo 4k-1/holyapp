@@ -14,9 +14,9 @@
   --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Admin/staff portal — Plus Jakarta Sans for titles, Inter for body */
+/* Admin/staff portal — Inter throughout, titles included, as in Healix */
 [data-portal="admin"] {
-  --font-serif: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -55,19 +55,20 @@
   --color-admin-amber-700: var(--color-admin-amber-700);
   --color-admin-amber-100: var(--color-admin-amber-100);
 
-  --text-admin-page: 1.5rem;
-  --text-admin-page--line-height: 1.2;
-  --text-admin-section: 1.1875rem;
+  --text-admin-page: 1.875rem;
+  --text-admin-page--line-height: 1.15;
+  --text-admin-page--letter-spacing: -0.02em;
+  --text-admin-section: 1.125rem;
   --text-admin-section--line-height: 1.25;
   --text-admin-group: 0.9375rem;
   --text-admin-group--line-height: 1.3;
   --text-admin-metric: 1.75rem;
   --text-admin-metric--line-height: 1.1;
-  --text-admin-body: 0.84375rem;
+  --text-admin-body: 0.875rem;
   --text-admin-body--line-height: 1.45;
-  --text-admin-support: 0.78125rem;
+  --text-admin-support: 0.8125rem;
   --text-admin-support--line-height: 1.5;
-  --text-admin-label: 0.71875rem;
+  --text-admin-label: 0.75rem;
   --text-admin-label--line-height: 1.35;
   --tracking-admin-label: 0.04em;
 }
