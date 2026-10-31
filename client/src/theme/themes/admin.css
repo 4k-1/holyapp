@@ -13,19 +13,20 @@
   font-family: var(--font-sans);
   caret-color: var(--color-admin-green-700);
 
-  --color-admin-bg: #f4f6f6;
+  /* Teal from the HolyApp logo. Tokens keep their "green" names so components need no changes. */
+  --color-admin-bg: #f2f7f8;
   --color-admin-surface: #ffffff;
-  --color-admin-surface-alt: #f0f3f3;
-  --color-admin-border: #e6ebec;
-  --color-admin-border-strong: #cdd6d8;
-  --color-admin-ink: #172d31;
-  --color-admin-ink-muted: #5a6d71;
-  --color-admin-ink-faint: #8a9a9e;
-  --color-admin-green-900: #172d31;
-  --color-admin-green-700: #3f8f38;
-  --color-admin-green-600: #2f6f2a;
-  --color-admin-green-100: #c8e9c6;
-  --color-admin-green-050: #e6f4e6;
+  --color-admin-surface-alt: #edf4f5;
+  --color-admin-border: #e0e9eb;
+  --color-admin-border-strong: #c6d5d8;
+  --color-admin-ink: #15323a;
+  --color-admin-ink-muted: #55707a;
+  --color-admin-ink-faint: #8ba1a7;
+  --color-admin-green-900: #0e3b46;
+  --color-admin-green-700: #16798c;
+  --color-admin-green-600: #11616f;
+  --color-admin-green-100: #cfeaea;
+  --color-admin-green-050: #e8f5f5;
   --color-admin-gold-700: #8a6418;
   --color-admin-gold-600: #f9c96c;
   --color-admin-gold-100: #fef6e4;
@@ -42,21 +43,21 @@
   color: var(--color-admin-green-900);
 }
 
-/* Super-admin HTML: forest green + gold, Inter 800. Parish admin keeps the ReadyTask green set above. */
+/* Super-admin console: the same HolyApp teal with gold, Inter 800. */
 [data-portal="admin"][data-surface="platform"] {
-  --color-admin-bg: #f6f8f6;
+  --color-admin-bg: #f2f7f8;
   --color-admin-surface: #ffffff;
-  --color-admin-surface-alt: #f4f6f4;
-  --color-admin-border: #e6ebe6;
-  --color-admin-border-strong: #cfd6cf;
-  --color-admin-ink: #1c2621;
-  --color-admin-ink-muted: #5b6b63;
-  --color-admin-ink-faint: #8a988f;
-  --color-admin-green-900: #1f4d33;
-  --color-admin-green-700: #2f6b45;
-  --color-admin-green-600: #3a7d52;
-  --color-admin-green-100: #e7f2ea;
-  --color-admin-green-050: #e7f2ea;
+  --color-admin-surface-alt: #edf4f5;
+  --color-admin-border: #e0e9eb;
+  --color-admin-border-strong: #c6d5d8;
+  --color-admin-ink: #15323a;
+  --color-admin-ink-muted: #55707a;
+  --color-admin-ink-faint: #8ba1a7;
+  --color-admin-green-900: #0e3b46;
+  --color-admin-green-700: #16798c;
+  --color-admin-green-600: #11616f;
+  --color-admin-green-100: #e3f2f2;
+  --color-admin-green-050: #e8f5f5;
   --color-admin-gold-700: #8a5f00;
   --color-admin-gold-600: #f2b632;
   --color-admin-gold-100: #fdf1d6;

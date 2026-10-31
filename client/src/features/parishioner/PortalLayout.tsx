@@ -21,7 +21,7 @@ export function PortalLayout() {
   const userInitials = user ? getInitials(user.fullName) : "P";
 
   return (
-    <div className="min-h-screen bg-[#f8f6f1]">
+    <div className="min-h-screen bg-surface-alt">
       <Navbar parish={parish} userInitials={userInitials} userName={userName} />
       <main>
         <Outlet context={{ parish }} />

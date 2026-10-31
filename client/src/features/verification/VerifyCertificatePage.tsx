@@ -44,7 +44,7 @@ const statusCopy: Record<Verification["status"], { title: string; detail: string
   valid: {
     title: "Valid certificate",
     detail: "This certificate is the current extract from the parish register.",
-    tone: "border-[#1a3d2b]/20 text-[#1a3d2b]",
+    tone: "border-primary/20 text-primary",
   },
   superseded: {
     title: "Superseded certificate",

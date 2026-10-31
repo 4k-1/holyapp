@@ -1,20 +1,20 @@
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap");
 
-/* Sign-in pages: parish green, warm ivory, fine gold detailing, and a liturgical serif for headings. */
+/* Sign-in pages: HolyApp teal, a soft cool white, fine gold detailing, and a liturgical serif for headings. */
 .auth-desk {
-  --auth-bg: #f4f6f6;
+  --auth-bg: #f2f7f8;
   --auth-card: #ffffff;
-  --auth-ink: #172d31;
-  --auth-ink-soft: #5a6d71;
-  --auth-ink-faint: #8a9a9e;
-  --auth-border: #e6ebec;
-  --auth-border-strong: #cdd6d8;
-  --auth-green: #1f4a3a;
-  --auth-green-deep: #172d31;
-  --auth-green-soft: #e8f0ec;
+  --auth-ink: #15323a;
+  --auth-ink-soft: #55707a;
+  --auth-ink-faint: #8ba1a7;
+  --auth-border: #e0e9eb;
+  --auth-border-strong: #c6d5d8;
+  --auth-green: #0e4a57;
+  --auth-green-deep: #0e3b46;
+  --auth-green-soft: #e8f5f5;
   --auth-shadow: 0 1px 2px rgba(23, 45, 49, 0.04), 0 12px 32px rgba(23, 45, 49, 0.06);
-  --auth-ivory: #fbf9f4;
-  --auth-warm-border: #ddd6c8;
+  --auth-ivory: #f7fafa;
+  --auth-warm-border: #d6e3e5;
   --auth-gold: #c9a24a;
   --auth-gold-soft: rgba(233, 196, 120, 0.55);
   --auth-display: "Cormorant Garamond", "EB Garamond", Georgia, "Times New Roman", serif;
@@ -309,11 +309,11 @@
   position: relative;
   overflow: hidden;
   color: #fff;
-  /* Deep parish green with a warm light falling from above, like light through a chapel window. */
+  /* Deep HolyApp teal with a warm light falling from above, like light through a chapel window. */
   background:
     radial-gradient(55% 38% at 50% -4%, rgba(246, 214, 150, 0.26), transparent 72%),
     radial-gradient(90% 60% at 50% 110%, rgba(8, 22, 17, 0.75), transparent 70%),
-    linear-gradient(180deg, #21503e 0%, #183a30 52%, #10261f 100%);
+    linear-gradient(180deg, #17707f 0%, #0f5262 52%, #0a3a46 100%);
 }
 
 /* The panel stays in view at full screen height while a long form (sign-up) scrolls beside it. */
