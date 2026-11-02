@@ -50,8 +50,11 @@ export function AdminSidebar({ role, collapsed, unreadCount = 0 }: AdminSidebarP
 
   return (
     <aside
+      // On phones the sidebar leaves the page entirely when collapsed and slides over it when open.
       className={`flex h-full flex-shrink-0 flex-col bg-admin-surface text-admin-ink border-r border-admin-border transition-[width] duration-200 ${
-        collapsed ? "w-[72px]" : "w-[248px]"
+        collapsed
+          ? "w-[72px] max-sm:invisible max-sm:w-0 max-sm:border-r-0"
+          : "w-[248px] max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:top-16 max-sm:z-40 max-sm:h-auto max-sm:shadow-[0_12px_40px_rgb(14_59_70/0.25)]"
       }`}
     >
       {/* Nav */}
