@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Outlet, useOutletContext } from "react-router-dom";
+import { PageEnter } from "@/components/ui/PageEnter";
 import { AdminSidebar } from "@/features/parish-admin/components/AdminSidebar";
 import { AdminTopbar } from "@/features/parish-admin/components/AdminTopbar";
 import { getUnreadNotificationCount } from "@/features/parish-admin/notifications/api/notificationsApi";
@@ -31,7 +32,9 @@ export function AdminLayout() {
       <div className="flex flex-1 overflow-hidden">
         <AdminSidebar role={user.role} collapsed={sidebarCollapsed} unreadCount={unreadCount} />
         <main className="flex-1 overflow-y-auto p-6">
-          <Outlet context={{ parish, refetchUnreadNotifications }} />
+          <PageEnter>
+            <Outlet context={{ parish, refetchUnreadNotifications }} />
+          </PageEnter>
         </main>
       </div>
     </div>

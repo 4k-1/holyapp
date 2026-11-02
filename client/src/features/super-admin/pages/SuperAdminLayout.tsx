@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { PageEnter } from "@/components/ui/PageEnter";
 import { logout } from "@/features/auth/api/authApi";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { SuperAdminSidebar } from "@/features/super-admin/components/SuperAdminSidebar";
@@ -67,7 +68,9 @@ function SuperAdminShell() {
               {heading.sub ? <p className="mt-[3px] text-[12.8px] text-admin-ink-muted">{heading.sub}</p> : null}
             </header>
           ) : null}
-          <Outlet />
+          <PageEnter>
+            <Outlet />
+          </PageEnter>
         </main>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { Outlet, useOutletContext } from "react-router-dom";
+import { PageEnter } from "@/components/ui/PageEnter";
 import { Navbar } from "@/components/layout/Navbar";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import type { Parish } from "@/types";
@@ -24,7 +25,9 @@ export function PortalLayout() {
     <div className="min-h-screen bg-surface-alt">
       <Navbar parish={parish} userInitials={userInitials} userName={userName} />
       <main>
-        <Outlet context={{ parish }} />
+        <PageEnter>
+          <Outlet context={{ parish }} />
+        </PageEnter>
       </main>
     </div>
   );
