@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router-dom";
 import { router } from "@/app/router";
 import { ConfirmHost } from "@/components/ui/ConfirmHost";
 import { LoadingBar } from "@/components/ui/LoadingBar";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { Notices } from "@/components/ui/Notices";
 import { validateSession } from "@/features/auth/api/authApi";
 import { bindEnterAdvancesField } from "@/lib/enterAdvancesField";
@@ -23,11 +24,7 @@ export function App() {
   useEffect(() => bindEnterAdvancesField(), []);
 
   if (!ready) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#f4f6f6] text-sm text-[#5a6d71]">
-        Loading…
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

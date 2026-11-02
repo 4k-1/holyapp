@@ -1,4 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { ParishLayout } from "@/features/parish/ParishLayout";
 import { parishLayoutLoader } from "@/features/parish/parish-loader";
 import { parishionerRoutes } from "@/features/parishioner/routes";
@@ -84,6 +85,7 @@ export const router = createBrowserRouter([
     path: "/super-admin",
     element: <SuperAdminLayout />,
     loader: requireSuperAdmin,
+    hydrateFallbackElement: <PageLoader />,
     children: [
       { index: true, element: <SuperAdminDashboardPage /> },
       { path: "parishes", element: <SuperAdminParishesPage /> },
@@ -99,17 +101,20 @@ export const router = createBrowserRouter([
     path: "/:parishSlug",
     element: <ParishLayout />,
     loader: parishLayoutLoader,
+    hydrateFallbackElement: <PageLoader />,
     children: [
       { path: "login", element: <ParishLoginPage /> },
       { path: "register", element: <ParishRegisterPage /> },
       {
         path: "portal",
         loader: requireRole(["parishioner"]),
+        hydrateFallbackElement: <PageLoader />,
         children: parishionerRoutes,
       },
       {
         path: "admin",
         loader: requireRole(["parish_admin", "parish_staff"]),
+        hydrateFallbackElement: <PageLoader />,
         children: parishAdminRoutes,
       },
     ],

@@ -108,3 +108,71 @@ button{
   .loading-bar { animation-duration: 3s; }
   .notice-in { animation: none; }
 }
+
+/* Full-screen loading state (components/ui/PageLoader). */
+.page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 50% 45% at 15% 85%, rgba(142, 216, 210, 0.28), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 85% 15%, rgba(238, 181, 49, 0.12), transparent 70%),
+    #f8fbfb;
+  animation: page-loader-in 0.3s ease-out 0.15s both;
+}
+.page-loader__mark {
+  position: relative;
+  width: 9rem;
+  height: 9rem;
+}
+.page-loader__ring {
+  position: absolute;
+  inset: 0;
+  animation: page-loader-spin 1.2s linear infinite;
+}
+.page-loader__track {
+  fill: none;
+  stroke: #cfeaea;
+  stroke-width: 3;
+}
+.page-loader__arc {
+  fill: none;
+  stroke: #16798c;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 70 352;
+}
+.page-loader__logo {
+  position: absolute;
+  inset: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 10px 30px -10px rgba(14, 59, 70, 0.35);
+  animation: page-loader-breathe 2.4s ease-in-out infinite;
+}
+.page-loader__logo img {
+  width: 64%;
+  height: 64%;
+  object-fit: contain;
+}
+@keyframes page-loader-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes page-loader-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes page-loader-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-loader__ring { animation-duration: 3s; }
+  .page-loader__logo { animation: none; }
+}
