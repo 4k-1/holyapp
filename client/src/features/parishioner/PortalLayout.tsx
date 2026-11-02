@@ -3,6 +3,7 @@ import { PageEnter } from "@/components/ui/PageEnter";
 import { Navbar } from "@/components/layout/Navbar";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import type { Parish } from "@/types";
+import "./portal.css";
 
 function getInitials(fullName: string): string {
   return fullName
@@ -22,7 +23,7 @@ export function PortalLayout() {
   const userInitials = user ? getInitials(user.fullName) : "P";
 
   return (
-    <div className="min-h-screen bg-surface-alt">
+    <div className="parishioner-portal min-h-screen bg-surface-alt">
       <Navbar parish={parish} userInitials={userInitials} userName={userName} />
       <main>
         <PageEnter>

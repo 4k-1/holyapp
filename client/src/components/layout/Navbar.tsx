@@ -24,6 +24,15 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
       <div className="mx-auto flex h-[64px] max-w-6xl items-center justify-between gap-3 px-4 sm:h-[68px] sm:px-6">
         {/* ⬇️ THIS is the block that got replaced */}
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <Link
+            to="."
+            title="HolyApp"
+            aria-label="HolyApp, back to your dashboard"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm sm:h-9 sm:w-9"
+          >
+            <img src="/holyapp-logo.webp" alt="" className="h-7 w-7 sm:h-8 sm:w-8" />
+          </Link>
+          <span className="h-7 w-px shrink-0 bg-white/25" aria-hidden="true" />
           {parish.sealUrl ? (
             <img
               src={parish.sealUrl}

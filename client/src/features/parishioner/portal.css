@@ -1,0 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap");
+
+/* Parishioner portal: page titles and card headings (the font-serif ones) in the same warm serif as the public
+   giving pages. DM Serif Display has one weight and is heavy on its own, so it is never bolded further. */
+.parishioner-portal .font-serif {
+  font-family: "DM Serif Display", ui-serif, Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}
