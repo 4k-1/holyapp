@@ -1,6 +1,5 @@
 // src/features/parish-admin/settings/components/MassScheduleSection.tsx
 import { useState } from "react";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import {
   addRecurringCommitment,
@@ -12,6 +11,7 @@ import { convert24to12, parseTimeToMinutes, to24Hour } from "@/features/parish-a
 import type { DayAbbrev, RecurringCommitment } from "@/features/parish-admin/schedule/types";
 import { useAsync } from "@/hooks/useAsync";
 import { askConfirm, notifyError } from "@/lib/notify";
+import { SettingsPanel, SettingsPillButton } from "./SettingsUI";
 
 const DAYS: { key: DayAbbrev; label: string }[] = [
   { key: "Sun", label: "Sunday" },
@@ -80,13 +80,19 @@ export function MassScheduleSection() {
   }
 
   return (
-    <AdminCard className="p-5 px-[22px]">
-      <h2 className="mb-1 font-serif text-admin-section font-semibold text-admin-ink">Mass Schedule</h2>
-      <p className="mb-5 text-admin-body text-admin-ink-muted">
-        The parish&apos;s regular Mass times. They are not listed as events on the Schedule page, but they set the Masses
-        people can offer intentions for, and nothing else can be booked over them.
-      </p>
-
+    <SettingsPanel
+      title="Regular Masses"
+      description="These aren't listed as events on the Schedule page."
+      action={
+        editingId !== "new" &&
+        !loading &&
+        !error && (
+          <AdminButton size="sm" className="rounded-full" onClick={() => setEditingId("new")}>
+            + Add Mass times
+          </AdminButton>
+        )
+      }
+    >
       {notice && (
         <p className="mb-4 rounded-lg bg-admin-green-100 px-3.5 py-2.5 text-admin-body font-semibold text-admin-green-900" role="status">
           {notice}
@@ -107,39 +113,55 @@ export function MassScheduleSection() {
             ) : (
               <div
                 key={rc.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-admin-border bg-admin-surface-alt px-4 py-3.5"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-admin-border px-4 py-3.5"
               >
-                <div className="min-w-0">
-                  <p className="font-serif text-[1.0625rem] font-semibold text-admin-ink">{rc.label}</p>
-                  <p className="mt-0.5 text-admin-body text-admin-ink">{daysText(rc.days)}</p>
-                  <p className="mt-0.5 text-admin-body font-semibold tabular-nums text-admin-green-800">{timesText(rc)}</p>
+                <div className="flex min-w-0 items-center gap-3.5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-admin-green-100 text-admin-green-700">
+                    <ClockIcon />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-admin-body font-semibold text-admin-ink">{rc.label}</p>
+                    <p className="mt-0.5 text-admin-support text-admin-ink-muted">
+                      {daysText(rc.days)} ·{" "}
+                      <span className="font-semibold tabular-nums text-admin-green-800">{timesText(rc)}</span>
+                    </p>
+                  </div>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  <AdminButton variant="secondary" onClick={() => setEditingId(rc.id)}>
-                    Change
-                  </AdminButton>
-                  <AdminButton variant="secondary" onClick={() => handleRemove(rc)}>
+                  <SettingsPillButton onClick={() => setEditingId(rc.id)} disabled={editingId !== null}>
+                    Edit
+                  </SettingsPillButton>
+                  <SettingsPillButton
+                    icon={null}
+                    onClick={() => handleRemove(rc)}
+                    className="hover:!border-admin-red-700 hover:!text-admin-red-700"
+                  >
                     Remove
-                  </AdminButton>
+                  </SettingsPillButton>
                 </div>
               </div>
             )
           )}
 
           {masses.length === 0 && editingId !== "new" && (
-            <p className="rounded-[10px] border border-dashed border-admin-border-strong px-4 py-6 text-center text-admin-body text-admin-ink-muted">
-              No regular Masses yet. Add the parish&apos;s first Mass time below.
+            <p className="rounded-xl border border-dashed border-admin-border-strong px-4 py-6 text-center text-admin-body text-admin-ink-muted">
+              No regular Masses yet. Use Add Mass times to set the first one.
             </p>
           )}
 
-          {editingId === "new" ? (
-            <MassScheduleForm onCancel={() => setEditingId(null)} onSaved={handleSaved} />
-          ) : (
-            <AdminButton onClick={() => setEditingId("new")}>Add Mass times</AdminButton>
-          )}
+          {editingId === "new" && <MassScheduleForm onCancel={() => setEditingId(null)} onSaved={handleSaved} />}
         </div>
       )}
-    </AdminCard>
+    </SettingsPanel>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-[18px] w-[18px]" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -194,7 +216,7 @@ function MassScheduleForm({
   }
 
   return (
-    <div className="rounded-[10px] border border-admin-green-600/40 bg-admin-surface px-4 py-4">
+    <div className="rounded-xl border border-admin-green-600 bg-admin-green-050 px-4 py-4">
       <div className="space-y-4">
         <AdminField label="Name">
           <AdminInput value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Sunday Mass" />

@@ -1,7 +1,6 @@
 // src/features/parish-admin/settings/components/StaffAccountsSection.tsx
 import { useEffect, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminRowActions } from "@/components/ui/AdminRowActions";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
@@ -12,6 +11,7 @@ import { StaffAccountModal } from "./StaffAccountModal";
 import type { NewStaffInput, StaffAccount, StaffRole } from "../types";
 import { notifyError } from "@/lib/notify";
 import { SkeletonList } from "@/components/ui/Skeleton";
+import { SettingsPanel } from "./SettingsUI";
 
 const ROLE_AVATAR_STYLES: Record<StaffRole, string> = {
   Priest: "bg-admin-gold-100 text-admin-gold-700",
@@ -161,23 +161,17 @@ export function StaffAccountsSection() {
 
   return (
     <>
-      <AdminCard className="overflow-hidden p-0">
-        <div className="flex items-start justify-between gap-3 px-[22px] py-5">
-          <div>
-            <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Staff Accounts</h2>
-            <p className="mt-1 text-admin-support text-admin-ink-muted">
-              People who can sign in to this parish's admin console.
-            </p>
-            <p className="mt-1.5 text-admin-label text-admin-ink-faint">
-              {accounts.length} account{accounts.length === 1 ? "" : "s"} · {activeCount} active ·{" "}
-              {adminCount} with admin access
-            </p>
-          </div>
-          <AdminButton size="sm" onClick={openAdd} className="shrink-0">
+      <SettingsPanel
+        title="Accounts"
+        description={`${accounts.length} account${accounts.length === 1 ? "" : "s"} · ${activeCount} active · ${adminCount} with admin access`}
+        action={
+          <AdminButton size="sm" onClick={openAdd} className="rounded-full">
             <PlusIcon />
             Add staff account
           </AdminButton>
-        </div>
+        }
+        flush
+      >
 
         <AdminTable
           columns={columns}
@@ -186,7 +180,7 @@ export function StaffAccountsSection() {
           pageKey="staff-accounts"
           emptyMessage="No staff accounts yet. Add your first staff member to get started."
         />
-      </AdminCard>
+      </SettingsPanel>
 
       {modalMode && (
         <StaffAccountModal

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { CandleIcon, DoveIcon, DropletIcon, HeartIcon } from "@/components/ui/icons/SacramentIcons";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import {
   CertificateDocument,
   type CertificateFields,
@@ -14,6 +13,7 @@ import type { CertificateAppearance, CertificateConfigBySacrament } from "../typ
 import type { Parish, SacramentType } from "@/types";
 import { notifyError } from "@/lib/notify";
 import { SkeletonList } from "@/components/ui/Skeleton";
+import { SettingsPanel } from "./SettingsUI";
 
 const SACRAMENTS: {
   type: SacramentType;
@@ -155,24 +155,20 @@ export function CertificateConfigSection() {
 
   return (
     <div className="selection:bg-admin-green-100 selection:text-admin-ink">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-[54ch]">
-          <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Certificate Configuration</h2>
-          <p className="mt-1 text-admin-support leading-relaxed text-admin-ink-muted">
-            How each issued certificate looks: who signs it, what it says at the foot, and how it is numbered.
-            Parish name and seal come from the parish record.{" "}
-            <Link to="../fees" className="font-semibold text-admin-green-700 hover:underline">
-              Certificate fees
-            </Link>{" "}
-            stay under Service Fees.
-          </p>
-        </div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-[54ch] text-admin-support text-admin-ink-muted">
+          Parish name and seal come from the parish profile.{" "}
+          <Link to="../fees" className="font-semibold text-admin-green-700 hover:underline">
+            Certificate fees
+          </Link>{" "}
+          are under Service Fees.
+        </p>
         <div className="flex shrink-0 items-center gap-2.5">
           {justSaved && !dirty && <span className="text-admin-support text-admin-green-700">Saved</span>}
-          <AdminButton variant="secondary" onClick={cancelEditing} disabled={saving || !dirty}>
+          <AdminButton variant="secondary" className="rounded-full" onClick={cancelEditing} disabled={saving || !dirty}>
             Cancel
           </AdminButton>
-          <AdminButton onClick={handleSave} disabled={saving || !dirty}>
+          <AdminButton className="rounded-full" onClick={handleSave} disabled={saving || !dirty}>
             {saving ? "Saving…" : "Save changes"}
           </AdminButton>
         </div>
@@ -181,7 +177,7 @@ export function CertificateConfigSection() {
       <div
         role="tablist"
         aria-label="Sacrament"
-        className="mb-5 flex flex-wrap gap-1 rounded-[10px] border border-admin-border bg-admin-surface p-1"
+        className="mb-5 flex flex-wrap gap-1 rounded-2xl bg-admin-surface-alt p-1"
       >
         {SACRAMENTS.map(({ type, label, Icon }) => {
           const selected = activeType === type;
@@ -199,10 +195,10 @@ export function CertificateConfigSection() {
                 setErrors({});
                 setSaveError("");
               }}
-              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-admin-body font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
+              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-admin-body font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
                 selected
-                  ? "bg-admin-green-100 text-admin-green-900"
-                  : "text-admin-ink-muted hover:bg-admin-surface-alt hover:text-admin-ink"
+                  ? "bg-admin-surface text-admin-green-800 shadow-sm"
+                  : "text-admin-ink-muted hover:text-admin-ink"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -225,9 +221,9 @@ export function CertificateConfigSection() {
         id="certificate-config-panel"
         role="tabpanel"
         aria-labelledby={`certificate-tab-${activeType}`}
-        className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]"
+        className="grid grid-cols-1 items-start gap-4 2xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]"
       >
-        <AdminCard className="p-5 px-[22px]">
+        <SettingsPanel title="Appearance" description="Applies to this sacrament's certificates.">
           <AdminField label="Signatory name">
             <AdminInput
               value={appearance.signatoryName}
@@ -288,13 +284,9 @@ export function CertificateConfigSection() {
               Shown above the register reference. Leave blank to hide it.
             </p>
           </AdminField>
-        </AdminCard>
+        </SettingsPanel>
 
-        <div>
-          <div className="mb-2 flex items-baseline justify-between gap-3">
-            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Preview</h3>
-            <p className="text-admin-support text-admin-ink-muted">Sample names only — not an issued certificate.</p>
-          </div>
+        <SettingsPanel title="Preview" description="Sample names only — not an issued certificate.">
           <CertificateDocument
             parish={parish}
             sacramentType={activeType}
@@ -302,7 +294,7 @@ export function CertificateConfigSection() {
             fields={previewFields}
             appearance={appearance}
           />
-        </div>
+        </SettingsPanel>
       </div>
     </div>
   );
