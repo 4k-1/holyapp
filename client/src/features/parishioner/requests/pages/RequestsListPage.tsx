@@ -80,7 +80,7 @@ export function RequestsListPage() {
               <path d="M14 3v5h5M9 13h6M9 17h4" />
             </svg>
           </span>
-          <h2 className="mt-4 font-serif text-[1.375rem] text-ink">No requests yet</h2>
+          <h2 className="mt-4 font-serif text-[1.375rem] font-bold text-ink">No requests yet</h2>
           <p className="mx-auto mt-1.5 max-w-sm text-[0.9375rem] text-ink-muted">
             Ask the parish for a baptism, confirmation, marriage or death certificate. You can follow every step here.
           </p>

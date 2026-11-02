@@ -114,7 +114,7 @@ export function RequestDetailCard({ request, parishSlug, highlight = false }: Re
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
               <div className="min-w-0">
-                <h3 className="font-serif text-[1.1875rem] leading-snug text-ink sm:text-[1.3125rem]">
+                <h3 className="font-serif text-[1.125rem] font-bold leading-snug text-ink sm:text-[1.25rem]">
                   {SACRAMENT_TITLES[request.sacramentType]}
                 </h3>
                 {subject && <p className="text-[0.9375rem] text-ink">for {subject}</p>}

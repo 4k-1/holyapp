@@ -178,7 +178,7 @@ export function NewRequestWizard() {
         ) : (
           <>
             <div className="px-5 pt-6 sm:px-8 sm:pt-8">
-              <h2 ref={headingRef} tabIndex={-1} className="font-serif text-[1.5rem] leading-tight text-ink outline-none sm:text-[1.75rem]">
+              <h2 ref={headingRef} tabIndex={-1} className="font-serif text-[1.5rem] font-bold leading-tight text-ink outline-none sm:text-[1.75rem]">
                 {meta.title}
               </h2>
               <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-ink-muted">{meta.hint}</p>

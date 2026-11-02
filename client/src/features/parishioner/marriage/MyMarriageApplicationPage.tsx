@@ -40,7 +40,7 @@ export function MyMarriageApplicationPage() {
                   <p className="font-serif text-lg font-bold text-ink">
                     {app.groomName} & {app.brideName}
                   </p>
-                  <span className="rounded-full bg-[#dbe6ee] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-[#33607e]">
+                  <span className="rounded-full bg-[#dbe6ee] px-3 py-1.5 text-[12px] font-bold text-[#33607e]">
                     {STATUS_LABEL[app.status] || app.status}
                   </span>
                 </div>

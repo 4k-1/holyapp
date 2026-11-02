@@ -46,12 +46,12 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
           )}
           <div className="min-w-0 leading-tight">
             <div
-              className="truncate font-serif text-[14px] font-semibold leading-tight sm:line-clamp-2 sm:max-w-[280px] sm:text-[12.5px] sm:whitespace-normal lg:max-w-[420px]"
+              className="truncate font-serif text-[14px] font-semibold leading-tight sm:line-clamp-2 sm:max-w-[280px] sm:text-[13.5px] sm:whitespace-normal lg:max-w-[420px]"
               title={parish.name}
             >
               {parish.name}
             </div>
-            <div className="mt-0.5 truncate text-[9px] uppercase tracking-wide text-white/60">
+            <div className="mt-0.5 truncate text-[11px] font-semibold uppercase tracking-wide text-white/75">
               Parishioner Portal
             </div>
           </div>

@@ -1,8 +1,22 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Atkinson+Hyperlegible+Next:wght@400;500;600;700;800&display=swap");
 
-/* Parishioner portal: page titles and card headings (the font-serif ones) in the same warm serif as the public
-   giving pages. DM Serif Display has one weight and is heavy on its own, so it is never bolded further. */
-.parishioner-portal .font-serif {
+/* Parishioner portal: Atkinson Hyperlegible Next for everything, drawn for readers with low vision, which suits
+   older parishioners; it also keeps look-alikes such as I, l, 1, O and 0 apart in reference codes. */
+.parishioner-portal {
+  --font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-sans);
+  font-family: var(--font-sans);
+}
+
+/* A step darker than the app's muted grey, so meta lines stay readable on white and the pale teal page. */
+[data-theme="light"] .parishioner-portal {
+  --color-ink-muted: #44606a;
+}
+
+/* Page titles only keep the warm serif of the public giving pages. DM Serif Display is a display face with
+   hairline strokes, so smaller headings and card titles stay in the sans, where they read better. It has one
+   weight and is heavy on its own, so it is never bolded further. */
+.parishioner-portal h1.font-serif {
   font-family: "DM Serif Display", ui-serif, Georgia, serif;
   font-weight: 400;
   letter-spacing: -0.005em;

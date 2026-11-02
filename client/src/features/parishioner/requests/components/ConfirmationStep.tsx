@@ -25,7 +25,7 @@ export function ConfirmationStep() {
         </div>
       </div>
 
-      <h2 className="mb-1.5 font-serif text-[1.75rem] leading-tight text-ink">Request sent</h2>
+      <h2 className="mb-1.5 font-serif text-[1.75rem] font-bold leading-tight text-ink">Request sent</h2>
       <p className="mx-auto mb-6 max-w-sm text-sm text-ink-muted">
         Staff will now look for the entry in the parish register. We'll email you at each step, and once they find it you can pay the fee through GCash.
       </p>
@@ -44,7 +44,7 @@ export function ConfirmationStep() {
                 {isCurrent && <span className="h-[8px] w-[8px] rounded-full bg-primary" />}
               </div>
               <span
-                className={`text-center text-[11px] leading-tight ${
+                className={`text-center text-[12px] leading-tight ${
                   isCurrent ? "font-bold text-primary" : "text-ink-muted"
                 }`}
               >

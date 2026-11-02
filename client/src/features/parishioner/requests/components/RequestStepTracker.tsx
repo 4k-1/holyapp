@@ -51,7 +51,7 @@ export function RequestStepTracker({ request }: { request: CertificateRequest })
               ) : null}
             </span>
             <span
-              className={`mt-1.5 px-0.5 text-center text-[0.6875rem] leading-tight sm:text-[0.75rem] ${
+              className={`mt-1.5 px-0.5 text-center text-[0.75rem] leading-tight sm:text-[0.8125rem] ${
                 isRejectedNode
                   ? "font-semibold text-danger"
                   : isCurrent

@@ -89,7 +89,7 @@ export function DashboardPage({ parishId, parishSlug, userName }: DashboardPageP
                   </p>
                 </div>
                 <span
-                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide ${getStatusPillClasses(
+                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[12px] font-bold ${getStatusPillClasses(
                     request
                   )}`}
                 >
