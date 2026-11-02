@@ -53,10 +53,7 @@ export function PublicIntentionPage() {
   }, [result, returnedId, parishSlug, setSearchParams]);
 
   return (
-    <PublicGiveShell
-      title="Request a Mass intention"
-      description="Offer a Mass for someone: in thanksgiving, for healing, or in memory of a loved one. No account needed, and a donation is welcome but not required."
-    >
+    <PublicGiveShell mode="intention">
       {(parish) =>
         phase === "checking" ? (
           <PortalPending>Confirming your donation with GCash…</PortalPending>

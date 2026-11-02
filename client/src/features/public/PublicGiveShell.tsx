@@ -1,22 +1,27 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { getParishBySlug } from "@/features/parish/parishApi";
+import { ChurchList, ChurchPicker, GiveModeTabs, GivePanel, GiveSite, type GiveMode } from "@/features/public/PublicGiveLayout";
 import type { Parish } from "@/types";
 
+const COPY: Record<GiveMode, { title: string; description: string }> = {
+  donate: {
+    title: "Donate now",
+    description: "Your gift keeps the parish's ministries, upkeep and outreach going. Pay securely through GCash; no account needed.",
+  },
+  intention: {
+    title: "Offer a Mass",
+    description: "In thanksgiving, for healing, or in memory of a loved one. No account needed, and a donation is optional.",
+  },
+};
+
 /**
- * Frame for the signed-out giving pages: loads the parish from the URL, shows its seal and name, and hands the
- * parish to the page. Visitors can give or request a Mass without an account.
+ * Frame for the signed-out giving pages: loads the parish from the URL and hands it to the page's form, under the
+ * donate / Mass switch and the church picker. Visitors need no account.
  */
-export function PublicGiveShell({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: (parish: Parish) => ReactNode;
-}) {
+export function PublicGiveShell({ mode, children }: { mode: GiveMode; children: (parish: Parish) => ReactNode }) {
   const { parishSlug } = useParams();
+  const navigate = useNavigate();
   const [parish, setParish] = useState<Parish | null | undefined>(undefined);
 
   useEffect(() => {
@@ -31,48 +36,38 @@ export function PublicGiveShell({
 
   if (parish === undefined) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface-alt px-4 text-center">
-        <p className="text-sm text-ink-muted">Loading…</p>
-      </div>
+      <GiveSite>
+        <p className="py-24 text-center text-white/80">Loading…</p>
+      </GiveSite>
     );
   }
 
   if (!parish) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface-alt px-4 text-center">
-        <p className="text-sm text-ink-muted">Parish not found. Check the link and try again.</p>
-      </div>
+      <GiveSite>
+        <GivePanel title="We couldn't find that church" description="The link may be old or mistyped. Search for your church to continue.">
+          <div className="pt-5">
+            <ChurchList autoFocus onSelect={(next) => navigate(`/give/${next.slug}/${mode}`)} />
+          </div>
+        </GivePanel>
+      </GiveSite>
     );
   }
 
   return (
-    <div className="min-h-screen bg-surface-alt px-4 py-10 sm:px-6">
-      <div className="mx-auto max-w-xl">
-        <div className="mb-7 flex flex-col items-center text-center">
-          {parish.sealUrl ? (
-            <img
-              src={parish.sealUrl}
-              alt=""
-              className="mb-3 h-16 w-16 rounded-full border border-border bg-white object-contain shadow-sm"
-            />
-          ) : (
-            <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 font-serif text-2xl font-bold text-primary shadow-sm">
-              {parish.name.charAt(0)}
-            </div>
-          )}
-          <p className="text-sm font-medium text-ink-muted">{parish.name}</p>
-          <h1 className="mt-2 font-serif text-[1.75rem] font-bold leading-tight text-ink">{title}</h1>
-          <p className="mt-2 max-w-md text-[0.9375rem] leading-relaxed text-ink-muted">{description}</p>
-        </div>
+    <GiveSite parish={parish}>
+      <GivePanel
+        title={COPY[mode].title}
+        description={COPY[mode].description}
+        controls={
+          <>
+            <GiveModeTabs mode={mode} hrefFor={(m) => `/give/${parish.slug}/${m}`} />
+            <ChurchPicker parish={parish} mode={mode} />
+          </>
+        }
+      >
         {children(parish)}
-        <p className="mt-6 text-center text-[0.8125rem] text-ink-muted">
-          Have a parish account?{" "}
-          <Link to={`/${parish.slug}/login`} className="font-semibold text-primary hover:underline">
-            Sign in
-          </Link>{" "}
-          to keep track of your gifts and requests.
-        </p>
-      </div>
-    </div>
+      </GivePanel>
+    </GiveSite>
   );
 }

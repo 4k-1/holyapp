@@ -34,7 +34,7 @@ export function PortalFormPage({
 
 export function PortalFormCard({ children }: { children: ReactNode }) {
   return (
-    <div className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-[0_1px_2px_rgba(20,24,26,0.04),0_8px_24px_rgba(20,24,26,0.05)]">
+    <div data-pf="card" className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-[0_1px_2px_rgba(20,24,26,0.04),0_8px_24px_rgba(20,24,26,0.05)]">
       {children}
     </div>
   );
@@ -52,7 +52,7 @@ export function PortalFormSection({
   children: ReactNode;
 }) {
   return (
-    <section className="px-5 py-5 sm:px-6">
+    <section data-pf="section" className="px-5 py-5 sm:px-6">
       <h2 className="flex items-center gap-2.5 text-[0.9375rem] font-semibold text-ink">
         {step !== undefined && (
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
@@ -88,7 +88,7 @@ export function ChoiceButton({
   children: ReactNode;
 }) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={selected} className={`${tileClasses(selected)} ${className}`}>
+    <button type="button" data-pf="choice" onClick={onClick} aria-pressed={selected} className={`${tileClasses(selected)} ${className}`}>
       {children}
     </button>
   );
@@ -149,6 +149,7 @@ export function TextField({ id, label, hint, error, prefix, className = "", ...p
         )}
         <input
           id={id}
+          data-pf="input"
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy}
           className={`h-11 w-full rounded-xl border bg-surface text-[0.9375rem] text-ink placeholder:text-ink-muted/80 focus:outline-none focus:ring-2 ${
@@ -240,6 +241,7 @@ export function PrimarySubmit({
   return (
     <button
       type="button"
+      data-pf="submit"
       onClick={onClick}
       disabled={disabled}
       className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-primary px-5 text-[0.9375rem] font-semibold text-white shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -254,6 +256,7 @@ export function PortalPending({ children }: { children: ReactNode }) {
   return (
     <div
       role="status"
+      data-pf="card"
       className="flex flex-col items-center rounded-2xl border border-border bg-surface px-6 py-12 text-center shadow-sm"
     >
       <span
@@ -295,6 +298,7 @@ export function PortalSuccess({
   return (
     <div
       role="status"
+      data-pf="card"
       className="flex flex-col items-center rounded-2xl border border-border bg-surface px-6 py-12 text-center shadow-[0_1px_2px_rgba(20,24,26,0.04),0_8px_24px_rgba(20,24,26,0.05)]"
     >
       <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white" aria-hidden="true">

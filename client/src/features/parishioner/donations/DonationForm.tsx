@@ -131,7 +131,7 @@ export function DonationForm({ defaultFullName = "", gcashAvailable, onGive = gi
         />
       </PortalFormSection>
 
-      <div className="px-5 py-5 sm:px-6">
+      <div data-pf="footer" className="px-5 py-5 sm:px-6">
         {!gcashAvailable && (
           <div className="mb-3">
             <PortalNotice tone="info">

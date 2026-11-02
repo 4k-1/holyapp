@@ -48,7 +48,7 @@ export function PublicDonatePage() {
   }, [result, returnedId, parishSlug, setSearchParams]);
 
   return (
-    <PublicGiveShell title="Support the parish" description="Give securely through GCash. No account needed.">
+    <PublicGiveShell mode="donate">
       {(parish) =>
         phase === "checking" ? (
           <PortalPending>Confirming your gift with GCash…</PortalPending>
@@ -73,7 +73,7 @@ export function PublicDonatePage() {
                 onGive={(input) => guestGive(parish.slug, input)}
               />
             ) : (
-              <p className="text-center text-sm text-ink-muted">Loading…</p>
+              <p className="py-10 text-center text-sm text-white/80">Loading…</p>
             )}
           </>
         )
