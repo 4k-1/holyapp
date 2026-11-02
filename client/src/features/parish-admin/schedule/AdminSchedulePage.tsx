@@ -8,7 +8,6 @@ import { DayAgendaSidebar } from "./components/DayAgendaSidebar";
 import { EventsListView } from "./components/EventsListView";
 import { ScheduleEventModal } from "./components/ScheduleEventModal";
 import { AssignBlockModal } from "./components/AssignBlockModal";
-import { RecurringCommitmentsManagerModal } from "./components/RecurringCommitmentsManagerModal";
 import type { ScheduleBlock, ScheduleOccurrence } from "./types";
 
 const TODAY_ISO = toISO(new Date());
@@ -27,7 +26,6 @@ export function AdminSchedulePage() {
   const [editTarget, setEditTarget] = useState<ScheduleBlock | null>(null);
   /** Bumped after an edit so the list view fetches again. */
   const [listVersion, setListVersion] = useState(0);
-  const [managerOpen, setManagerOpen] = useState(false);
 
   const fetchMonth = useCallback(
     () =>
@@ -88,15 +86,7 @@ export function AdminSchedulePage() {
             Baptisms, weddings, funerals, and other events. Regular Masses are in Settings.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setManagerOpen(true)}
-            className="whitespace-nowrap shrink-0 text-admin-support font-semibold text-admin-green-700 hover:underline"
-          >
-            Manage recurring schedule
-          </button>
-          <AdminButton onClick={() => setAddModalDate(selectedDate)}>+ Add block</AdminButton>
-        </div>
+        <AdminButton onClick={() => setAddModalDate(selectedDate)}>+ Add block</AdminButton>
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -199,10 +189,6 @@ export function AdminSchedulePage() {
             reload();
           }}
         />
-      )}
-
-      {managerOpen && (
-        <RecurringCommitmentsManagerModal onClose={() => setManagerOpen(false)} onChanged={reload} />
       )}
     </div>
   );
