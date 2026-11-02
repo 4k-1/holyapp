@@ -82,7 +82,7 @@ export function DashboardPage({ parishId, parishSlug, userName }: DashboardPageP
                   <p className="text-xs text-ink-muted">
                     Requested{" "}
                     {new Date(request.createdAt).toLocaleDateString("en-US", {
-                      month: "long",
+                      month: "short",
                       day: "numeric",
                       year: "numeric",
                     })}

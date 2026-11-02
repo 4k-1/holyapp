@@ -21,3 +21,26 @@
   font-weight: 400;
   letter-spacing: -0.005em;
 }
+
+/* Phones: one size for every page title, and the small print a notch up, since phones are read at arm's length
+   and a 12–14px line is hard to read there. Larger screens keep each page's own sizes. */
+@media (max-width: 639.98px) {
+  .parishioner-portal h1.font-serif {
+    font-size: 1.625rem;
+    line-height: 1.2;
+  }
+  .parishioner-portal main .text-sm,
+  .parishioner-portal main .text-\[14px\],
+  .parishioner-portal main .text-\[0\.875rem\] {
+    font-size: 0.9375rem;
+  }
+  .parishioner-portal main .text-xs,
+  .parishioner-portal main .text-\[12px\],
+  .parishioner-portal main .text-\[0\.75rem\] {
+    font-size: 0.8125rem;
+  }
+  /* Up to six steps share one row in the request tracker, so its labels stay at 12px. */
+  .parishioner-portal main [data-tracker] .text-\[0\.75rem\] {
+    font-size: 0.75rem;
+  }
+}

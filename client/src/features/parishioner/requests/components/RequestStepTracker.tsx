@@ -6,7 +6,7 @@ export function RequestStepTracker({ request }: { request: CertificateRequest })
   const { steps, doneCount, currentIndex, rejected } = getTrackerState(request);
 
   return (
-    <ol className="flex w-full" aria-label="Request progress">
+    <ol className="flex w-full" aria-label="Request progress" data-tracker>
       {steps.map((label, i) => {
         const isRejectedNode = rejected && i === steps.length - 1;
         const isDone = !isRejectedNode && i < doneCount;

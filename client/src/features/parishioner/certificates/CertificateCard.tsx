@@ -64,14 +64,14 @@ export function CertificateCard({ certificate, onView, onDownload, downloading =
       <div className="relative mt-3.5 flex gap-1.5">
       <Button
         variant="outline"
-        className="flex-1 py-2 text-xs active:scale-95"
+        className="flex-1 py-2.5 text-sm active:scale-95"
         onClick={() => onView(certificate)}
       >
         View
       </Button>
       <Button
         variant="primary"
-        className="flex-1 py-2 text-xs active:scale-95"
+        className="flex-1 py-2.5 text-sm active:scale-95"
         onClick={() => onDownload(certificate)}
         disabled={downloading || revoked}
       >
