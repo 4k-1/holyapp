@@ -1,16 +1,38 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import "./landing.css";
 
 /** HolyApp's front door: what it is, who it's for, and the way into a parish. */
 export function LandingPage() {
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Sections fade up as they scroll into view. The hidden start only applies once this runs, so nothing stays
+  // invisible if it doesn't.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || !("IntersectionObserver" in window)) return;
+    const items = Array.from(root.querySelectorAll<HTMLElement>("[data-reveal]"));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        }
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0.12 }
+    );
+    root.classList.add("landing--reveal");
+    items.forEach((item) => observer.observe(item));
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="landing min-h-screen">
+    <div ref={rootRef} className="landing min-h-screen">
       <SiteHeader />
       <main>
         <Hero />
-        <SacramentStrip />
-        <Facts />
+        <Features />
         <ParishOffice />
         <Feature
           id="parishioners"
@@ -75,8 +97,8 @@ function SiteHeader() {
       <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
         <Logo />
         <nav aria-label="Main" className="hidden items-center gap-7 text-[0.9375rem] font-medium text-[var(--l-muted)] md:flex">
-          <a href="#parish-office" className="hover:text-[var(--l-teal-deep)]">For parishes</a>
-          <a href="#parishioners" className="hover:text-[var(--l-teal-deep)]">For parishioners</a>
+          <a href="#features-office" className="hover:text-[var(--l-teal-deep)]">For parishes</a>
+          <a href="#features-parishioners" className="hover:text-[var(--l-teal-deep)]">For parishioners</a>
           <a href="#giving" className="hover:text-[var(--l-teal-deep)]">Giving</a>
         </nav>
         <div className="flex items-center gap-2">
@@ -100,59 +122,22 @@ function SiteHeader() {
 
 /* ---------- Hero ---------- */
 
-function Cross({ className, color }: { className: string; color: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={`landing-deco ${className}`} aria-hidden="true">
-      <path d="M10 3h4v6h6v4h-6v8h-4v-8H4V9h6z" fill={color} />
-    </svg>
-  );
-}
-
-/** A small church: steeple and gold cross, rose window and arched door, set in a chapel-window arch. */
-function ChurchMark() {
-  return (
-    <svg viewBox="0 0 160 130" className="mx-auto mb-4 h-24 w-28" role="img" aria-label="A parish church">
-      <path d="M28 124V66a52 52 0 0 1 104 0v58Z" fill="#e8f5f5" />
-      <path d="M28 124V66a52 52 0 0 1 104 0v58" fill="none" stroke="#eeb531" strokeWidth="1.5" strokeDasharray="2 4" strokeLinecap="round" />
-      <rect x="78" y="2" width="4" height="19" rx="1" fill="#eeb531" />
-      <rect x="72" y="7.5" width="16" height="4" rx="1" fill="#eeb531" />
-      <path d="M60 50 80 20l20 30Z" fill="#0e3b46" />
-      <path d="M22 122V82l41-20v60Z" fill="#8ed8d2" />
-      <path d="M138 122V82l-41-20v60Z" fill="#8ed8d2" />
-      <rect x="63" y="48" width="34" height="74" fill="#16798c" />
-      <circle cx="80" cy="68" r="8.5" fill="#ffffff" />
-      <circle cx="80" cy="68" r="3.2" fill="#eeb531" />
-      <path d="M80 59.5v17M71.5 68h17" stroke="#8ed8d2" strokeWidth="1" />
-      <path d="M72 122v-18a8 8 0 0 1 16 0v18Z" fill="#eeb531" />
-      <path d="M35 114v-12a4 4 0 0 1 8 0v12ZM48 114v-15a4 4 0 0 1 8 0v15Z" fill="#ffffff" />
-      <path d="M117 114v-12a4 4 0 0 1 8 0v12ZM104 114v-15a4 4 0 0 1 8 0v15Z" fill="#ffffff" />
-      <rect x="10" y="121" width="140" height="3" rx="1.5" fill="#c6d5d8" />
-    </svg>
-  );
-}
-
 function Hero() {
   return (
     <section className="landing-hero relative overflow-hidden px-4 pb-14 pt-8 sm:px-6 sm:pt-12">
-      <Cross className="left-[9%] top-[14%] hidden h-7 w-7 sm:block" color="#eeb531" />
-      <Cross className="right-[10%] top-[10%] h-6 w-6 [animation-delay:1.5s]" color="#8ed8d2" />
-      <Cross className="right-[18%] top-[34%] hidden h-5 w-5 [animation-delay:3s] sm:block" color="#2a9d9c" />
 
       <div className="text-center">
-        <ChurchMark />
-        <p className="mx-auto mb-5 inline-flex rounded-full bg-white/80 px-4 py-1.5 text-[0.875rem] font-medium text-[var(--l-teal)] ring-1 ring-[#d9ecec]">
-          For Catholic parishes and the faithful they serve
-        </p>
         <h1 className="landing-display mx-auto max-w-[900px] text-[2.75rem] leading-[1.08] text-[var(--l-ink)] sm:text-[4.5rem]">
-          Your church
-          <br />
-          on the <span className="landing-mark">cloud.</span>
+          <span className="landing-in block">Your church</span>
+          <span className="landing-in block [animation-delay:120ms]">
+            on the <span className="landing-mark landing-mark--in">cloud.</span>
+          </span>
         </h1>
-        <p className="mx-auto mt-6 max-w-[560px] text-[1.0625rem] leading-relaxed text-[var(--l-muted)] sm:text-[1.125rem]">
-          Sacramental records, certificate requests, the Mass schedule and offerings, kept safe in one place for the
-          parish office and the faithful.
+        <p className="landing-in mx-auto mt-6 max-w-[560px] [animation-delay:240ms] text-[1.0625rem] leading-relaxed text-[var(--l-muted)] sm:text-[1.125rem]">
+          Sacramental records, certificate requests, the Mass schedule and offerings, kept safe in one place for
+          Catholic parishes and the faithful they serve.
         </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <div className="landing-in mt-8 flex flex-col items-center justify-center gap-3 [animation-delay:340ms] sm:flex-row">
           <Link
             to="/login"
             className="inline-flex min-h-[52px] items-center rounded-full bg-[var(--l-teal-deep)] px-7 text-[1rem] font-semibold text-white shadow-[0_10px_24px_-10px_rgb(14_59_70/0.7)] hover:bg-[var(--l-teal)]"
@@ -181,7 +166,7 @@ function ProductStage() {
       {/* A soft arch behind the laptop, like light through a chapel window. */}
       <div className="landing-arch absolute inset-x-[4%] bottom-0 top-[12%] rounded-t-full" aria-hidden="true" />
 
-      <figure className="relative mx-auto w-[92%] max-w-[860px]">
+      <figure className="landing-in-stage relative mx-auto w-[92%] max-w-[860px]">
         <div className="rounded-t-[18px] bg-[#132a30] p-[2.2%] pb-[1.6%] shadow-[0_40px_80px_-30px_rgb(14_59_70/0.6)]">
           <div className="mx-auto mb-[1.2%] h-1.5 w-1.5 rounded-full bg-[#2c454b]" aria-hidden="true" />
           <img
@@ -260,50 +245,218 @@ function FloatCard({ className, children }: { className: string; children: React
   );
 }
 
-/** The sacraments and services HolyApp keeps, in a quiet row under the hero. */
-function SacramentStrip() {
-  const items = ["Baptism", "Confirmation", "Holy Matrimony", "Funerals", "Mass Intentions", "Offerings"];
-  return (
-    <section aria-label="What HolyApp keeps" className="border-y border-[#e3eef0] bg-white px-4 py-7 sm:px-6">
-      <ul className="mx-auto flex max-w-[1080px] flex-wrap items-center justify-center gap-x-6 gap-y-3">
-        {items.map((item, i) => (
-          <li key={item} className="flex items-center gap-6">
-            {i > 0 && (
-              <svg viewBox="0 0 24 24" className="hidden h-3 w-3 sm:block" aria-hidden="true">
-                <path d="M10 3h4v6h6v4h-6v8h-4v-8H4V9h6z" fill="#eeb531" />
-              </svg>
-            )}
-            <span className="landing-display text-[1.25rem] text-[#55707a]">{item}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 function Line({ w, className = "" }: { w: string; className?: string }) {
   return <span className={`block h-2.5 rounded-full ${w} ${className}`} />;
 }
 
-/* ---------- Facts ---------- */
+/* ---------- Feature boxes ---------- */
 
-function Facts() {
-  const facts = [
-    ["Kept safe", "Records stay with your parish"],
-    ["QR-verified", "Certificates anyone can check"],
-    ["GCash", "For gifts and Mass intentions"],
-    ["Any phone", "Nothing to download"],
-  ];
+type FeatureBox = { title: string; body: string; icon: string };
+
+// 24×24 stroke icons, one path string each.
+const ICONS = {
+  book: "M4 19.5V5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2Zm0 0A2 2 0 0 0 6 21h14M12 7v6M9 10h6",
+  scan: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 9h8M8 12h8M8 15h5",
+  inbox: "M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6Z",
+  qr: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2h-2",
+  calendar: "M4 6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1ZM4 10h16M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2",
+  candle: "M12 3c1.5 2 2 3 2 4a2 2 0 0 1-4 0c0-1 .5-2 2-4ZM9 11h6v10H9zM6 21h12",
+  heart: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z",
+  rings: "M9 15a5 5 0 1 0 0-.01M15 15a5 5 0 1 0 0-.01M12 4l1.5 2h-3Z",
+  people: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM3 20a6 6 0 0 1 12 0M16 11a3 3 0 1 0 0-6M17 14a5 5 0 0 1 4 6",
+  chart: "M4 20V10M10 20V4M16 20v-7M22 20H2",
+  request: "M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1ZM14 3v5h5M9 13h6M9 17h4",
+  track: "M5 12l4 4L19 6",
+  wallet: "M3 7a2 2 0 0 1 2-2h13v4M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2ZM16 14.5h.01",
+  gift: "M4 10h16v10H4zM2 7h20v3H2zM12 7v13M12 7c-1.5-3-5-3-5-1s3 1 5 1Zm0 0c1.5-3 5-3 5-1s-3 1-5 1Z",
+  timeline: "M6 4v16M6 7h.01M6 12h.01M6 17h.01M10 7h9M10 12h7M10 17h8",
+} as const;
+
+const OFFICE_FEATURES: (FeatureBox & { icon: keyof typeof ICONS })[] = [
+  { icon: "book", title: "Sacramental registers", body: "Baptism, confirmation, marriage and death records, each with its book, page and entry." },
+  { icon: "scan", title: "Digitized ledgers", body: "Scan the old register books so a page can be found in seconds, not hours." },
+  { icon: "inbox", title: "Certificate requests", body: "Find the record, issue the certificate and release it, for online and walk-in requests." },
+  { icon: "qr", title: "QR-verified certificates", body: "Every certificate carries a code anyone can scan to check it is genuine." },
+  { icon: "calendar", title: "Parish calendar", body: "Masses, weddings, baptisms and blessings, with a warning when a priest or place is double-booked." },
+  { icon: "candle", title: "Mass intentions", body: "See every intention per Mass and print the list for the presider." },
+  { icon: "heart", title: "Donations and receipts", body: "Record cash gifts, receive GCash online, and print a receipt for every one." },
+  { icon: "rings", title: "Marriage preparation", body: "Follow each couple through documents, interview, Pre-Cana and the banns." },
+  { icon: "people", title: "Staff and reports", body: "Keep the list of priests and staff, and see monthly reports at a glance." },
+];
+
+const PARISHIONER_FEATURES: (FeatureBox & { icon: keyof typeof ICONS })[] = [
+  { icon: "request", title: "Request a certificate", body: "Ask for a baptismal, confirmation, marriage or death certificate from home." },
+  { icon: "track", title: "Follow your request", body: "See when it is received, being prepared, and ready to pick up." },
+  { icon: "wallet", title: "Certificate wallet", body: "Keep released certificates on your phone, ready to show or share." },
+  { icon: "gift", title: "Give to the parish", body: "Give through GCash in a few taps. No account needed." },
+  { icon: "candle", title: "Offer a Mass", body: "Request a Mass for thanksgiving, healing, or in memory of a loved one." },
+  { icon: "timeline", title: "Your sacramental timeline", body: "Your baptism, confirmation and marriage on the parish's records, in one place." },
+];
+
+function FeatureIcon({ name, tone, large = false }: { name: keyof typeof ICONS; tone: "teal" | "gold"; large?: boolean }) {
   return (
-    <section aria-label="At a glance" className="px-4 py-16 sm:px-6 sm:py-20">
-      <dl className="mx-auto grid max-w-[1000px] grid-cols-2 gap-y-10 text-center md:grid-cols-4">
-        {facts.map(([value, label]) => (
-          <div key={value}>
-            <dt className="landing-display text-[1.625rem] leading-none text-[var(--l-teal-deep)] sm:text-[1.875rem]">{value}</dt>
-            <dd className="mt-2 text-[0.9375rem] text-[var(--l-muted)]">{label}</dd>
-          </div>
-        ))}
-      </dl>
+    <span
+      className={`flex shrink-0 items-center justify-center ${large ? "h-24 w-24 rounded-[28px]" : "h-12 w-12 rounded-2xl"} ${
+        tone === "teal" ? "bg-[var(--l-mist)] text-[var(--l-teal)]" : "bg-[var(--l-gold-soft)] text-[#9a6f0c]"
+      }`}
+      aria-hidden="true"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={large ? 1.5 : 1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={large ? "h-11 w-11" : "h-6 w-6"}
+      >
+        <path d={ICONS[name]} />
+      </svg>
+    </span>
+  );
+}
+
+function ArrowButton({ dir, onClick, label }: { dir: "prev" | "next"; onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[var(--l-teal-deep)] ring-1 ring-[#d6e3e5] transition hover:bg-[var(--l-mist)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--l-teal-light)]"
+    >
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+        {dir === "prev" ? <path d="M12 5l-5 5 5 5" /> : <path d="M8 5l5 5-5 5" />}
+      </svg>
+    </button>
+  );
+}
+
+/**
+ * A row of feature cards. On wide screens one card is open (big icon, title and description) and the rest sit
+ * beside it as narrow cards; clicking one, or the arrows, opens it. On phones every card is open and the row swipes.
+ */
+function FeatureGroup({
+  id,
+  title,
+  intro,
+  features,
+  tone,
+}: {
+  id: string;
+  title: string;
+  intro: string;
+  features: (FeatureBox & { icon: keyof typeof ICONS })[];
+  tone: "teal" | "gold";
+}) {
+  const [active, setActive] = useState(0);
+  const cardRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const moved = useRef(false);
+
+  // Bring the open card into view, but not on first load, which would scroll the page.
+  useEffect(() => {
+    if (!moved.current) return;
+    cardRefs.current[active]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }, [active]);
+
+  function open(index: number) {
+    moved.current = true;
+    setActive((index + features.length) % features.length);
+  }
+
+  function step(delta: number) {
+    moved.current = true;
+    setActive((current) => (current + delta + features.length) % features.length);
+  }
+
+  return (
+    <div id={id} data-reveal className="scroll-mt-24">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div className="max-w-[640px]">
+          <h3 className="landing-display text-[1.875rem] leading-[1.15] text-[var(--l-ink)] sm:text-[2.25rem]">{title}</h3>
+          <p className="mt-3 text-[1.0625rem] leading-relaxed text-[var(--l-muted)]">{intro}</p>
+        </div>
+        <div className="flex gap-2">
+          <ArrowButton dir="prev" onClick={() => step(-1)} label={`Previous: ${title}`} />
+          <ArrowButton dir="next" onClick={() => step(1)} label={`Next: ${title}`} />
+        </div>
+      </div>
+
+      <ul className="landing-carousel -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
+        {features.map((f, i) => {
+          const isOpen = i === active;
+          const number = String(i + 1).padStart(2, "0");
+          return (
+            <li
+              key={f.title}
+              ref={(el) => {
+                cardRefs.current[i] = el;
+              }}
+              className={`relative flex w-[82%] shrink-0 snap-start focus-within:ring-[3px] focus-within:ring-[var(--l-teal-light)] flex-col rounded-[28px] p-6 transition-[width,background-color,box-shadow] duration-500 ease-out sm:w-[340px] md:h-[400px] md:p-7 ${
+                isOpen
+                  ? "bg-white shadow-[0_1px_2px_rgb(14_59_70/0.05),0_24px_48px_-28px_rgb(14_59_70/0.45)] ring-1 ring-[#e3eef0] md:w-[440px]"
+                  : "bg-[#eef5f5] ring-1 ring-[#e3eef0] md:w-[150px] md:hover:bg-[#e6f1f1]"
+              }`}
+            >
+              {/* Open card: big icon, number, title and description. Always shown on phones. */}
+              <div className={`flex h-full flex-col ${isOpen ? "" : "md:hidden"}`}>
+                <FeatureIcon name={f.icon} tone={tone} large />
+                <div className="mt-auto pt-8">
+                  <p className="text-[0.875rem] font-bold text-[var(--l-teal)]">{number}</p>
+                  <p className="landing-display mt-2 text-[1.625rem] leading-[1.15] text-[var(--l-ink)] md:text-[1.875rem]">{f.title}</p>
+                  <p className="mt-3 text-[1rem] leading-relaxed text-[var(--l-muted)]">{f.body}</p>
+                </div>
+              </div>
+
+              {/* Closed card on wide screens: small icon and the name, opens on click. */}
+              <button
+                type="button"
+                onClick={() => open(i)}
+                aria-label={`Show ${f.title}`}
+                className={`hidden h-full flex-col items-start text-left focus-visible:outline-none ${isOpen ? "" : "md:flex"}`}
+              >
+                <FeatureIcon name={f.icon} tone={tone} />
+                <span className="mt-auto">
+                  <span className="block text-[0.8125rem] font-bold text-[var(--l-teal)]">{number}</span>
+                  <span className="mt-1.5 block text-[0.9375rem] font-bold leading-snug text-[var(--l-ink)]">{f.title}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function Features() {
+  return (
+    <section id="features" aria-labelledby="features-title" className="scroll-mt-20 bg-[#f6fafa] px-4 py-20 sm:px-6 sm:py-24">
+      <div className="mx-auto max-w-[1120px]">
+        <div data-reveal className="mx-auto mb-14 max-w-[680px] text-center">
+          <h2 id="features-title" className="landing-display text-[2.25rem] leading-[1.1] sm:text-[2.875rem]">
+            Everything your parish needs
+          </h2>
+          <p className="mt-4 text-[1.0625rem] leading-relaxed text-[var(--l-muted)] sm:text-[1.125rem]">
+            One system for the parish office, and a simple portal for the faithful.
+          </p>
+        </div>
+        <div className="space-y-16">
+          <FeatureGroup
+            id="features-office"
+            title="Run the parish office in one place"
+            intro="For the parish priest, secretary and staff, on any computer at the office."
+            features={OFFICE_FEATURES}
+            tone="teal"
+          />
+          <FeatureGroup
+            id="features-parishioners"
+            title="The parish, a tap away"
+            intro="For the faithful, on any phone. Nothing to download."
+            features={PARISHIONER_FEATURES}
+            tone="gold"
+          />
+        </div>
+      </div>
     </section>
   );
 }
@@ -319,11 +472,8 @@ function ParishOffice() {
   ];
   return (
     <section id="parish-office" className="scroll-mt-20 px-4 pb-24 sm:px-6">
-      <div className="mx-auto grid max-w-[1180px] items-center gap-12 lg:grid-cols-[1fr_1.05fr_0.9fr]">
+      <div data-reveal className="mx-auto grid max-w-[1180px] items-center gap-12 lg:grid-cols-[1fr_1.05fr_0.9fr]">
         <div>
-          <p className="mb-4 inline-flex rounded-full bg-[var(--l-mist)] px-3.5 py-1 text-[0.8125rem] font-medium text-[var(--l-teal)]">
-            For the parish office
-          </p>
           <h2 className="landing-display text-[2.25rem] leading-[1.1] sm:text-[2.875rem]">Every register, one place.</h2>
           <p className="mt-5 max-w-[420px] text-[1.0625rem] leading-relaxed text-[var(--l-muted)]">
             Whether you are looking up a baptism from 1987 or getting Saturday's weddings ready, everyone in the office
@@ -405,6 +555,7 @@ function Feature({
   return (
     <section id={id} className="scroll-mt-20 px-4 pb-8 sm:px-6">
       <div
+        data-reveal
         className={`mx-auto grid max-w-[1060px] items-center gap-10 rounded-[32px] p-7 ring-1 sm:p-12 md:grid-cols-[1.2fr_1fr] ${bg}`}
       >
         <div className={reverse ? "md:order-2" : ""}>
@@ -485,7 +636,7 @@ function GivingArt() {
 function Closing() {
   return (
     <section className="px-4 pb-20 pt-16 sm:px-6">
-      <div className="relative mx-auto max-w-[1060px] overflow-hidden rounded-[32px] bg-gradient-to-br from-[#17707f] via-[#0f5262] to-[#0a3a46] px-7 py-14 text-center text-white sm:px-12">
+      <div data-reveal className="relative mx-auto max-w-[1060px] overflow-hidden rounded-[32px] bg-gradient-to-br from-[#17707f] via-[#0f5262] to-[#0a3a46] px-7 py-14 text-center text-white sm:px-12">
         <div className="absolute -left-10 -top-10 h-44 w-44 rounded-full bg-[var(--l-teal-light)]/25 blur-3xl" aria-hidden="true" />
         <div className="absolute -bottom-12 -right-6 h-40 w-40 rounded-full bg-[var(--l-gold)]/30 blur-3xl" aria-hidden="true" />
         <h2 className="landing-display relative text-[2rem] leading-[1.12] sm:text-[2.75rem]">

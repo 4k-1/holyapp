@@ -1,6 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Young+Serif&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap");
 
-/* HolyApp landing page: logo teal with candle gold. Young Serif for headlines, sturdy and warm;
+/* HolyApp landing page: logo teal with candle gold. Libre Franklin for headlines, steady and institutional;
    Atkinson Hyperlegible for text, drawn for readers with low vision, which suits older parishioners. */
 .landing {
   --l-ink: #13262b;
@@ -13,7 +13,7 @@
   --l-cream: #fbf8f1;
   --l-gold: #eeb531;
   --l-gold-soft: #fbefcf;
-  --l-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --l-display: "Libre Franklin", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-sans);
   background: #ffffff;
@@ -25,8 +25,9 @@
 /* Scoped under .landing so it outranks the app's base h1–h4 font rule. */
 .landing .landing-display {
   font-family: var(--l-display);
-  font-weight: 400;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  font-optical-sizing: auto;
 }
 
 /* A soft wash of logo teal and candle gold behind the hero, fading to white. */
@@ -63,6 +64,14 @@
   animation: landing-float 7s ease-in-out infinite;
 }
 
+/* Feature carousels move with the arrows or a swipe, so the scrollbar stays out of sight. */
+.landing-carousel {
+  scrollbar-width: none;
+}
+.landing-carousel::-webkit-scrollbar {
+  display: none;
+}
+
 .landing-card {
   transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
@@ -71,6 +80,40 @@
 }
 
 
+/* Hero: the headline, text, buttons and laptop rise in one after another when the page opens. */
+.landing-in {
+  animation: landing-in 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.landing-in-stage {
+  animation: landing-stage-in 1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.45s both;
+}
+.landing-mark--in {
+  animation: landing-mark-in 0.6s cubic-bezier(0.3, 1.4, 0.5, 1) 0.7s both;
+}
+
+/* Sections below fade up as they scroll into view. */
+.landing--reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.landing--reveal [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes landing-in {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes landing-stage-in {
+  from { opacity: 0; transform: translateY(48px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes landing-mark-in {
+  from { opacity: 0; transform: rotate(-1.5deg) translateY(10px) scale(0.9); }
+  to { opacity: 1; transform: rotate(-1.5deg); }
+}
 @keyframes landing-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
@@ -78,6 +121,10 @@
 
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-deco { animation: none; }
+  .landing-deco,
+  .landing-in,
+  .landing-in-stage,
+  .landing-mark--in { animation: none; }
+  .landing--reveal [data-reveal] { opacity: 1; transform: none; transition: none; }
   .landing-card { transition: none; }
 }
