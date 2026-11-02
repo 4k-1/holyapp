@@ -2,28 +2,6 @@ import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { daysInMonth, toISO } from "@/features/parish-admin/schedule/scheduleHelpers";
 import type { MassSlotView } from "@/types";
 
-type DayState = "open" | "tight" | "full";
-
-const DOT: Record<DayState, string> = {
-  open: "bg-admin-green-600",
-  tight: "bg-admin-amber-700",
-  full: "bg-admin-red-700",
-};
-
-const STATE_TEXT: Record<DayState, string> = {
-  open: "places left",
-  tight: "a Mass is almost full",
-  full: "all Masses full",
-};
-
-/** One summary per day: every Mass full, at least one down to its last place (or full), or plenty of room. */
-function dayState(slots: MassSlotView[]): DayState | null {
-  if (slots.length === 0) return null;
-  if (slots.every((slot) => slot.capacityState === "full")) return "full";
-  if (slots.some((slot) => slot.capacityState !== "open")) return "tight";
-  return "open";
-}
-
 interface MassIntentionsMiniCalendarProps {
   cursor: Date;
   slotsByDate: Record<string, MassSlotView[]>;
@@ -83,7 +61,6 @@ export function MassIntentionsMiniCalendar({
           const isPast = iso < todayStr;
           const isToday = iso === todayStr;
           const isSelected = iso === selectedDate;
-          const state = isPast ? null : dayState(slots);
           const unlimited = slots.some((slot) => slot.maxIntentions === null);
           const left = slots.reduce((sum, slot) => sum + (slot.remaining ?? 0), 0);
           const capacity = slots.reduce((sum, slot) => sum + (slot.maxIntentions ?? 0), 0);
@@ -104,7 +81,7 @@ export function MassIntentionsMiniCalendar({
               aria-pressed={isSelected}
               aria-label={`${label}: ${detail}`}
               title={`${label} · ${detail}`}
-              className={`mx-auto flex h-10 w-10 flex-col items-center justify-center rounded-full text-admin-body transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/50 ${
+              className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full text-admin-body transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/50 ${
                 isSelected
                   ? "bg-admin-green-700 font-semibold text-white"
                   : isToday
@@ -114,25 +91,13 @@ export function MassIntentionsMiniCalendar({
                       : "text-admin-ink hover:bg-admin-surface-alt"
               }`}
             >
-              <span className="leading-none">{day}</span>
-              <span
-                aria-hidden="true"
-                className={`mt-1 h-1.5 w-1.5 rounded-full ${state ? (isSelected ? "bg-white" : DOT[state]) : "bg-transparent"}`}
-              />
+              {day}
             </button>
           );
         })}
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-admin-border pt-3">
-        <ul className="flex flex-wrap gap-x-3 gap-y-1 text-admin-label text-admin-ink-muted">
-          {(["open", "tight", "full"] as DayState[]).map((state) => (
-            <li key={state} className="inline-flex items-center gap-1.5">
-              <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${DOT[state]}`} />
-              {STATE_TEXT[state]}
-            </li>
-          ))}
-        </ul>
+      <div className="mt-3 flex justify-end border-t border-admin-border pt-3">
         <button
           type="button"
           onClick={onToday}
