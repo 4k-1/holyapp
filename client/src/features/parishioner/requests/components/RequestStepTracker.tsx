@@ -1,65 +1,72 @@
 import type { CertificateRequest } from "@/types";
 import { getTrackerState } from "@/features/parishioner/requests/trackerState";
 
-interface RequestStepTrackerProps {
-  request: CertificateRequest;
-}
-
-export function RequestStepTracker({ request }: RequestStepTrackerProps) {
-  const { steps, doneCount, currentIndex, rejected, fillPercent } = getTrackerState(request);
+/** The request's steps in a line: done ones ticked, the current one ringed, a refusal in red. */
+export function RequestStepTracker({ request }: { request: CertificateRequest }) {
+  const { steps, doneCount, currentIndex, rejected } = getTrackerState(request);
 
   return (
-    <div className="relative mt-4 flex w-full pt-1">
-      <div className="absolute left-[9px] right-[9px] top-[10px] h-0 border-t-2 border-dashed border-border sm:left-[11px] sm:right-[11px] sm:top-[14px]" />
-      <div
-        className={`absolute left-[9px] top-[10px] h-0 border-t-2 transition-all duration-300 sm:left-[11px] sm:top-[14px] ${
-          rejected ? "border-danger" : "border-emerald-600"
-        }`}
-        style={{ width: `calc(${fillPercent}% - 18px * ${fillPercent / 100})` }}
-      />
-
+    <ol className="flex w-full" aria-label="Request progress">
       {steps.map((label, i) => {
-        const isDone = i < doneCount;
-        const isCurrent = i === currentIndex;
         const isRejectedNode = rejected && i === steps.length - 1;
+        const isDone = !isRejectedNode && i < doneCount;
+        const isCurrent = !isRejectedNode && !isDone && i === currentIndex;
 
         return (
-          <div key={label} className="relative z-10 flex flex-1 flex-col items-center gap-1 sm:gap-1.5">
-            <div
-              className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 text-[8.5px] sm:h-[22px] sm:w-[22px] sm:text-[10px] ${
+          <li
+            key={label}
+            className="relative flex flex-1 flex-col items-center"
+            aria-current={isCurrent ? "step" : undefined}
+          >
+            {i > 0 && (
+              <span
+                className={`absolute right-1/2 top-[11px] h-0.5 w-full ${
+                  isRejectedNode ? "bg-danger/50" : isDone || isCurrent ? "bg-primary" : "bg-border"
+                }`}
+                aria-hidden="true"
+              />
+            )}
+            <span
+              className={`relative z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 ${
                 isRejectedNode
                   ? "border-danger bg-danger text-white"
                   : isDone
-                  ? "border-emerald-600 bg-emerald-600 text-white"
-                  : isCurrent
-                  ? "border-emerald-600 bg-white"
-                  : "border-dashed border-border bg-white"
+                    ? "border-primary bg-primary text-white"
+                    : isCurrent
+                      ? "border-primary bg-surface"
+                      : "border-border bg-surface"
               }`}
+              aria-hidden="true"
             >
               {isRejectedNode ? (
-                "✕"
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.6" className="h-3 w-3">
+                  <path d="M6 6l8 8M14 6l-8 8" strokeLinecap="round" />
+                </svg>
               ) : isDone ? (
-                "✓"
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.6" className="h-3 w-3">
+                  <path d="m4.5 10.5 3.5 3.5 7.5-8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               ) : isCurrent ? (
-                <span className="h-[6px] w-[6px] rounded-full bg-emerald-600 sm:h-[8px] sm:w-[8px]" />
+                <span className="h-2 w-2 rounded-full bg-primary" />
               ) : null}
-            </div>
+            </span>
             <span
-              className={`px-0.5 text-center text-[8.5px] leading-tight sm:text-[10.5px] ${
+              className={`mt-1.5 px-0.5 text-center text-[0.6875rem] leading-tight sm:text-[0.75rem] ${
                 isRejectedNode
-                  ? "font-bold text-danger"
+                  ? "font-semibold text-danger"
                   : isCurrent
-                  ? "font-bold text-emerald-700"
-                  : isDone
-                  ? "text-ink"
-                  : "text-ink-muted"
+                    ? "font-semibold text-primary"
+                    : isDone
+                      ? "text-ink"
+                      : "text-ink-muted"
               }`}
             >
               {label}
+              <span className="sr-only">{isDone ? " (done)" : isCurrent ? " (current step)" : isRejectedNode ? "" : " (to come)"}</span>
             </span>
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }

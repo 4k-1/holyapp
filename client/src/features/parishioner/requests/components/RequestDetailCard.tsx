@@ -1,19 +1,20 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { CandleIcon, DoveIcon, DropletIcon, HeartIcon } from "@/components/ui/icons/SacramentIcons";
+import { deriveStatusKey, deriveStatusLabel } from "@/features/parishioner/dashboard/deriveStatusLabel";
+import { getSacramentIconStyle, getStatusPillClasses } from "@/features/parishioner/dashboard/statusStyles";
 import { startGcashPayment } from "@/features/parishioner/requests/api/requestsApi";
-import { DropletIcon, DoveIcon, HeartIcon, CandleIcon } from "@/components/ui/icons/SacramentIcons";
-import { getSacramentIconStyle } from "@/features/parishioner/dashboard/statusStyles";
-import { getStatusPillClasses } from "@/features/parishioner/dashboard/statusStyles";
-import { deriveStatusLabel } from "@/features/parishioner/dashboard/deriveStatusLabel";
 import { RequestStepTracker } from "@/features/parishioner/requests/components/RequestStepTracker";
+import {
+  feeOf,
+  peso,
+  requestRef,
+  SACRAMENT_TITLES,
+  statusSentence,
+  subjectOf,
+  submittedLabel,
+} from "@/features/parishioner/requests/requestDisplay";
 import type { CertificateRequest, SacramentType } from "@/types";
-
-const sacramentLabels: Record<SacramentType, string> = {
-  baptism: "Certificate of Baptism",
-  confirmation: "Certificate of Confirmation",
-  marriage: "Certificate of Marriage",
-  death: "Certificate of Death",
-};
 
 const sacramentIcons: Record<SacramentType, typeof DropletIcon> = {
   baptism: DropletIcon,
@@ -22,18 +23,46 @@ const sacramentIcons: Record<SacramentType, typeof DropletIcon> = {
   death: CandleIcon,
 };
 
+function SacramentBadge({ type, small = false }: { type: SacramentType; small?: boolean }) {
+  const Icon = sacramentIcons[type];
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center rounded-xl ${small ? "h-9 w-9" : "h-11 w-11"} ${getSacramentIconStyle(type)}`}
+      aria-hidden="true"
+    >
+      <Icon className={small ? "h-4 w-4" : "h-5 w-5"} />
+    </span>
+  );
+}
+
+function StatusPill({ request }: { request: CertificateRequest }) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[0.75rem] font-semibold ${getStatusPillClasses(request)}`}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+      {deriveStatusLabel(request)}
+    </span>
+  );
+}
+
+const actionBase =
+  "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 text-[0.875rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25";
+const primaryAction = `${actionBase} bg-primary text-white shadow-[var(--shadow-button)] hover:opacity-90 disabled:opacity-60`;
+const secondaryAction = `${actionBase} border border-border bg-surface text-ink hover:bg-surface-alt`;
+
 interface RequestDetailCardProps {
   request: CertificateRequest;
   parishSlug: string;
+  /** Something the parishioner needs to do: the card is edged in gold. */
+  highlight?: boolean;
 }
 
-export function RequestDetailCard({ request, parishSlug }: RequestDetailCardProps) {
-  const Icon = sacramentIcons[request.sacramentType];
-  const label = deriveStatusLabel(request);
-  const isAwaitingPayment = label === "Awaiting Payment";
-  const isReadyForPickup = label === "Ready for Pickup";
-  const isReleased = label === "Released";
-  const isRejected = label === "Rejected";
+/** One request in progress: what it is, whose it is, where it stands, and the next thing to do. */
+export function RequestDetailCard({ request, parishSlug, highlight = false }: RequestDetailCardProps) {
+  const key = deriveStatusKey(request);
+  const subject = subjectOf(request);
+  const fee = feeOf(request);
   const isPaid = request.payment?.status === "paid";
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
@@ -48,7 +77,7 @@ export function RequestDetailCard({ request, parishSlug }: RequestDetailCardProp
         window.location.reload();
         return;
       }
-      if (!result.checkoutUrl) throw new Error("PayMongo did not return a checkout page.");
+      if (!result.checkoutUrl) throw new Error("GCash didn't open a payment page. Try again in a moment.");
       window.location.assign(result.checkoutUrl);
     } catch (err) {
       setPayError(err instanceof Error ? err.message : "Could not start GCash payment.");
@@ -56,112 +85,148 @@ export function RequestDetailCard({ request, parishSlug }: RequestDetailCardProp
     }
   }
 
+  const actions: ReactNode[] = [];
+  if (key === "awaiting_payment") {
+    actions.push(
+      <button key="pay" type="button" onClick={payWithGcash} disabled={paying} className={`${primaryAction} w-full sm:w-auto`}>
+        <CardIcon />
+        {paying ? "Opening GCash…" : fee ? `Pay ${peso(fee)} with GCash` : "Pay with GCash"}
+      </button>
+    );
+  }
+  if (isPaid) {
+    actions.push(
+      <Link key="receipt" to={`/${parishSlug}/portal/requests/${request.id}/receipt`} className={`${secondaryAction} w-full sm:w-auto`}>
+        View receipt
+      </Link>
+    );
+  }
+
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm transition-shadow hover:shadow-md sm:p-6">
-      <div className="flex items-start gap-3 sm:gap-3.5">
-        <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10 ${getSacramentIconStyle(
-            request.sacramentType
-          )}`}
-        >
-          <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-serif text-[15px] font-semibold leading-snug text-ink sm:text-lg">
-            {sacramentLabels[request.sacramentType]}
-          </p>
-
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-ink-muted">
-            <span
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${getStatusPillClasses(
-                request
-              )}`}
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              {label}
-            </span>
-            <span className="text-border">·</span>
-            <span>
-              {new Date(request.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-            </span>
-            {request.purpose && (
-              <>
-                <span className="text-border">·</span>
-                <span>{request.purpose}</span>
-              </>
-            )}
-            <span className="text-border">·</span>
-            <span>{request.deliveryMethod === "pickup" ? "Self Pickup" : "Digital Copy"}</span>
+    <article
+      className={`rounded-2xl border bg-surface shadow-[var(--shadow-card)] ${
+        highlight ? "border-[#e8c98a] ring-1 ring-[#e8c98a]/60" : "border-border"
+      }`}
+    >
+      <div className="p-4 sm:p-6">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <SacramentBadge type={request.sacramentType} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
+              <div className="min-w-0">
+                <h3 className="font-serif text-[1.1875rem] leading-snug text-ink sm:text-[1.3125rem]">
+                  {SACRAMENT_TITLES[request.sacramentType]}
+                </h3>
+                {subject && <p className="text-[0.9375rem] text-ink">for {subject}</p>}
+              </div>
+              <StatusPill request={request} />
+            </div>
+            <p className="mt-1.5 text-[0.8125rem] text-ink-muted">
+              <span className="font-mono">Ref. {requestRef(request)}</span>
+              <span aria-hidden="true"> · </span>
+              Submitted {submittedLabel(request.createdAt)}
+              <span aria-hidden="true"> · </span>
+              {request.deliveryMethod === "pickup" ? "Pick up at the office" : "Digital copy"}
+              {request.purpose && (
+                <>
+                  <span aria-hidden="true"> · </span>
+                  {request.purpose}
+                </>
+              )}
+            </p>
           </div>
-
-          <RequestStepTracker request={request} />
-
-          {isReadyForPickup && (
-            <div className="mt-4 flex gap-2.5 rounded-xl border border-primary/15 bg-primary/[0.04] px-3.5 py-3 text-sm text-primary sm:px-4 sm:py-3.5">
-              <span className="shrink-0"></span>
-              <p>Your printed certificate is ready at the parish office. Bring a valid ID to claim it.</p>
-            </div>
-          )}
-
-          {isRejected && (
-            <div className="mt-4 flex gap-2.5 rounded-xl border border-danger/20 bg-danger/[0.05] px-3.5 py-3 text-sm text-danger sm:px-4 sm:py-3.5">
-              <span className="shrink-0">ℹ</span>
-              <p>
-                We couldn't match a {sacramentLabels[request.sacramentType].replace("Certificate of ", "")} record with
-                the details provided. Please confirm the parish and approximate date, then submit a new request.
-              </p>
-            </div>
-          )}
         </div>
+
+        <p
+          className={`mt-4 rounded-xl px-4 py-3 text-[0.9375rem] leading-relaxed ${
+            highlight ? "bg-[#fbf3e1] text-[#5c3f0c]" : "bg-surface-alt text-ink"
+          }`}
+        >
+          {statusSentence(request)}
+        </p>
+
+        <div className="mt-5">
+          <RequestStepTracker request={request} />
+        </div>
+
+        {payError && (
+          <p role="alert" className="mt-4 rounded-xl border border-danger/30 bg-danger/[0.06] px-4 py-3 text-[0.875rem] text-danger">
+            {payError}
+          </p>
+        )}
       </div>
 
-      {isAwaitingPayment && (
-        <div className="mt-4 border-t border-border pt-4">
-          {payError && <p className="mb-3 text-sm font-medium text-red-700">{payError}</p>}
-          <button
-            type="button"
-            onClick={payWithGcash}
-            disabled={paying}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-[13.5px] font-bold text-white shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-60 sm:w-auto sm:ml-auto"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              className="h-4 w-4"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
+      {actions.length > 0 && (
+        <div className="flex flex-col-reverse gap-2 border-t border-border px-4 py-3.5 sm:flex-row sm:justify-end sm:px-6">
+          {actions}
+        </div>
+      )}
+    </article>
+  );
+}
+
+/** A finished request in one line, with its wallet or receipt link, or why it wasn't issued. */
+export function CompletedRequestRow({ request, parishSlug }: { request: CertificateRequest; parishSlug: string }) {
+  const key = deriveStatusKey(request);
+  const subject = subjectOf(request);
+  const rejected = key === "rejected";
+
+  return (
+    <li className="flex items-start gap-3 px-4 py-4 sm:px-5">
+      <SacramentBadge type={request.sacramentType} small />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <p className="min-w-0 text-[0.9375rem] font-semibold text-ink">
+            {SACRAMENT_TITLES[request.sacramentType]}
+            {subject && <span className="font-normal text-ink"> · for {subject}</span>}
+          </p>
+          <StatusPill request={request} />
+        </div>
+        <p className="mt-0.5 text-[0.8125rem] text-ink-muted">
+          <span className="font-mono">Ref. {requestRef(request)}</span>
+          <span aria-hidden="true"> · </span>
+          Submitted {submittedLabel(request.createdAt)}
+        </p>
+        {rejected ? (
+          <div className="mt-2 text-[0.875rem]">
+            <p className="text-ink">
+              {request.rejectionReason ? (
+                <>
+                  <span className="font-semibold text-danger">Reason from the office:</span> {request.rejectionReason}
+                </>
+              ) : (
+                "The parish couldn't match a record with the details given."
+              )}
+            </p>
+            <Link
+              to={`/${parishSlug}/portal/requests/new`}
+              className="mt-1.5 inline-flex font-semibold text-primary hover:underline"
             >
-              <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
-              <line x1="2.5" y1="10" x2="21.5" y2="10" />
-            </svg>
-            {paying ? "Opening GCash…" : "Proceed to Payment"}
-          </button>
-        </div>
-      )}
+              Request again with more details →
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[0.875rem]">
+            <Link to={`/${parishSlug}/portal/wallet`} className="font-semibold text-primary hover:underline">
+              Open in wallet →
+            </Link>
+            {request.payment?.status === "paid" && (
+              <Link to={`/${parishSlug}/portal/requests/${request.id}/receipt`} className="font-semibold text-ink-muted hover:text-ink hover:underline">
+                View receipt
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
 
-      {isPaid && (
-        <div className="mt-4 border-t border-border pt-4">
-          <Link
-            to={`/${parishSlug}/portal/requests/${request.id}/receipt`}
-            className="flex w-full items-center justify-center gap-1 rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-semibold text-ink transition-colors hover:bg-surface-alt sm:w-auto sm:ml-auto"
-          >
-            View receipt
-          </Link>
-        </div>
-      )}
-
-      {isReleased && (
-        <div className="mt-4 border-t border-border pt-4">
-          <Link
-            to={`/${parishSlug}/portal/wallet`}
-            className="flex w-full items-center justify-center gap-1 rounded-xl border border-primary/30 px-4 py-2.5 text-[13.5px] font-semibold text-primary transition-colors hover:bg-primary/5 sm:w-auto sm:ml-auto sm:border-0 sm:px-0 sm:py-0 sm:hover:bg-transparent sm:hover:underline"
-          >
-            View in wallet →
-          </Link>
-        </div>
-      )}
-    </div>
+function CardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+      <line x1="2.5" y1="10" x2="21.5" y2="10" />
+    </svg>
   );
 }
