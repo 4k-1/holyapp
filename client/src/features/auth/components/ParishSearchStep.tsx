@@ -41,7 +41,7 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
   }, [query]);
 
   return (
-    <div className="auth-desk flex w-full flex-col gap-5">
+    <div className="auth-desk flex w-full flex-col gap-7">
       <div>
         <h1 className="auth-desk__title">Find your parish</h1>
         <p className="auth-desk__subtitle">Search by name or location to continue.</p>
@@ -61,7 +61,7 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
         />
       </div>
 
-      <div className="flex max-h-[min(22rem,50vh)] flex-col gap-2 overflow-y-auto">
+      <div className="flex max-h-[min(24rem,50vh)] flex-col gap-2.5 overflow-y-auto">
         {loading && (
           <p className="text-[0.84375rem] text-[var(--auth-ink-soft)]">Loading parishes…</p>
         )}

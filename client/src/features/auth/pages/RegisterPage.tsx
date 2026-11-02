@@ -15,12 +15,12 @@ import { getParishBySlug } from "@/features/parish/parishApi";
 import type { Parish } from "@/types";
 import "@/features/auth/styles/authDesk.css";
 
-type Step = "search" | "register" | "otp" | "success";
+type Step = "search" | "details" | "account" | "otp" | "success";
 
 export function RegisterPage() {
   const [searchParams] = useSearchParams();
   const parishSlug = searchParams.get("parish");
-  const [step, setStep] = useState<Step>(parishSlug ? "register" : "search");
+  const [step, setStep] = useState<Step>(parishSlug ? "details" : "search");
   const [selectedParish, setSelectedParish] = useState<Parish | null>(null);
   const [pendingEmail, setPendingEmail] = useState("");
   const [bootError, setBootError] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export function RegisterPage() {
         if (cancelled) return;
         if (parish) {
           setSelectedParish(parish);
-          setStep("register");
+          setStep("details");
         } else {
           setBootError("Parish not found.");
           setStep("search");
@@ -65,12 +65,16 @@ export function RegisterPage() {
     }, 1500);
   }
 
-  const showBack = step === "register" || step === "otp";
-  const backLabel = step === "otp" ? "Back" : "Change parish";
+  const showBack = step === "details" || step === "account" || step === "otp";
+  const backLabel = step === "details" ? "Change parish" : "Back";
 
   function handleBack() {
     if (step === "otp") {
-      setStep("register");
+      setStep("account");
+      return;
+    }
+    if (step === "account") {
+      setStep("details");
       return;
     }
     setSelectedParish(null);
@@ -89,12 +93,18 @@ export function RegisterPage() {
           onSelect={(parish) => {
             setSelectedParish(parish);
             setBootError(null);
-            setStep("register");
+            setStep("details");
           }}
         />
       )}
-      {step === "register" && selectedParish && (
-        <RegisterForm parish={selectedParish} onSubmit={handleRegisterSubmit} />
+      {/* One form across both pages, so what was typed on page 1 is kept. */}
+      {(step === "details" || step === "account") && selectedParish && (
+        <RegisterForm
+          parish={selectedParish}
+          part={step === "details" ? 1 : 2}
+          onNext={() => setStep("account")}
+          onSubmit={handleRegisterSubmit}
+        />
       )}
       {step === "otp" && (
         <OtpStep email={pendingEmail} onVerify={handleVerify} onResend={resendVerificationCode} />

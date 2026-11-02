@@ -52,7 +52,7 @@ export function ResetPasswordPage() {
                 </Link>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6 text-left">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-8 text-left">
                 <div>
                   <h1 className="auth-desk__title">Set a new password</h1>
                   <p className="auth-desk__subtitle">Choose a password with at least 8 characters.</p>

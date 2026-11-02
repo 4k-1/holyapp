@@ -41,7 +41,7 @@ export function ForgotPasswordPage() {
                 </Link>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6 text-left">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-8 text-left">
                 <div>
                   <h1 className="auth-desk__title">Forgot password</h1>
                   <p className="auth-desk__subtitle">Enter your email and we’ll send a reset link.</p>

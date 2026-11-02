@@ -47,7 +47,7 @@ export function OtpStep({ email, onVerify, onResend }: OtpStepProps) {
   }
 
   return (
-    <div className="auth-desk flex w-full flex-col gap-6 text-left">
+    <div className="auth-desk flex w-full flex-col gap-8 text-left">
       <div>
         <h1 className="auth-desk__title">Enter verification code</h1>
         <p className="auth-desk__subtitle">

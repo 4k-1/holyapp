@@ -41,13 +41,13 @@ export function LoginForm({ parish }: LoginFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="auth-desk flex w-full flex-col gap-6 text-left">
+    <form onSubmit={handleSubmit} className="auth-desk flex w-full flex-col gap-8 text-left">
       <div>
         <h1 className="auth-desk__title">Welcome back</h1>
         <p className="auth-desk__subtitle">Sign in to your parish account.</p>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         <div>
           <label htmlFor="login-email" className="auth-desk__label">
             Email

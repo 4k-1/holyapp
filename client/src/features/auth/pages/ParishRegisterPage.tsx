@@ -12,12 +12,12 @@ import {
 } from "@/features/auth/api/authApi";
 import type { Parish } from "@/types";
 
-type Step = "register" | "otp" | "success";
+type Step = "details" | "account" | "otp" | "success";
 
 export function ParishRegisterPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>("register");
+  const [step, setStep] = useState<Step>("details");
   const [pendingEmail, setPendingEmail] = useState("");
 
   async function handleRegisterSubmit(data: RegisterInput) {
@@ -34,12 +34,16 @@ export function ParishRegisterPage() {
     }, 1500);
   }
 
-  const showBack = step === "register" || step === "otp";
-  const backLabel = step === "otp" ? "Back" : "Change parish";
+  const showBack = step !== "success";
+  const backLabel = step === "details" ? "Change parish" : "Back";
 
   function handleBack() {
     if (step === "otp") {
-      setStep("register");
+      setStep("account");
+      return;
+    }
+    if (step === "account") {
+      setStep("details");
       return;
     }
     navigate("/register");
@@ -47,8 +51,14 @@ export function ParishRegisterPage() {
 
   return (
     <AuthShell parish={parish} back={showBack ? { label: backLabel, onClick: handleBack } : undefined}>
-      {step === "register" && (
-        <RegisterForm parish={parish} onSubmit={handleRegisterSubmit} />
+      {/* One form across both pages, so what was typed on page 1 is kept. */}
+      {(step === "details" || step === "account") && (
+        <RegisterForm
+          parish={parish}
+          part={step === "details" ? 1 : 2}
+          onNext={() => setStep("account")}
+          onSubmit={handleRegisterSubmit}
+        />
       )}
       {step === "otp" && (
         <OtpStep email={pendingEmail} onVerify={handleVerify} onResend={resendVerificationCode} />

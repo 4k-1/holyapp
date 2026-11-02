@@ -6,10 +6,13 @@ import "@/features/auth/styles/authDesk.css";
 
 interface RegisterFormProps {
   parish: Parish;
+  /** Page 1 asks about the person; page 2 sets up the sign-in. Fields keep their values between pages. */
+  part: 1 | 2;
+  onNext: () => void;
   onSubmit: (data: RegisterInput) => Promise<void>;
 }
 
-export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
+export function RegisterForm({ parish, part, onNext, onSubmit }: RegisterFormProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [middleName, setMiddleName] = useState("");
@@ -24,6 +27,11 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (part === 1) {
+      onNext();
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
@@ -50,15 +58,21 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="auth-desk flex w-full flex-col gap-6 text-left">
+    <form onSubmit={handleSubmit} className="auth-desk flex w-full flex-col gap-8 text-left">
 
       <div>
-        <h1 className="auth-desk__title">Create your account</h1>
-        <p className="auth-desk__subtitle">Register as a parishioner to request certificates and Mass intentions online.</p>
+        <p className="auth-desk__step">Step {part} of 2</p>
+        <h1 className="auth-desk__title">{part === 1 ? "Create your account" : "Contact and sign-in"}</h1>
+        <p className="auth-desk__subtitle">
+          {part === 1
+            ? "Tell us a little about yourself."
+            : "Where you live, and how you'll sign in."}
+        </p>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-3">
+      {part === 1 && (
+      <div className="flex flex-col gap-5">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="reg-first-name" className="auth-desk__label">
               First name
@@ -91,6 +105,7 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
           </div>
         </div>
 
+        <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="reg-middle-name" className="auth-desk__label">
             Middle name <span className="font-normal text-[var(--auth-ink-faint)]">(optional)</span>
@@ -121,7 +136,12 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
             autoComplete="bday"
           />
         </div>
+        </div>
+      </div>
+      )}
 
+      {part === 2 && (
+      <div className="flex flex-col gap-5">
         <div>
           <label htmlFor="reg-address" className="auth-desk__label">
             Address
@@ -155,7 +175,7 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <AuthPasswordField
             id="reg-password"
             label="Password"
@@ -169,7 +189,7 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
           <AuthPasswordField
             id="reg-confirm-password"
             label="Confirm"
-            placeholder="Confirm"
+            placeholder="Again"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
@@ -178,6 +198,7 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
           />
         </div>
       </div>
+      )}
 
       {error && (
         <p role="alert" className="auth-desk__error">
@@ -186,7 +207,7 @@ export function RegisterForm({ parish, onSubmit }: RegisterFormProps) {
       )}
 
       <button type="submit" className="auth-desk__cta" disabled={loading}>
-        {loading ? "Sending code…" : "Continue"}
+        {part === 1 ? "Continue" : loading ? "Sending code…" : "Create account"}
       </button>
 
       <p className="text-center text-[0.875rem] text-[var(--auth-ink-soft)]">
