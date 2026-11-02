@@ -105,7 +105,7 @@ export function formatWeddingDate(iso: string, style: "short" | "long" = "long")
   });
 }
 
-function daysUntil(iso: string, today = new Date()) {
+export function daysUntil(iso: string, today = new Date()) {
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   return Math.round((new Date(`${iso}T00:00:00`).getTime() - start.getTime()) / 86_400_000);
 }
