@@ -1,10 +1,12 @@
-import type {
-  ButtonHTMLAttributes,
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-  SVGProps,
-  TextareaHTMLAttributes,
+import {
+  createContext,
+  useContext,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type SVGProps,
+  type TextareaHTMLAttributes,
 } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 
@@ -26,6 +28,16 @@ export function AdminFormPage({
   return <div className={`mx-auto w-full max-w-[760px] ${className}`}>{children}</div>;
 }
 
+const NotchedLabelsContext = createContext(false);
+
+/**
+ * Fields inside sit their label on the input's top border, like a notch in the outline,
+ * which keeps a long form compact and easy to scan.
+ */
+export function AdminNotchedLabels({ children }: { children: ReactNode }) {
+  return <NotchedLabelsContext.Provider value>{children}</NotchedLabelsContext.Provider>;
+}
+
 export function AdminField({
   label,
   children,
@@ -35,6 +47,18 @@ export function AdminField({
   children: ReactNode;
   className?: string;
 }) {
+  const notched = useContext(NotchedLabelsContext);
+  if (notched) {
+    // Wrapping in <label> ties the text to its input and lets a click on the notch focus it.
+    return (
+      <label className={`group relative mb-4 block ${className}`}>
+        <span className="pointer-events-none absolute left-2.5 top-0 z-[1] max-w-[calc(100%-1.5rem)] -translate-y-1/2 truncate bg-admin-surface px-1 text-[0.75rem] font-medium leading-none text-admin-ink-muted transition-colors group-focus-within:text-admin-green-700">
+          {label}
+        </span>
+        {children}
+      </label>
+    );
+  }
   return (
     <div className={`mb-4 ${className}`}>
       <label className="mb-1.5 block text-[0.8125rem] font-semibold leading-snug text-admin-ink">
@@ -49,7 +73,8 @@ export function AdminTextarea({
   className = "",
   ...props
 }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={`${fieldInputClass} min-h-[100px] resize-y ${className}`} {...props} />;
+  // A className replaces the default height, since two min-h classes can't be ordered reliably.
+  return <textarea className={`${fieldInputClass} resize-y ${className || "min-h-[100px]"}`} {...props} />;
 }
 
 export function AdminSelect({

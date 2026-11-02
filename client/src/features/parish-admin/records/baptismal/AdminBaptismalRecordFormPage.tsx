@@ -1,20 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import {
-  AdminButton,
   AdminField,
-  AdminFieldGroup,
   AdminFormPage,
-  AdminFormSection,
   AdminInput,
   AdminSelect,
   AdminTextarea,
-  ChecklistIcon,
-  FamilyIcon,
-  NoteIcon,
-  UserIcon,
 } from "@/features/parish-admin/components/AdminForm";
-import { DropletIcon } from "@/components/ui/icons/SacramentIcons";
+import { RecordFormShell, RecordSection } from "@/features/parish-admin/records/RecordFormShell";
+import { span } from "@/features/parish-admin/records/recordFormSpan";
 import {
   createBaptismalRecord,
   getBaptismalRecord,
@@ -219,285 +213,148 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   }
 
   return (
-    <AdminFormPage>
-      <BackLink />
-
-      <div className="mb-5">
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">
-          {mode === "edit" ? "Edit" : "Add"} Baptismal Record
-        </h1>
-        <p className="text-admin-body text-admin-ink-muted">
-          {mode === "edit"
-            ? "Update the details of this record."
-            : "Enter details exactly as they appear in the parish register."}
-        </p>
-        {prefill && (
-          <p className="mt-2 rounded-[8px] border border-admin-gold-600/30 bg-admin-gold-100/40 px-3 py-2 text-admin-support text-admin-gold-700">
+    <RecordFormShell
+      title={`${mode === "edit" ? "Edit" : "Add"} Baptismal Record`}
+      subtitle={
+        mode === "edit"
+          ? "Update the details of this record."
+          : "Enter details exactly as they appear in the parish register."
+      }
+      notice={
+        prefill && (
+          <p className="mb-4 rounded-[8px] border border-admin-gold-600/30 bg-admin-gold-100/40 px-3 py-2 text-admin-support text-admin-gold-700">
             Linked from schedule: <span className="font-semibold">{prefill.subjectNameHint || "Untitled block"}</span>
             {prefill.date ? ` · ${prefill.date}` : ""}
           </p>
-        )}
-      </div>
+        )
+      }
+      submitting={submitting}
+      submitLabel={mode === "edit" ? "Save changes" : "Confirm & add record"}
+      onSubmit={handleSubmit}
+    >
+      <RecordSection title="Person baptized" note="As written in the register.">
+        <AdminField label="First name" className={`mb-0 ${span.third}`}>
+          <AdminInput placeholder="Juan" value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Middle name" className={`mb-0 ${span.third}`}>
+          <AdminInput placeholder="Santos" value={form.middleName} onChange={(e) => setField("middleName", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Last name" className={`mb-0 ${span.third}`}>
+          <AdminInput placeholder="Dela Cruz" value={form.lastName} onChange={(e) => setField("lastName", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Date of birth" className={`mb-0 ${span.third}`}>
+          <AdminInput type="date" value={form.dateOfBirth} onChange={(e) => setField("dateOfBirth", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Sex" className={`mb-0 ${span.third}`}>
+          <AdminSelect value={form.sex} onChange={(e) => setField("sex", e.target.value)}>
+            <option value="">—</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </AdminSelect>
+        </AdminField>
+        <AdminField label="Legitimacy status" className={`mb-0 ${span.third}`}>
+          <AdminSelect
+            value={form.legitimacyStatus}
+            onChange={(e) => setField("legitimacyStatus", e.target.value as LegitimacyStatus | "")}
+          >
+            <option value="">—</option>
+            <option value="Legitimate">Legitimate</option>
+            <option value="Illegitimate">Illegitimate</option>
+          </AdminSelect>
+        </AdminField>
+        <AdminField label="Place of birth" className={`mb-0 ${span.half}`}>
+          <AdminInput value={form.placeOfBirth} onChange={(e) => setField("placeOfBirth", e.target.value)} />
+        </AdminField>
+        <AdminField label="Address" className={`mb-0 ${span.full}`}>
+          <AdminInput value={form.address} onChange={(e) => setField("address", e.target.value)} />
+        </AdminField>
+      </RecordSection>
 
-      <form onSubmit={handleSubmit}>
-        <AdminFormSection
-          tone="blue"
-          icon={<UserIcon className="h-4.5 w-4.5" />}
-          title="Personal information"
-          description="Who was baptized, and where they were born."
-        >
-          <AdminFieldGroup cols={3}>
-            <AdminField label="First name" className="mb-0">
-              <AdminInput
-                placeholder="Juan"
-                value={form.firstName}
-                onChange={(e) => setField("firstName", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Middle name" className="mb-0">
-              <AdminInput
-                placeholder="Santos"
-                value={form.middleName}
-                onChange={(e) => setField("middleName", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Last name" className="mb-0">
-              <AdminInput
-                placeholder="Dela Cruz"
-                value={form.lastName}
-                onChange={(e) => setField("lastName", e.target.value)}
-                required
-              />
-            </AdminField>
-          </AdminFieldGroup>
+      <RecordSection title="Baptism" note="Date, minister and church.">
+        <AdminField label="Date of baptism" className={`mb-0 ${span.third}`}>
+          <AdminInput type="date" value={form.dateOfBaptism} onChange={(e) => setField("dateOfBaptism", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Minister" className={`mb-0 ${span.twoThirds}`}>
+          <AdminInput placeholder="Rev. Fr." value={form.minister} onChange={(e) => setField("minister", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Place of baptism" className={`mb-0 ${span.full}`}>
+          <AdminInput value={form.placeOfBaptism} onChange={(e) => setField("placeOfBaptism", e.target.value)} required />
+        </AdminField>
+      </RecordSection>
 
-          <AdminFieldGroup cols={3} title="Birth details">
-            <AdminField label="Sex" className="mb-0">
-              <AdminSelect value={form.sex} onChange={(e) => setField("sex", e.target.value)}>
-                <option value="">—</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </AdminSelect>
-            </AdminField>
-            <AdminField label="Date of birth" className="mb-0">
-              <AdminInput
-                type="date"
-                value={form.dateOfBirth}
-                onChange={(e) => setField("dateOfBirth", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Place of birth" className="mb-0">
-              <AdminInput value={form.placeOfBirth} onChange={(e) => setField("placeOfBirth", e.target.value)} />
-            </AdminField>
-          </AdminFieldGroup>
+      <RecordSection title="Register reference" note="Where this entry sits in the book.">
+        <AdminField label="Book no." className={`mb-0 ${span.sixth}`}>
+          <AdminInput placeholder="6" value={form.bookNumber} onChange={(e) => setField("bookNumber", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Page no." className={`mb-0 ${span.sixth}`}>
+          <AdminInput placeholder="21" value={form.pageNumber} onChange={(e) => setField("pageNumber", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Entry no." className={`mb-0 ${span.sixth}`}>
+          <AdminInput placeholder="04" value={form.entryNumber} onChange={(e) => setField("entryNumber", e.target.value)} required />
+        </AdminField>
+      </RecordSection>
 
-          <AdminFieldGroup cols={2}>
-            <AdminField label="Address" className="mb-0 sm:col-span-2">
-              <AdminInput value={form.address} onChange={(e) => setField("address", e.target.value)} />
-            </AdminField>
-            <AdminField label="Legitimacy status" className="mb-0">
-              <AdminSelect
-                value={form.legitimacyStatus}
-                onChange={(e) => setField("legitimacyStatus", e.target.value as LegitimacyStatus | "")}
-              >
-                <option value="">—</option>
-                <option value="Legitimate">Legitimate</option>
-                <option value="Illegitimate">Illegitimate</option>
-              </AdminSelect>
-            </AdminField>
-          </AdminFieldGroup>
-        </AdminFormSection>
+      <RecordSection title="Parents">
+        <AdminField label="Father's first name" className={`mb-0 ${span.half}`}>
+          <AdminInput value={form.fatherFirstName} onChange={(e) => setField("fatherFirstName", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Father's last name" className={`mb-0 ${span.half}`}>
+          <AdminInput value={form.fatherLastName} onChange={(e) => setField("fatherLastName", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Mother's first name" className={`mb-0 ${span.half}`}>
+          <AdminInput value={form.motherFirstName} onChange={(e) => setField("motherFirstName", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Mother's last name" className={`mb-0 ${span.half}`}>
+          <AdminInput value={form.motherLastName} onChange={(e) => setField("motherLastName", e.target.value)} required />
+        </AdminField>
+      </RecordSection>
 
-        <AdminFormSection
-          tone="gold"
-          icon={<DropletIcon className="h-4.5 w-4.5" />}
-          title="Baptismal information"
-          description="Minister, date, and register reference for this sacrament."
-        >
-          <AdminFieldGroup cols={2}>
-            <AdminField label="Minister" className="mb-0">
-              <AdminInput
-                placeholder="Rev. Fr."
-                value={form.minister}
-                onChange={(e) => setField("minister", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Date of baptism" className="mb-0">
-              <AdminInput
-                type="date"
-                value={form.dateOfBaptism}
-                onChange={(e) => setField("dateOfBaptism", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Place of baptism" className="mb-0 sm:col-span-2">
-              <AdminInput
-                value={form.placeOfBaptism}
-                onChange={(e) => setField("placeOfBaptism", e.target.value)}
-                required
-              />
-            </AdminField>
-          </AdminFieldGroup>
+      <RecordSection title="Grandparents">
+        <AdminField label="Paternal grandfather" className={`mb-0 ${span.half}`}>
+          <AdminInput value={form.paternalGrandfather} onChange={(e) => setField("paternalGrandfather", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Paternal grandmother" className={`mb-0 ${span.half}`}>
+          <AdminInput value={form.paternalGrandmother} onChange={(e) => setField("paternalGrandmother", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Maternal grandfather" className={`mb-0 ${span.half}`}>
+          <AdminInput value={form.maternalGrandfather} onChange={(e) => setField("maternalGrandfather", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Maternal grandmother" className={`mb-0 ${span.half}`}>
+          <AdminInput value={form.maternalGrandmother} onChange={(e) => setField("maternalGrandmother", e.target.value)} required />
+        </AdminField>
+      </RecordSection>
 
-          <AdminFieldGroup cols={3} title="Register reference" className="mb-0">
-            <AdminField label="Book no." className="mb-0">
-              <AdminInput
-                placeholder="6"
-                value={form.bookNumber}
-                onChange={(e) => setField("bookNumber", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Page no." className="mb-0">
-              <AdminInput
-                placeholder="21"
-                value={form.pageNumber}
-                onChange={(e) => setField("pageNumber", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Entry no." className="mb-0">
-              <AdminInput
-                placeholder="04"
-                value={form.entryNumber}
-                onChange={(e) => setField("entryNumber", e.target.value)}
-                required
-              />
-            </AdminField>
-          </AdminFieldGroup>
-        </AdminFormSection>
-
-        <AdminFormSection
-          tone="amber"
-          icon={<FamilyIcon className="h-4.5 w-4.5" />}
-          title="Parents"
-          description="As recorded in the parish register."
-        >
-          <AdminFieldGroup cols={2} title="Father">
-            <AdminField label="First name" className="mb-0">
-              <AdminInput
-                value={form.fatherFirstName}
-                onChange={(e) => setField("fatherFirstName", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Last name" className="mb-0">
-              <AdminInput
-                value={form.fatherLastName}
-                onChange={(e) => setField("fatherLastName", e.target.value)}
-                required
-              />
-            </AdminField>
-          </AdminFieldGroup>
-
-          <AdminFieldGroup cols={2} title="Mother" className="mb-0">
-            <AdminField label="First name" className="mb-0">
-              <AdminInput
-                value={form.motherFirstName}
-                onChange={(e) => setField("motherFirstName", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Last name" className="mb-0">
-              <AdminInput
-                value={form.motherLastName}
-                onChange={(e) => setField("motherLastName", e.target.value)}
-                required
-              />
-            </AdminField>
-          </AdminFieldGroup>
-        </AdminFormSection>
-
-        <AdminFormSection
-          tone="green"
-          icon={<FamilyIcon className="h-4.5 w-4.5" />}
-          title="Grandparents"
-        >
-          <AdminFieldGroup cols={2} title="Paternal">
-            <AdminField label="Grandfather" className="mb-0">
-              <AdminInput
-                value={form.paternalGrandfather}
-                onChange={(e) => setField("paternalGrandfather", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Grandmother" className="mb-0">
-              <AdminInput
-                value={form.paternalGrandmother}
-                onChange={(e) => setField("paternalGrandmother", e.target.value)}
-                required
-              />
-            </AdminField>
-          </AdminFieldGroup>
-
-          <AdminFieldGroup cols={2} title="Maternal" className="mb-0">
-            <AdminField label="Grandfather" className="mb-0">
-              <AdminInput
-                value={form.maternalGrandfather}
-                onChange={(e) => setField("maternalGrandfather", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Grandmother" className="mb-0">
-              <AdminInput
-                value={form.maternalGrandmother}
-                onChange={(e) => setField("maternalGrandmother", e.target.value)}
-                required
-              />
-            </AdminField>
-          </AdminFieldGroup>
-        </AdminFormSection>
-
-        <AdminFormSection
-          tone="neutral"
-          icon={<ChecklistIcon className="h-4.5 w-4.5" />}
-          title="Supporting documents"
-        >
-          <div className="flex flex-wrap gap-6">
-            <label className="flex cursor-pointer items-center gap-2 text-admin-body text-admin-ink">
-              <input
-                type="checkbox"
-                checked={form.withMarriageCertificate}
-                onChange={(e) => setField("withMarriageCertificate", e.target.checked)}
-                className="h-4 w-4 rounded border-admin-border-strong"
-              />
-              Marriage certificate on file
-            </label>
-            <label className="flex cursor-pointer items-center gap-2 text-admin-body text-admin-ink">
-              <input
-                type="checkbox"
-                checked={form.withBirthCertificate}
-                onChange={(e) => setField("withBirthCertificate", e.target.checked)}
-                className="h-4 w-4 rounded border-admin-border-strong"
-              />
-              Birth certificate on file
-            </label>
-          </div>
-        </AdminFormSection>
-
-        <AdminFormSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks" className="mb-0">
+      <RecordSection title="Documents and remarks" note="Copies on file, and anything else the register notes.">
+        <div className="col-span-6 flex flex-wrap gap-x-6 gap-y-2">
+          <label className="flex cursor-pointer items-center gap-2 text-admin-body text-admin-ink">
+            <input
+              type="checkbox"
+              checked={form.withMarriageCertificate}
+              onChange={(e) => setField("withMarriageCertificate", e.target.checked)}
+              className="h-4 w-4 rounded border-admin-border-strong"
+            />
+            Marriage certificate on file
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-admin-body text-admin-ink">
+            <input
+              type="checkbox"
+              checked={form.withBirthCertificate}
+              onChange={(e) => setField("withBirthCertificate", e.target.checked)}
+              className="h-4 w-4 rounded border-admin-border-strong"
+            />
+            Birth certificate on file
+          </label>
+        </div>
+        <AdminField label="Remarks" className={`mb-0 ${span.full}`}>
           <AdminTextarea
             value={form.remarks}
             onChange={(e) => setField("remarks", e.target.value)}
             placeholder="Optional notes from the register"
+            className="min-h-[84px]"
           />
-        </AdminFormSection>
-
-        <div className="mt-5 flex justify-end gap-2.5">
-          <AdminButton variant="secondary" type="button" onClick={() => navigate(-1)}>
-            Cancel
-          </AdminButton>
-          <AdminButton type="submit" disabled={submitting}>
-            <CheckIcon />
-            {submitting ? "Saving…" : mode === "edit" ? "Save changes" : "Confirm & add record"}
-          </AdminButton>
-        </div>
-      </form>
-    </AdminFormPage>
+        </AdminField>
+      </RecordSection>
+    </RecordFormShell>
   );
 }
 
@@ -517,10 +374,3 @@ function BackLink() {
   );
 }
 
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="h-3.5 w-3.5">
-      <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
