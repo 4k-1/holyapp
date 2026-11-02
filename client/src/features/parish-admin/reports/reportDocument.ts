@@ -8,213 +8,405 @@ import {
 import {
   countPhrase,
   formatMonthLabel,
+  formatPeso,
   REPORT_SECTIONS,
-  SACRAMENT_SERIES,
   sum,
   type ReportDateRange,
   type ReportKind,
 } from "@/features/parish-admin/reports/reportsHelpers";
 
-export interface ReportPdfSection {
-  title: string;
-  rows: string[][];
-  headers: string[];
+/**
+ * Literal colours for the report sheet. Its charts are captured into a PDF and printed outside the admin
+ * shell, where the admin CSS variables don't reach, so they can't use the tokens.
+ */
+export const SHEET_COLORS = {
+  teal: "#16798c",
+  tealLight: "#7fc4cd",
+  gold: "#e9b04f",
+  slate: "#9fb2b8",
+  rose: "#d98c8c",
+  ink: "#15323a",
+  muted: "#55707a",
+  faint: "#8ba1a7",
+  grid: "#e0e9eb",
+} as const;
+
+const SLICE_COLORS = [SHEET_COLORS.teal, SHEET_COLORS.tealLight, SHEET_COLORS.gold, SHEET_COLORS.slate];
+
+export interface ReportTile {
+  label: string;
+  value: string;
+  /** The last finished period against the one before it; null when there is nothing fair to compare. */
+  change: { pct: number; caption: string } | null;
 }
 
-export interface ReportPdfDocument {
+export interface ReportSeries {
+  id: string;
+  label: string;
+  color: string;
+  values: number[];
+}
+
+export interface ReportSlice {
+  id: string;
+  label: string;
+  value: number;
+  color: string;
+}
+
+export interface ReportHighlight {
+  label: string;
+  value: string;
+  note: string;
+}
+
+/** How a row's total sits against the average row, shown as a pill in the table. */
+export type ReportLevel = "high" | "typical" | "low";
+
+export type CsvCell = string | number;
+
+export interface ReportDocument {
   kind: ReportKind;
   title: string;
   parishName: string;
   period: string;
   generatedOn: string;
+  /** One sentence; the detail lives in the highlights. */
   summary: string;
-  sections: ReportPdfSection[];
+  empty: boolean;
+  tiles: ReportTile[];
+  highlights: ReportHighlight[];
+  trend: { title: string; labels: string[]; series: ReportSeries[]; money: boolean };
+  breakdown: { title: string; slices: ReportSlice[]; money: boolean };
+  table: { title: string; headers: string[]; rows: string[][]; totals: string[]; levels: ReportLevel[] };
+  csv: { headers: string[]; rows: CsvCell[][] };
+  /** Without an extension; PDF and CSV add their own. */
   filename: string;
 }
 
-function slugDate() {
-  return new Date().toISOString().slice(0, 10);
+/**
+ * Compare the last finished period with the one before it. A period still under way (this year, this month)
+ * is skipped, since a part-year against a full year always looks like a drop.
+ */
+function change(values: number[], labels: string[], lastIsOpen: boolean): ReportTile["change"] {
+  const end = lastIsOpen ? values.length - 1 : values.length;
+  if (end < 2) return null;
+  const last = values[end - 1];
+  const prev = values[end - 2];
+  if (prev === 0) return null;
+  return { pct: ((last - prev) / prev) * 100, caption: `${labels[end - 1]} vs ${labels[end - 2]}` };
 }
 
-function pesoForPdf(amount: number) {
-  return `PHP ${Math.round(amount).toLocaleString()}`;
+function levels(totals: number[]): ReportLevel[] {
+  const average = totals.length ? sum(totals) / totals.length : 0;
+  return totals.map((value) => (value >= average * 1.15 ? "high" : value <= average * 0.85 ? "low" : "typical"));
 }
+
+/** "Jun ’26", so a month never reads as a day of the month. */
+function monthLabel(month: string) {
+  return formatMonthLabel(month).replace(" ", " ’");
+}
+
+function longMonth(month: string) {
+  const [year, monthNum] = month.split("-");
+  return new Date(Number(year), Number(monthNum) - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function share(part: number, whole: number) {
+  return whole === 0 ? 0 : Math.round((part / whole) * 100);
+}
+
+function peak<T>(rows: T[], value: (row: T) => number) {
+  return rows.reduce<T | null>((best, row) => (best === null || value(row) > value(best) ? row : best), null);
+}
+
+function trough<T>(rows: T[], value: (row: T) => number) {
+  return rows.reduce<T | null>((low, row) => (low === null || value(row) < value(low) ? row : low), null);
+}
+
+function largest(slices: ReportSlice[]) {
+  return slices.reduce((best, slice) => (slice.value > best.value ? slice : best), slices[0]);
+}
+
+const currentMonth = () => new Date().toISOString().slice(0, 7);
 
 export async function buildReportDocument(
   kind: ReportKind,
   parish: { id: string; name: string },
   range: ReportDateRange,
   period: string
-): Promise<ReportPdfDocument> {
+): Promise<ReportDocument> {
   const meta = REPORT_SECTIONS.find((section) => section.id === kind) ?? REPORT_SECTIONS[0];
-  const generatedOn = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-  const filename = `${kind}-report-${slugDate()}.pdf`;
-
-  if (kind === "sacraments") {
-    const rows = await getSacramentYearly(parish.id, range);
-    const totals = {
-      baptism: sum(rows.map((row) => row.baptism)),
-      confirmation: sum(rows.map((row) => row.confirmation)),
-      marriage: sum(rows.map((row) => row.marriage)),
-      death: sum(rows.map((row) => row.death)),
-    };
-    return {
-      kind,
-      title: meta.label,
-      parishName: parish.name,
-      period,
-      generatedOn,
-      summary: `${countPhrase(totals.baptism, "baptism")}, ${countPhrase(totals.confirmation, "confirmation")}, ${countPhrase(totals.marriage, "marriage")}, and ${countPhrase(totals.death, "death")} for ${period}.`,
-      filename,
-      sections: [
-        {
-          title: "By year",
-          headers: ["Year", "Baptism", "Confirmation", "Marriage", "Death", "Total"],
-          rows: rows.map((row) => [
-            String(row.year),
-            String(row.baptism),
-            String(row.confirmation),
-            String(row.marriage),
-            String(row.death),
-            String(row.baptism + row.confirmation + row.marriage + row.death),
-          ]),
-        },
-        {
-          title: "Totals in this period",
-          headers: ["Sacrament", "Count"],
-          rows: SACRAMENT_SERIES.map((item) => [item.label, String(totals[item.id])]),
-        },
-      ],
-    };
-  }
-
-  if (kind === "certificates") {
-    const rows = await getCertificateMonthly(parish.id, range);
-    const total = sum(rows.map((row) => row.pending + row.processing + row.released + row.rejected));
-    const released = sum(rows.map((row) => row.released));
-    const inOffice = sum(rows.map((row) => row.pending + row.processing));
-    return {
-      kind,
-      title: meta.label,
-      parishName: parish.name,
-      period,
-      generatedOn,
-      summary: `${countPhrase(total, "certificate request")} for ${period} — ${released} released, ${inOffice} still in the office.`,
-      filename,
-      sections: [
-        {
-          title: "Requests by month",
-          headers: ["Month", "Pending", "Processing", "Released", "Rejected", "Total"],
-          rows: rows.map((row) => [
-            formatMonthLabel(row.month),
-            String(row.pending),
-            String(row.processing),
-            String(row.released),
-            String(row.rejected),
-            String(row.pending + row.processing + row.released + row.rejected),
-          ]),
-        },
-        {
-          title: "By sacrament",
-          headers: ["Sacrament", "Count"],
-          rows: SACRAMENT_SERIES.map((item) => [item.label, String(sum(rows.map((row) => row[item.id])))]),
-        },
-        {
-          title: "By status",
-          headers: ["Status", "Count"],
-          rows: [
-            ["Released", String(released)],
-            ["Processing", String(sum(rows.map((row) => row.processing)))],
-            ["Pending", String(sum(rows.map((row) => row.pending)))],
-            ["Rejected", String(sum(rows.map((row) => row.rejected)))],
-          ],
-        },
-      ],
-    };
-  }
-
-  if (kind === "donations") {
-    const rows = await getDonationMonthly(parish.id, range);
-    const total = sum(rows.map((row) => row.amount));
-    return {
-      kind,
-      title: meta.label,
-      parishName: parish.name,
-      period,
-      generatedOn,
-      summary: `Gifts recorded for ${period} total ${formatAmount(total)}.`,
-      filename,
-      sections: [
-        {
-          title: "Amount by month",
-          headers: ["Month", "Amount", "Cash", "GCash"],
-          rows: rows.map((row) => [
-            formatMonthLabel(row.month),
-            pesoForPdf(row.amount),
-            pesoForPdf(row.cash),
-            pesoForPdf(row.gcash),
-          ]),
-        },
-        {
-          title: "By purpose",
-          headers: ["Purpose", "Amount"],
-          rows: [
-            ["Church roof repair", pesoForPdf(sum(rows.map((row) => row.roof)))],
-            ["Sunday offertory", pesoForPdf(sum(rows.map((row) => row.offertory)))],
-            ["Sound system fund", pesoForPdf(sum(rows.map((row) => row.sound)))],
-            ["Outreach for the poor", pesoForPdf(sum(rows.map((row) => row.outreach)))],
-          ],
-        },
-        {
-          title: "By type",
-          headers: ["Type", "Amount"],
-          rows: [
-            ["Cash", pesoForPdf(sum(rows.map((row) => row.cash)))],
-            ["GCash", pesoForPdf(sum(rows.map((row) => row.gcash)))],
-          ],
-        },
-      ],
-    };
-  }
-
-  const rows = await getIntentionMonthly(parish.id, range);
-  const total = sum(rows.map((row) => row.pending + row.confirmed + row.said));
-  const said = sum(rows.map((row) => row.said));
-  const offering = sum(rows.map((row) => row.offering));
-  return {
+  const base = {
     kind,
     title: meta.label,
     parishName: parish.name,
     period,
-    generatedOn,
-    summary: `${countPhrase(total, "Mass intention")} for ${period} — ${said} already said. Offerings ${formatAmount(offering)}.`,
-    filename,
-    sections: [
-      {
-        title: "Intentions by month",
-        headers: ["Month", "Pending", "Confirmed", "Said", "Total", "Offerings"],
-        rows: rows.map((row) => [
-          formatMonthLabel(row.month),
-          String(row.pending),
-          String(row.confirmed),
-          String(row.said),
-          String(row.pending + row.confirmed + row.said),
-          pesoForPdf(row.offering),
-        ]),
+    generatedOn: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+    filename: `${kind}-report-${new Date().toISOString().slice(0, 10)}`,
+  };
+
+  if (kind === "sacraments") {
+    const rows = await getSacramentYearly(range);
+    const labels = rows.map((row) => String(row.year));
+    const open = rows.length > 0 && rows[rows.length - 1].year === new Date().getFullYear();
+    const series: ReportSeries[] = [
+      { id: "baptism", label: "Baptism", color: SHEET_COLORS.teal, values: rows.map((row) => row.baptism) },
+      { id: "confirmation", label: "Confirmation", color: SHEET_COLORS.tealLight, values: rows.map((row) => row.confirmation) },
+      { id: "marriage", label: "Marriage", color: SHEET_COLORS.gold, values: rows.map((row) => row.marriage) },
+      { id: "death", label: "Death", color: SHEET_COLORS.slate, values: rows.map((row) => row.death) },
+    ];
+    const yearTotal = (row: (typeof rows)[number]) => row.baptism + row.confirmation + row.marriage + row.death;
+    const totals = series.map((item) => sum(item.values));
+    const all = sum(totals);
+    const busiest = peak(rows, yearTotal);
+    const quietest = trough(rows, yearTotal);
+    const confirmationYears = rows.filter((row) => row.confirmation > 0).length;
+    return {
+      ...base,
+      empty: all === 0,
+      summary:
+        all === 0
+          ? `No sacraments were recorded for ${period}.`
+          : `The register holds ${countPhrase(all, "sacrament")} for ${period}, across ${countPhrase(rows.length, "year")}.`,
+      tiles: series.map((item, index) => ({
+        label: `${item.label}s`,
+        value: totals[index].toLocaleString(),
+        change: change(item.values, labels, open),
+      })),
+      highlights: all === 0 ? [] : [
+        { label: "Busiest year", value: String(busiest?.year ?? "—"), note: `${busiest ? yearTotal(busiest) : 0} sacraments` },
+        ...(rows.length > 1
+          ? [{ label: "Quietest year", value: String(quietest?.year ?? "—"), note: `${quietest ? yearTotal(quietest) : 0} sacraments` }]
+          : []),
+        { label: "Baptisms", value: `${share(totals[0], all)}%`, note: "of all sacraments" },
+        { label: "Confirmation years", value: `${confirmationYears} of ${rows.length}`, note: "confirmations come in clusters" },
+        ...(open ? [{ label: `${rows[rows.length - 1].year} so far`, value: String(yearTotal(rows[rows.length - 1])), note: "the year is still under way" }] : []),
+      ],
+      // Confirmations swing between none and dozens, which turns a line into a zig-zag; they show in the donut and table.
+      trend: {
+        title: "Baptisms, marriages and deaths",
+        labels,
+        series: series.filter((item) => item.id !== "confirmation"),
+        money: false,
       },
-      {
-        title: "By status",
-        headers: ["Status", "Count"],
-        rows: [
-          ["Said", String(said)],
-          ["Confirmed", String(sum(rows.map((row) => row.confirmed)))],
-          ["Pending", String(sum(rows.map((row) => row.pending)))],
+      breakdown: {
+        title: "Share by sacrament",
+        money: false,
+        slices: series.map((item, index) => ({ id: item.id, label: item.label, value: totals[index], color: item.color })),
+      },
+      table: {
+        title: "By year",
+        headers: ["Year", "Baptism", "Confirmation", "Marriage", "Death", "Total"],
+        rows: rows.map((row) => [row.year, row.baptism, row.confirmation, row.marriage, row.death, yearTotal(row)].map(String)),
+        totals: ["Total", ...totals.map(String), String(all)],
+        levels: levels(rows.map(yearTotal)),
+      },
+      csv: {
+        headers: ["Year", "Baptism", "Confirmation", "Marriage", "Death", "Total"],
+        rows: rows.map((row) => [row.year, row.baptism, row.confirmation, row.marriage, row.death, yearTotal(row)]),
+      },
+    };
+  }
+
+  if (kind === "certificates") {
+    const rows = await getCertificateMonthly(range);
+    const labels = rows.map((row) => monthLabel(row.month));
+    const open = rows.length > 0 && rows[rows.length - 1].month === currentMonth();
+    const monthTotal = (row: (typeof rows)[number]) => row.pending + row.processing + row.released + row.rejected;
+    const total = sum(rows.map(monthTotal));
+    const released = sum(rows.map((row) => row.released));
+    const processing = sum(rows.map((row) => row.processing));
+    const pending = sum(rows.map((row) => row.pending));
+    const rejected = sum(rows.map((row) => row.rejected));
+    const online = sum(rows.map((row) => row.online));
+    const bySacrament = [
+      { label: "Baptism", value: sum(rows.map((row) => row.baptism)) },
+      { label: "Confirmation", value: sum(rows.map((row) => row.confirmation)) },
+      { label: "Marriage", value: sum(rows.map((row) => row.marriage)) },
+      { label: "Death", value: sum(rows.map((row) => row.death)) },
+    ].sort((a, b) => b.value - a.value);
+    const busiest = peak(rows, monthTotal);
+    return {
+      ...base,
+      empty: total === 0,
+      summary:
+        total === 0
+          ? `No certificate requests came in for ${period}.`
+          : `The office took in ${countPhrase(total, "certificate request")} for ${period} and released ${share(released, total)}% of them.`,
+      tiles: [
+        { label: "Requests", value: total.toLocaleString(), change: change(rows.map(monthTotal), labels, open) },
+        { label: "Released", value: released.toLocaleString(), change: change(rows.map((row) => row.released), labels, open) },
+        { label: "In the office", value: (processing + pending).toLocaleString(), change: change(rows.map((row) => row.processing + row.pending), labels, open) },
+        { label: "Rejected", value: rejected.toLocaleString(), change: null },
+      ],
+      highlights: total === 0 ? [] : [
+        { label: "Still in the office", value: String(processing + pending), note: `${pending} pending, ${processing} processing` },
+        { label: "Most requested", value: bySacrament[0].label, note: `${share(bySacrament[0].value, total)}% of requests` },
+        { label: "Came in online", value: `${share(online, total)}%`, note: `${total - online} at the window` },
+        { label: "Busiest month", value: busiest ? longMonth(busiest.month) : "—", note: `${busiest ? monthTotal(busiest) : 0} requests` },
+      ],
+      trend: {
+        title: "Requests by month",
+        labels,
+        money: false,
+        series: [
+          { id: "total", label: "All requests", color: SHEET_COLORS.teal, values: rows.map(monthTotal) },
+          { id: "released", label: "Released", color: SHEET_COLORS.gold, values: rows.map((row) => row.released) },
         ],
       },
+      breakdown: {
+        title: "By status",
+        money: false,
+        slices: [
+          { id: "released", label: "Released", value: released, color: SHEET_COLORS.teal },
+          { id: "processing", label: "Processing", value: processing, color: SHEET_COLORS.tealLight },
+          { id: "pending", label: "Pending", value: pending, color: SHEET_COLORS.gold },
+          { id: "rejected", label: "Rejected", value: rejected, color: SHEET_COLORS.rose },
+        ],
+      },
+      table: {
+        title: "Requests by month",
+        headers: ["Month", "Pending", "Processing", "Released", "Rejected", "Total"],
+        rows: rows.map((row, index) => [labels[index], row.pending, row.processing, row.released, row.rejected, monthTotal(row)].map(String)),
+        totals: ["Total", String(pending), String(processing), String(released), String(rejected), String(total)],
+        levels: levels(rows.map(monthTotal)),
+      },
+      csv: {
+        headers: [
+          "Month", "Pending", "Processing", "Released", "Rejected", "Total",
+          "Baptism", "Confirmation", "Marriage", "Death", "Online", "Walk-in",
+        ],
+        rows: rows.map((row) => [
+          row.month, row.pending, row.processing, row.released, row.rejected, monthTotal(row),
+          row.baptism, row.confirmation, row.marriage, row.death, row.online, row.walkin,
+        ]),
+      },
+    };
+  }
+
+  if (kind === "donations") {
+    const { rows, purposes } = await getDonationMonthly(range);
+    const labels = rows.map((row) => monthLabel(row.month));
+    const open = rows.length > 0 && rows[rows.length - 1].month === currentMonth();
+    const total = sum(rows.map((row) => row.amount));
+    const cash = sum(rows.map((row) => row.cash));
+    const gcash = sum(rows.map((row) => row.gcash));
+    // Purposes are typed in by the office, so keep the four largest and fold the rest into "Other".
+    const top = purposes.slice(0, purposes.length > 4 ? 3 : 4);
+    const rest = sum(purposes.slice(top.length).map((item) => item.amount));
+    const slices: ReportSlice[] = [
+      ...top.map((item, index) => ({ id: item.purpose, label: item.purpose, value: item.amount, color: SLICE_COLORS[index] })),
+      ...(rest > 0 ? [{ id: "other", label: "Other", value: rest, color: SLICE_COLORS[3] }] : []),
+    ];
+    const best = peak(rows, (row) => row.amount);
+    const low = trough(rows, (row) => row.amount);
+    const biggest = largest(slices);
+    const average = rows.length ? total / rows.length : 0;
+    return {
+      ...base,
+      empty: total === 0,
+      summary:
+        total === 0
+          ? `No gifts were recorded for ${period}.`
+          : `Gifts recorded for ${period} total ${formatAmount(total)} over ${countPhrase(rows.length, "month")}.`,
+      tiles: [
+        { label: "Total given", value: formatPeso(total), change: change(rows.map((row) => row.amount), labels, open) },
+        { label: "Cash", value: formatPeso(cash), change: change(rows.map((row) => row.cash), labels, open) },
+        { label: "GCash", value: formatPeso(gcash), change: change(rows.map((row) => row.gcash), labels, open) },
+        { label: "Monthly average", value: formatPeso(average), change: null },
+      ],
+      highlights: total === 0 ? [] : [
+        { label: "Strongest month", value: best ? longMonth(best.month) : "—", note: formatPeso(best?.amount ?? 0) },
+        ...(rows.length > 1
+          ? [{ label: "Quietest month", value: low ? longMonth(low.month) : "—", note: formatPeso(low?.amount ?? 0) }]
+          : []),
+        { label: "Top purpose", value: biggest.label, note: `${share(biggest.value, total)}% of the total` },
+        { label: "Through GCash", value: `${share(gcash, total)}%`, note: `the rest in cash` },
+      ],
+      trend: {
+        title: "Amount by month",
+        labels,
+        money: true,
+        series: [
+          { id: "cash", label: "Cash", color: SHEET_COLORS.teal, values: rows.map((row) => row.cash) },
+          { id: "gcash", label: "GCash", color: SHEET_COLORS.gold, values: rows.map((row) => row.gcash) },
+        ],
+      },
+      breakdown: { title: "By purpose", money: true, slices },
+      table: {
+        title: "Amount by month",
+        headers: ["Month", "Cash", "GCash", "Total"],
+        rows: rows.map((row, index) => [labels[index], formatPeso(row.cash), formatPeso(row.gcash), formatPeso(row.amount)]),
+        totals: ["Total", formatPeso(cash), formatPeso(gcash), formatPeso(total)],
+        levels: levels(rows.map((row) => row.amount)),
+      },
+      csv: {
+        headers: ["Month", "Total (PHP)", "Cash (PHP)", "GCash (PHP)"],
+        rows: rows.map((row) => [row.month, row.amount, row.cash, row.gcash]),
+      },
+    };
+  }
+
+  const rows = await getIntentionMonthly(range);
+  const labels = rows.map((row) => monthLabel(row.month));
+  const open = rows.length > 0 && rows[rows.length - 1].month === currentMonth();
+  const monthTotal = (row: (typeof rows)[number]) => row.pending + row.confirmed + row.said;
+  const total = sum(rows.map(monthTotal));
+  const said = sum(rows.map((row) => row.said));
+  const confirmed = sum(rows.map((row) => row.confirmed));
+  const pending = sum(rows.map((row) => row.pending));
+  const offering = sum(rows.map((row) => row.offering));
+  const busiest = peak(rows, monthTotal);
+  return {
+    ...base,
+    empty: total === 0,
+    summary:
+      total === 0
+        ? `No Mass intentions were booked for ${period}.`
+        : `${countPhrase(total, "Mass intention")} were booked for ${period}, with offerings of ${formatAmount(offering)}.`,
+    tiles: [
+      { label: "Intentions", value: total.toLocaleString(), change: change(rows.map(monthTotal), labels, open) },
+      { label: "Said", value: said.toLocaleString(), change: change(rows.map((row) => row.said), labels, open) },
+      { label: "Pending", value: pending.toLocaleString(), change: null },
+      { label: "Offerings", value: formatPeso(offering), change: change(rows.map((row) => row.offering), labels, open) },
     ],
+    highlights: total === 0 ? [] : [
+      { label: "Already said", value: `${share(said, total)}%`, note: `${said} of ${total} intentions` },
+      { label: "Waiting on the office", value: String(pending), note: "pending confirmation" },
+      { label: "Busiest month", value: busiest ? longMonth(busiest.month) : "—", note: `${busiest ? monthTotal(busiest) : 0} intentions` },
+      { label: "Offering per intention", value: formatPeso(offering / total), note: "on average" },
+    ],
+    trend: {
+      title: "Intentions by month",
+      labels,
+      money: false,
+      series: [
+        { id: "total", label: "Booked", color: SHEET_COLORS.teal, values: rows.map(monthTotal) },
+        { id: "said", label: "Said", color: SHEET_COLORS.gold, values: rows.map((row) => row.said) },
+      ],
+    },
+    breakdown: {
+      title: "By status",
+      money: false,
+      slices: [
+        { id: "said", label: "Said", value: said, color: SHEET_COLORS.teal },
+        { id: "confirmed", label: "Confirmed", value: confirmed, color: SHEET_COLORS.tealLight },
+        { id: "pending", label: "Pending", value: pending, color: SHEET_COLORS.gold },
+      ],
+    },
+    table: {
+      title: "Intentions by month",
+      headers: ["Month", "Pending", "Confirmed", "Said", "Total", "Offerings"],
+      rows: rows.map((row, index) =>
+        [labels[index], String(row.pending), String(row.confirmed), String(row.said), String(monthTotal(row)), formatPeso(row.offering)]
+      ),
+      totals: ["Total", String(pending), String(confirmed), String(said), String(total), formatPeso(offering)],
+      levels: levels(rows.map(monthTotal)),
+    },
+    csv: {
+      headers: ["Month", "Pending", "Confirmed", "Said", "Total", "Offerings (PHP)"],
+      rows: rows.map((row) => [row.month, row.pending, row.confirmed, row.said, monthTotal(row), row.offering]),
+    },
   };
 }

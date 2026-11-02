@@ -1,48 +1,77 @@
-import { delay } from "@/services/delay";
-import {
-  CERTIFICATE_MONTHLY,
-  DONATION_MONTHLY,
-  INTENTION_MONTHLY,
-  SACRAMENT_YEARLY,
-  type CertificateMonthRow,
-  type DonationMonthRow,
-  type IntentionMonthRow,
-  type SacramentYearRow,
-} from "@/services/mocks/reports.mock";
-import {
-  monthInRange,
-  yearInRange,
-  type ReportDateRange,
-} from "@/features/parish-admin/reports/reportsHelpers";
+import { apiFetch, ApiError } from "@/lib/api";
+import type { ReportDateRange } from "@/features/parish-admin/reports/reportsHelpers";
 
-export async function getSacramentYearly(
-  _parishId: string,
-  range: ReportDateRange
-): Promise<SacramentYearRow[]> {
-  await delay(180);
-  return SACRAMENT_YEARLY.filter((row) => yearInRange(row.year, range));
+/* Report totals from the server, for the signed-in office's parish. Months are "YYYY-MM". */
+
+export interface SacramentYearRow {
+  year: number;
+  baptism: number;
+  confirmation: number;
+  marriage: number;
+  death: number;
 }
 
-export async function getCertificateMonthly(
-  _parishId: string,
-  range: ReportDateRange
-): Promise<CertificateMonthRow[]> {
-  await delay(180);
-  return CERTIFICATE_MONTHLY.filter((row) => monthInRange(row.month, range));
+export interface CertificateMonthRow {
+  month: string;
+  pending: number;
+  processing: number;
+  released: number;
+  rejected: number;
+  baptism: number;
+  confirmation: number;
+  marriage: number;
+  death: number;
+  online: number;
+  walkin: number;
+}
+
+export interface DonationMonthRow {
+  month: string;
+  amount: number;
+  cash: number;
+  gcash: number;
+}
+
+export interface DonationPurposeTotal {
+  purpose: string;
+  amount: number;
+}
+
+export interface IntentionMonthRow {
+  month: string;
+  pending: number;
+  confirmed: number;
+  said: number;
+  offering: number;
+}
+
+async function getReport<T>(name: string, range: ReportDateRange): Promise<T> {
+  const query = new URLSearchParams();
+  if (range.from) query.set("from", range.from);
+  if (range.to) query.set("to", range.to);
+  const search = query.toString();
+  try {
+    return await apiFetch<T>(`/reports/${name}${search ? `?${search}` : ""}`);
+  } catch (err) {
+    if (err instanceof ApiError) throw new Error(err.message, { cause: err });
+    throw new Error("Unable to reach the server.", { cause: err });
+  }
+}
+
+export async function getSacramentYearly(range: ReportDateRange): Promise<SacramentYearRow[]> {
+  return (await getReport<{ rows: SacramentYearRow[] }>("sacraments", range)).rows;
+}
+
+export async function getCertificateMonthly(range: ReportDateRange): Promise<CertificateMonthRow[]> {
+  return (await getReport<{ rows: CertificateMonthRow[] }>("certificates", range)).rows;
 }
 
 export async function getDonationMonthly(
-  _parishId: string,
   range: ReportDateRange
-): Promise<DonationMonthRow[]> {
-  await delay(180);
-  return DONATION_MONTHLY.filter((row) => monthInRange(row.month, range));
+): Promise<{ rows: DonationMonthRow[]; purposes: DonationPurposeTotal[] }> {
+  return getReport("donations", range);
 }
 
-export async function getIntentionMonthly(
-  _parishId: string,
-  range: ReportDateRange
-): Promise<IntentionMonthRow[]> {
-  await delay(180);
-  return INTENTION_MONTHLY.filter((row) => monthInRange(row.month, range));
+export async function getIntentionMonthly(range: ReportDateRange): Promise<IntentionMonthRow[]> {
+  return (await getReport<{ rows: IntentionMonthRow[] }>("intentions", range)).rows;
 }

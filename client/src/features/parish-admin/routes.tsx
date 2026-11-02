@@ -26,10 +26,7 @@ import { AdminMarriageApplicationsPage } from "@/features/parish-admin/marriage-
 import { AdminMarriageApplicationDetailPage } from "@/features/parish-admin/marriage-applications/AdminMarriageApplicationDetailPage";
 import { AdminNotificationsPage } from "@/features/parish-admin/notifications/AdminNotificationsPage";
 import { AdminReportsLayout } from "@/features/parish-admin/reports/AdminReportsLayout";
-import { AdminSacramentsReportPage } from "@/features/parish-admin/reports/AdminSacramentsReportPage";
-import { AdminCertificatesReportPage } from "@/features/parish-admin/reports/AdminCertificatesReportPage";
-import { AdminDonationsReportPage } from "@/features/parish-admin/reports/AdminDonationsReportPage";
-import { AdminIntentionsReportPage } from "@/features/parish-admin/reports/AdminIntentionsReportPage";
+import { AdminReportPage } from "@/features/parish-admin/reports/AdminReportPage";
 import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSettingsLayout";
 import { SettingsHomeRedirect } from "@/features/parish-admin/settings/SettingsHomeRedirect";
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
@@ -111,10 +108,10 @@ export const parishAdminRoutes: RouteObject[] = [
         element: <AdminReportsLayout />,
         children: [
           { index: true, element: <Navigate to="sacraments" replace /> },
-          { path: "sacraments", element: <AdminSacramentsReportPage /> },
-          { path: "certificates", element: <AdminCertificatesReportPage /> },
-          { path: "donations", element: <AdminDonationsReportPage /> },
-          { path: "intentions", element: <AdminIntentionsReportPage /> },
+          { path: "sacraments", element: <AdminReportPage key="sacraments" kind="sacraments" /> },
+          { path: "certificates", element: <AdminReportPage key="certificates" kind="certificates" /> },
+          { path: "donations", element: <AdminReportPage key="donations" kind="donations" /> },
+          { path: "intentions", element: <AdminReportPage key="intentions" kind="intentions" /> },
         ],
       },
       {
