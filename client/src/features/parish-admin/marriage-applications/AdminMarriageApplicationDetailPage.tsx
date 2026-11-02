@@ -56,6 +56,7 @@ import {
   to24Hour,
 } from "@/features/parish-admin/schedule/scheduleHelpers";
 import { askConfirm } from "@/lib/notify";
+import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 const GROUPS: RequirementGroup[] = ["Bride", "Groom", "Couple", "Preparation"];
 
@@ -365,7 +366,7 @@ export function AdminMarriageApplicationDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1180px]">
+    <div className={PAGE_WIDTH_CLASS}>
       <button
         type="button"
         onClick={() => {
@@ -384,7 +385,7 @@ export function AdminMarriageApplicationDetailPage() {
           <div className="flex min-w-0 items-center gap-4">
             <CoupleAvatars bride={brideFull} groom={groomFull} />
             <div className="min-w-0">
-              <h1 className="font-serif text-[1.5rem] font-semibold leading-tight text-admin-ink sm:text-[1.75rem]">
+              <h1 className={PAGE_TITLE_CLASS}>
                 {brideFull}{" "}
                 <span className="font-normal text-admin-ink-faint">&amp;</span>{" "}
                 {groomFull}

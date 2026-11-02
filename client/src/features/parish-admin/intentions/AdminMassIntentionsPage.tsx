@@ -19,6 +19,7 @@ import { donationTotal, formatMassDate, formatPeso, todayISO } from "@/features/
 import { daysInMonth, toISO } from "@/features/parish-admin/schedule/scheduleHelpers";
 import { useAsync } from "@/hooks/useAsync";
 import type { MassIntentionRequest, MassSlotView, Parish } from "@/types";
+import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
 /** View + book: parish_admin and parish_staff via requireRole on this route. Parishioner cannot confirm a slot. */
 
@@ -114,13 +115,11 @@ export function AdminMassIntentionsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-5">
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Mass Intentions</h1>
-        <p className="text-admin-body text-admin-ink-muted">
-          Intentions requested for each Mass. Pick a day to see its Masses; donations are optional.
-        </p>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Mass Intentions"
+        description="Intentions requested for each Mass. Pick a day to see its Masses; donations are optional."
+      />
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="flex flex-col gap-4 lg:sticky lg:top-4">
@@ -217,6 +216,6 @@ export function AdminMassIntentionsPage() {
           }}
         />
       )}
-    </div>
+    </AdminPage>
   );
 }

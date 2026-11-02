@@ -15,6 +15,7 @@ import { deriveStatusLabel } from "@/features/parishioner/dashboard/deriveStatus
 import { getAdminStatusTone, getAdminActionLabel } from "@/features/parish-admin/requests/adminRequestHelpers";
 import type { CertificateRequest, Parish, SacramentType } from "@/types";
 import { deriveStatusKey } from "@/features/parishioner/dashboard/deriveStatusLabel";
+import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
 
 const sacramentLabels: Record<SacramentType, string> = {
@@ -215,13 +216,8 @@ export function AdminRequestsPage() {
   ];
 
   return (
-    <div>
-      <div className="mb-5 flex items-end justify-between">
-        <div>
-          <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Requests</h1>
-          <p className="text-admin-body text-admin-ink-muted">Online certificate requests submitted by parishioners.</p>
-        </div>
-      </div>
+    <AdminPage>
+      <AdminPageHeader title="Requests" description="Online certificate requests submitted by parishioners." />
 
       <div className="mb-[22px] grid grid-cols-[repeat(auto-fit,minmax(148px,1fr))] gap-3.5">
         {(Object.keys(counts) as (keyof typeof counts)[]).map((key) => (
@@ -309,6 +305,6 @@ export function AdminRequestsPage() {
           }}
         />
       )}
-    </div>
+    </AdminPage>
   );
 }

@@ -26,6 +26,8 @@ import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import type { BaptismalRecord } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 import "@/features/parish-admin/requests/AdminFindRecordPage.css";
+import { AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
+import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 interface MatchFilters {
   name: string;
@@ -245,7 +247,7 @@ export function AdminFindRecordPage() {
     return (
       <div>
         <BackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Request not found</h1>
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Request not found</h1>
       </div>
     );
   }
@@ -334,23 +336,21 @@ export function AdminFindRecordPage() {
   ];
 
   return (
-    <div>
+    <div className={PAGE_WIDTH_CLASS}>
       <BackLink />
 
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record Matching</h1>
-          <p className="text-admin-body text-admin-ink-muted">
-            Request {request.id} · {subjectName}
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5 pt-1">
-          <StatusPill status={status} />
-          <AdminButton variant="danger" size="sm" onClick={() => setRejectOpen(true)} disabled={closed}>
-            Reject request
-          </AdminButton>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Record Matching"
+        description={`Request ${request.id} · ${subjectName}`}
+        actions={
+          <>
+            <StatusPill status={status} />
+            <AdminButton variant="danger" size="sm" onClick={() => setRejectOpen(true)} disabled={closed}>
+              Reject request
+            </AdminButton>
+          </>
+        }
+      />
 
       {status === "confirmed" && confirmedRecord && (
         <StatusBanner tone="confirmed">

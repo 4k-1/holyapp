@@ -23,6 +23,7 @@ import type { Donation } from "./types";
 import type { Parish } from "@/types";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
+import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
 export function AdminDonationsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -168,16 +169,12 @@ export function AdminDonationsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Donations</h1>
-          <p className="mt-1 text-admin-body text-admin-ink-muted">
-            Gifts recorded at the office and given online through GCash.
-          </p>
-        </div>
-        <AdminButton onClick={() => setModalOpen(true)}>+ Record donation</AdminButton>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Donations"
+        description="Gifts recorded at the office and given online through GCash."
+        actions={<AdminButton onClick={() => setModalOpen(true)}>+ Record donation</AdminButton>}
+      />
 
       <AdminCard className="mb-4 p-5 px-[22px]">
         <h2 className="mb-3.5 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
@@ -284,7 +281,7 @@ export function AdminDonationsPage() {
           }}
         />
       )}
-    </div>
+    </AdminPage>
   );
 }
 

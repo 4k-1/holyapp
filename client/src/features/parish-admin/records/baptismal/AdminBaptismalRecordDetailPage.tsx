@@ -35,6 +35,7 @@ import {
 } from "@/features/parish-admin/records/baptismalHelpers";
 import type { IssuedRecordCertificate, RecordAnnotation } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 export function AdminBaptismalRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -62,7 +63,7 @@ export function AdminBaptismalRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>
           {error ? "Could not load record" : "Record not found"}
         </h1>
         <p className="text-admin-body text-admin-ink-muted">
@@ -89,7 +90,7 @@ export function AdminBaptismalRecordDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[920px]">
+    <div className={PAGE_WIDTH_CLASS}>
       <RecordDetailBackLink />
 
       <AdminCard className="mb-4 flex flex-wrap items-start justify-between gap-4 p-5 px-6">
@@ -98,7 +99,7 @@ export function AdminBaptismalRecordDetailPage() {
             {initials(name)}
           </div>
           <div>
-            <h1 className="mb-1 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
+            <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>{name}</h1>
             <p className="mb-2 text-admin-body text-admin-ink-muted">
               Baptized {formatRecordDate(record.dateOfBaptism)}
             </p>

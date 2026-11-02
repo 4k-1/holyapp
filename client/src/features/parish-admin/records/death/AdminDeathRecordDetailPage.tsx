@@ -34,6 +34,7 @@ import {
 import { baptismRecordRef, recordFullName as baptismFullName } from "@/features/parish-admin/records/baptismalHelpers";
 import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 export function AdminDeathRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -67,7 +68,7 @@ export function AdminDeathRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Record not found</h1>
         <p className="text-admin-body text-admin-ink-muted">
           This death record is not available for this parish.
         </p>
@@ -79,7 +80,7 @@ export function AdminDeathRecordDetailPage() {
   const certs = record.certificates;
 
   return (
-    <div className="mx-auto max-w-[920px]">
+    <div className={PAGE_WIDTH_CLASS}>
       <RecordDetailBackLink />
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
@@ -91,7 +92,7 @@ export function AdminDeathRecordDetailPage() {
             <p className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-ink-muted">
               Death Record
             </p>
-            <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
+            <h1 className={`mb-1.5 ${PAGE_TITLE_CLASS}`}>{name}</h1>
             <p className="mb-2.5 text-admin-body text-admin-ink-muted">
               Died {formatRecordDate(record.dateOfDeath)} · Buried {formatRecordDate(record.dateOfBurial)}
             </p>

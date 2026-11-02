@@ -5,8 +5,14 @@ import { PrintSheet } from "@/components/print/PrintSheet";
 import { usePrintJob } from "@/components/print/usePrintJob";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import type { ReportsOutletContext } from "@/features/parish-admin/reports/AdminReportsLayout";
-import { buildReportDocument, type ReportDocument } from "@/features/parish-admin/reports/reportDocument";
-import { downloadReportCsv, saveReportPdf } from "@/features/parish-admin/reports/reportPdf";
+import {
+  buildReportDocument,
+  type ReportDocument,
+} from "@/features/parish-admin/reports/reportDocument";
+import {
+  downloadReportCsv,
+  saveReportPdf,
+} from "@/features/parish-admin/reports/reportPdf";
 import { ReportSheet } from "@/features/parish-admin/reports/ReportSheet";
 import {
   emptyReportDateRange,
@@ -17,6 +23,10 @@ import {
   type ReportKind,
 } from "@/features/parish-admin/reports/reportsHelpers";
 import "./reportPrint.css";
+import {
+  AdminPage,
+  AdminPageHeader,
+} from "@/features/parish-admin/components/AdminPageHeader";
 
 /** CSS width the landscape PDF is laid out at, so every download looks the same whatever the screen. */
 const PDF_WIDTH = 1280;
@@ -24,7 +34,13 @@ const PDF_WIDTH = 1280;
 const dateInputClass =
   "h-9 w-[150px] rounded-[10px] border border-admin-border bg-admin-surface px-2.5 text-admin-support text-admin-ink outline-none focus-visible:border-admin-green-700 focus-visible:ring-[3px] focus-visible:ring-admin-green-100";
 
-function DateFilter({ range, onApply }: { range: ReportDateRange; onApply: (range: ReportDateRange) => void }) {
+function DateFilter({
+  range,
+  onApply,
+}: {
+  range: ReportDateRange;
+  onApply: (range: ReportDateRange) => void;
+}) {
   const [draft, setDraft] = useState(range);
   // Follow a range changed from outside, such as Clear.
   const [applied, setApplied] = useState(range);
@@ -35,7 +51,8 @@ function DateFilter({ range, onApply }: { range: ReportDateRange; onApply: (rang
 
   const dirty = draft.from !== range.from || draft.to !== range.to;
   const active = Boolean(range.from || range.to);
-  const labelClass = "mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted";
+  const labelClass =
+    "mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted";
 
   return (
     <form
@@ -50,7 +67,9 @@ function DateFilter({ range, onApply }: { range: ReportDateRange; onApply: (rang
         <input
           type="date"
           value={draft.from}
-          onChange={(e) => setDraft((prev) => ({ ...prev, from: e.target.value }))}
+          onChange={(e) =>
+            setDraft((prev) => ({ ...prev, from: e.target.value }))
+          }
           className={dateInputClass}
         />
       </label>
@@ -59,7 +78,9 @@ function DateFilter({ range, onApply }: { range: ReportDateRange; onApply: (rang
         <input
           type="date"
           value={draft.to}
-          onChange={(e) => setDraft((prev) => ({ ...prev, to: e.target.value }))}
+          onChange={(e) =>
+            setDraft((prev) => ({ ...prev, to: e.target.value }))
+          }
           className={dateInputClass}
         />
       </label>
@@ -76,7 +97,9 @@ function DateFilter({ range, onApply }: { range: ReportDateRange; onApply: (rang
         </button>
       )}
       <p className="w-full text-admin-support text-admin-ink-muted sm:ml-auto sm:w-auto sm:self-center">
-        {active ? `Showing ${reportPeriodLabel(range)}.` : "Showing every date on file."}
+        {active
+          ? `Showing ${reportPeriodLabel(range)}.`
+          : "Showing every date on file."}
       </p>
     </form>
   );
@@ -85,7 +108,8 @@ function DateFilter({ range, onApply }: { range: ReportDateRange; onApply: (rang
 /** A report as a dashboard, with the date filter above it and CSV, PDF and print in the header. */
 export function AdminReportPage({ kind }: { kind: ReportKind }) {
   const { parish, range, setRange } = useOutletContext<ReportsOutletContext>();
-  const section = REPORT_SECTIONS.find((item) => item.id === kind) ?? REPORT_SECTIONS[0];
+  const section =
+    REPORT_SECTIONS.find((item) => item.id === kind) ?? REPORT_SECTIONS[0];
   const period = reportPeriodLabel(range);
   const [doc, setDoc] = useState<ReportDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +127,12 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not prepare this report.");
+        if (!cancelled)
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Could not prepare this report.",
+          );
       });
     return () => {
       cancelled = true;
@@ -127,30 +156,37 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
   }
 
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-admin-page font-semibold text-admin-ink">{section.label}</h1>
-          <p className="mt-1 text-admin-body text-admin-ink-muted">{section.blurb}</p>
-        </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Export this report">
-          <AdminButton
-            variant="secondary"
-            onClick={() => shown && downloadReportCsv(shown)}
-            disabled={!shown}
-            title="The report's rows as a spreadsheet"
+    <AdminPage>
+      <AdminPageHeader
+        title={section.label}
+        description={section.blurb}
+        actions={
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label="Export this report"
           >
-            Export CSV
-          </AdminButton>
-          <AdminButton variant="secondary" onClick={() => shown && setPrintJob(shown)} disabled={!shown || saving}>
-            Print
-          </AdminButton>
-          <AdminButton onClick={handleDownload} disabled={!shown || saving}>
-            {saving ? "Saving…" : "Download PDF"}
-          </AdminButton>
-        </div>
-      </div>
-
+            <AdminButton
+              variant="secondary"
+              onClick={() => shown && downloadReportCsv(shown)}
+              disabled={!shown}
+              title="The report's rows as a spreadsheet"
+            >
+              Export CSV
+            </AdminButton>
+            <AdminButton
+              variant="secondary"
+              onClick={() => shown && setPrintJob(shown)}
+              disabled={!shown || saving}
+            >
+              Print
+            </AdminButton>
+            <AdminButton onClick={handleDownload} disabled={!shown || saving}>
+              {saving ? "Saving…" : "Download PDF"}
+            </AdminButton>
+          </div>
+        }
+      />
       <DateFilter range={range} onApply={setRange} />
 
       {error && (
@@ -162,7 +198,9 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
       {shown ? (
         <ReportSheet doc={shown} bare interactive />
       ) : (
-        <p className="text-admin-body text-admin-ink-muted">Loading this report…</p>
+        <p className="text-admin-body text-admin-ink-muted">
+          Loading this report…
+        </p>
       )}
 
       {/* Off-screen copy at a fixed width, outside the page so nothing clips it; the PDF is drawn from this. */}
@@ -178,7 +216,7 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
               <ReportSheet doc={shown} flat />
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {printJob && (
@@ -188,6 +226,6 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
           </div>
         </PrintSheet>
       )}
-    </div>
+    </AdminPage>
   );
 }

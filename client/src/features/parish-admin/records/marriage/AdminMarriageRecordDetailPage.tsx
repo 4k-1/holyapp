@@ -38,6 +38,7 @@ import {
 } from "@/features/parish-admin/records/marriageHelpers";
 import type { IssuedRecordCertificate, MarriageParty, MarriagePartyRole } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 export function AdminMarriageRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -83,7 +84,7 @@ export function AdminMarriageRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Record not found</h1>
         <p className="text-admin-body text-admin-ink-muted">
           This marriage record is not available for this parish.
         </p>
@@ -95,7 +96,7 @@ export function AdminMarriageRecordDetailPage() {
   const certs = record.certificates;
 
   return (
-    <div className="mx-auto max-w-[920px]">
+    <div className={PAGE_WIDTH_CLASS}>
       <RecordDetailBackLink />
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
@@ -107,7 +108,7 @@ export function AdminMarriageRecordDetailPage() {
             <p className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">
               Marriage Record
             </p>
-            <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">
+            <h1 className={`mb-1.5 ${PAGE_TITLE_CLASS}`}>
               {couple}
             </h1>
             <p className="mb-2.5 text-admin-body text-admin-ink-muted">

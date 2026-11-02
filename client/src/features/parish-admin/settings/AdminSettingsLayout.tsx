@@ -5,6 +5,7 @@ import { SETTINGS_SECTIONS, type SettingsSectionMeta } from "./types";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { canManageParishSettings } from "@/features/parish-admin/permissions";
 import type { Parish } from "@/types";
+import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
 const STAFF_SETTINGS_IDS = new Set(["personal", "security"]);
 
@@ -48,17 +49,15 @@ export function AdminSettingsLayout() {
   }, [pathname]);
 
   return (
-    <div>
-      <div className="mb-5">
-        <h1 className="font-serif text-admin-page font-semibold text-admin-ink">
-          {canManage ? "Settings" : "My Account"}
-        </h1>
-        <p className="mt-1 text-admin-body text-admin-ink-muted">
-          {canManage
+    <AdminPage>
+      <AdminPageHeader
+        title={canManage ? "Settings" : "My Account"}
+        description={
+          canManage
             ? "Parish-wide defaults, and your own account."
-            : "Your name, contact details, and sign-in options. Parish settings are managed by the parish admin."}
-        </p>
-      </div>
+            : "Your name, contact details, and sign-in options. Parish settings are managed by the parish admin."
+        }
+      />
 
       <div className="grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-[20px] border border-admin-border bg-admin-surface shadow-[var(--shadow-card)] md:grid-cols-[232px_minmax(0,1fr)]">
         <nav
@@ -104,6 +103,6 @@ export function AdminSettingsLayout() {
           <Outlet context={{ parish }} />
         </div>
       </div>
-    </div>
+    </AdminPage>
   );
 }

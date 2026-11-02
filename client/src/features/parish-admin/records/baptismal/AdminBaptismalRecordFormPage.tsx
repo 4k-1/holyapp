@@ -18,6 +18,7 @@ import { markRecordStatus } from "@/features/parish-admin/schedule/api/scheduleA
 import { useAsync } from "@/hooks/useAsync";
 import type { LegitimacyStatus } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import { PAGE_TITLE_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 interface FormState {
   firstName: string;
@@ -158,7 +159,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
     return (
       <AdminFormPage>
         <BackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Record not found</h1>
       </AdminFormPage>
     );
   }

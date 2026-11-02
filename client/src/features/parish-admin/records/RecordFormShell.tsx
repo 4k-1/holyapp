@@ -1,6 +1,7 @@
 import { useId, type FormEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminButton, AdminNotchedLabels } from "@/features/parish-admin/components/AdminForm";
+import { PAGE_TITLE_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 /**
  * Page frame for adding or editing a register entry: one white sheet read top to bottom, made of
@@ -42,7 +43,7 @@ export function RecordFormShell({
           </svg>
         </button>
         <div className="min-w-0 flex-1 basis-[15rem]">
-          <h1 className="text-[1.25rem] font-semibold leading-tight text-admin-ink">{title}</h1>
+          <h1 className={PAGE_TITLE_CLASS}>{title}</h1>
           <p className="text-admin-support text-admin-ink-muted max-sm:hidden">{subtitle}</p>
         </div>
         <div className="flex shrink-0 gap-2.5 whitespace-nowrap max-sm:w-full max-sm:[&>*]:flex-1">

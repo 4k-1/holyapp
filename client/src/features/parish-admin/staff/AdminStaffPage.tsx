@@ -13,6 +13,7 @@ import { GiveSignInModal } from "./components/GiveSignInModal";
 import { RemoveStaffModal } from "./components/RemoveStaffModal";
 import { StaffPersonModal } from "./components/StaffPersonModal";
 import { SkeletonList } from "@/components/ui/Skeleton";
+import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
 type Filter = "all" | "clergy" | "staff" | "inactive";
 
@@ -130,20 +131,18 @@ export function AdminStaffPage() {
   }
 
   return (
-    <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
-        <div>
-          <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Staff</h1>
-          <p className="text-admin-body text-admin-ink-muted">
-            Priests and staff who serve the parish, with or without a sign-in. Events are assigned from this list.
-          </p>
-        </div>
-        {canManage && (
-          <AdminButton type="button" onClick={() => setEditing("new")} className="shrink-0">
-            + Add staff
-          </AdminButton>
-        )}
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Staff"
+        description="Priests and staff who serve the parish, with or without a sign-in. Events are assigned from this list."
+        actions={
+          canManage && (
+            <AdminButton type="button" onClick={() => setEditing("new")}>
+              + Add staff
+            </AdminButton>
+          )
+        }
+      />
 
       <div className="mb-[22px] grid grid-cols-2 gap-3.5 sm:grid-cols-4">
         {STAT_CARDS.map((card) => (
@@ -223,6 +222,6 @@ export function AdminStaffPage() {
           }}
         />
       )}
-    </div>
+    </AdminPage>
   );
 }

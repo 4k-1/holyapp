@@ -21,6 +21,7 @@ import type { MarriageApplication } from "@/features/parish-admin/marriage-appli
 import { useAsync } from "@/hooks/useAsync";
 import "@/features/parish-admin/styles/adminDesk.css";
 import { SkeletonList } from "@/components/ui/Skeleton";
+import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
 const PREPARATION: ApplicationStage[] = ["documents", "interview", "precana", "banns"];
 
@@ -168,18 +169,16 @@ export function AdminMarriageApplicationsPage() {
   ];
 
   return (
-    <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
-        <div>
-          <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Marriage Applications</h1>
-          <p className="text-admin-body text-admin-ink-muted">
-            Couples in marriage preparation. Documents are checked in person; this only tracks status.
-          </p>
-        </div>
-        <AdminButton type="button" onClick={() => setCreateOpen(true)}>
-          + New application
-        </AdminButton>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Marriage Applications"
+        description="Couples in marriage preparation. Documents are checked in person; this only tracks status."
+        actions={
+          <AdminButton type="button" onClick={() => setCreateOpen(true)}>
+            + New application
+          </AdminButton>
+        }
+      />
 
       <div className="mb-[22px] grid grid-cols-[repeat(auto-fit,minmax(148px,1fr))] gap-3.5">
         {STAT_CARDS.map((card) => (
@@ -232,6 +231,6 @@ export function AdminMarriageApplicationsPage() {
           }}
         />
       )}
-    </div>
+    </AdminPage>
   );
 }

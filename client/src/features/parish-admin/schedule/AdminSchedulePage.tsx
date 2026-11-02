@@ -9,6 +9,7 @@ import { EventsListView } from "./components/EventsListView";
 import { ScheduleEventModal } from "./components/ScheduleEventModal";
 import { AssignBlockModal } from "./components/AssignBlockModal";
 import type { ScheduleBlock, ScheduleOccurrence } from "./types";
+import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
 const TODAY_ISO = toISO(new Date());
 
@@ -78,16 +79,12 @@ export function AdminSchedulePage() {
   }
 
   return (
-    <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Parish Schedule & Events</h1>
-          <p className="mt-1 max-w-xl text-admin-body text-admin-ink-muted">
-            Baptisms, weddings, funerals, and other events. Regular Masses are in Settings.
-          </p>
-        </div>
-        <AdminButton onClick={() => setAddModalDate(selectedDate)}>+ Add block</AdminButton>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Parish Schedule & Events"
+        description="Baptisms, weddings, funerals, and other events. Regular Masses are in Settings."
+        actions={<AdminButton onClick={() => setAddModalDate(selectedDate)}>+ Add block</AdminButton>}
+      />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex rounded-[10px] border border-admin-border bg-admin-surface-alt p-1">
@@ -190,6 +187,6 @@ export function AdminSchedulePage() {
           }}
         />
       )}
-    </div>
+    </AdminPage>
   );
 }
