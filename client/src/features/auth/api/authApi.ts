@@ -336,9 +336,3 @@ export async function resetPassword(token: string, password: string): Promise<vo
     throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
 }
-
-export async function deleteAccount(): Promise<void> {
-  await new Promise((r) => setTimeout(r, 500));
-  clearSession();
-  setCurrentUser(null);
-}
