@@ -1,6 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import type { Parish } from "@/types";
 import mtcarmellogo from "@/assets/mtcarmellogo.png";
+import mtcarmelChurch from "@/assets/mtcarmel-church.webp";
 
 type BackendParish = {
   id: string;
@@ -18,6 +19,11 @@ type BackendParish = {
 /** Local seals until the API stores uploaded parish logos. */
 const LOCAL_SEALS: Record<string, string> = {
   mtcarmel: mtcarmellogo,
+};
+
+/** Local church photos until the API stores them. */
+const LOCAL_PHOTOS: Record<string, string> = {
+  mtcarmel: mtcarmelChurch,
 };
 
 const LOCAL_TAGLINES: Record<string, string> = {
@@ -42,6 +48,7 @@ function mapParish(row: BackendParish): Parish {
     email: row.email ?? "",
     sealUrl: row.seal_url ?? LOCAL_SEALS[row.slug],
     backgroundImageUrl: LOCAL_SEALS[row.slug] ?? row.seal_url ?? undefined,
+    photoUrl: LOCAL_PHOTOS[row.slug],
     tagline: row.tagline ?? LOCAL_TAGLINES[row.slug],
     createdAt: row.created_at ?? "",
     updatedAt: row.updated_at ?? "",

@@ -7,5 +7,5 @@ export function DashboardRoute() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const user = getCurrentUser();
   const firstName = user?.firstName?.trim() || user?.fullName?.split(/\s+/)[0] || "Parishioner";
-  return <DashboardPage parishId={parish.id} parishSlug={parish.slug} userName={firstName} />;
+  return <DashboardPage parish={parish} userName={firstName} />;
 }

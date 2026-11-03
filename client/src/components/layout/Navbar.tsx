@@ -28,9 +28,9 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
             to="."
             title="HolyApp"
             aria-label="HolyApp, back to your dashboard"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm sm:h-9 sm:w-9"
+            className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/35 bg-white shadow-sm sm:h-9 sm:w-9"
           >
-            <img src="/holyapp-logo.webp" alt="" className="h-7 w-7 sm:h-8 sm:w-8" />
+            <img src="/holyapp-logo.webp" alt="" className="h-6 w-6 object-contain sm:h-7 sm:w-7" />
           </Link>
           <span className="h-7 w-px shrink-0 bg-white/25" aria-hidden="true" />
           {parish.sealUrl ? (
@@ -59,7 +59,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
         {/* ⬆️ end of replaced block */}
 
         {/* Desktop nav */}
-        <div className="hidden shrink-0 items-center gap-1 md:flex">
+        <div className="hidden shrink-0 items-center gap-1 lg:flex">
           {navItems.map((item) => (
             <NavLink
               key={item.label}
@@ -97,7 +97,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label="Toggle navigation menu"
             aria-expanded={menuOpen}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xl text-white md:hidden"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xl text-white lg:hidden"
           >
             {menuOpen ? "✕" : "☰"}
           </button>
@@ -106,7 +106,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
 
       {/* Mobile menu panel */}
       {menuOpen && (
-        <div className="absolute w-full flex flex-col gap-1 border-t border-white/10 bg-primary px-4 pb-4 pt-2 shadow-lg md:hidden">
+        <div className="absolute w-full flex flex-col gap-1 border-t border-white/10 bg-primary px-4 pb-4 pt-2 shadow-lg lg:hidden">
           {navItems.map((item) => (
             <NavLink
               key={item.label}

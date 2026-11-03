@@ -23,6 +23,8 @@ export interface Parish {
   email: string;
   sealUrl?: string;
   backgroundImageUrl?: string;
+  /** A photo of the church building, shown on the parishioner dashboard. */
+  photoUrl?: string;
   tagline?: string;
   createdAt: string;
   updatedAt: string;
