@@ -13,6 +13,7 @@ import { GivePage } from "@/features/public/GivePage";
 import { LandingPage } from "@/features/public/LandingPage";
 import { PublicDonatePage } from "@/features/public/PublicDonatePage";
 import { PublicIntentionPage } from "@/features/public/PublicIntentionPage";
+import { PrivacyPage } from "@/features/public/PrivacyPage";
 import { ParishLoginPage } from "@/features/auth/pages/ParishLoginPage";
 import { ParishRegisterPage } from "@/features/auth/pages/ParishRegisterPage";
 import { parishAdminRoutes } from "@/features/parish-admin/routes";
@@ -48,6 +49,10 @@ export const router = createBrowserRouter([
   {
     path: "/give/:parishSlug/intention",
     element: <PublicIntentionPage />,
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPage />,
   },
   {
     path: "/login",
