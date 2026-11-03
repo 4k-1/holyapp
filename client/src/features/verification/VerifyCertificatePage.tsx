@@ -1,9 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
-import { CertificateDocument } from "@/features/parish-admin/components/CertificateDocument";
-import { CERT_SHEET_WIDTH } from "@/features/parish-admin/components/certificate/constants";
 import { useAsync } from "@/hooks/useAsync";
-import type { Parish, SacramentType } from "@/types";
+import type { SacramentType } from "@/types";
 import mtcarmellogo from "@/assets/mtcarmellogo.png";
 import "./verify.css";
 
@@ -37,10 +35,6 @@ interface Verification {
   reason?: string;
   fields?: VerificationFields;
 }
-
-const SEALS: Record<string, string> = {
-  mtcarmel: mtcarmellogo,
-};
 
 const UNAVAILABLE = "This certificate could not be checked. Try again in a moment.";
 
@@ -79,33 +73,38 @@ const OUTCOMES: Record<Outcome, { tone: Tone; icon: "check" | "alert" | "cross";
   valid: {
     tone: "teal",
     icon: "check",
-    title: "Valid Certificate",
+    title: "Valid certificate",
     detail: "This certificate matches the parish register exactly as issued and has not been altered.",
   },
   superseded: {
     tone: "gold",
     icon: "alert",
-    title: "Superseded Certificate",
+    title: "Superseded certificate",
     detail: "This certificate was valid when issued, but the parish has since issued a newer one for this record.",
   },
   invalid: {
     tone: "red",
     icon: "cross",
-    title: "Revoked Certificate",
+    title: "Revoked certificate",
     detail: "The parish office has withdrawn this certificate. It should no longer be accepted.",
   },
   notfound: {
     tone: "red",
     icon: "cross",
-    title: "Could Not Be Verified",
+    title: "Certificate could not be verified",
     detail: "This code does not match any certificate issued through HolyApp.",
   },
   unavailable: {
     tone: "gold",
     icon: "alert",
-    title: "Could Not Check Right Now",
+    title: "Verification is unavailable right now",
     detail: "The verification service didn't respond. The certificate may still be valid.",
   },
+};
+
+/** Parish seals kept in the app until the API serves uploaded ones. */
+const SEALS: Record<string, string> = {
+  mtcarmel: mtcarmellogo,
 };
 
 const TYPE_LABEL: Record<SacramentType, string> = {
@@ -176,31 +175,12 @@ async function loadVerification(hash: string): Promise<Verification> {
   throw new Error("Certificate not found.");
 }
 
-function parishFrom(data: Verification): Parish {
-  return {
-    id: data.parishSlug || "parish",
-    slug: data.parishSlug || "",
-    name: data.parishName,
-    address: data.parishAddress || "",
-    contact: "",
-    email: "",
-    sealUrl: data.parishSlug ? SEALS[data.parishSlug] : undefined,
-    createdAt: "",
-    updatedAt: "",
-  };
-}
-
 /** "2026-06-27" → "June 27, 2026", read as a calendar date so no time zone moves it a day. */
 function formatIssued(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
   if (!match) return value || "—";
   const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-}
-
-/** A long code shortened for the eye; the full one is in the technical details. */
-function shortCode(code: string) {
-  return code.length > 16 ? `${code.slice(0, 8)}…${code.slice(-4)}` : code;
 }
 
 /** The public page a certificate's QR code opens: whether the parish register still stands behind it. */
@@ -218,43 +198,65 @@ export function VerifyCertificatePage() {
         : "notfound";
 
   return (
-    <div className="verify-page min-h-screen px-4 py-10 sm:py-14">
-      <div className="mx-auto w-full max-w-[480px]">
-        {outcome === null ? (
-          <div
-            role="status"
-            className="flex flex-col items-center rounded-[24px] bg-white px-6 py-16 text-center shadow-[0_1px_2px_rgb(14_59_70/0.06),0_24px_48px_-28px_rgb(14_59_70/0.45)] ring-1 ring-[#dfe7e9]"
-          >
-            <span
-              className="h-9 w-9 animate-spin rounded-full border-[3px] border-[#16798c]/20 border-t-[#16798c] motion-reduce:animate-none"
-              aria-hidden="true"
-            />
-            <p className="mt-4 text-[0.9375rem] text-[#5b7079]">Checking this certificate…</p>
-          </div>
-        ) : (
-          <ResultCard outcome={outcome} data={data ?? null} hash={hash} checkedAt={checkedAt} />
-        )}
+    <div className="verify-page min-h-screen bg-[#f4f6f7] px-4 py-8 sm:py-12 print:bg-white print:p-0">
+      <main className="mx-auto w-full max-w-[640px]">
+        <article className="overflow-hidden rounded-md border border-[#d3dde0] bg-white shadow-[0_1px_3px_rgb(19_38_43/0.06)] print:rounded-none print:border-[#999] print:shadow-none">
+          <IssuerHeader data={data ?? null} />
+          {outcome === null ? (
+            <div role="status" className="flex items-center gap-3 px-6 py-12 sm:px-8">
+              <span
+                className="h-5 w-5 animate-spin rounded-full border-2 border-[#0e4a57]/20 border-t-[#0e4a57] motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+              <p className="text-[0.9375rem] text-[#4a5d63]">Checking this certificate against the parish register…</p>
+            </div>
+          ) : (
+            <Result outcome={outcome} data={data ?? null} hash={hash} checkedAt={checkedAt} />
+          )}
+        </article>
 
-        {data && data.status !== "invalid" && <IssuedCopy data={data} />}
-
-        <p className="mt-6 text-center text-[0.8125rem] leading-relaxed text-[#5b7079]">
-          This is a public verification page. No account or sign-in is needed to use it.
+        <p className="mt-5 text-[0.8125rem] leading-relaxed text-[#4a5d63] sm:px-1">
+          This page confirms the record held by the issuing parish at the time of checking. It does not replace the signed
+          certificate. Anyone can use this page; no account or sign-in is needed.
         </p>
         <Link
           to="/"
-          className="mx-auto mt-4 flex w-fit items-center gap-2 rounded-full bg-white/85 py-1.5 pl-2 pr-3.5 no-underline ring-1 ring-[#dfe7e9] transition-colors hover:bg-white"
+          className="mt-4 inline-flex items-center gap-2 text-[0.8125rem] text-[#4a5d63] no-underline hover:text-[#13262b] sm:px-1 print:hidden"
         >
-          <img src="/holyapp-logo.webp" alt="" className="h-6 w-6" />
-          <span className="text-[0.8125rem] text-[#5b7079]">
-            Powered by <span className="font-bold text-[#0e3b46]">HolyApp</span>
-          </span>
+          <img src="/holyapp-logo.webp" alt="" className="h-5 w-5" />
+          Verification service by <span className="font-semibold text-[#13262b]">HolyApp</span>
         </Link>
-      </div>
+      </main>
     </div>
   );
 }
 
-function ResultCard({
+/** Who stands behind the certificate: the issuing parish, or HolyApp when no parish could be found. */
+function IssuerHeader({ data }: { data: Verification | null }) {
+  const seal = data?.parishSlug ? SEALS[data.parishSlug] : undefined;
+  return (
+    <header className="flex items-center gap-4 border-b border-[#e3e9eb] px-6 py-5 sm:px-8">
+      {data ? (
+        seal ? (
+          <img src={seal} alt="" className="h-12 w-12 shrink-0 rounded-full border border-[#e3e9eb] object-cover" />
+        ) : (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#e3e9eb] text-lg text-[#0e4a57]">
+            ✝
+          </span>
+        )
+      ) : (
+        <img src="/holyapp-logo.webp" alt="" className="h-11 w-11 shrink-0" />
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[#4a5d63]">Certificate verification</p>
+        <p className="mt-0.5 text-[1rem] font-semibold leading-snug text-[#13262b]">{data ? data.parishName : "HolyApp"}</p>
+        {data?.parishAddress && <p className="text-[0.8125rem] text-[#4a5d63]">{data.parishAddress}</p>}
+      </div>
+    </header>
+  );
+}
+
+function Result({
   outcome,
   data,
   hash,
@@ -267,163 +269,144 @@ function ResultCard({
 }) {
   const copy = OUTCOMES[outcome];
   const tone = TONES[copy.tone];
+  const checked = checkedAt.toLocaleString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 
   return (
-    <article className="relative overflow-hidden rounded-[24px] bg-white shadow-[0_1px_2px_rgb(14_59_70/0.06),0_24px_48px_-28px_rgb(14_59_70/0.45)] ring-1 ring-[#dfe7e9]">
-      <CornerMarks className={tone.mark} />
-
-      <header className={`px-6 pb-8 pt-10 text-center ${tone.band}`}>
-        <span className={`mx-auto flex h-[84px] w-[84px] items-center justify-center rounded-full border border-dashed ${tone.ring}`}>
-          <span
-            className={`flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br text-white shadow-[0_10px_22px_-10px_rgb(0_0_0/0.55)] ${tone.icon}`}
-          >
-            <StatusIcon kind={copy.icon} />
-          </span>
+    <>
+      <div className={`flex items-start gap-4 px-6 py-5 sm:px-8 ${tone.band}`}>
+        <span
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-white shadow-[0_6px_14px_-8px_rgb(0_0_0/0.55)] ${tone.icon}`}
+        >
+          <StatusIcon kind={copy.icon} />
         </span>
-        <h1 className={`verify-serif mt-5 text-[1.875rem] leading-tight sm:text-[2.125rem] ${tone.title}`}>{copy.title}</h1>
-        <p className="mx-auto mt-2 max-w-[360px] text-[0.9375rem] leading-relaxed text-[#4c6168]">{copy.detail}</p>
-      </header>
+        <div className="min-w-0">
+          <h1 className={`font-sans text-[1.25rem] font-bold leading-snug sm:text-[1.375rem] ${tone.title}`}>{copy.title}</h1>
+          <p className="mt-1 text-[0.9375rem] leading-relaxed text-[#4a5d63]">{copy.detail}</p>
+        </div>
+      </div>
 
-      <div className="px-6 pb-7 pt-7 sm:px-8">
+      <div className="px-6 py-6 sm:px-8">
         {data ? (
           <>
-            <p className="text-center text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-[#5b7079]">
-              Certificate holder
-            </p>
-            <p className="verify-serif mt-1 text-center text-[1.625rem] leading-tight text-[#13262b]">{data.holderName}</p>
-            <dl className="mt-6 divide-y divide-[#e6ecee] border-y border-[#e6ecee]">
+            <dl className="divide-y divide-[#e3e9eb] border-y border-[#e3e9eb]">
+              <Row label="Certificate holder">
+                <span className="text-[1.0625rem] font-semibold">{data.holderName}</span>
+              </Row>
               <Row label="Certificate type">{TYPE_LABEL[data.sacramentType] ?? data.sacramentType}</Row>
               <Row label="Issuing parish">{data.parishName}</Row>
               <Row label="Date issued">{formatIssued(data.issuedAt)}</Row>
-              <Row label="Reference no.">
-                <span className="font-mono text-[0.875rem] tracking-tight">{data.code}</span>
+              <Row label="Reference number">
+                <span className="font-mono text-[0.875rem]">{data.code}</span>
               </Row>
+              <Row label="Register status">{STATUS_LABEL[data.status]}</Row>
             </dl>
             {data.status === "superseded" && (
               <Notice className={tone.notice}>
-                A newer certificate has been issued for this record. Please ask{" "}
-                <strong className="font-semibold">{data.parishName}</strong> for the current copy.
+                A newer certificate has been issued for this record. Please ask {data.parishName} for the current copy.
               </Notice>
             )}
             {data.status === "invalid" && (
               <Notice className={tone.notice}>
                 {data.reason ? (
                   <>
-                    <strong className="font-semibold">Reason given by the parish:</strong> {data.reason}
+                    <span className="font-semibold">Reason given by the parish:</span> {data.reason}
                   </>
                 ) : (
-                  <>
-                    Contact <strong className="font-semibold">{data.parishName}</strong> for details.
-                  </>
+                  <>Contact {data.parishName} for details.</>
                 )}
               </Notice>
             )}
           </>
         ) : outcome === "unavailable" ? (
-          <>
-            <Notice className={tone.notice}>
-              Check your connection and try again. If it keeps happening, contact the parish that issued the
-              certificate.
-            </Notice>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-full bg-[#16798c] px-5 text-[0.9375rem] font-semibold text-white transition-colors hover:bg-[#0e3b46] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#8ed8d2]"
-            >
-              Try again
-            </button>
-          </>
+          <Notice className={tone.notice}>
+            Check your connection and try again. If it keeps happening, contact the parish that issued the certificate.
+          </Notice>
         ) : (
           <>
             <Notice className={tone.notice}>
-              This certificate could not be matched to our records. Contact the parish that issued it to confirm it is
-              authentic. A mistyped or damaged code can cause this, so it isn't necessarily a sign of tampering.
+              Contact the parish that issued this certificate to confirm it is authentic. A mistyped or damaged code can
+              cause this result, so it is not necessarily a sign of tampering.
             </Notice>
-            <p className="mt-6 text-center text-[0.8125rem] text-[#5b7079]">Code scanned</p>
-            <p className="mt-1.5 text-center">
-              <span className="inline-block rounded-lg bg-[#edf1f2] px-3 py-1.5 font-mono text-[0.875rem] text-[#13262b]">
-                {hash ? shortCode(hash) : "—"}
-              </span>
-            </p>
+            <dl className="mt-5 border-y border-[#e3e9eb]">
+              <Row label="Code checked">
+                <span className="break-all font-mono text-[0.875rem]">{hash || "—"}</span>
+              </Row>
+            </dl>
           </>
         )}
-      </div>
 
-      <details className="border-t border-[#e6ecee]">
-        <summary className="flex cursor-pointer items-center justify-between gap-3 px-8 py-4 text-[0.9375rem] font-semibold text-[#13262b] hover:bg-[#f7fafa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#8ed8d2]">
-          Technical verification details
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" className="verify-chevron h-4 w-4 shrink-0 text-[#5b7079] transition-transform" aria-hidden="true">
-            <path d="m5 8 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </summary>
-        <dl className="space-y-3 px-8 pb-6 text-[0.8125rem]">
-          <TechRow label="Verification code">
-            <span className="break-all font-mono">{hash || "—"}</span>
-          </TechRow>
-          {data && (
-            <>
-              <TechRow label="Certificate no.">
-                <span className="font-mono">{data.code}</span>
-              </TechRow>
-              {data.fields?.registerRef && data.fields.registerRef !== "—" && (
-                <TechRow label="Register entry">{data.fields.registerRef}</TechRow>
-              )}
-              <TechRow label="Register status">{STATUS_LABEL[data.status]}</TechRow>
-            </>
+        <p className="mt-5 flex items-start gap-2 text-[0.875rem] leading-relaxed text-[#4a5d63]">
+          <ClockIcon />
+          <span>
+            {outcome === "unavailable" ? "Attempted on " : data ? "Checked against the parish register on " : "Checked on "}
+            <span className="font-semibold text-[#13262b]">{checked}</span>.
+          </span>
+        </p>
+
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row print:hidden">
+          {outcome === "unavailable" ? (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-md bg-[#0e4a57] px-5 text-[0.9375rem] font-semibold text-white hover:bg-[#0b3b45] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#0e4a57]/30"
+            >
+              Try again
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-[#c7d3d6] bg-white px-5 text-[0.9375rem] font-semibold text-[#13262b] hover:bg-[#f4f6f7] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[#0e4a57]/25"
+            >
+              <PrintIcon />
+              Print this result
+            </button>
           )}
-          <TechRow label="Checked">
-            {checkedAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
-          </TechRow>
-          <TechRow label="Checked against">The parish register kept on HolyApp</TechRow>
-        </dl>
-      </details>
-    </article>
-  );
-}
-
-/** The certificate exactly as the parish issued it, to compare with the paper in hand. */
-function IssuedCopy({ data }: { data: Verification }) {
-  return (
-    <details className="mt-4 overflow-hidden rounded-[20px] bg-white ring-1 ring-[#dfe7e9]">
-      <summary className="flex cursor-pointer items-center justify-between gap-3 px-6 py-4 text-[0.9375rem] font-semibold text-[#13262b] hover:bg-[#f7fafa] sm:px-8">
-        Compare with the certificate as issued
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" className="verify-chevron h-4 w-4 shrink-0 text-[#5b7079] transition-transform" aria-hidden="true">
-          <path d="m5 8 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </summary>
-      <div className="overflow-x-auto border-t border-[#e6ecee] bg-[#f3f7f7] p-3">
-        <div style={{ width: CERT_SHEET_WIDTH }}>
-          <CertificateDocument
-            parish={parishFrom(data)}
-            sacramentType={data.sacramentType}
-            subjectName={data.holderName}
-            fields={data.fields ?? { requestId: "", registerRef: "—", certCode: data.code }}
-            appearance={{
-              signatoryName: data.signatoryName || "",
-              signatoryTitle: data.signatoryTitle || "",
-              numberingPrefix: "",
-              footerText: data.footerText || "",
-            }}
-          />
         </div>
       </div>
-    </details>
+
+      {data && (
+        <details className="border-t border-[#e3e9eb] print:hidden">
+          <summary className="flex cursor-pointer items-center justify-between gap-3 px-6 py-4 text-[0.875rem] font-semibold text-[#13262b] hover:bg-[#f7f9f9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0e4a57]/30 sm:px-8">
+            Technical details
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" className="verify-chevron h-4 w-4 shrink-0 text-[#4a5d63] transition-transform" aria-hidden="true">
+              <path d="m5 8 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </summary>
+          <dl className="space-y-2.5 px-6 pb-6 text-[0.8125rem] sm:px-8">
+            <TechRow label="Verification code">
+              <span className="break-all font-mono">{hash || "—"}</span>
+            </TechRow>
+            {data.fields?.registerRef && data.fields.registerRef !== "—" && (
+              <TechRow label="Register entry">{data.fields.registerRef}</TechRow>
+            )}
+            <TechRow label="Checked against">The parish register kept on HolyApp</TechRow>
+          </dl>
+        </details>
+      )}
+    </>
   );
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-6 py-4">
-      <dt className="shrink-0 pt-0.5 text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-[#5b7079]">{label}</dt>
-      <dd className="min-w-0 text-right text-[0.9375rem] leading-snug text-[#13262b]">{children}</dd>
+    <div className="grid gap-0.5 py-3.5 sm:grid-cols-[170px_minmax(0,1fr)] sm:gap-4">
+      <dt className="text-[0.8125rem] text-[#4a5d63]">{label}</dt>
+      <dd className="min-w-0 text-[0.9375rem] leading-snug text-[#13262b]">{children}</dd>
     </div>
   );
 }
 
 function TechRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-3">
-      <dt className="text-[#5b7079]">{label}</dt>
+    <div className="grid grid-cols-[130px_minmax(0,1fr)] gap-3">
+      <dt className="text-[#4a5d63]">{label}</dt>
       <dd className="text-[#13262b]">{children}</dd>
     </div>
   );
@@ -431,7 +414,7 @@ function TechRow({ label, children }: { label: string; children: ReactNode }) {
 
 function Notice({ className, children }: { className: string; children: ReactNode }) {
   return (
-    <div className={`mt-6 flex gap-3 rounded-2xl px-4 py-3.5 text-[0.875rem] leading-relaxed ${className}`}>
+    <div className={`mt-6 flex gap-3 rounded-lg px-4 py-3.5 text-[0.875rem] leading-relaxed ${className}`}>
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="mt-0.5 h-[18px] w-[18px] shrink-0" aria-hidden="true">
         <circle cx="10" cy="10" r="7.5" />
         <path d="M10 6.5v4M10 13.5h.01" strokeLinecap="round" />
@@ -441,44 +424,43 @@ function Notice({ className, children }: { className: string; children: ReactNod
   );
 }
 
-/** Small crosses in the card's corners, as on a printed certificate. */
-function CornerMarks({ className }: { className: string }) {
-  const spots = ["left-3 top-3", "right-3 top-3", "bottom-3 left-3", "bottom-3 right-3"];
-  return (
-    <>
-      {spots.map((spot) => (
-        <svg
-          key={spot}
-          viewBox="0 0 14 14"
-          className={`pointer-events-none absolute z-10 h-3.5 w-3.5 ${spot} ${className}`}
-          aria-hidden="true"
-        >
-          <path d="M7 0v14M0 7h14" stroke="currentColor" strokeWidth="1.3" />
-        </svg>
-      ))}
-    </>
-  );
-}
-
 function StatusIcon({ kind }: { kind: "check" | "alert" | "cross" }) {
   if (kind === "check") {
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" className="h-7 w-7" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" className="h-6 w-6" aria-hidden="true">
         <path d="m5.5 12.5 4.5 4.5 8.5-9.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }
   if (kind === "cross") {
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" className="h-7 w-7" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" className="h-6 w-6" aria-hidden="true">
         <path d="M7 7l10 10M17 7 7 17" strokeLinecap="round" />
       </svg>
     );
   }
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="h-7 w-7" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="h-6 w-6" aria-hidden="true">
       <circle cx="12" cy="12" r="8.5" />
       <path d="M12 7.5v5.5M12 16.5h.01" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="mt-[3px] h-4 w-4 shrink-0" aria-hidden="true">
+      <circle cx="10" cy="10" r="7.25" />
+      <path d="M10 6v4l2.5 1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PrintIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-4 w-4" aria-hidden="true">
+      <path d="M5.5 8V3h9v5M5.5 14.5h-2v-6.5h13v6.5h-2" strokeLinejoin="round" />
+      <path d="M5.5 11.5h9V17h-9z" strokeLinejoin="round" />
     </svg>
   );
 }

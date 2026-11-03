@@ -1,19 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap");
-
-/* Public certificate check: the HolyApp serif for titles and names, on a pale teal page with a faint dot grid. */
-.verify-page {
-  background-color: #f3f7f7;
-  background-image: radial-gradient(rgb(14 59 70 / 0.09) 1px, transparent 1px);
-  background-size: 18px 18px;
-}
-
-.verify-page .verify-serif {
-  font-family: "DM Serif Display", ui-serif, Georgia, serif;
-  font-weight: 400;
-  letter-spacing: -0.005em;
-}
-
-/* "Technical verification details" opens in place; the chevron turns with it. */
+/* Public certificate check: a plain official page. "Technical details" opens in place; the chevron turns with it. */
 .verify-page details > summary {
   list-style: none;
 }
