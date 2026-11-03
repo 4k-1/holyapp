@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDownIcon, LogoutIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "@/components/ui/icons/AdminIcons";
 import { logout } from "@/features/auth/api/authApi";
+import { askConfirm } from "@/lib/notify";
 import { AdminNotificationBell } from "@/features/parish-admin/notifications/AdminNotificationBell";
 import type { CurrentUser, Parish } from "@/types";
 
@@ -58,6 +59,12 @@ export function AdminTopbar({
 
   async function handleSignOut() {
     setMenuOpen(false);
+    const ok = await askConfirm({
+      title: "Sign out?",
+      message: "You'll need to sign in again to use the parish portal.",
+      confirmLabel: "Sign out",
+    });
+    if (!ok) return;
     await logout();
     navigate(`/${parish.slug}/login`, { replace: true });
   }

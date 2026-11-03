@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PageEnter } from "@/components/ui/PageEnter";
 import { logout } from "@/features/auth/api/authApi";
+import { askConfirm } from "@/lib/notify";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { SuperAdminSidebar } from "@/features/super-admin/components/SuperAdminSidebar";
 import { SuperAdminTopbar } from "@/features/super-admin/components/SuperAdminTopbar";
@@ -52,6 +53,12 @@ function SuperAdminShell() {
   if (!user) return null;
 
   async function handleSignOut() {
+    const ok = await askConfirm({
+      title: "Sign out?",
+      message: "You'll need to sign in again to use the platform console.",
+      confirmLabel: "Sign out",
+    });
+    if (!ok) return;
     await logout();
     navigate("/super-admin/login", { replace: true });
   }
