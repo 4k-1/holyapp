@@ -91,7 +91,7 @@ export function AdminLedgersPage() {
   }
 
   return (
-    <div className="admin-dash mx-auto max-w-[1180px]">
+    <div className="admin-dash mx-auto w-full max-w-[1920px]">
       <header className="mb-6">
         <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)] sm:text-[1.5rem]">
           Digitized Ledger

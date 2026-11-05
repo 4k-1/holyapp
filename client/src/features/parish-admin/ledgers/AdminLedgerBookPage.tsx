@@ -31,7 +31,7 @@ export function AdminLedgerBookPage() {
 
   if (bookLoading && !book) {
     return (
-      <div className="admin-dash mx-auto max-w-[1180px]">
+      <div className="admin-dash mx-auto w-full max-w-[1920px]">
         <RecordDetailBackLink />
         <p className="admin-dash__muted text-admin-body">Loading register book…</p>
       </div>
@@ -40,7 +40,7 @@ export function AdminLedgerBookPage() {
 
   if (!book) {
     return (
-      <div className="admin-dash mx-auto max-w-[1180px]">
+      <div className="admin-dash mx-auto w-full max-w-[1920px]">
         <RecordDetailBackLink />
         <h1 className="mb-1 font-serif text-[1.35rem] font-bold text-[var(--dash-ink)] sm:text-[1.5rem]">
           Book not found
@@ -54,7 +54,7 @@ export function AdminLedgerBookPage() {
   const loadingPages = pagesLoading && pages.length === 0;
 
   return (
-    <div className="admin-dash mx-auto max-w-[1180px]">
+    <div className="admin-dash mx-auto w-full max-w-[1920px]">
       <RecordDetailBackLink />
 
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

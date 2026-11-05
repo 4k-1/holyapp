@@ -84,7 +84,7 @@ export function AdminLedgerPageViewer() {
 
   if ((bookLoading && !book) || (pagesLoading && pages.length === 0 && !page)) {
     return (
-      <div className="admin-dash mx-auto max-w-[1180px]">
+      <div className="admin-dash mx-auto w-full max-w-[1920px]">
         <RecordDetailBackLink />
         <p className="admin-dash__muted text-admin-body">Loading scanned page…</p>
       </div>
@@ -93,7 +93,7 @@ export function AdminLedgerPageViewer() {
 
   if (!book) {
     return (
-      <div className="admin-dash mx-auto max-w-[1180px]">
+      <div className="admin-dash mx-auto w-full max-w-[1920px]">
         <RecordDetailBackLink />
         <h1 className="mb-1 font-serif text-[1.35rem] font-bold text-[var(--dash-ink)] sm:text-[1.5rem]">
           Book not found
@@ -105,7 +105,7 @@ export function AdminLedgerPageViewer() {
 
   if (!Number.isInteger(pageNumber) || pageNumber < 1 || !page) {
     return (
-      <div className="admin-dash mx-auto max-w-[1180px]">
+      <div className="admin-dash mx-auto w-full max-w-[1920px]">
         <RecordDetailBackLink />
         <h1 className="mb-1 font-serif text-[1.35rem] font-bold text-[var(--dash-ink)] sm:text-[1.5rem]">
           Page not found
@@ -121,7 +121,7 @@ export function AdminLedgerPageViewer() {
     pages.length > 0 ? `${pageIndex + 1} of ${pages.length} digitized pages` : "1 page";
 
   return (
-    <div className="admin-dash mx-auto max-w-[1180px]">
+    <div className="admin-dash mx-auto w-full max-w-[1920px]">
       <RecordDetailBackLink />
 
       <header className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
