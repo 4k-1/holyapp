@@ -13,8 +13,8 @@ export function PrivacyPage() {
       <header className="border-b border-[#e3eef0] bg-white">
         <div className="mx-auto flex max-w-[860px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <Link to="/" className="inline-flex items-center gap-2.5 no-underline">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-[0_2px_8px_rgb(14_59_70/0.12)]">
-              <img src="/holyapp-logo.webp" alt="" className="h-9 w-9" />
+            <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white shadow-[0_2px_8px_rgb(14_59_70/0.12)]">
+              <img src="/holyapp-logo.webp" alt="" className="h-[30px] w-[30px] object-contain" />
             </span>
             <span className="text-[1.25rem] font-bold tracking-tight text-[var(--l-teal-deep)]">HolyApp</span>
           </Link>

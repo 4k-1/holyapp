@@ -223,7 +223,7 @@ export function VerifyCertificatePage() {
           to="/"
           className="mt-4 inline-flex items-center gap-2 text-[0.8125rem] text-[#4a5d63] no-underline hover:text-[#13262b] sm:px-1 print:hidden"
         >
-          <img src="/holyapp-logo.webp" alt="" className="h-5 w-5" />
+          <img src="/holyapp-logo.webp" alt="" className="h-6 w-6 rounded-full border border-[#e3e9eb] bg-white object-contain p-[3px]" />
           Verification service by <span className="font-semibold text-[#13262b]">HolyApp</span>
         </Link>
       </main>
@@ -245,7 +245,7 @@ function IssuerHeader({ data }: { data: Verification | null }) {
           </span>
         )
       ) : (
-        <img src="/holyapp-logo.webp" alt="" className="h-11 w-11 shrink-0" />
+        <img src="/holyapp-logo.webp" alt="" className="h-12 w-12 shrink-0 rounded-full border border-[#e3e9eb] bg-white object-contain p-1.5" />
       )}
       <div className="min-w-0 flex-1">
         <p className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[#4a5d63]">Certificate verification</p>

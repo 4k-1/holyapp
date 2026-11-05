@@ -37,14 +37,14 @@ export function SuperAdminTopbar({
           </button>
 
           <div className="flex min-w-0 items-center gap-2.5">
-            <div
-              className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] text-[15px] font-extrabold text-admin-gold-600"
-              style={{
-                background: "linear-gradient(145deg, var(--color-admin-green-700), var(--color-admin-green-900))",
-              }}
+            <Link
+              to="/super-admin"
+              title="HolyApp"
+              aria-label="HolyApp, back to the dashboard"
+              className="ml-1 flex h-[34px] w-[34px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-admin-border bg-white shadow-sm transition-shadow hover:shadow-md"
             >
-              H
-            </div>
+              <img src="/holyapp-logo.webp" alt="" className="h-[26px] w-[26px] object-contain" />
+            </Link>
             <div className="min-w-0 overflow-hidden whitespace-nowrap leading-tight">
               <p className="truncate text-[13.5px] font-extrabold tracking-[0.2px] text-admin-ink">HolyApp</p>
               <p className="mt-px truncate text-[10.5px] text-admin-ink-faint">Diocesan Control Center</p>

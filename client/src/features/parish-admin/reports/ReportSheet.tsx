@@ -250,7 +250,7 @@ export function ReportSheet({
       {!bare && (
         <header data-pdf-break className="mb-4 flex flex-wrap items-start justify-between gap-3 px-1">
           <div className="flex items-center gap-3">
-            <img src="/holyapp-logo.webp" alt="" className="h-10 w-10 shrink-0 rounded-[10px] bg-admin-surface object-contain p-1" />
+            <img src="/holyapp-logo.webp" alt="" className="h-10 w-10 shrink-0 rounded-full border border-admin-border bg-white object-contain p-1.5" />
             <div>
               <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">{doc.parishName}</p>
               <h2 className="font-sans text-[1.375rem] font-bold leading-tight tracking-[-0.01em] text-admin-ink">

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ChevronDownIcon, LogoutIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "@/components/ui/icons/AdminIcons";
 import { logout } from "@/features/auth/api/authApi";
 import { askConfirm } from "@/lib/notify";
@@ -87,6 +87,15 @@ export function AdminTopbar({
           </button>
 
           <div className="flex min-w-0 items-center gap-2.5">
+            <Link
+              to={`/${parish.slug}/admin`}
+              title="HolyApp"
+              aria-label="HolyApp, back to the admin dashboard"
+              className="ml-1 flex h-[34px] w-[34px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-admin-border bg-white shadow-sm transition-shadow hover:shadow-md"
+            >
+              <img src="/holyapp-logo.webp" alt="" className="h-[26px] w-[26px] object-contain" />
+            </Link>
+            <span className="h-7 w-px shrink-0 bg-admin-border" aria-hidden="true" />
             {parish.sealUrl ? (
               <img src={parish.sealUrl} alt="" className="h-[34px] w-[34px] shrink-0 rounded-full object-contain" />
             ) : (

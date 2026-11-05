@@ -16,8 +16,8 @@ export function GiveSite({ parish, children }: { parish?: Parish | null; childre
       <header className="relative">
         <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <Link to="/" className="inline-flex items-center gap-2 no-underline">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white">
-              <img src="/holyapp-logo.webp" alt="" className="h-8 w-8" />
+            <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white">
+              <img src="/holyapp-logo.webp" alt="" className="h-[27px] w-[27px] object-contain" />
             </span>
             <span className="text-[1.0625rem] font-bold tracking-tight text-white">HolyApp</span>
           </Link>
