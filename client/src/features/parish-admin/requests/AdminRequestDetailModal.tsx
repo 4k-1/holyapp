@@ -125,7 +125,7 @@ export function AdminRequestDetailModal({
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
-              <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Request {request.id}</h3>
+              <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Request {request.referenceNo}</h3>
               <AdminBadge tone={getAdminStatusTone(request)}>{deriveAdminStatusLabel(request)}</AdminBadge>
             </div>
             <p className="mt-0.5 text-admin-support text-admin-ink-muted">

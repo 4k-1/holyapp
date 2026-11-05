@@ -8,6 +8,7 @@ export const MOCK_PARISH_MASS_CAPACITY = { value: MASS_INTENTION_MAX_PER_SLOT };
 export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   {
     id: "MI-01",
+    referenceNo: "MI-2026-00001",
     parishId,
     requesterId: "u-parishioner",
     intentionType: "Thanksgiving",
@@ -24,6 +25,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-02",
+    referenceNo: "MI-2026-00002",
     parishId,
     requesterId: "online",
     intentionType: "Healing",
@@ -40,6 +42,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-12",
+    referenceNo: "MI-2026-00003",
     parishId,
     requesterId: "online",
     intentionType: "In memory of the deceased",
@@ -56,6 +59,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-13",
+    referenceNo: "MI-2026-00004",
     parishId,
     requesterId: "u-parishioner",
     intentionType: "Birthday blessing",
@@ -72,6 +76,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-16",
+    referenceNo: "MI-2026-00005",
     parishId,
     requesterId: "online",
     intentionType: "Thanksgiving",
@@ -88,6 +93,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-03",
+    referenceNo: "MI-2026-00006",
     parishId,
     requesterId: "u-parishioner",
     intentionType: "Birthday blessing",
@@ -104,6 +110,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-17",
+    referenceNo: "MI-2026-00007",
     parishId,
     requesterId: "online",
     intentionType: "Thanksgiving",
@@ -120,6 +127,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-18",
+    referenceNo: "MI-2026-00008",
     parishId,
     requesterId: "online",
     intentionType: "In memory of the deceased",
@@ -136,6 +144,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-19",
+    referenceNo: "MI-2026-00009",
     parishId,
     requesterId: "online",
     intentionType: "Healing",
@@ -152,6 +161,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-04",
+    referenceNo: "MI-2026-00010",
     parishId,
     requesterId: "online",
     intentionType: "In memory of the deceased",
@@ -168,6 +178,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-05",
+    referenceNo: "MI-2026-00011",
     parishId,
     requesterId: "u-parishioner",
     intentionType: "Thanksgiving",
@@ -184,6 +195,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-06",
+    referenceNo: "MI-2026-00012",
     parishId,
     requesterId: "u-parishioner",
     intentionType: "Thanksgiving",
@@ -200,6 +212,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-07",
+    referenceNo: "MI-2026-00013",
     parishId,
     requesterId: "online",
     intentionType: "Healing",
@@ -216,6 +229,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-08",
+    referenceNo: "MI-2026-00014",
     parishId,
     requesterId: "u-parishioner",
     intentionType: "In memory of the deceased",
@@ -232,6 +246,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-14",
+    referenceNo: "MI-2026-00015",
     parishId,
     requesterId: "online",
     intentionType: "Thanksgiving",
@@ -248,6 +263,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-15",
+    referenceNo: "MI-2026-00016",
     parishId,
     requesterId: "u-parishioner",
     intentionType: "Healing",
@@ -264,6 +280,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-09",
+    referenceNo: "MI-2026-00017",
     parishId,
     requesterId: "online",
     intentionType: "Other",
@@ -279,6 +296,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-10",
+    referenceNo: "MI-2026-00018",
     parishId,
     requesterId: "u-parishioner",
     intentionType: "Healing",
@@ -295,6 +313,7 @@ export const MOCK_MASS_INTENTIONS: MassIntentionRequest[] = [
   },
   {
     id: "MI-11",
+    referenceNo: "MI-2026-00019",
     parishId,
     requesterId: "online",
     intentionType: "Thanksgiving",

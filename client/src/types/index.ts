@@ -98,6 +98,8 @@ export interface CertificateRequestDetails {
 
 export interface CertificateRequest {
   id: string;
+  /** Short reference people read and search for, e.g. CR-2026-00042. The id stays the key. */
+  referenceNo: string;
   parishId: string;
   requesterId: string;
   sacramentType: SacramentType;
@@ -188,6 +190,8 @@ export const MASS_INTENTION_MAX_PER_SLOT = 5;
 
 export interface MassIntentionRequest {
   id: string;
+  /** Short reference people read and search for, e.g. MI-2026-00007. */
+  referenceNo: string;
   parishId: string;
   /** Portal user id, or `"online"` for public / office-recorded online requests. */
   requesterId: string | null;

@@ -61,7 +61,7 @@ export function AdminReleaseCertificateModal({
 
   function printReceipt() {
     if (!printRef.current) return;
-    printElement(printRef.current, `Pickup Receipt — ${request.id}`);
+    printElement(printRef.current, `Pickup Receipt — ${request.referenceNo}`);
   }
 
   async function handleRelease() {
@@ -98,7 +98,7 @@ export function AdminReleaseCertificateModal({
             {done ? "Certificate released" : "Release certificate"}
           </h3>
           <p className="mt-0.5 text-admin-support text-admin-ink-muted">
-            Request {request.id} · {sacramentCertTitles[request.sacramentType]}
+            Request {request.referenceNo} · {sacramentCertTitles[request.sacramentType]}
           </p>
         </div>
         {!submitting && (
@@ -183,7 +183,7 @@ export function AdminReleaseCertificateModal({
                 <PickupReceiptDocument
                   ref={printRef}
                   parish={parish}
-                  requestId={request.id}
+                  requestId={request.referenceNo}
                   certTitle={sacramentCertTitles[request.sacramentType]}
                   holderName={registerName}
                   registerRef={registerRef}
@@ -315,7 +315,7 @@ const PickupReceiptDocument = forwardRef<
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "#7a8580" }}>{certTitle}</p>
       </div>
 
-      <ReceiptRow label="Request ID" value={requestId} />
+      <ReceiptRow label="Request no." value={requestId} />
       <ReceiptRow label="Register ref" value={registerRef} />
       <ReceiptRow label="Copies released" value={String(copies)} />
       <ReceiptRow label="Released to" value={releasedTo} />

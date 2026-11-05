@@ -341,7 +341,7 @@ export function AdminFindRecordPage() {
 
       <AdminPageHeader
         title="Record Matching"
-        description={`Request ${request.id} · ${subjectName}`}
+        description={`Request ${request.referenceNo} · ${subjectName}`}
         actions={
           <>
             <StatusPill status={status} />

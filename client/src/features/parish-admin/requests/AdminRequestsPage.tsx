@@ -109,7 +109,7 @@ export function AdminRequestsPage() {
       const q = search.trim().toLowerCase();
       const matchesSearch =
         !q ||
-        r.id.toLowerCase().includes(q) ||
+        r.referenceNo.toLowerCase().includes(q) ||
         (r.details?.subjectName ?? "").toLowerCase().includes(q);
       const matchesDate = !dateFilter || r.createdAt.startsWith(dateFilter);
       return matchesStatus && matchesSearch && matchesDate;
@@ -117,13 +117,13 @@ export function AdminRequestsPage() {
   }, [parishRequests, statusFilter, search, dateFilter]);
 
   const columns: AdminTableColumn<CertificateRequest>[] = [
-    { key: "id", header: "ID", sortValue: (r) => r.id, render: (r) => (
+    { key: "id", header: "Request no.", sortValue: (r) => r.referenceNo, render: (r) => (
       <button
         type="button"
         onClick={() => setDetailRequestId(r.id)}
-        className="text-left font-medium text-admin-ink hover:text-admin-green-700 hover:underline"
+        className="whitespace-nowrap text-left font-mono text-[0.8125rem] font-medium text-admin-ink hover:text-admin-green-700 hover:underline"
       >
-        {r.id}
+        {r.referenceNo}
       </button>
     ) },
     {
@@ -233,7 +233,7 @@ export function AdminRequestsPage() {
 
       <AdminCard>
         <AdminFilterBar
-          search={{ value: search, onChange: setSearch, placeholder: "Search by request ID or name", label: "Search requests" }}
+          search={{ value: search, onChange: setSearch, placeholder: "Search by request no. or name", label: "Search requests" }}
           chips={[
             ...(statusFilter !== "All statuses"
               ? [{ key: "status", label: statusFilter, onRemove: () => setStatusFilter("All statuses") }]

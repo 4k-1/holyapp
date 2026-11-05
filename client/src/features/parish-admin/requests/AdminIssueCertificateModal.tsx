@@ -85,14 +85,14 @@ export function AdminIssueCertificateModal({
 
   function handlePrintCertificate() {
     if (!printRef.current) return;
-    printElement(printRef.current, `${sacramentCertTitles[request.sacramentType]} — ${request.id}`);
+    printElement(printRef.current, `${sacramentCertTitles[request.sacramentType]} — ${request.referenceNo}`);
   }
 
   const previewName = linked ? recordFullName(linked) : subjectName;
   const baseFields: CertificateFields = linked
-    ? baptismCertificateFields(linked, { requestId: request.id, certCode: certCode || undefined })
+    ? baptismCertificateFields(linked, { requestId: request.referenceNo, certCode: certCode || undefined })
     : {
-        requestId: request.id,
+        requestId: request.referenceNo,
         registerRef: "—",
         birthdate: request.details?.birthdate ?? "—",
         birthplace: request.details?.birthplace ?? "—",
@@ -126,7 +126,7 @@ export function AdminIssueCertificateModal({
                 : "Mark ready for pickup"}
           </h3>
           <p className="mt-0.5 text-admin-support text-admin-ink-muted">
-            Request {request.id} · {sacramentCertTitles[request.sacramentType]}
+            Request {request.referenceNo} · {sacramentCertTitles[request.sacramentType]}
           </p>
         </div>
         {!submitting && (

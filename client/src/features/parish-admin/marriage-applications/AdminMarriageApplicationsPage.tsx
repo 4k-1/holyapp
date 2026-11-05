@@ -102,7 +102,7 @@ export function AdminMarriageApplicationsPage() {
   const q = search.trim().toLowerCase();
   const rows = applications
     .filter((app) => matches(app, filter))
-    .filter((app) => !q || `${app.brideName} ${app.groomName}`.toLowerCase().includes(q))
+    .filter((app) => !q || `${app.referenceNo} ${app.brideName} ${app.groomName}`.toLowerCase().includes(q))
     .sort(byWeddingDate);
 
   const columns: AdminTableColumn<MarriageApplication>[] = [
@@ -194,7 +194,7 @@ export function AdminMarriageApplicationsPage() {
 
       <AdminCard>
         <AdminFilterBar
-          search={{ value: search, onChange: setSearch, placeholder: "Search by bride or groom name", label: "Search applications" }}
+          search={{ value: search, onChange: setSearch, placeholder: "Search by reference or name", label: "Search applications" }}
           chips={filter === "all" ? [] : [{ key: "status", label: FILTER_LABEL[filter], onRemove: () => setFilter("all") }]}
           summary={`${rows.length} shown`}
         >

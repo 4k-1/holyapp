@@ -12,7 +12,7 @@ const RECORD_TABLES = {
   death: 'death',
 };
 const REQUEST_COLUMNS = `
-  r.id, r.parish_id, r.request_type, r.record_type, r.record_id, r.certificate_id,
+  r.id, r.reference_no, r.parish_id, r.request_type, r.record_type, r.record_id, r.certificate_id,
   r.purpose, r.copies, r.status, r.rejection_reason, r.requested_by, r.processed_by,
   r.delivery_method, r.created_at, r.subject_details, r.pickup_ready,
   pay.status AS payment_status,
@@ -179,6 +179,7 @@ function toCertificateRequest(row) {
 
   return {
     id: row.id,
+    referenceNo: row.reference_no,
     parishId: row.parish_id,
     requesterId: row.requested_by,
     sacramentType: row.record_type,

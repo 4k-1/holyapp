@@ -778,7 +778,7 @@ export function AdminMarriageApplicationDetailPage() {
                 label="Reference"
                 value={
                   <span className="font-mono">
-                    {application.id.slice(0, 8).toUpperCase()}
+                    {application.referenceNo}
                   </span>
                 }
               />

@@ -84,6 +84,7 @@ function parseDonation(value) {
 function toIntention(row) {
   return {
     id: row.id,
+    referenceNo: row.reference_no,
     parishId: row.parish_id,
     requesterId: row.requester_id,
     intentionType: DB_TO_UI[row.intention_type] || row.intention_type,

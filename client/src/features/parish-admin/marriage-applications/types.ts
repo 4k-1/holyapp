@@ -32,6 +32,8 @@ export interface MarriageWeddingEvent {
 
 export interface MarriageApplication {
   id: string;
+  /** Short reference people read and search for, e.g. MA-2026-00003. */
+  referenceNo: string;
   parishId: string;
   parishionerId: string | null;
   groomFirstName: string;

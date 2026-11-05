@@ -24,9 +24,9 @@ export function subjectOf(request: CertificateRequest): string | null {
   return name && name !== "Certificate subject" ? name : null;
 }
 
-/** A short, readable reference: the first block of the request's id. */
+/** The short reference people read and search for, e.g. CR-2026-00042. */
 export function requestRef(request: CertificateRequest) {
-  return request.id.split("-")[0].slice(0, 8).toUpperCase();
+  return request.referenceNo;
 }
 
 export function peso(amount: number) {

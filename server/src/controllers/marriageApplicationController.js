@@ -53,6 +53,7 @@ function toRequirement(row) {
 function toApplication(row, requirements = [], event = null) {
   return {
     id: row.id,
+    referenceNo: row.reference_no,
     parishId: row.parish_id,
     parishionerId: row.parishioner_id || null,
     groomFirstName: row.groom_first_name,
