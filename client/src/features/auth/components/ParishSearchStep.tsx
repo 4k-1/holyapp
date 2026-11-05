@@ -61,8 +61,14 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
         />
       </div>
 
-      <div className="flex max-h-[min(24rem,50vh)] flex-col gap-2.5 overflow-y-auto">
-        {loading && (
+      {/* Fixed height, so the card (and the search box) doesn't jump as the number of results changes. */}
+      <div
+        className={`flex h-[min(24rem,50vh)] flex-col gap-2.5 overflow-y-auto transition-opacity duration-150 ${
+          loading && results.length > 0 ? "opacity-60" : ""
+        }`}
+        aria-busy={loading}
+      >
+        {loading && results.length === 0 && (
           <p className="text-[0.84375rem] text-[var(--auth-ink-soft)]">Loading parishes…</p>
         )}
         {error && (
@@ -70,8 +76,7 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
             {error}
           </p>
         )}
-        {!loading &&
-          !error &&
+        {!error &&
           results.map((parish) => {
             const photo = parish.backgroundImageUrl || parish.sealUrl;
             return (
@@ -89,8 +94,8 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
                 </span>
               )}
               <span className="min-w-0">
-                <p className="text-[0.875rem] font-semibold text-[var(--auth-ink)]">{parish.name}</p>
-                <p className="mt-0.5 text-[0.78rem] text-[var(--auth-ink-soft)]">{parish.address}</p>
+                <p className="auth-desk__result-name">{parish.name}</p>
+                <p className="auth-desk__result-address">{parish.address}</p>
               </span>
             </button>
             );
