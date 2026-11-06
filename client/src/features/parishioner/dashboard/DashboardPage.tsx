@@ -59,7 +59,7 @@ export function DashboardPage({ parish, userName }: DashboardPageProps) {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-      <section className="relative overflow-hidden rounded-[22px] bg-[#dcf1ef]">
+      <section className="relative overflow-hidden rounded-[22px] bg-[#dcf1ef] shadow-[0_1px_2px_rgb(14_59_70/0.06),0_12px_30px_-14px_rgb(14_59_70/0.35)]">
         {parish.photoUrl && (
           <img
             src={parish.photoUrl}
