@@ -254,7 +254,7 @@ export function AdminBaptismalRecordDetailPage() {
       />
 
       <RecordDetailMeta
-        encodedBy={encodedByLabel(record.encodedBy)}
+        encodedBy={record.encodedByName ?? encodedByLabel(record.encodedBy)}
         created={formatDateTime(record.createdAt)}
         updated={formatDateTime(record.updatedAt)}
       />

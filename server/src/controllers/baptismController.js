@@ -188,6 +188,13 @@ async function getBaptism(req, res) {
       return res.status(404).json({ error: 'Record not found.' });
     }
     const record = toBaptismalRecord(row);
+    if (row.encoded_by) {
+      const encoder = await pool.query(
+        `SELECT NULLIF(trim(concat_ws(' ', first_name, last_name)), '') AS name FROM app_user WHERE id = $1`,
+        [row.encoded_by]
+      );
+      record.encodedByName = encoder.rows[0]?.name || undefined;
+    }
     try {
       record.annotations = await listBaptismAnnotations(pool, row.id);
     } catch (annotationErr) {

@@ -95,6 +95,8 @@ export interface BaptismalRecord {
   entryNumber: string;
   remarks?: string;
   encodedBy: string;
+  /** The encoder's name, sent with a single record. */
+  encodedByName?: string;
   createdAt: string;
   updatedAt: string;
   status: RecordStatus;
