@@ -74,7 +74,7 @@ What the parish is struggling with now.
 | 4 | **Done.** Several titles per staff member, name in parts, clergy status from the honorific; one Parish Priest (migration 033). Title history parked | — |
 | E6 | Parish priest approves without being the admin | 4, E1 |
 | E4 | Staff-added register entries wait for approval; no certificate until approved | E6 |
-| E2 | Handover when someone leaves | — |
+| E2 | **Done.** Handover when someone leaves: events, Parish Priest title, certificate signatory, sign-in | — |
 | 8.7 (part) | Two-step sign-in for staff | — |
 
 Do E1 + 8.2 early: moving from "one user, one parish" touches sign-in and every access check,

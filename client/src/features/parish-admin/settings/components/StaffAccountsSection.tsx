@@ -7,6 +7,7 @@ import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { addStaffAccount, listStaffAccounts, setStaffAccountStatus, updateStaffAccount } from "../api/staffApi";
 import { DeactivateStaffModal } from "./DeactivateStaffModal";
+import { HandoverModal } from "@/features/parish-admin/staff/components/HandoverModal";
 import { StaffAccountModal } from "./StaffAccountModal";
 import type { NewStaffInput, StaffAccount, StaffRole } from "../types";
 import { notifyError } from "@/lib/notify";
@@ -191,7 +192,20 @@ export function StaffAccountsSection() {
         />
       )}
 
-      {deactivateTarget && (
+      {deactivateTarget?.personnelId && (
+        <HandoverModal
+          personId={deactivateTarget.personnelId}
+          personName={deactivateTarget.name}
+          onClose={() => setDeactivateTarget(null)}
+          onDone={() => {
+            const id = deactivateTarget.id;
+            setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, status: "Inactive" } : a)));
+            setDeactivateTarget(null);
+          }}
+        />
+      )}
+
+      {deactivateTarget && !deactivateTarget.personnelId && (
         <DeactivateStaffModal
           account={deactivateTarget}
           onClose={() => setDeactivateTarget(null)}

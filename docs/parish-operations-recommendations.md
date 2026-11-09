@@ -461,6 +461,9 @@ Several titles per person, honorifics and dated assignments are already covered 
   open requests stay with them.
 - **Add:** when deactivating, list what they still hold (future Masses, assigned requests) and ask who
   takes each over. End their sign-in in the same step.
+- **Done (2026-11-09):** `server/src/controllers/handoverController.js`. Certificate requests have no
+  owner (anyone in the office works the queue), so there is nothing to hand over there. When E1 is
+  built, add "Who takes over their areas?" to the same form.
 
 ### E3. Always keep at least one admin (already done)
 
@@ -517,7 +520,7 @@ change other accounts. So the last admin can't be removed. No work needed.
 | D5–D11 | Proposed |
 | Donation campaign goals | Set aside for now |
 | E1 | Parked (2026-11-09): design noted under E1; not started |
-| E2 | Proposed |
+| E2 | Done: "Set inactive…" (Staff list) and Deactivate (Staff Accounts) open one handover form: upcoming events to someone or unassigned, the Parish Priest title, the certificate signatory; the sign-in is suspended and its saved sign-ins cancelled; all in one step, with an audit entry. No new table |
 | E3 | Already done |
 | E4–E6 | Proposed |
 | E7 | Done: untitled staff sign-ins show "Staff"; the edit form asks for a real title |

@@ -47,6 +47,8 @@ export interface StaffAccount {
   email: string;
   status: StaffStatus;
   accessRole: StaffAccessRole;
+  /** Their row on the Staff list, used for the handover when they leave. */
+  personnelId?: string | null;
 }
 
 export type NewStaffInput = Pick<StaffAccount, "name" | "email" | "role" | "accessRole"> & {

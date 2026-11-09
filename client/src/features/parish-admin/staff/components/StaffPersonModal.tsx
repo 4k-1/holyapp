@@ -24,7 +24,6 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
     person?.titles?.length ? person.titles : [{ title: person?.role ?? firstRole, scope: null }]
   );
   const [contact, setContact] = useState(person?.contact ?? "");
-  const [status, setStatus] = useState<"active" | "inactive">(person?.status ?? "active");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const nameLocked = Boolean(person?.hasAccount);
@@ -55,7 +54,6 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
         titles: titles.map((t) => ({ title: t.title, scope: t.scope?.trim() || null })),
         contact: contact.trim(),
         ...(nameLocked ? {} : { name: name.trim() }),
-        ...(person && !nameLocked ? { status } : {}),
       };
       onSaved(person ? await updatePerson(person.id, input) : await addPerson(input));
     } catch (err) {
@@ -187,14 +185,6 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
         <AdminField label="Contact (optional)" className="mb-0">
           <AdminInput value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Mobile number or email" />
         </AdminField>
-        {person && !nameLocked && (
-          <AdminField label="Status" className="mb-0">
-            <select value={status} onChange={(e) => setStatus(e.target.value as "active" | "inactive")} className={selectClass}>
-              <option value="active">Active: can be assigned to events</option>
-              <option value="inactive">Inactive: kept on record, not assignable</option>
-            </select>
-          </AdminField>
-        )}
         {error && <p className="text-admin-support font-semibold text-red-700">{error}</p>}
       </div>
       <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">

@@ -8,7 +8,9 @@ import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { isParishAdminRole } from "@/features/parish-admin/permissions";
-import { listPersonnel, type ParishPerson } from "./api/personnelApi";
+import { listPersonnel, updatePerson, type ParishPerson } from "./api/personnelApi";
+import { HandoverModal } from "./components/HandoverModal";
+import { notifyError } from "@/lib/notify";
 import { GiveSignInModal } from "./components/GiveSignInModal";
 import { RemoveStaffModal } from "./components/RemoveStaffModal";
 import { StaffPersonModal } from "./components/StaffPersonModal";
@@ -49,6 +51,19 @@ export function AdminStaffPage() {
   const [editing, setEditing] = useState<ParishPerson | "new" | null>(null);
   const [removing, setRemoving] = useState<ParishPerson | null>(null);
   const [givingSignIn, setGivingSignIn] = useState<ParishPerson | null>(null);
+  const [leaving, setLeaving] = useState<ParishPerson | null>(null);
+
+  function replacePerson(saved: ParishPerson) {
+    setPeople((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
+  }
+
+  async function reactivate(person: ParishPerson) {
+    try {
+      replacePerson(await updatePerson(person.id, { status: "active" }));
+    } catch (err) {
+      notifyError(err, "Couldn't reactivate this person.");
+    }
+  }
 
   const load = useCallback(
     () =>
@@ -135,6 +150,9 @@ export function AdminStaffPage() {
           actions={[
             { label: "Edit", onSelect: () => setEditing(p) },
             { label: "Give sign-in", onSelect: () => setGivingSignIn(p), hidden: p.hasAccount || p.status !== "active" },
+            { label: "Set inactive…", onSelect: () => setLeaving(p), hidden: p.status !== "active" },
+            // Someone with a sign-in is reactivated with their account, under Settings → Staff Accounts.
+            { label: "Reactivate", onSelect: () => reactivate(p), hidden: p.status === "active" || p.hasAccount },
             { label: "Remove", onSelect: () => setRemoving(p), danger: true, hidden: p.hasAccount },
           ]}
         />
@@ -220,6 +238,18 @@ export function AdminStaffPage() {
           onRemoved={() => {
             setPeople((prev) => prev.filter((p) => p.id !== removing.id));
             setRemoving(null);
+          }}
+        />
+      )}
+
+      {leaving && (
+        <HandoverModal
+          personId={leaving.id}
+          personName={leaving.name}
+          onClose={() => setLeaving(null)}
+          onDone={() => {
+            setLeaving(null);
+            load();
           }}
         />
       )}

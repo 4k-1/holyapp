@@ -30,6 +30,7 @@ function toStaff(row) {
     email: row.email,
     status: row.status === 'active' ? 'Active' : 'Inactive',
     accessRole: row.role === ROLES.PARISH_ADMIN ? 'admin' : 'staff',
+    personnelId: row.personnel_id || null,
   };
 }
 
@@ -98,7 +99,7 @@ async function listStaff(req, res) {
   try {
     const result = await pool.query(
       `SELECT u.id, u.email, u.role, u.status, u.first_name, u.middle_name, u.last_name,
-              p.full_name AS personnel_name, p.role_title, p.honorific, p.post_nominals
+              p.full_name AS personnel_name, p.role_title, p.honorific, p.post_nominals, p.id AS personnel_id
        FROM app_user u
        LEFT JOIN parish_personnel p ON p.user_id = u.id
        WHERE u.parish_id = $1
@@ -305,6 +306,9 @@ async function setStaffStatus(req, res) {
       `UPDATE app_user SET status = $1, updated_at = NOW() WHERE id = $2`,
       [nextStatus, current.id]
     );
+    if (nextStatus === 'suspended') {
+      await pool.query('UPDATE refresh_token SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL', [current.id]);
+    }
     await upsertPersonnel({
       parishId: req.parishId,
       userId: current.id,

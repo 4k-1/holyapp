@@ -84,3 +84,41 @@ export async function removePerson(id: string): Promise<void> {
     fail(err);
   }
 }
+
+/** E2: what someone still holds before they leave, and who can take it over. */
+export interface Handover {
+  person: ParishPerson;
+  isSelf: boolean;
+  events: { id: string; title: string; eventType: string; date: string; time: string }[];
+  parishPriest: boolean;
+  signatory: { name: string; types: string[] } | null;
+  candidates: { id: string; name: string; role: string; clergy: boolean; priest: boolean }[];
+}
+
+export interface LeaveInput {
+  /** `to` null leaves the event unassigned. */
+  events: { id: string; to: string | null }[];
+  parishPriestTo: string | null;
+  signAs: boolean;
+}
+
+export async function getHandover(id: string): Promise<Handover> {
+  try {
+    return await apiFetch<Handover>(`/personnel/${encodeURIComponent(id)}/handover`);
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Passes on what they hold and sets them inactive; a sign-in is suspended in the same step. */
+export async function leavePerson(id: string, input: LeaveInput): Promise<ParishPerson> {
+  try {
+    const data = await apiFetch<{ person: ParishPerson }>(`/personnel/${encodeURIComponent(id)}/leave`, {
+      method: "POST",
+      body: input,
+    });
+    return data.person;
+  } catch (err) {
+    fail(err);
+  }
+}

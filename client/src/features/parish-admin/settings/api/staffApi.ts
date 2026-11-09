@@ -18,6 +18,7 @@ function asStaff(row: StaffAccount): StaffAccount {
     email: row.email,
     status: row.status === "Inactive" ? "Inactive" : "Active",
     accessRole: row.accessRole === "admin" ? "admin" : "staff",
+    personnelId: row.personnelId ?? null,
   };
 }
 
