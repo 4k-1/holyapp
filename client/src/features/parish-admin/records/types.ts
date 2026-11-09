@@ -102,6 +102,20 @@ export interface BaptismalRecord {
   status: RecordStatus;
   certificates: IssuedRecordCertificate[];
   annotations: RecordAnnotation[];
+  /** Godparents (stored in the sponsor tables), primary first. At most two (can. 873). */
+  godparents?: Godparent[];
+  /** The scanned register page and row this record was made from (when it was). */
+  ledgerPageId?: string;
+  ledgerRow?: number;
+  /** Sent with a single record: that page's book and number, for a link to it. */
+  ledgerSource?: { pageId: string; bookId: string; bookTitle: string; pageNumber: number; row: number };
+}
+
+export interface Godparent {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  role?: "Godfather" | "Godmother";
 }
 
 export interface BaptismalSearchCriteria {

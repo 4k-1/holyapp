@@ -1,0 +1,117 @@
+{
+  "image": "baptism-p01-right.jpg",
+  "spread": "p01",
+  "side": "right",
+  "pageHeading": "Register",
+  "rule": "Values are exactly as written on the page (spelling included). null = blank on the page. Row N here is entry N on the left page.",
+  "reviewNotes": [
+    "Row 2 sponsor2: read as 'Nenita C. Uy' (first letter could be M). Confirm.",
+    "Row 5 minister: surname looks like 'Bocalso' here but 'Bacalso' on rows 7 and 10. Set to 'Bacalso'; confirm.",
+    "Row 8 residence: read as 'Brgy. Pusok, Lapu-Lapu City' (could be 'Purok'). Confirm.",
+    "Row 9 sponsor1: surname read as 'Abao'. Confirm.",
+    "Row 10 sponsor1: surname read as 'Baguio' (there may be an accent mark). Confirm.",
+    "Row 10 minister: surname runs into the cell edge. Set to 'Bacalso'; confirm."
+  ],
+  "entries": [
+    {
+      "entryNumber": "1",
+      "residence": "Brgy. Lahug, Cebu City",
+      "dateOfBaptismAsWritten": "June 7, 2026",
+      "dateOfBaptismIso": "2026-06-07",
+      "minister": "Rev. Fr. Rodolfo M. Cabahug",
+      "sponsor1": "Ernesto P. Cañete",
+      "sponsor2": "Cherry M. Ouano",
+      "observations": null
+    },
+    {
+      "entryNumber": "2",
+      "residence": "Brgy. Banilad, Cebu City",
+      "dateOfBaptismAsWritten": "June 7, 2026",
+      "dateOfBaptismIso": "2026-06-07",
+      "minister": "Rev. Fr. Rodolfo M. Cabahug",
+      "sponsor1": "Victor G. Lim",
+      "sponsor2": "Nenita C. Uy",
+      "observations": null
+    },
+    {
+      "entryNumber": "3",
+      "residence": "Brgy. Tabunok, Talisay City",
+      "dateOfBaptismAsWritten": "June 14, 2026",
+      "dateOfBaptismIso": "2026-06-14",
+      "minister": "Rev. Fr. Jerome P. Alcoseba",
+      "sponsor1": "Antonio J. Seno",
+      "sponsor2": "Mila V. Gica",
+      "observations": "Parents Married 2026"
+    },
+    {
+      "entryNumber": "4",
+      "residence": "Brgy. Mabolo, Cebu City",
+      "dateOfBaptismAsWritten": "June 14, 2026",
+      "dateOfBaptismIso": "2026-06-14",
+      "minister": "Rev. Fr. Jerome P. Alcoseba",
+      "sponsor1": "Wilfredo L. Go",
+      "sponsor2": "Liza D. Navarro",
+      "observations": null
+    },
+    {
+      "entryNumber": "5",
+      "residence": "Brgy. Subangdaku, Mandaue City",
+      "dateOfBaptismAsWritten": "June 21, 2026",
+      "dateOfBaptismIso": "2026-06-21",
+      "minister": "Rev. Fr. Nestor L. Bacalso",
+      "sponsor1": "Elmer T. Sato",
+      "sponsor2": "Josefina A. Ricablanca",
+      "observations": "Single Mother"
+    },
+    {
+      "entryNumber": "6",
+      "residence": "Brgy. Kamputhaw, Cebu City",
+      "dateOfBaptismAsWritten": "June 28, 2026",
+      "dateOfBaptismIso": "2026-06-28",
+      "minister": "Rev. Fr. Rodolfo M. Cabahug",
+      "sponsor1": "Dennis E. Pacquia",
+      "sponsor2": "Joy L. Yap",
+      "observations": null
+    },
+    {
+      "entryNumber": "7",
+      "residence": "Brgy. Guadalupe, Cebu City",
+      "dateOfBaptismAsWritten": "July 5, 2026",
+      "dateOfBaptismIso": "2026-07-05",
+      "minister": "Rev. Fr. Nestor L. Bacalso",
+      "sponsor1": "Teodoro P. Mendoza",
+      "sponsor2": "Ivy B. Villamor",
+      "observations": null
+    },
+    {
+      "entryNumber": "8",
+      "residence": "Brgy. Pusok, Lapu-Lapu City",
+      "dateOfBaptismAsWritten": "July 5, 2026",
+      "dateOfBaptismIso": "2026-07-05",
+      "minister": "Rev. Fr. Jerome P. Alcoseba",
+      "sponsor1": "Rodrigo N. Lao",
+      "sponsor2": "Ellen S. Durano",
+      "observations": "Private baptism"
+    },
+    {
+      "entryNumber": "9",
+      "residence": "Poblacion Ward II, Minglanilla",
+      "dateOfBaptismAsWritten": "July 12, 2026",
+      "dateOfBaptismIso": "2026-07-12",
+      "minister": "Rev. Fr. Rodolfo M. Cabahug",
+      "sponsor1": "Florencio B. Abao",
+      "sponsor2": "Lyn E. Go",
+      "observations": null
+    },
+    {
+      "entryNumber": "10",
+      "residence": "Brgy. Bulacao, Cebu City",
+      "dateOfBaptismAsWritten": "July 19, 2026",
+      "dateOfBaptismIso": "2026-07-19",
+      "minister": "Rev. Fr. Nestor L. Bacalso",
+      "sponsor1": "Arnel D. Baguio",
+      "sponsor2": "Daisy R. Chiong",
+      "observations": null
+    }
+  ]
+}

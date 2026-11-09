@@ -1,0 +1,117 @@
+{
+  "image": "baptism-p01-left.jpg",
+  "spread": "p01",
+  "side": "left",
+  "pageHeading": "Baptismal",
+  "rule": "Values are exactly as written on the page (spelling included). null = blank on the page.",
+  "reviewNotes": [
+    "Entry 3 dateOfBirthAsWritten: page says 'Febuary' (missing r). Kept as written; confirm.",
+    "Entry 3 motherName: read as 'Rhea Mae B. Ybanez'. Confirm first letter.",
+    "Entry 5 motherName: set to 'Lorna', but the handwriting looks like 'Loma'. Confirm which you wrote.",
+    "Entry 9 motherName: surname read as 'Roral'. May be 'Rosal'. Confirm.",
+    "Entry 10 placeOfBirth: last word runs off the cell ('Talisay'). Confirm.",
+    "Entry 10 dateOfBirth: the day is overwritten; read as 28. Confirm."
+  ],
+  "entries": [
+    {
+      "entryNumber": "1",
+      "childFullName": "Althea Mae R. Villanueva",
+      "placeOfBirth": "Vicente Sotto Memorial Medical Center, Cebu City",
+      "dateOfBirthAsWritten": "March 4, 2026",
+      "dateOfBirthIso": "2026-03-04",
+      "legitimacy": "L",
+      "fatherName": "Mark Anthony R. Villanueva",
+      "motherName": "Kristine Joy L. Abella"
+    },
+    {
+      "entryNumber": "2",
+      "childFullName": "Juan Carlos D. Tan",
+      "placeOfBirth": "Chong Hua Hospital, Cebu City",
+      "dateOfBirthAsWritten": "January 19, 2026",
+      "dateOfBirthIso": "2026-01-19",
+      "legitimacy": "L",
+      "fatherName": "John Paul S. Tan",
+      "motherName": "Maria Angelica D. Fernandez"
+    },
+    {
+      "entryNumber": "3",
+      "childFullName": "Princess Nicole B. Pepito",
+      "placeOfBirth": "Talisay City Cebu",
+      "dateOfBirthAsWritten": "Febuary 27, 2026",
+      "dateOfBirthIso": "2026-02-27",
+      "legitimacy": "ILL",
+      "fatherName": "Christian Dave M. Pepito",
+      "motherName": "Rhea Mae B. Ybanez"
+    },
+    {
+      "entryNumber": "4",
+      "childFullName": "Gabriel Jose A. Dela Peña",
+      "placeOfBirth": "Perpetual Succour Hospital, Cebu City",
+      "dateOfBirthAsWritten": "December 8, 2025",
+      "dateOfBirthIso": "2025-12-08",
+      "legitimacy": "L",
+      "fatherName": "Ronald James C. Dela Peña",
+      "motherName": "Jessa Marie A. Sanchez"
+    },
+    {
+      "entryNumber": "5",
+      "childFullName": "Ma. Sofia L. Gonzaga",
+      "placeOfBirth": "Mandaue City, Cebu",
+      "dateOfBirthAsWritten": "April 2, 2026",
+      "dateOfBirthIso": "2026-04-02",
+      "legitimacy": "ILL",
+      "fatherName": null,
+      "motherName": "Lorna P. Gonzaga"
+    },
+    {
+      "entryNumber": "6",
+      "childFullName": "Ezekiel T. Montaño",
+      "placeOfBirth": "Cebu Doctors' University Hospital",
+      "dateOfBirthAsWritten": "March 21, 2026",
+      "dateOfBirthIso": "2026-03-21",
+      "legitimacy": "L",
+      "fatherName": "Jerald F. Montaño",
+      "motherName": "Lovely Grace T. Cuizon"
+    },
+    {
+      "entryNumber": "7",
+      "childFullName": "Andrea Joy S. Lapitan",
+      "placeOfBirth": "Brgy. Guadalupe, Cebu City",
+      "dateOfBirthAsWritten": "May 10, 2026",
+      "dateOfBirthIso": "2026-05-10",
+      "legitimacy": "L",
+      "fatherName": "Paolo B. Gabuya",
+      "motherName": "Sheila Mae R. Lapitan"
+    },
+    {
+      "entryNumber": "8",
+      "childFullName": "Liam Rafael O. Sumalinog",
+      "placeOfBirth": "Lapu-Lapu City, Cebu",
+      "dateOfBirthAsWritten": "April 15, 2026",
+      "dateOfBirthIso": "2026-04-15",
+      "legitimacy": "L",
+      "fatherName": "Neil Bryan A. Sumalinog",
+      "motherName": "Camille O. Estrera"
+    },
+    {
+      "entryNumber": "9",
+      "childFullName": "Kyla Marie D. Cabrera",
+      "placeOfBirth": "Minglanilla, Cebu",
+      "dateOfBirthAsWritten": "June 1, 2026",
+      "dateOfBirthIso": "2026-06-01",
+      "legitimacy": "ILL",
+      "fatherName": "Rey Mark D. Cabrera",
+      "motherName": "Hazel Ann P. Roral"
+    },
+    {
+      "entryNumber": "10",
+      "childFullName": "Santino Miguel C. Ouano",
+      "placeOfBirth": "Cebu South Medical Center Talisay",
+      "dateOfBirthAsWritten": "May 28, 2026",
+      "dateOfBirthIso": "2026-05-28",
+      "legitimacy": "L",
+      "fatherName": "Pedro Luis N. Ouano",
+      "motherName": "Ma. Teresa C. Alburo"
+    }
+  ]
+}

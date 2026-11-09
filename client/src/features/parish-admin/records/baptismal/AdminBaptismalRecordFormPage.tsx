@@ -16,9 +16,16 @@ import {
 } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { markRecordStatus } from "@/features/parish-admin/schedule/api/scheduleApi";
 import { useAsync } from "@/hooks/useAsync";
-import type { LegitimacyStatus } from "@/features/parish-admin/records/types";
+import type { Godparent, LegitimacyStatus } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 import { PAGE_TITLE_CLASS } from "@/features/parish-admin/components/adminPageStyles";
+import { LedgerSourcePanel } from "@/features/parish-admin/ledgers/LedgerSourcePanel";
+import {
+  draftFromLedgerRow,
+  godparentsOf,
+  isLedgerHandoff,
+  type GodparentRole,
+} from "@/features/parish-admin/ledgers/ledgerToRecord";
 
 interface FormState {
   firstName: string;
@@ -46,6 +53,14 @@ interface FormState {
   pageNumber: string;
   entryNumber: string;
   remarks: string;
+  godparent1First: string;
+  godparent1Middle: string;
+  godparent1Last: string;
+  godparent1Role: GodparentRole | "";
+  godparent2First: string;
+  godparent2Middle: string;
+  godparent2Last: string;
+  godparent2Role: GodparentRole | "";
 }
 
 interface ScheduleLinkPrefill {
@@ -81,7 +96,30 @@ const emptyForm = (placeOfBaptism = ""): FormState => ({
   pageNumber: "",
   entryNumber: "",
   remarks: "",
+  godparent1First: "",
+  godparent1Middle: "",
+  godparent1Last: "",
+  godparent1Role: "",
+  godparent2First: "",
+  godparent2Middle: "",
+  godparent2Last: "",
+  godparent2Role: "",
 });
+
+/** A saved record's godparents as the two form rows. */
+function godparentFields(list: Godparent[] = []) {
+  const at = (i: number) => list[i];
+  return {
+    godparent1First: at(0)?.firstName ?? "",
+    godparent1Middle: at(0)?.middleName ?? "",
+    godparent1Last: at(0)?.lastName ?? "",
+    godparent1Role: at(0)?.role ?? "",
+    godparent2First: at(1)?.firstName ?? "",
+    godparent2Middle: at(1)?.middleName ?? "",
+    godparent2Last: at(1)?.lastName ?? "",
+    godparent2Role: at(1)?.role ?? "",
+  } satisfies Partial<FormState>;
+}
 
 export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit" }) {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -90,7 +128,10 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   const location = useLocation();
   const id = decodeURIComponent(recordId);
 
-  const prefill = mode === "create" ? (location.state as ScheduleLinkPrefill | null) : null;
+  // Opened from the register check screen with a ledger row, or from the schedule.
+  const ledger = mode === "create" && isLedgerHandoff(location.state) ? location.state : null;
+  const [ledgerDraft] = useState(() => (ledger ? draftFromLedgerRow(ledger) : null));
+  const prefill = mode === "create" && !ledger ? (location.state as ScheduleLinkPrefill | null) : null;
 
   const { data: existing, loading: existingLoading } = useAsync(
     () => (mode === "edit" ? getBaptismalRecord(parish.id, id) : Promise.resolve(undefined)),
@@ -99,6 +140,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
 
   const [form, setForm] = useState<FormState>(() => {
     const base = emptyForm(parish.name);
+    if (ledgerDraft) return { ...base, ...ledgerDraft.draft };
     if (prefill) {
       return {
         ...base,
@@ -143,6 +185,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       pageNumber: existing.pageNumber,
       entryNumber: existing.entryNumber,
       remarks: existing.remarks ?? "",
+      ...godparentFields(existing.godparents),
     });
   }
 
@@ -163,6 +206,13 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       </AdminFormPage>
     );
   }
+
+  // With no parent recorded (e.g. a foundling), the register should say why.
+  const noParents = !form.fatherLastName.trim() && !form.motherLastName.trim();
+
+  // A godparent row with any name in it needs both a first and a last name.
+  const hasGodparent = (n: 1 | 2) =>
+    Boolean((form[`godparent${n}First`] + form[`godparent${n}Middle`] + form[`godparent${n}Last`]).trim());
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -197,6 +247,9 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       pageNumber: form.pageNumber,
       entryNumber: form.entryNumber,
       remarks: form.remarks || undefined,
+      godparents: godparentsOf(form),
+      // Made from a scanned register row: link the record to that page and row.
+      ...(ledger?.ledgerPageId ? { ledgerPageId: ledger.ledgerPageId, ledgerRow: ledger.row } : {}),
     };
     try {
       if (mode === "edit") {
@@ -222,7 +275,9 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
           : "Enter details exactly as they appear in the parish register."
       }
       notice={
-        prefill && (
+        ledger && ledgerDraft ? (
+          <LedgerSourcePanel handoff={ledger} notes={ledgerDraft.notes} />
+        ) : prefill && (
           <p className="mb-4 rounded-[8px] border border-admin-gold-600/30 bg-admin-gold-100/40 px-3 py-2 text-admin-support text-admin-gold-700">
             Linked from schedule: <span className="font-semibold">{prefill.subjectNameHint || "Untitled block"}</span>
             {prefill.date ? ` · ${prefill.date}` : ""}
@@ -238,7 +293,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
           <AdminInput placeholder="Juan" value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} required />
         </AdminField>
         <AdminField label="Middle name" className={`mb-0 ${span.third}`}>
-          <AdminInput placeholder="Santos" value={form.middleName} onChange={(e) => setField("middleName", e.target.value)} required />
+          <AdminInput placeholder="If recorded" value={form.middleName} onChange={(e) => setField("middleName", e.target.value)} />
         </AdminField>
         <AdminField label="Last name" className={`mb-0 ${span.third}`}>
           <AdminInput placeholder="Dela Cruz" value={form.lastName} onChange={(e) => setField("lastName", e.target.value)} required />
@@ -295,33 +350,114 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
         </AdminField>
       </RecordSection>
 
-      <RecordSection title="Parents">
+      <RecordSection
+        title="Parents"
+        note="Only as the register names them. A child of an unmarried mother may have no father recorded, and a foundling no parents."
+      >
         <AdminField label="Father's first name" className={`mb-0 ${span.half}`}>
-          <AdminInput value={form.fatherFirstName} onChange={(e) => setField("fatherFirstName", e.target.value)} required />
+          <AdminInput value={form.fatherFirstName} onChange={(e) => setField("fatherFirstName", e.target.value)} />
         </AdminField>
         <AdminField label="Father's last name" className={`mb-0 ${span.half}`}>
-          <AdminInput value={form.fatherLastName} onChange={(e) => setField("fatherLastName", e.target.value)} required />
+          <AdminInput
+            value={form.fatherLastName}
+            onChange={(e) => setField("fatherLastName", e.target.value)}
+            required={Boolean(form.fatherFirstName.trim())}
+          />
         </AdminField>
         <AdminField label="Mother's first name" className={`mb-0 ${span.half}`}>
-          <AdminInput value={form.motherFirstName} onChange={(e) => setField("motherFirstName", e.target.value)} required />
+          <AdminInput value={form.motherFirstName} onChange={(e) => setField("motherFirstName", e.target.value)} />
         </AdminField>
         <AdminField label="Mother's last name" className={`mb-0 ${span.half}`}>
-          <AdminInput value={form.motherLastName} onChange={(e) => setField("motherLastName", e.target.value)} required />
+          <AdminInput
+            value={form.motherLastName}
+            onChange={(e) => setField("motherLastName", e.target.value)}
+            required={Boolean(form.motherFirstName.trim())}
+          />
         </AdminField>
       </RecordSection>
 
-      <RecordSection title="Grandparents">
+      <RecordSection
+        title="Godparents"
+        note="The register's sponsors. One godfather, one godmother, or one of each (can. 873)."
+      >
+        <AdminField label="Godparent 1: first name" className={`mb-0 ${span.third}`}>
+          <AdminInput
+            value={form.godparent1First}
+            onChange={(e) => setField("godparent1First", e.target.value)}
+            required={hasGodparent(1)}
+          />
+        </AdminField>
+        <AdminField label="Middle name" className={`mb-0 ${span.third}`}>
+          <AdminInput value={form.godparent1Middle} onChange={(e) => setField("godparent1Middle", e.target.value)} />
+        </AdminField>
+        <AdminField label="Last name" className={`mb-0 ${span.third}`}>
+          <AdminInput
+            value={form.godparent1Last}
+            onChange={(e) => setField("godparent1Last", e.target.value)}
+            required={hasGodparent(1)}
+          />
+        </AdminField>
+        <AdminField label="Role" className={`mb-0 ${span.third}`}>
+          <AdminSelect
+            value={form.godparent1Role}
+            onChange={(e) => setField("godparent1Role", e.target.value as GodparentRole | "")}
+          >
+            <option value="">—</option>
+            <option value="Godfather" disabled={form.godparent2Role === "Godfather"}>
+              Godfather
+            </option>
+            <option value="Godmother" disabled={form.godparent2Role === "Godmother"}>
+              Godmother
+            </option>
+          </AdminSelect>
+        </AdminField>
+        <div className={`hidden @min-[36rem]:block ${span.twoThirds}`} />
+        <AdminField label="Godparent 2: first name" className={`mb-0 ${span.third}`}>
+          <AdminInput
+            value={form.godparent2First}
+            onChange={(e) => setField("godparent2First", e.target.value)}
+            required={hasGodparent(2)}
+          />
+        </AdminField>
+        <AdminField label="Middle name" className={`mb-0 ${span.third}`}>
+          <AdminInput value={form.godparent2Middle} onChange={(e) => setField("godparent2Middle", e.target.value)} />
+        </AdminField>
+        <AdminField label="Last name" className={`mb-0 ${span.third}`}>
+          <AdminInput
+            value={form.godparent2Last}
+            onChange={(e) => setField("godparent2Last", e.target.value)}
+            required={hasGodparent(2)}
+          />
+        </AdminField>
+        <AdminField label="Role" className={`mb-0 ${span.third}`}>
+          <AdminSelect
+            value={form.godparent2Role}
+            onChange={(e) => setField("godparent2Role", e.target.value as GodparentRole | "")}
+          >
+            <option value="">—</option>
+            <option value="Godfather" disabled={form.godparent1Role === "Godfather"}>
+              Godfather
+            </option>
+            <option value="Godmother" disabled={form.godparent1Role === "Godmother"}>
+              Godmother
+            </option>
+          </AdminSelect>
+        </AdminField>
+        <div className={`hidden @min-[36rem]:block ${span.twoThirds}`} />
+      </RecordSection>
+
+      <RecordSection title="Grandparents" note="Optional. Only if the register lists them.">
         <AdminField label="Paternal grandfather" className={`mb-0 ${span.half}`}>
-          <AdminInput value={form.paternalGrandfather} onChange={(e) => setField("paternalGrandfather", e.target.value)} required />
+          <AdminInput value={form.paternalGrandfather} onChange={(e) => setField("paternalGrandfather", e.target.value)} />
         </AdminField>
         <AdminField label="Paternal grandmother" className={`mb-0 ${span.half}`}>
-          <AdminInput value={form.paternalGrandmother} onChange={(e) => setField("paternalGrandmother", e.target.value)} required />
+          <AdminInput value={form.paternalGrandmother} onChange={(e) => setField("paternalGrandmother", e.target.value)} />
         </AdminField>
         <AdminField label="Maternal grandfather" className={`mb-0 ${span.half}`}>
-          <AdminInput value={form.maternalGrandfather} onChange={(e) => setField("maternalGrandfather", e.target.value)} required />
+          <AdminInput value={form.maternalGrandfather} onChange={(e) => setField("maternalGrandfather", e.target.value)} />
         </AdminField>
         <AdminField label="Maternal grandmother" className={`mb-0 ${span.half}`}>
-          <AdminInput value={form.maternalGrandmother} onChange={(e) => setField("maternalGrandmother", e.target.value)} required />
+          <AdminInput value={form.maternalGrandmother} onChange={(e) => setField("maternalGrandmother", e.target.value)} />
         </AdminField>
       </RecordSection>
 
@@ -350,7 +486,12 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
           <AdminTextarea
             value={form.remarks}
             onChange={(e) => setField("remarks", e.target.value)}
-            placeholder="Optional notes from the register"
+            placeholder={
+              noParents
+                ? "Required when no parent is recorded. For a foundling: when, where and by whom the child was found."
+                : "Optional notes from the register"
+            }
+            required={noParents}
             className="min-h-[84px]"
           />
         </AdminField>

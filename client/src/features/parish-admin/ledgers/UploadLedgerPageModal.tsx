@@ -17,21 +17,15 @@ interface UploadLedgerPageModalProps {
   books: LedgerBook[];
   defaultBookId?: string;
   onClose: () => void;
-  onSubmit: (pages: LedgerPageUploadInput[]) => Promise<void>;
+  /** Saves the pages; call onProgress with how many are done so far. */
+  onSubmit: (pages: LedgerPageUploadInput[], onProgress: (done: number) => void) => Promise<void>;
 }
+
+const MAX_BYTES = 25 * 1024 * 1024;
 
 function isImageFile(file: File) {
   if (file.type.startsWith("image/")) return true;
   return /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name);
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error(`Couldn't read ${file.name}.`));
-    reader.readAsDataURL(file);
-  });
 }
 
 function pageIssues(drafts: DraftScan[], taken: Set<number>) {
@@ -77,6 +71,7 @@ export function UploadLedgerPageModal({
   const [takenPages, setTakenPages] = useState<Set<number>>(new Set());
   const [dragging, setDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploaded, setUploaded] = useState(0);
   const [error, setError] = useState("");
   const [showIssues, setShowIssues] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -110,7 +105,7 @@ export function UploadLedgerPageModal({
   function addFiles(fileList: FileList | File[]) {
     const incoming = Array.from(fileList).filter(isImageFile);
     if (incoming.length === 0) {
-      setError("Choose photos of the register pages (JPG or PNG).");
+      setError("Choose photos of the register pages (JPEG, PNG, WebP or HEIC).");
       return;
     }
     const next = incoming.map((file) => ({
@@ -166,21 +161,23 @@ export function UploadLedgerPageModal({
       return;
     }
     if (!canSave) return;
+    const tooBig = drafts.find((d) => d.file.size > MAX_BYTES);
+    if (tooBig) {
+      setActiveId(tooBig.id);
+      setError(`${tooBig.file.name} is larger than 25 MB. Use a smaller photo.`);
+      return;
+    }
     setSubmitting(true);
+    setUploaded(0);
     setError("");
     try {
-      const pages = await Promise.all(
-        drafts.map(async (draft) => ({
-          bookId,
-          pageNumber: Number(draft.pageNumber),
-          fileName: draft.file.name,
-          imageUrl: await readFileAsDataUrl(draft.file),
-        }))
+      await onSubmit(
+        drafts.map((draft) => ({ bookId, pageNumber: Number(draft.pageNumber), file: draft.file })),
+        setUploaded
       );
-      await onSubmit(pages);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't attach these scans.");
+      setError(err instanceof Error ? err.message : "Couldn't upload these pages.");
     } finally {
       setSubmitting(false);
     }
@@ -217,8 +214,8 @@ export function UploadLedgerPageModal({
         title="Add scanned pages"
         subtitle={
           drafts.length === 0
-            ? "Drop photos of the register. You will number each page from the book next."
-            : `${photoLabel}. Read the scan and enter the page number written in the book.`
+            ? "Photograph the open book with both pages showing, one photo per spread. You will number each photo next."
+            : `${photoLabel}. Enter the page number written on the left-hand page.`
         }
         onClose={onClose}
         busy={submitting}
@@ -389,12 +386,12 @@ export function UploadLedgerPageModal({
           </AdminButton>
           <AdminButton type="submit" disabled={submitting || drafts.length === 0 || !bookId}>
             {submitting
-              ? "Attaching…"
+              ? `Uploading ${Math.min(uploaded + 1, drafts.length)} of ${drafts.length}…`
               : drafts.length === 0
-                ? "Attach pages"
+                ? "Upload pages"
                 : drafts.length === 1
-                  ? "Attach 1 page"
-                  : `Attach ${drafts.length} pages`}
+                  ? "Upload 1 page"
+                  : `Upload ${drafts.length} pages`}
           </AdminButton>
         </AdminDialogFooter>
       </form>
@@ -474,7 +471,7 @@ function DropZone({
       </span>
       {!compact && (
         <span className="mt-1 block text-admin-support text-admin-ink-muted">
-          JPG or PNG. Several pages at once is fine — you will number them below.
+          JPEG, PNG, WebP or HEIC, up to 25 MB each. Several at once is fine.
         </span>
       )}
     </button>

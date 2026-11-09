@@ -6,6 +6,7 @@ import {
   type LedgerBook,
   type LedgerPage,
   type LedgerSearchField,
+  type LedgerSearchPage,
   type LedgerSearchHit,
 } from "@/features/parish-admin/ledgers/types";
 
@@ -67,12 +68,9 @@ const LEDGER_FIELD_PATTERNS: Record<Exclude<LedgerSearchField, "all" | "name">, 
   sponsor: /\b(Sponsor|Witness(?:es)?)\b/i,
 };
 
-/**
- * Heuristic-only line filter for the "Field" search narrowing. Real
- * field-scoped search would need structured OCR output rather than regex
- * over raw scanned text.
- * TODO: replace with structured field matching once OCR emits fields.
- */
+// Each line of a page's read text holds one detail of one entry ("Entry 4: born 4 Mar 2016
+// at ...", "Entry 4: Minister Rev. Fr. ..."; see ledgerController.searchTextOf on the
+// server), so "Field" narrows the search to the lines of that kind.
 function lineMatchesField(line: string, field: LedgerSearchField) {
   if (field === "all" || field === "name") return true;
   return LEDGER_FIELD_PATTERNS[field].test(line);
@@ -80,7 +78,7 @@ function lineMatchesField(line: string, field: LedgerSearchField) {
 
 export function searchLedgerPages(
   books: LedgerBook[],
-  pages: LedgerPage[],
+  pages: LedgerSearchPage[],
   query: string,
   options: { field?: LedgerSearchField; bookId?: string; sacrament?: SacramentType | "all" } = {}
 ): LedgerSearchHit[] {

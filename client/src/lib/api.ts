@@ -22,8 +22,12 @@ export class ApiError extends Error {
 
 type ApiFetchOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
+  /** Sent as-is instead of JSON (e.g. an image File). Set the Content-Type header yourself. */
+  rawBody?: BodyInit;
   /** When false, skip attaching the access token (login/logout/refresh). Default true. */
   auth?: boolean;
+  /** Internal: read the response as a Blob instead of JSON. */
+  _blob?: boolean;
   /** Internal: set after one refresh+retry so we don't loop. */
   _retried?: boolean;
 };
@@ -93,12 +97,22 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   }
 }
 
+/** Fetches a file the API serves (e.g. a scanned page) with the signed-in user's token. */
+export async function apiFetchBlob(path: string, options: ApiFetchOptions = {}): Promise<Blob> {
+  reportActivity(1);
+  try {
+    return await request<Blob>(path, { ...options, _blob: true });
+  } finally {
+    reportActivity(-1);
+  }
+}
+
 async function request<T>(path: string, options: ApiFetchOptions): Promise<T> {
   if (!API_URL) {
     throw new ApiError("VITE_API_URL is not configured.", 500);
   }
 
-  const { body, headers, auth = true, _retried = false, ...rest } = options;
+  const { body, rawBody, headers, auth = true, _retried = false, _blob = false, ...rest } = options;
   const accessToken = auth ? getAccessToken() : null;
 
   const response = await fetch(`${API_URL}${path.startsWith("/") ? path : `/${path}`}`, {
@@ -109,8 +123,10 @@ async function request<T>(path: string, options: ApiFetchOptions): Promise<T> {
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...headers,
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: rawBody ?? (body !== undefined ? JSON.stringify(body) : undefined),
   });
+
+  if (_blob && response.ok) return (await response.blob()) as T;
 
   let payload: unknown = null;
   const text = await response.text();
@@ -126,7 +142,7 @@ async function request<T>(path: string, options: ApiFetchOptions): Promise<T> {
     if (response.status === 401 && auth && !_retried) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
-        return apiFetch<T>(path, { ...options, _retried: true });
+        return request<T>(path, { ...options, _retried: true });
       }
     }
 

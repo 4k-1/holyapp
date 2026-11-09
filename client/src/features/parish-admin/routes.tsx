@@ -21,6 +21,7 @@ import { AdminDonationsPage } from "@/features/parish-admin/donations/AdminDonat
 import { AdminLedgersPage } from "@/features/parish-admin/ledgers/AdminLedgersPage";
 import { AdminLedgerBookPage } from "@/features/parish-admin/ledgers/AdminLedgerBookPage";
 import { AdminLedgerPageViewer } from "@/features/parish-admin/ledgers/AdminLedgerPageViewer";
+import { AdminLedgerPageRecordsPage } from "@/features/parish-admin/ledgers/AdminLedgerPageRecordsPage";
 import { AdminMassIntentionsPage } from "@/features/parish-admin/intentions/AdminMassIntentionsPage";
 import { AdminMarriageApplicationsPage } from "@/features/parish-admin/marriage-applications/AdminMarriageApplicationsPage";
 import { AdminMarriageApplicationDetailPage } from "@/features/parish-admin/marriage-applications/AdminMarriageApplicationDetailPage";
@@ -94,6 +95,7 @@ export const parishAdminRoutes: RouteObject[] = [
       { path: "records/ledgers", element: <AdminLedgersPage /> },
       { path: "records/ledgers/:bookId", element: <AdminLedgerBookPage /> },
       { path: "records/ledgers/:bookId/pages/:pageNumber", element: <AdminLedgerPageViewer /> },
+      { path: "records/ledgers/:bookId/pages/:pageNumber/records", element: <AdminLedgerPageRecordsPage /> },
       { path: "mass-intentions", element: <AdminMassIntentionsPage /> },
       { path: "marriage-applications", element: <AdminMarriageApplicationsPage /> },
       { path: "marriage-applications/:applicationId", element: <AdminMarriageApplicationDetailPage /> },

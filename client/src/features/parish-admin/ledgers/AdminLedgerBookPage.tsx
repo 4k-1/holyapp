@@ -9,9 +9,18 @@ import { getLedgerBook, listLedgerPages, uploadLedgerPages } from "@/features/pa
 import { LedgerStateMessage } from "@/features/parish-admin/ledgers/LedgerCards";
 import { ledgerPageAlt, ledgerSacramentBadgeTone, ledgerSacramentLabel, ledgerYearRange } from "@/features/parish-admin/ledgers/ledgersHelpers";
 import { UploadLedgerPageModal } from "@/features/parish-admin/ledgers/UploadLedgerPageModal";
+import { LedgerPageImage } from "@/features/parish-admin/ledgers/LedgerPageImage";
 import { useAsync } from "@/hooks/useAsync";
+import type { LedgerBook, LedgerPage } from "@/features/parish-admin/ledgers/types";
 import type { Parish } from "@/types";
 import "@/features/parish-admin/styles/adminDesk.css";
+
+// What's been done with a page so far: read, and how many records were made from it.
+function pageStatus(sacrament: LedgerBook["sacramentType"], page: LedgerPage) {
+  if (page.recordCount > 0) return page.recordCount === 1 ? "1 record made" : `${page.recordCount} records made`;
+  if (page.readAt) return "Read · no records yet";
+  return sacrament === "baptism" ? "Not read yet" : "Open scan";
+}
 
 export function AdminLedgerBookPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -84,7 +93,7 @@ export function AdminLedgerBookPage() {
       ) : pages.length === 0 ? (
         <LedgerStateMessage>
           This register has no scanned pages yet.
-          {canUpload ? " Upload photos of the book to start." : " Ask a parish admin to upload scans."}
+          {canUpload ? " Upload photos of the book to start." : " Ask a parish admin to upload photos of it."}
         </LedgerStateMessage>
       ) : (
         <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 xl:grid-cols-4">
@@ -95,14 +104,16 @@ export function AdminLedgerBookPage() {
               className="group block rounded-[var(--dash-radius,14px)] outline-none focus-visible:ring-2 focus-visible:ring-admin-green-700/40"
             >
               <AdminCard className="overflow-hidden p-0 transition-colors group-hover:border-admin-green-700/35">
-                <img
-                  src={page.imageUrl}
+                <LedgerPageImage
+                  parishId={parish.id}
+                  pageId={page.id}
+                  size="thumb"
                   alt={ledgerPageAlt(book, page)}
-                  className="aspect-[3/4] w-full bg-admin-surface-alt object-cover object-top"
+                  className="aspect-[4/3] w-full bg-admin-surface-alt object-cover object-top"
                 />
                 <div className="border-t border-admin-border px-4 py-3">
                   <p className="text-admin-body font-semibold text-admin-ink">Page {page.pageNumber}</p>
-                  <p className="mt-0.5 text-admin-support text-admin-ink-muted">Open scan</p>
+                  <p className="mt-0.5 text-admin-support text-admin-ink-muted">{pageStatus(book.sacramentType, page)}</p>
                 </div>
               </AdminCard>
             </Link>
@@ -116,10 +127,14 @@ export function AdminLedgerBookPage() {
           books={[book]}
           defaultBookId={book.id}
           onClose={() => setUploadOpen(false)}
-          onSubmit={async (pages) => {
-            await uploadLedgerPages(parish.id, pages);
-            refetchPages();
-            refetchBook();
+          onSubmit={async (pages, onProgress) => {
+            try {
+              await uploadLedgerPages(parish.id, pages, onProgress);
+            } finally {
+              // Pages uploaded before a failure are in the book too.
+              refetchPages();
+              refetchBook();
+            }
           }}
         />
       )}
