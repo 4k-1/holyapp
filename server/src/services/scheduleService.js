@@ -384,9 +384,10 @@ function scheduleLabelForDate(dateStr, schedule) {
   return schedule.find((entry) => entry.dayType === dayType)?.label || '';
 }
 
-async function createEvent(parishId, userId, input) {
+/** `db`: a client when the event is saved inside a larger transaction (funeral booking). */
+async function createEvent(parishId, userId, input, db = pool) {
   await checkAssignee(parishId, input);
-  const inserted = await pool.query(
+  const inserted = await db.query(
     `INSERT INTO event (
        parish_id, event_type, title, description, start_datetime, end_datetime,
        location, status, created_by, assigned_to, assignee_name, source,

@@ -302,6 +302,10 @@ Most Philippine parishes have a main church plus several chapels (*kapilya*) and
   free priests and church availability.
 - Link the booking to the death record and the burial niche.
 - Offer the follow-up Masses families expect: *pasiyam*, the 40th day and the first anniversary.
+- **Done:** "Book a funeral" on the Schedule shows the free hours in the main church for three days
+  with the priests free at each, and books the follow-up Masses as intentions on regular Masses
+  (counted from the date of death, evening Mass by default). The death record and niche are linked
+  when the death entry is made from the funeral (C11). Emergency sick calls are parked.
 
 #### C8. Group baptisms and confirmations (priority: low)
 

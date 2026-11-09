@@ -9,6 +9,7 @@ import { DayAgendaSidebar } from "./components/DayAgendaSidebar";
 import { EventsListView } from "./components/EventsListView";
 import { ScheduleEventModal } from "./components/ScheduleEventModal";
 import { AssignBlockModal } from "./components/AssignBlockModal";
+import { FuneralBookingModal } from "./components/FuneralBookingModal";
 import type { LiturgicalDay, ScheduleBlock, ScheduleOccurrence } from "./types";
 import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
@@ -30,6 +31,7 @@ export function AdminSchedulePage() {
   const [addModalDate, setAddModalDate] = useState<string | null>(null);
   const [assignTarget, setAssignTarget] = useState<ScheduleOccurrence | null>(null);
   const [editTarget, setEditTarget] = useState<ScheduleBlock | null>(null);
+  const [bookingFuneral, setBookingFuneral] = useState(false);
   /** Bumped after an edit so the list view fetches again. */
   const [listVersion, setListVersion] = useState(0);
 
@@ -89,7 +91,14 @@ export function AdminSchedulePage() {
       <AdminPageHeader
         title="Parish Schedule & Events"
         description="Baptisms, weddings, funerals, and other events. Regular Masses are in Settings."
-        actions={<AdminButton onClick={() => setAddModalDate(selectedDate)}>+ Add block</AdminButton>}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <AdminButton variant="secondary" onClick={() => setBookingFuneral(true)}>
+              Book a funeral
+            </AdminButton>
+            <AdminButton onClick={() => setAddModalDate(selectedDate)}>+ Add block</AdminButton>
+          </div>
+        }
       />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -180,6 +189,17 @@ export function AdminSchedulePage() {
           onClose={() => setEditTarget(null)}
           onSaved={() => {
             setEditTarget(null);
+            reload();
+            setListVersion((v) => v + 1);
+          }}
+        />
+      )}
+
+      {bookingFuneral && (
+        <FuneralBookingModal
+          onClose={() => setBookingFuneral(false)}
+          onSaved={() => {
+            setBookingFuneral(false);
             reload();
             setListVersion((v) => v + 1);
           }}

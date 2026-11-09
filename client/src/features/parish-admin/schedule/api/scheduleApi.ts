@@ -130,6 +130,60 @@ export async function checkConflict(
   }
 }
 
+/** One day of open church times for a funeral (C7). */
+export interface FuneralDay {
+  date: string;
+  day: LiturgicalDay;
+  warnings: BookingWarning[];
+  slots: { start: string; end: string; freePriests: string[] }[];
+}
+
+/** Open church times for a funeral over the three days from `from`, with the priests free at each. */
+export async function getFuneralSlots(from: string): Promise<FuneralDay[]> {
+  try {
+    const data = await apiFetch<{ days: FuneralDay[] }>(`/schedule/funeral-slots?from=${encodeURIComponent(from)}`);
+    return data.days ?? [];
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Regular Mass times on a date, from Settings → Mass Schedule. */
+export async function getMassTimesOn(date: string): Promise<string[]> {
+  try {
+    const data = await apiFetch<{ times?: string[] }>(`/schedule/mass-times?date=${encodeURIComponent(date)}`);
+    return data.times ?? [];
+  } catch (err) {
+    fail(err);
+  }
+}
+
+export interface FuneralBooking {
+  deceasedName: string;
+  date: string;
+  start: string;
+  end: string;
+  assigneeId: string | null;
+  assignee: string;
+  requesterName: string;
+  contact: string;
+  calendarOk: boolean;
+  /** Masses for the deceased afterwards, booked as intentions on regular Masses. */
+  followUps: { label: string; date: string; time: string; offering?: number }[];
+}
+
+/** Books the funeral and its follow-up Masses together; returns how many Masses were booked. */
+export async function bookFuneral(input: FuneralBooking): Promise<{ block: ScheduleBlock; intentions: unknown[] }> {
+  try {
+    return await apiFetch<{ block: ScheduleBlock; intentions: unknown[] }>("/schedule/funerals", {
+      method: "POST",
+      body: input,
+    });
+  } catch (err) {
+    fail(err);
+  }
+}
+
 /** `calendarOk`: staff chose to book anyway on a day the Church calendar warns about. */
 type BlockInput = Omit<ScheduleBlock, "id"> & { calendarOk?: boolean };
 

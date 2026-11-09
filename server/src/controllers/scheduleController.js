@@ -5,6 +5,7 @@ const schedule = require('../services/scheduleService');
 const { ROLES } = require('../constants/roles');
 const massTimes = require('../services/massTimeChanges');
 const liturgical = require('../utils/liturgicalCalendar');
+const funerals = require('../services/funeralBooking');
 
 /** Runs `work` in a transaction; rolls back if it throws. */
 async function inTransaction(work) {
@@ -113,6 +114,48 @@ async function calendarDay(req, res) {
   try {
     const date = dateValue(req.query.date, 'Date');
     res.json(await schedule.calendarCheck(req.parishId, date, optionalText(req.query.type)));
+  } catch (err) {
+    return send(res, err);
+  }
+}
+
+/** Open church times for a funeral over the next few days, with the priests free at each (C7). */
+async function funeralSlots(req, res) {
+  try {
+    const from = req.query.from ? dateValue(req.query.from, 'From') : '';
+    const days = Math.min(Math.max(Number(req.query.days) || 3, 1), 7);
+    await schedule.ensureDefaultMassSchedule(req.parishId, req.user.id);
+    res.json({ days: await funerals.funeralSlots(req.parishId, from, days) });
+  } catch (err) {
+    return send(res, err);
+  }
+}
+
+/** Books a funeral and any follow-up Masses for the deceased together (C7). */
+async function bookFuneral(req, res) {
+  try {
+    await schedule.ensureDefaultMassSchedule(req.parishId, req.user.id);
+    const { eventId, input, intentions } = await funerals.bookFuneral(req.parishId, req.user.id, req.body || {});
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'schedule.event_created',
+      entityType: 'event',
+      entityId: eventId,
+      metadata: { title: input.title, date: input.date, type: 'funeral' },
+    });
+    for (const item of intentions) {
+      await writeAudit({
+        parishId: req.parishId,
+        actorId: req.user.id,
+        action: 'mass_intention.booked',
+        entityType: 'mass_intention',
+        entityId: item.id,
+        metadata: { date: item.date, time: item.time, funeralEventId: eventId },
+      });
+    }
+    const block = (await schedule.loadBlocks(req.parishId)).find((item) => item.id === eventId);
+    res.status(201).json({ block, intentions });
   } catch (err) {
     return send(res, err);
   }
@@ -383,6 +426,8 @@ module.exports = {
   listStaffNames,
   checkConflict,
   calendarDay,
+  funeralSlots,
+  bookFuneral,
   createBlock,
   updateBlock,
   assignOccurrence,

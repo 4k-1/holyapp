@@ -8,6 +8,8 @@ const {
   listStaffNames,
   checkConflict,
   calendarDay,
+  funeralSlots,
+  bookFuneral,
   createBlock,
   updateBlock,
   assignOccurrence,
@@ -34,6 +36,8 @@ router.get('/blocks', ...office, listBlocks);
 router.get('/staff', ...office, listStaffNames);
 router.post('/conflicts', ...office, checkConflict);
 router.get('/calendar-day', ...office, calendarDay);
+router.get('/funeral-slots', ...office, funeralSlots);
+router.post('/funerals', ...office, bookFuneral);
 router.post('/events', ...office, createBlock);
 router.patch('/events/:id', ...office, updateBlock);
 router.post('/assign', ...office, assignOccurrence);

@@ -9,6 +9,14 @@ const {
   sendRecordError,
 } = require('../utils/recordFields');
 const schedule = require('../services/scheduleService');
+const {
+  parseDonation,
+  ensureSettings,
+  getCapacity,
+  isFull,
+  slotCount,
+  insertOfficeIntention,
+} = require('../services/intentionBooking');
 const { frontendUrl } = require('../utils/frontendUrl');
 const { parishSetupActor } = require('../utils/parishActor');
 const {
@@ -21,8 +29,6 @@ const {
   paidPaymentFromSession,
 } = require('../utils/paymongo');
 
-/** Upper bound for a single GCash donation, to catch typos like an extra zero. */
-const MAX_DONATION = 100000;
 /** How far ahead parishioners can pick a Mass. */
 const OPEN_SLOT_DAYS = 60;
 
@@ -73,14 +79,6 @@ function localISO(date) {
   return `${y}-${m}-${d}`;
 }
 
-function parseDonation(value) {
-  if (value === undefined || value === null || value === '') return 0;
-  const amount = Number(value);
-  if (!Number.isFinite(amount) || amount < 0) throw httpError(400, 'Donation amount is not valid.');
-  if (amount > MAX_DONATION) throw httpError(400, 'Donation amount is too large.');
-  return Math.round(amount * 100) / 100;
-}
-
 function toIntention(row) {
   return {
     id: row.id,
@@ -126,31 +124,6 @@ function datesInRange(from, to) {
   return dates;
 }
 
-async function ensureSettings(parishId, userId) {
-  await pool.query(
-    `INSERT INTO parish_settings (parish_id, updated_by)
-     VALUES ($1, $2)
-     ON CONFLICT (parish_id) DO NOTHING`,
-    [parishId, userId]
-  );
-}
-
-/** Intentions allowed per Mass, or null for no limit (stored as 0). */
-async function getCapacity(parishId, userId) {
-  await ensureSettings(parishId, userId);
-  const result = await pool.query(
-    'SELECT mass_intention_capacity FROM parish_settings WHERE parish_id = $1',
-    [parishId]
-  );
-  const stored = result.rows[0]?.mass_intention_capacity;
-  if (stored === 0) return null;
-  return stored || 5;
-}
-
-function isFull(booked, max) {
-  return max !== null && booked >= max;
-}
-
 async function offeringAmount(parishId) {
   const named = await pool.query(
     `SELECT amount FROM service_fee
@@ -159,17 +132,6 @@ async function offeringAmount(parishId) {
     [parishId]
   );
   return named.rows[0] ? Number(named.rows[0].amount) : 100;
-}
-
-async function slotCount(parishId, date, time) {
-  const result = await pool.query(
-    `SELECT COUNT(*)::int AS n
-     FROM mass_intention
-     WHERE parish_id = $1 AND schedule_date = $2 AND schedule_time = $3
-       AND status IN ('pending', 'confirmed', 'said')`,
-    [parishId, date, time]
-  );
-  return result.rows[0].n;
 }
 
 async function notifyOffice(parishId, title, body) {
@@ -544,48 +506,21 @@ async function bookIntention(req, res) {
     const intentionFor = requiredText(req.body?.intentionText || req.body?.intentionFor, 'Intention');
     const type = intentionTypeToDb(req.body?.intentionType);
     const offering = parseDonation(req.body?.offering);
-    const maxIntentions = await getCapacity(req.parishId, req.user.id);
-    if (isFull(await slotCount(req.parishId, date, time), maxIntentions)) {
-      throw httpError(409, 'This Mass is at full capacity.');
-    }
-    const recurring = await schedule.loadRecurring(req.parishId);
-    const scheduleEntries = schedule.massScheduleFromCommitments(recurring);
-    const label =
-      optionalText(req.body?.scheduleLabel) || schedule.scheduleLabelForDate(date, scheduleEntries);
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      const inserted = await client.query(
-        `INSERT INTO mass_intention (
-           parish_id, requester_name, intention_type, intention_for, schedule_date,
-           requester_id, schedule_time, schedule_label, status, offering, payment_status,
-           contact, confirmed_at, confirmed_by
-         )
-         VALUES ($1, $2, $3, $4, $5, NULL, $6, $7, 'confirmed', $8, $11, $9, NOW(), $10)
-         RETURNING *`,
-        [
-          req.parishId,
-          requesterName,
-          type,
-          intentionFor,
-          date,
-          time,
-          label,
-          offering,
-          optionalText(req.body?.contact),
-          req.user.id,
-          offering > 0 ? 'paid' : 'none',
-        ]
-      );
-      const row = inserted.rows[0];
-      if (offering > 0) await client.query(
-        `INSERT INTO payment (
-           certificate_request_id, payment_type, amount_due, amount_tendered, change,
-           status, collected_by, paid_at, mass_intention_id
-         )
-         VALUES (NULL, 'cash', $1, $1, 0, 'paid', $2, NOW(), $3)`,
-        [offering, req.user.id, row.id]
-      );
+      const row = await insertOfficeIntention(client, {
+        parishId: req.parishId,
+        actorId: req.user.id,
+        date,
+        time,
+        requesterName,
+        type,
+        intentionFor,
+        offering,
+        contact: optionalText(req.body?.contact),
+        scheduleLabel: optionalText(req.body?.scheduleLabel),
+      });
       await client.query('COMMIT');
       await writeAudit({
         parishId: req.parishId,
