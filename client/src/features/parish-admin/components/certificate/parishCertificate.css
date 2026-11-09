@@ -576,6 +576,7 @@
 }
 
 /* ---------- Specimen watermark (a preview of a copy not yet issued) ---------- */
+/* Faint and behind the text, so the certificate stays easy to read and check. */
 
 .mcert__page {
   position: relative;
@@ -584,7 +585,7 @@
 .cert-specimen {
   position: absolute;
   inset: 0;
-  z-index: 5;
+  z-index: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -592,14 +593,18 @@
   overflow: hidden;
 }
 
+.pcert__frame,
+.mcert__page > .mf-frame {
+  position: relative;
+  z-index: 1;
+}
+
 .cert-specimen__text {
   display: flex;
   flex-direction: column;
   align-items: center;
   transform: rotate(-32deg);
-  padding: 3mm 8mm;
-  border: 1.2mm solid rgba(190, 30, 45, 0.45);
-  color: rgba(190, 30, 45, 0.45);
+  color: rgba(190, 30, 45, 0.1);
   font-family: Arial, Helvetica, sans-serif;
   font-size: 20mm;
   font-weight: 700;
