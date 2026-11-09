@@ -96,7 +96,7 @@ and gets more expensive the longer it waits.
 | --- | --- | --- |
 | B6 + C10 | `place` table for church and chapels (also used by donations and intentions) | — |
 | C2 | **Done.** Assign staff by ID, not typed name; guests for visiting priests (migration 035) | — |
-| C1 | Change or cancel one occasion of a recurring event; date ranges for patterns | — |
+| C1 | **Not needed:** Masses aren't changed one date at a time. Date ranges for patterns are parked. **Done instead:** Mass time changes in Settings carry booked intentions | — |
 | C4 | Notifications on changes; move intentions off cancelled Masses | Job queue (8.9) |
 | B5 + C5 | Liturgical calendar and booking warnings | — |
 | C3, C6 | Travel buffers; priests' Mass limits and days off | C2, place table |

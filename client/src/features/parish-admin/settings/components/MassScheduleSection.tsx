@@ -1,12 +1,16 @@
 // src/features/parish-admin/settings/components/MassScheduleSection.tsx
 import { useEffect, useState } from "react";
-import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, AdminField, AdminInput, AdminSelect } from "@/features/parish-admin/components/AdminForm";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 import {
   addRecurringCommitment,
+  IntentionsAffectedError,
   listAssignableStaff,
   listRecurringCommitments,
   removeRecurringCommitment,
   updateRecurringCommitment,
+  type AffectedMassTime,
+  type IntentionMoves,
 } from "@/features/parish-admin/schedule/api/scheduleApi";
 import { convert24to12, parseTimeToMinutes, to24Hour } from "@/features/parish-admin/schedule/scheduleHelpers";
 import { AssigneeName, StaffSelect } from "@/features/parish-admin/schedule/components/StaffSelect";
@@ -56,11 +60,136 @@ function timesText(rc: RecurringCommitment) {
     .join(" · ");
 }
 
+function movedText(count: number) {
+  if (!count) return "";
+  return ` ${count} booked ${count === 1 ? "intention" : "intentions"} moved to another Mass time.`;
+}
+
+/** "2030-03-02" → "Sat 2 Mar". */
+function shortDate(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+}
+
+function datesText(dates: string[]) {
+  const shown = dates.slice(0, 4).map(shortDate).join(", ");
+  return dates.length > 4 ? `${shown} and ${dates.length - 4} more` : shown;
+}
+
+const allChosen = (affected: AffectedMassTime[], moves: IntentionMoves) =>
+  affected.every((a) => a.options.length > 0 && Boolean(moves[a.time]));
+
+/** For each removed time with intentions on it, choose another Mass time on the same dates. */
+function IntentionMovesFields({
+  affected,
+  moves,
+  onChange,
+}: {
+  affected: AffectedMassTime[];
+  moves: IntentionMoves;
+  onChange: (next: IntentionMoves) => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-lg border border-admin-border bg-admin-amber-100 px-4 py-3">
+      <p className="text-admin-body font-semibold text-admin-ink">
+        Intentions are booked on a Mass time you're removing. Choose where they go.
+      </p>
+      {affected.map((a) => (
+        <div key={a.time}>
+          <p className="text-admin-support text-admin-ink">
+            <span className="font-semibold">{a.time}</span> · {a.count} {a.count === 1 ? "intention" : "intentions"} on{" "}
+            {datesText(a.dates)}
+          </p>
+          {a.options.length > 0 ? (
+            <AdminSelect
+              value={moves[a.time] ?? ""}
+              onChange={(e) => onChange({ ...moves, [a.time]: e.target.value })}
+              aria-label={`Move the ${a.time} intentions to`}
+              className="mt-1.5"
+            >
+              <option value="">Move them to…</option>
+              {a.options.map((t) => (
+                <option key={t} value={t}>
+                  The {t} Mass that day
+                </option>
+              ))}
+            </AdminSelect>
+          ) : (
+            <p className="mt-1 text-admin-support font-semibold text-admin-red-700">
+              No other Mass is left on {a.dates.length === 1 ? "that date" : "those dates"}. Keep this time until they
+              are said, or add another Mass on that day first.
+            </p>
+          )}
+        </div>
+      ))}
+      <p className="text-admin-label text-admin-ink-muted">The people who booked them are told in the app.</p>
+    </div>
+  );
+}
+
+/** Removing a whole Mass that still has intentions booked on it. */
+function RemoveMassModal({
+  rc,
+  affected,
+  onClose,
+  onRemoved,
+}: {
+  rc: RecurringCommitment;
+  affected: AffectedMassTime[];
+  onClose: () => void;
+  onRemoved: (moved: number) => void;
+}) {
+  const [moves, setMoves] = useState<IntentionMoves>({});
+  const [current, setCurrent] = useState(affected);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function remove() {
+    setSaving(true);
+    setError("");
+    try {
+      onRemoved(await removeRecurringCommitment(rc.id, moves));
+    } catch (err) {
+      if (err instanceof IntentionsAffectedError) setCurrent(err.affected);
+      setError(err instanceof Error ? err.message : "Could not remove this Mass.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <AdminModalFrame
+      onClose={onClose}
+      busy={saving}
+      panelClassName="max-w-[480px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+    >
+      <div className="border-b border-admin-border px-6 py-4">
+        <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Remove {rc.label}?</h3>
+        <p className="mt-0.5 text-admin-support text-admin-ink-muted">
+          {daysText(rc.days)}, {timesText(rc)} will no longer be on the Mass schedule.
+        </p>
+      </div>
+      <div className="space-y-3 px-6 py-5">
+        <IntentionMovesFields affected={current} moves={moves} onChange={setMoves} />
+        {error && <p className="text-admin-support font-semibold text-red-700">{error}</p>}
+      </div>
+      <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        <AdminButton variant="secondary" onClick={onClose} disabled={saving}>
+          Cancel
+        </AdminButton>
+        <AdminButton variant="danger" onClick={remove} disabled={saving || !allChosen(current, moves)}>
+          {saving ? "Removing…" : "Move intentions and remove"}
+        </AdminButton>
+      </div>
+    </AdminModalFrame>
+  );
+}
+
 export function MassScheduleSection() {
   const { data: commitments = [], loading, error, refetch } = useAsync(() => listRecurringCommitments(), []);
   const masses = commitments.filter((rc) => rc.type === "mass");
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
   const [notice, setNotice] = useState("");
+  const [removing, setRemoving] = useState<{ rc: RecurringCommitment; affected: AffectedMassTime[] } | null>(null);
 
   async function handleRemove(rc: RecurringCommitment) {
     if (
@@ -77,13 +206,14 @@ export function MassScheduleSection() {
       setNotice(`${rc.label} removed.`);
       refetch();
     } catch (err) {
-      notifyError(err, "Could not remove this Mass.");
+      if (err instanceof IntentionsAffectedError) setRemoving({ rc, affected: err.affected });
+      else notifyError(err, "Could not remove this Mass.");
     }
   }
 
-  function handleSaved(label: string) {
+  function handleSaved(label: string, moved = 0) {
     setEditingId(null);
-    setNotice(`${label} saved.`);
+    setNotice(`${label} saved.${movedText(moved)}`);
     refetch();
   }
 
@@ -165,6 +295,18 @@ export function MassScheduleSection() {
           {editingId === "new" && <MassScheduleForm onCancel={() => setEditingId(null)} onSaved={handleSaved} />}
         </div>
       )}
+      {removing && (
+        <RemoveMassModal
+          rc={removing.rc}
+          affected={removing.affected}
+          onClose={() => setRemoving(null)}
+          onRemoved={(moved) => {
+            setNotice(`${removing.rc.label} removed.${moved ? ` ${moved} booked intentions moved.` : ""}`);
+            setRemoving(null);
+            refetch();
+          }}
+        />
+      )}
     </SettingsPanel>
   );
 }
@@ -185,7 +327,7 @@ function MassScheduleForm({
 }: {
   initial?: RecurringCommitment;
   onCancel: () => void;
-  onSaved: (label: string) => void;
+  onSaved: (label: string, moved?: number) => void;
 }) {
   const [label, setLabel] = useState(initial?.label ?? "");
   const [days, setDays] = useState<DayAbbrev[]>(initial?.days ?? []);
@@ -199,6 +341,9 @@ function MassScheduleForm({
   const [staff, setStaff] = useState<AssignableStaff[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Removed times that still have intentions booked, and where staff chose to move them.
+  const [affected, setAffected] = useState<AffectedMassTime[]>([]);
+  const [chosenMoves, setChosenMoves] = useState<IntentionMoves>({});
 
   useEffect(() => {
     listAssignableStaff().then(setStaff).catch(() => setStaff([]));
@@ -224,12 +369,24 @@ function MassScheduleForm({
       assignee: celebrant.assigneeId ? "" : celebrant.assignee.trim(),
       showOnOverview: false,
     };
+    // A time that was changed carries its intentions to the new time on its own.
+    const autoMoves: IntentionMoves = {};
+    initial?.slots.forEach((slot, i) => {
+      const next = times[i]?.start ? convert24to12(times[i].start) : "";
+      if (next && next !== slot.start) autoMoves[slot.start] = next;
+    });
     try {
-      if (initial) await updateRecurringCommitment(initial.id, payload);
+      let moved = 0;
+      if (initial) moved = await updateRecurringCommitment(initial.id, payload, { ...autoMoves, ...chosenMoves });
       else await addRecurringCommitment(payload);
-      onSaved(name);
+      onSaved(name, moved);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save these Mass times.");
+      if (err instanceof IntentionsAffectedError) {
+        setAffected(err.affected);
+        setError("");
+      } else {
+        setError(err instanceof Error ? err.message : "Could not save these Mass times.");
+      }
     } finally {
       setSaving(false);
     }
@@ -306,6 +463,8 @@ function MassScheduleForm({
           </p>
         </AdminField>
 
+        {affected.length > 0 && <IntentionMovesFields affected={affected} moves={chosenMoves} onChange={setChosenMoves} />}
+
         {error && (
           <p className="text-admin-body font-semibold text-admin-red-700" role="alert">
             {error}
@@ -316,8 +475,8 @@ function MassScheduleForm({
           <AdminButton variant="secondary" onClick={onCancel} disabled={saving}>
             Cancel
           </AdminButton>
-          <AdminButton onClick={handleSave} disabled={saving}>
-            {saving ? "Saving…" : "Save"}
+          <AdminButton onClick={handleSave} disabled={saving || (affected.length > 0 && !allChosen(affected, chosenMoves))}>
+            {saving ? "Saving…" : affected.length > 0 ? "Move intentions and save" : "Save"}
           </AdminButton>
         </div>
       </div>

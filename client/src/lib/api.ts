@@ -12,11 +12,14 @@ const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\
 
 export class ApiError extends Error {
   status: number;
+  /** The whole error response, for screens that need more than the message. */
+  data: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, data: unknown = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -153,7 +156,7 @@ async function request<T>(path: string, options: ApiFetchOptions): Promise<T> {
       typeof (payload as { error: unknown }).error === "string"
         ? (payload as { error: string }).error
         : `Request failed (${response.status})`;
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, payload);
   }
 
   return payload as T;

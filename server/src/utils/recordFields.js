@@ -78,7 +78,8 @@ function optionalInt(value, label, { min = 0, max } = {}) {
 
 function sendRecordError(res, err) {
   if (err.status) {
-    return res.status(err.status).json({ error: err.message });
+    // `details` carries extra fields a screen needs to answer the error (e.g. which choices are missing).
+    return res.status(err.status).json({ error: err.message, ...(err.details || {}) });
   }
   return res.status(500).json({ error: err.message });
 }

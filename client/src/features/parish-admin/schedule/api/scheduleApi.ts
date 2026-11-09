@@ -1,8 +1,35 @@
 import { apiFetch, ApiError } from "@/lib/api";
 import type { AssignableStaff, AssigneeValue, RecurringCommitment, ScheduleBlock, ScheduleConflict, ScheduleOccurrence } from "../types";
 
+/** A removed Mass time with intentions still booked on it. `options`: Mass times left on all those dates. */
+export interface AffectedMassTime {
+  time: string;
+  count: number;
+  dates: string[];
+  options: string[];
+}
+
+/** Saving would leave intentions on a Mass time that no longer exists; staff choose where they go. */
+export class IntentionsAffectedError extends Error {
+  affected: AffectedMassTime[];
+
+  constructor(message: string, affected: AffectedMassTime[]) {
+    super(message);
+    this.affected = affected;
+  }
+}
+
+/** Old time → new time, e.g. { "6:00 PM": "7:00 PM" }. */
+export type IntentionMoves = Record<string, string>;
+
 function fail(err: unknown): never {
-  if (err instanceof ApiError) throw new Error(err.message);
+  if (err instanceof ApiError) {
+    const data = err.data as { code?: string; affected?: AffectedMassTime[] } | null;
+    if (err.status === 409 && data?.code === "intentions_affected" && data.affected) {
+      throw new IntentionsAffectedError(err.message, data.affected);
+    }
+    throw new Error(err.message);
+  }
   throw new Error("Unable to reach the server.");
 }
 
@@ -134,23 +161,31 @@ export async function addRecurringCommitment(
   }
 }
 
+/** Returns how many booked intentions moved to another Mass time. */
 export async function updateRecurringCommitment(
   id: string,
-  patch: Partial<Omit<RecurringCommitment, "id">>
-): Promise<void> {
+  patch: Partial<Omit<RecurringCommitment, "id">>,
+  moves: IntentionMoves = {}
+): Promise<number> {
   try {
-    await apiFetch(`/schedule/recurring/${encodeURIComponent(id)}`, {
+    const data = await apiFetch<{ movedIntentions?: number }>(`/schedule/recurring/${encodeURIComponent(id)}`, {
       method: "PATCH",
-      body: patch,
+      body: { ...patch, moves },
     });
+    return data.movedIntentions ?? 0;
   } catch (err) {
     fail(err);
   }
 }
 
-export async function removeRecurringCommitment(id: string): Promise<void> {
+/** Returns how many booked intentions moved to another Mass time. */
+export async function removeRecurringCommitment(id: string, moves: IntentionMoves = {}): Promise<number> {
   try {
-    await apiFetch(`/schedule/recurring/${encodeURIComponent(id)}`, { method: "DELETE" });
+    const data = await apiFetch<{ movedIntentions?: number }>(`/schedule/recurring/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      body: { moves },
+    });
+    return data.movedIntentions ?? 0;
   } catch (err) {
     fail(err);
   }

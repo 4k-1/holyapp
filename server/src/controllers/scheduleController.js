@@ -3,6 +3,23 @@ const { writeAudit } = require('../utils/audit');
 const { requiredText, optionalText, dateValue, sendRecordError } = require('../utils/recordFields');
 const schedule = require('../services/scheduleService');
 const { ROLES } = require('../constants/roles');
+const massTimes = require('../services/massTimeChanges');
+
+/** Runs `work` in a transaction; rolls back if it throws. */
+async function inTransaction(work) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await work(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
 function send(res, err) {
   return sendRecordError(res, err);
@@ -235,26 +252,49 @@ async function updateRecurring(req, res) {
     const input = parseRecurring(req.body || {});
     await assertCanEditRecurring(req, input.type, req.params.id);
     await schedule.checkAssignee(req.parishId, input);
-    const updated = await pool.query(
-      `UPDATE parish_recurring_commitment
-       SET label = $1, event_type = $2, days = $3, slots = $4::jsonb,
-           assigned_to = $5, assignee = $6, show_on_overview = $7, updated_at = NOW()
-       WHERE id = $8 AND parish_id = $9
-       RETURNING id`,
-      [
-        input.label,
-        input.type,
-        input.days,
-        JSON.stringify(input.slots),
-        input.assigneeId,
-        input.assignee,
-        input.showOnOverview,
-        req.params.id,
-        req.parishId,
-      ]
+    const before = await schedule.loadRecurring(req.parishId);
+    if (!before.some((c) => c.id === req.params.id)) return res.status(404).json({ error: 'Commitment not found.' });
+    // Intentions on a Mass time this edit takes away move with it, or staff say where they go.
+    const after = before.map((c) =>
+      c.id === req.params.id ? { ...c, type: input.type, days: input.days, slots: input.slots } : c
     );
-    if (!updated.rowCount) return res.status(404).json({ error: 'Commitment not found.' });
-    res.json({ commitment: await schedule.loadCommitment(req.parishId, req.params.id) });
+    const plan = await inTransaction(async (client) => {
+      const moves = await massTimes.planIntentionMoves(
+        client,
+        req.parishId,
+        before,
+        after,
+        massTimes.movesFrom(req.body)
+      );
+      await client.query(
+        `UPDATE parish_recurring_commitment
+         SET label = $1, event_type = $2, days = $3, slots = $4::jsonb,
+             assigned_to = $5, assignee = $6, show_on_overview = $7, updated_at = NOW()
+         WHERE id = $8 AND parish_id = $9
+         RETURNING id`,
+        [
+          input.label,
+          input.type,
+          input.days,
+          JSON.stringify(input.slots),
+          input.assigneeId,
+          input.assignee,
+          input.showOnOverview,
+          req.params.id,
+          req.parishId,
+        ]
+      );
+      await massTimes.applyIntentionMoves(client, moves);
+      return moves;
+    });
+    await massTimes.announceIntentionMoves({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      commitmentId: req.params.id,
+      label: input.label,
+      plan,
+    });
+    res.json({ commitment: await schedule.loadCommitment(req.parishId, req.params.id), movedIntentions: plan.length });
   } catch (err) {
     return send(res, err);
   }
@@ -263,17 +303,38 @@ async function updateRecurring(req, res) {
 async function removeRecurring(req, res) {
   try {
     await assertCanEditRecurring(req, null, req.params.id);
-    const deleted = await pool.query(
-      `DELETE FROM parish_recurring_commitment WHERE id = $1 AND parish_id = $2 RETURNING id`,
-      [req.params.id, req.parishId]
-    );
-    if (!deleted.rowCount) return res.status(404).json({ error: 'Commitment not found.' });
-    await pool.query(
-      `DELETE FROM parish_schedule_override
-       WHERE parish_id = $1 AND occurrence_id LIKE $2`,
-      [req.parishId, `${req.params.id}-%`]
-    );
-    res.json({ ok: true });
+    const before = await schedule.loadRecurring(req.parishId);
+    const removed = before.find((c) => c.id === req.params.id);
+    if (!removed) return res.status(404).json({ error: 'Commitment not found.' });
+    const after = before.filter((c) => c.id !== req.params.id);
+    const plan = await inTransaction(async (client) => {
+      const moves = await massTimes.planIntentionMoves(
+        client,
+        req.parishId,
+        before,
+        after,
+        massTimes.movesFrom(req.body)
+      );
+      await client.query(`DELETE FROM parish_recurring_commitment WHERE id = $1 AND parish_id = $2`, [
+        req.params.id,
+        req.parishId,
+      ]);
+      await client.query(
+        `DELETE FROM parish_schedule_override
+         WHERE parish_id = $1 AND occurrence_id LIKE $2`,
+        [req.parishId, `${req.params.id}-%`]
+      );
+      await massTimes.applyIntentionMoves(client, moves);
+      return moves;
+    });
+    await massTimes.announceIntentionMoves({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      commitmentId: req.params.id,
+      label: removed.label,
+      plan,
+    });
+    res.json({ ok: true, movedIntentions: plan.length });
   } catch (err) {
     return send(res, err);
   }

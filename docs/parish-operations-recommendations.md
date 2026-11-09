@@ -235,6 +235,12 @@ Most Philippine parishes have a main church plus several chapels (*kapilya*) and
 - **Add:** cancel, change time, change place and add a note, all for one date.
 - **Also:** give recurring patterns optional start and end dates, so a Lent or summer schedule runs
   for a set period and then reverts.
+- **Decision (2026-11-09):** Masses are a regular weekly schedule, not events, so cancelling, moving
+  or adding a single Mass is not needed. Start and end dates for patterns are parked.
+- **Done instead:** changing or removing a regular Mass time in Settings no longer strands the
+  intentions booked on it. A changed time moves its future intentions to the new time; a removed
+  time asks staff to pick another Mass that day first (or keeps the time if none is left). Intentions
+  already said and past dates are not touched; the people who booked are told in the app.
 
 #### C2. Assign staff by record, not by typed name (priority: high)
 
