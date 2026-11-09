@@ -86,7 +86,7 @@ export function DonationForm({ defaultFullName = "", gcashAvailable, onGive = gi
         </fieldset>
         <fieldset className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <legend className="mb-2 text-sm text-ink-muted">
-            Special collections. The parish passes these on in full to the diocese and the Church.
+            For the diocese. The parish sends these on in full; none of it is kept by the parish.
           </legend>
           {REMIT_FUNDS.map((item) => (
             <RadioCard

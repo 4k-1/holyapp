@@ -252,7 +252,7 @@ function FundsTable({ funds }: { funds: NonNullable<ReportDocument["funds"]> }) 
       <h3 className="mb-1 font-sans text-admin-group font-semibold text-admin-ink">By fund</h3>
       <table className="w-full border-collapse text-admin-support">
         {group("Parish funds", funds.parish)}
-        {group("To pass on in full", funds.remit, "Sent on to the diocese and the Church, not the parish's to spend")}
+        {group("For the diocese", funds.remit, "Sent on in full; not the parish's to spend")}
       </table>
     </section>
   );

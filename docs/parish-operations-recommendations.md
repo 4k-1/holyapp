@@ -360,7 +360,7 @@ Campaign goals with progress bars were considered and set aside for now.
 - **Built as:** a fixed list in the code (`server/src/constants/funds.js`, mirrored in
   `client/src/lib/funds.ts`), not a table. Staff pick a fund or choose "Other…" and type the
   purpose; a typed name that matches a fund is saved as that fund. The report totals must-remit
-  funds apart under "To pass on in full". The diocesan assessment is left out: it's owed from the
+  funds apart under "For the diocese". The diocesan assessment is left out: it's owed from the
   parish's own income, not given by people.
 
 ##### Parked for later: tracking remittances

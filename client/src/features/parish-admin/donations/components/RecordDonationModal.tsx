@@ -174,7 +174,7 @@ export function RecordDonationModal({
                 </option>
               ))}
             </optgroup>
-            <optgroup label="To pass on in full">
+            <optgroup label="For the diocese">
               {FUNDS.filter((f) => f.mustRemit).map((f) => (
                 <option key={f.name} value={f.name}>
                   {f.name}
