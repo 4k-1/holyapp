@@ -1,10 +1,27 @@
 import { apiFetch, ApiError } from "@/lib/api";
 
+export type ClergyRank = "priest" | "deacon" | "religious" | "lay";
+
+/** One of a person's titles; `scope` says where, e.g. "St. Jude School". */
+export interface PersonTitle {
+  title: string;
+  scope: string | null;
+}
+
 /** Someone who serves the parish, whether or not they can sign in. */
 export interface ParishPerson {
   id: string;
+  /** In full, e.g. "Rev. Fr. Juan Santos, SVD". */
   name: string;
+  plainName: string;
+  honorific: string;
+  postNominals: string;
+  clergyRank: ClergyRank;
+  /** The primary title. */
   role: string;
+  /** All titles, primary first. */
+  titles: PersonTitle[];
+  /** From the clergy status: priests and deacons. */
   clergy: boolean;
   contact: string;
   status: "active" | "inactive";
@@ -14,6 +31,11 @@ export interface ParishPerson {
 
 export interface PersonInput {
   name?: string;
+  honorific?: string;
+  postNominals?: string;
+  clergyRank?: ClergyRank;
+  /** Primary first. */
+  titles?: PersonTitle[];
   role?: string;
   contact?: string;
   status?: "active" | "inactive";

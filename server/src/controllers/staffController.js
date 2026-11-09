@@ -4,13 +4,16 @@ const { hashPassword } = require('../utils/password');
 const { writeAudit } = require('../utils/audit');
 const { notifyStaffRoleChange } = require('../utils/notify');
 
-const { PERSONNEL_ROLES } = require('../constants/personnelRoles');
+const { PERSONNEL_ROLES, rankForTitle, splitHonorific, formatPersonName } = require('../constants/personnelRoles');
+const { assertOneParishPriest } = require('../utils/personnel');
 
 const JOB_TITLES = new Set(PERSONNEL_ROLES);
 const DEV_PASSWORD = 'password123';
 
 function displayName(row) {
-  if (row.personnel_name) return row.personnel_name;
+  if (row.personnel_name) {
+    return formatPersonName({ honorific: row.honorific, name: row.personnel_name, postNominals: row.post_nominals });
+  }
   return [row.first_name, row.middle_name, row.last_name].filter(Boolean).join(' ') || row.email;
 }
 
@@ -47,7 +50,7 @@ function accessToRole(accessRole) {
 async function loadOfficeUser(parishId, userId) {
   const result = await pool.query(
     `SELECT u.id, u.email, u.role, u.status, u.first_name, u.middle_name, u.last_name,
-            p.full_name AS personnel_name, p.role_title, p.id AS personnel_id
+            p.full_name AS personnel_name, p.role_title, p.id AS personnel_id, p.honorific, p.post_nominals
      FROM app_user u
      LEFT JOIN parish_personnel p ON p.user_id = u.id
      WHERE u.id = $1
@@ -58,25 +61,35 @@ async function loadOfficeUser(parishId, userId) {
   return result.rows[0] || null;
 }
 
+/**
+ * Keeps the Staff list in step with the account. The name's honorific ("Fr.") is kept apart; the
+ * account's title becomes the person's primary title, and their other titles stay as they are.
+ */
 async function upsertPersonnel({ parishId, userId, fullName, roleTitle, status }) {
   const existing = await pool.query(
-    'SELECT id FROM parish_personnel WHERE user_id = $1',
+    'SELECT id, honorific, role_title FROM parish_personnel WHERE user_id = $1',
     [userId]
   );
   const personnelStatus = status === 'active' ? 'active' : 'inactive';
-  if (existing.rows.length > 0) {
+  const typed = splitHonorific(fullName);
+  const person = existing.rows[0];
+  if (roleTitle === 'Parish Priest' && personnelStatus === 'active') {
+    await assertOneParishPriest(pool, parishId, person ? person.id : null);
+  }
+  if (person) {
     await pool.query(
       `UPDATE parish_personnel
-       SET full_name = $1, role_title = $2, status = $3, updated_at = NOW()
+       SET full_name = $1, role_title = $2, status = $3, honorific = COALESCE($5, honorific),
+           role_scope = CASE WHEN role_title = $2 THEN role_scope END, updated_at = NOW()
        WHERE user_id = $4`,
-      [fullName, roleTitle, personnelStatus, userId]
+      [typed.name, roleTitle, personnelStatus, userId, typed.honorific]
     );
     return;
   }
   await pool.query(
-    `INSERT INTO parish_personnel (parish_id, full_name, role_title, contact_info, user_id, status)
-     VALUES ($1, $2, $3, NULL, $4, $5)`,
-    [parishId, fullName, roleTitle, userId, personnelStatus]
+    `INSERT INTO parish_personnel (parish_id, full_name, role_title, contact_info, user_id, status, honorific, clergy_rank)
+     VALUES ($1, $2, $3, NULL, $4, $5, $6, $7)`,
+    [parishId, typed.name, roleTitle, userId, personnelStatus, typed.honorific, rankForTitle(roleTitle)]
   );
 }
 
@@ -84,7 +97,7 @@ async function listStaff(req, res) {
   try {
     const result = await pool.query(
       `SELECT u.id, u.email, u.role, u.status, u.first_name, u.middle_name, u.last_name,
-              p.full_name AS personnel_name, p.role_title
+              p.full_name AS personnel_name, p.role_title, p.honorific, p.post_nominals
        FROM app_user u
        LEFT JOIN parish_personnel p ON p.user_id = u.id
        WHERE u.parish_id = $1
@@ -94,7 +107,7 @@ async function listStaff(req, res) {
     );
     res.json({ staff: result.rows.map(toStaff) });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 }
 
@@ -131,7 +144,9 @@ async function createStaff(req, res) {
       return res.status(409).json({ error: 'An account with this email already exists.' });
     }
 
-    const { firstName, lastName } = splitName(name);
+    // Check the one-Parish-Priest rule before anything is saved.
+    if (roleTitle === 'Parish Priest') await assertOneParishPriest(pool, req.parishId, person ? person.id : null);
+    const { firstName, lastName } = splitName(splitHonorific(name).name);
     const passwordHash = await hashPassword(DEV_PASSWORD);
     const userRole = accessToRole(accessRole);
     const inserted = await pool.query(
@@ -169,7 +184,7 @@ async function createStaff(req, res) {
     const loaded = await loadOfficeUser(req.parishId, user.id);
     res.status(201).json({ staff: toStaff(loaded) });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 }
 
@@ -201,7 +216,10 @@ async function updateStaff(req, res) {
       return res.status(409).json({ error: 'An account with this email already exists.' });
     }
 
-    const { firstName, lastName } = splitName(name);
+    if (roleTitle === 'Parish Priest' && current.status === 'active') {
+      await assertOneParishPriest(pool, req.parishId, current.personnel_id);
+    }
+    const { firstName, lastName } = splitName(splitHonorific(name).name);
     const nextRole = accessToRole(accessRole);
     await pool.query(
       `UPDATE app_user
@@ -254,7 +272,7 @@ async function updateStaff(req, res) {
     const loaded = await loadOfficeUser(req.parishId, current.id);
     res.json({ staff: toStaff(loaded) });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 }
 
@@ -293,7 +311,7 @@ async function setStaffStatus(req, res) {
     const loaded = await loadOfficeUser(req.parishId, current.id);
     res.json({ staff: toStaff(loaded) });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 }
 

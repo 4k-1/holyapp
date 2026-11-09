@@ -7,7 +7,7 @@ Everything suggested so far, with its status. Started 2026-11-05.
 | 1 | [HolyApp logo in the admin topbar](#1-holyapp-logo-in-the-admin-topbar) | Done |
 | 2 | [Hot reload in Docker on Windows](#2-hot-reload-in-docker-on-windows) | Done |
 | 3 | [E-signatures on certificates](#3-e-signatures-on-certificates) | Proposed |
-| 4 | [Several titles per staff member](#4-several-titles-per-staff-member) | Proposed |
+| 4 | [Several titles per staff member](#4-several-titles-per-staff-member) | Done (no title history) |
 | 5 | [Marriage requirements](#5-marriage-requirements) | Proposed |
 | 6 | [Admin pages fill the screen](#6-admin-pages-fill-the-screen) | Done |
 | 7 | [Short reference numbers](#7-short-reference-numbers) | Done, with follow-ups |
@@ -70,7 +70,13 @@ Everything marked Done is committed on the `sprint-5` branch. The hosting, email
 
 ## 4. Several titles per staff member
 
-**Proposed.**
+**Done (2026-11-09), simpler than proposed below.** Migration 033 adds `honorific`, `post_nominals`,
+`clergy_rank`, `role_scope` and `other_titles` (a JSON list) to `parish_personnel`; no `personnel_title`
+table. `role_title` stays as the primary title. Clergy comes from `clergy_rank`, so a chaplain stays
+clergy. Only one active Parish Priest per parish, and only a priest (checked in the app, on both the
+Staff list and Staff accounts). Up to 6 titles, each with an optional "where". The staff list shows the
+full name, the primary title and a "+N" chip. **Parked:** dated titles and history ("who was pastor in
+2019?"); add the table from the design below if that is needed.
 
 ### Problem
 - `parish_personnel.role_title` holds one title, and it also decides whether someone is clergy (`isClergy()`).

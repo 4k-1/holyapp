@@ -1,37 +1,61 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { requiredText, optionalText, sendRecordError } = require('../utils/recordFields');
-const { PERSONNEL_ROLES, isClergy } = require('../constants/personnelRoles');
+const {
+  PERSONNEL_ROLES,
+  PARISH_PRIEST,
+  CLERGY_RANKS,
+  rankForTitle,
+  splitHonorific,
+} = require('../constants/personnelRoles');
+const { toPerson, assertOneParishPriest, holdsParishPriest, httpError } = require('../utils/personnel');
 
-function httpError(status, message) {
-  const err = new Error(message);
-  err.status = status;
-  return err;
+const MAX_TITLES = 6;
+
+function shortText(value, label, max) {
+  const text = optionalText(value);
+  if (text && text.length > max) throw httpError(400, `Keep the ${label} under ${max} characters.`);
+  return text;
 }
 
-function toPerson(row) {
-  return {
-    id: row.id,
-    name: row.full_name,
-    role: row.role_title,
-    clergy: isClergy(row.role_title),
-    contact: row.contact_info || '',
-    status: row.status,
-    hasAccount: Boolean(row.user_id),
-  };
+/**
+ * The person's titles, primary first. Takes `titles: [{ title, scope }]`, or the older single `role`.
+ * Each title comes from the list; the scope ("St. Jude School") is optional.
+ */
+function parseTitles(body, fallback) {
+  const raw = Array.isArray(body?.titles) ? body.titles : body?.role !== undefined ? [{ title: body.role }] : fallback;
+  if (!Array.isArray(raw) || raw.length === 0) throw httpError(400, 'Give this person at least one title.');
+  if (raw.length > MAX_TITLES) throw httpError(400, `A person can hold up to ${MAX_TITLES} titles.`);
+  const seen = new Set();
+  return raw.map((item) => {
+    const title = requiredText(item?.title, 'Title');
+    if (!PERSONNEL_ROLES.includes(title)) throw httpError(400, `${title} is not a title on the list.`);
+    const scope = shortText(item?.scope, 'place', 100);
+    const key = `${title}|${(scope || '').toLowerCase()}`;
+    if (seen.has(key)) throw httpError(400, `${title} is listed twice.`);
+    seen.add(key);
+    return { title, scope };
+  });
 }
 
-function parseRole(value) {
-  const role = requiredText(value, 'Role');
-  if (!PERSONNEL_ROLES.includes(role)) throw httpError(400, 'Role is not valid.');
-  return role;
+function parseRank(value, fallback) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (!CLERGY_RANKS.includes(value)) throw httpError(400, 'Clergy status is not valid.');
+  return value;
+}
+
+/** A Parish Priest must be a priest; and only one active person may hold the title. */
+async function checkTitles(db, { parishId, personId, titles, rank, status }) {
+  if (!holdsParishPriest(titles)) return;
+  if (rank !== 'priest') throw httpError(400, `The ${PARISH_PRIEST} must have clergy status Priest.`);
+  if (status === 'active') await assertOneParishPriest(db, parishId, personId);
 }
 
 /** Everyone who serves the parish: priests and staff, with or without a sign-in account. */
 async function listPersonnel(req, res) {
   try {
     const result = await pool.query(
-      `SELECT id, full_name, role_title, contact_info, status, user_id
+      `SELECT *
        FROM parish_personnel
        WHERE parish_id = $1
        ORDER BY status, full_name`,
@@ -45,13 +69,29 @@ async function listPersonnel(req, res) {
 
 async function createPerson(req, res) {
   try {
-    const name = requiredText(req.body?.name, 'Name');
-    const role = parseRole(req.body?.role);
+    // "Fr. Juan Santos" typed in one box still works: the honorific is split off.
+    const typed = splitHonorific(requiredText(req.body?.name, 'Name'));
+    const titles = parseTitles(req.body);
+    const rank = parseRank(req.body?.clergyRank, rankForTitle(titles[0].title));
+    const honorific = shortText(req.body?.honorific, 'honorific', 30) || typed.honorific;
+    const postNominals = shortText(req.body?.postNominals, 'letters after the name', 30);
+    await checkTitles(pool, { parishId: req.parishId, personId: null, titles, rank, status: 'active' });
     const inserted = await pool.query(
-      `INSERT INTO parish_personnel (parish_id, full_name, role_title, contact_info, status)
-       VALUES ($1, $2, $3, $4, 'active')
+      `INSERT INTO parish_personnel (parish_id, full_name, role_title, role_scope, other_titles, contact_info, status,
+                                     honorific, post_nominals, clergy_rank)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, 'active', $7, $8, $9)
        RETURNING *`,
-      [req.parishId, name, role, optionalText(req.body?.contact)]
+      [
+        req.parishId,
+        typed.name,
+        titles[0].title,
+        titles[0].scope,
+        JSON.stringify(titles.slice(1)),
+        optionalText(req.body?.contact),
+        honorific,
+        postNominals,
+        rank,
+      ]
     );
     await writeAudit({
       parishId: req.parishId,
@@ -59,7 +99,7 @@ async function createPerson(req, res) {
       action: 'personnel.added',
       entityType: 'parish_personnel',
       entityId: inserted.rows[0].id,
-      metadata: { name, role },
+      metadata: { name: typed.name, titles: titles.map((t) => t.title) },
     });
     res.status(201).json({ person: toPerson(inserted.rows[0]) });
   } catch (err) {
@@ -68,8 +108,8 @@ async function createPerson(req, res) {
 }
 
 /**
- * Name and status of people with an account follow their staff account, so only their role and contact change
- * here. People without an account can be renamed and set inactive.
+ * Name and status of people with an account follow their staff account, so only their titles, clergy
+ * status, honorific and contact change here. People without an account can be renamed and set inactive.
  */
 async function updatePerson(req, res) {
   try {
@@ -80,12 +120,22 @@ async function updatePerson(req, res) {
     const row = current.rows[0];
     if (!row) return res.status(404).json({ error: 'Person not found.' });
 
-    const role = parseRole(req.body?.role ?? row.role_title);
+    const titles = parseTitles(req.body, [{ title: row.role_title, scope: row.role_scope }, ...(row.other_titles || [])]);
+    const rank = parseRank(req.body?.clergyRank, row.clergy_rank);
     const contact = req.body?.contact !== undefined ? optionalText(req.body.contact) : row.contact_info;
+    let honorific = req.body?.honorific !== undefined ? shortText(req.body.honorific, 'honorific', 30) : row.honorific;
+    const postNominals =
+      req.body?.postNominals !== undefined
+        ? shortText(req.body.postNominals, 'letters after the name', 30)
+        : row.post_nominals;
     let name = row.full_name;
     let status = row.status;
     if (!row.user_id) {
-      if (req.body?.name !== undefined) name = requiredText(req.body.name, 'Name');
+      if (req.body?.name !== undefined) {
+        const typed = splitHonorific(requiredText(req.body.name, 'Name'));
+        name = typed.name;
+        if (typed.honorific && !honorific) honorific = typed.honorific;
+      }
       if (req.body?.status !== undefined) {
         if (!['active', 'inactive'].includes(req.body.status)) throw httpError(400, 'Status is not valid.');
         status = req.body.status;
@@ -93,13 +143,26 @@ async function updatePerson(req, res) {
     } else if (req.body?.status !== undefined && req.body.status !== row.status) {
       throw httpError(400, 'This person has a staff account. Change their status under Staff accounts.');
     }
+    await checkTitles(pool, { parishId: req.parishId, personId: row.id, titles, rank, status });
 
     const updated = await pool.query(
       `UPDATE parish_personnel
-       SET full_name = $1, role_title = $2, contact_info = $3, status = $4, updated_at = NOW()
-       WHERE id = $5
+       SET full_name = $1, role_title = $2, role_scope = $3, other_titles = $4::jsonb, contact_info = $5,
+           status = $6, honorific = $7, post_nominals = $8, clergy_rank = $9, updated_at = NOW()
+       WHERE id = $10
        RETURNING *`,
-      [name, role, contact, status, row.id]
+      [
+        name,
+        titles[0].title,
+        titles[0].scope,
+        JSON.stringify(titles.slice(1)),
+        contact,
+        status,
+        honorific,
+        postNominals,
+        rank,
+        row.id,
+      ]
     );
     await writeAudit({
       parishId: req.parishId,
@@ -107,7 +170,7 @@ async function updatePerson(req, res) {
       action: 'personnel.updated',
       entityType: 'parish_personnel',
       entityId: row.id,
-      metadata: { name, role, status },
+      metadata: { name, titles: titles.map((t) => t.title), clergyRank: rank, status },
     });
     res.json({ person: toPerson(updated.rows[0]) });
   } catch (err) {

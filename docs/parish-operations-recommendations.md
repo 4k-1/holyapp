@@ -521,3 +521,4 @@ change other accounts. So the last admin can't be removed. No work needed.
 | E3 | Already done |
 | E4–E6 | Proposed |
 | E7 | Done: untitled staff sign-ins show "Staff"; the edit form asks for a real title |
+| Item 4 (recommendations.md) | Done: several titles, honorific and letters after the name, clergy status, one Parish Priest (migration 033). Title history parked |

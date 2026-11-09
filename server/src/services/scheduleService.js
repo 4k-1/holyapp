@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const { isClergy } = require('../constants/personnelRoles');
+const { isClergyRank, formatPersonName } = require('../constants/personnelRoles');
 const {
   convert24to12,
   dayAbbrev,
@@ -123,7 +123,7 @@ const EVENT_SELECT = `
          to_char(e.start_datetime, 'YYYY-MM-DD') AS event_date,
          to_char(e.start_datetime, 'HH24:MI') AS start_24,
          to_char(COALESCE(e.end_datetime, e.start_datetime + interval '1 hour'), 'HH24:MI') AS end_24,
-         p.full_name AS assigned_personnel_name
+         concat_ws(' ', p.honorific, p.full_name) || COALESCE(', ' || p.post_nominals, '') AS assigned_personnel_name
   FROM event e
   LEFT JOIN parish_personnel p ON p.id = e.assigned_to
 `;
@@ -178,8 +178,11 @@ async function resolvePersonnelId(parishId, name) {
   const text = String(name || '').trim();
   if (!text) return null;
   const result = await pool.query(
-    `SELECT id FROM parish_personnel
-     WHERE parish_id = $1 AND lower(full_name) = lower($2)
+    // The picker sends the name as shown ("Fr. Juan Santos"); a bare name still matches too.
+    `SELECT p.id FROM parish_personnel p
+     WHERE p.parish_id = $1
+       AND (lower(p.full_name) = lower($2) OR lower(concat_ws(' ', p.honorific, p.full_name) || COALESCE(', ' || p.post_nominals, '')) = lower($2))
+     ORDER BY lower(concat_ws(' ', p.honorific, p.full_name) || COALESCE(', ' || p.post_nominals, '')) = lower($2) DESC
      LIMIT 1`,
     [parishId, text]
   );
@@ -189,14 +192,20 @@ async function resolvePersonnelId(parishId, name) {
 /** Clergy first so priests are easy to find when assigning; everyone carries their role for identification. */
 async function listAssignableStaff(parishId) {
   const result = await pool.query(
-    `SELECT id, full_name, role_title FROM parish_personnel
+    `SELECT id, full_name, role_title, honorific, post_nominals, clergy_rank FROM parish_personnel
      WHERE parish_id = $1 AND status = 'active'
      ORDER BY full_name`,
     [parishId]
   );
   return result.rows
     .filter((row) => row.full_name)
-    .map((row) => ({ id: row.id, name: row.full_name, role: row.role_title, clergy: isClergy(row.role_title) }))
+    // Clergy from their clergy status (item 4), so a priest who is also a chaplain stays with the priests.
+    .map((row) => ({
+      id: row.id,
+      name: formatPersonName({ honorific: row.honorific, name: row.full_name, postNominals: row.post_nominals }),
+      role: row.role_title,
+      clergy: isClergyRank(row.clergy_rank),
+    }))
     .sort((a, b) => Number(b.clergy) - Number(a.clergy) || a.name.localeCompare(b.name));
 }
 

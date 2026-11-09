@@ -65,6 +65,7 @@ docker compose exec -e TEST_DATABASE_URL=postgresql://holyapp:holyapp_dev@postgr
 | `day-summary.test.js` | The day summary counts copies, reprints and spoiled copies; adds cash, GCash and cheques by source; leaves voided gifts out; filters to one staff member; shows each copy's receipt on the record; flags unconfirmed prints; keeps parishes apart and parishioners out |
 | `funds.test.js` | The server's fund list matches the app's; listed funds are saved under their own name, typed purposes tidied and grouped ignoring capitals; must-remit funds are marked in the report |
 | `donation-clearing.test.js` | A cheque needs its number; cheques and transfers wait to clear and only count once cleared; bounced needs a reason, is logged and never counts; a status can't change twice; admins of the parish only |
+| `personnel-titles.test.js` | Names are kept in parts and shown in full; an honorific typed into the name is split off; only one active Parish Priest and only a priest (also through Staff accounts, with no sign-in left behind); the title can be handed over; a chaplain stays clergy in the schedule picker; unknown, repeated or no titles are refused; admins only |
 | `certificate-register.test.js` | The register lists every copy newest first with its number, receipt, issuer, status and times printed; filters by the day issued; keeps parishes apart and parishioners out |
 | `staff.test.js` | Staff sign-ins with no title show "Staff" (admins "Admin Staff"), and a chosen title shows |
 

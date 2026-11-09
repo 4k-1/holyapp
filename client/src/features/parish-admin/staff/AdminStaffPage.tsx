@@ -14,6 +14,7 @@ import { RemoveStaffModal } from "./components/RemoveStaffModal";
 import { StaffPersonModal } from "./components/StaffPersonModal";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
+import { titleLabel } from "./staffRoles";
 
 type Filter = "all" | "clergy" | "staff" | "inactive";
 
@@ -75,7 +76,7 @@ export function AdminStaffPage() {
   const q = search.trim().toLowerCase();
   const rows = people
     .filter((p) => matches(p, filter))
-    .filter((p) => !q || `${p.name} ${p.role} ${p.contact}`.toLowerCase().includes(q))
+    .filter((p) => !q || `${p.name} ${(p.titles ?? []).map(titleLabel).join(" ")} ${p.contact}`.toLowerCase().includes(q))
     .sort((a, b) => Number(b.clergy) - Number(a.clergy) || a.name.localeCompare(b.name));
 
   const columns: AdminTableColumn<ParishPerson>[] = [
@@ -94,13 +95,24 @@ export function AdminStaffPage() {
     },
     {
       key: "role",
-      header: "Role",
+      header: "Title",
       sortValue: (p) => p.role,
-      render: (p) => (
-        <span className="whitespace-nowrap">
-          <AdminBadge tone={p.clergy ? "gold" : "muted"}>{p.role}</AdminBadge>
-        </span>
-      ),
+      render: (p) => {
+        const [primary, ...others] = p.titles?.length ? p.titles : [{ title: p.role, scope: null }];
+        return (
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <AdminBadge tone={p.clergy ? "gold" : "muted"}>{titleLabel(primary)}</AdminBadge>
+            {others.length > 0 && (
+              <span
+                className="rounded-full bg-admin-surface-alt px-2 py-0.5 text-admin-label font-semibold text-admin-ink-muted"
+                title={others.map(titleLabel).join("\n")}
+              >
+                +{others.length}
+              </span>
+            )}
+          </span>
+        );
+      },
     },
     {
       key: "status",
