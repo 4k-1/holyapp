@@ -9,17 +9,14 @@ import {
   TextField,
 } from "@/features/parishioner/components/PortalForm";
 import { giveDonation, type GiveInput } from "@/features/parishioner/donations/donationsApi";
+import { FUNDS } from "@/lib/funds";
 
 const PRESET_AMOUNTS = [100, 300, 500, 1000];
 /** PayMongo's smallest GCash charge. */
 const MIN_AMOUNT = 20;
 
-const PURPOSES = [
-  { title: "General fund", description: "Where the parish needs it most" },
-  { title: "Church repair and maintenance", description: "Upkeep of the church and grounds" },
-  { title: "Outreach and charity", description: "Help for families in need" },
-  { title: "Feast day celebration", description: "The parish fiesta and liturgies" },
-];
+const PARISH_FUNDS = FUNDS.filter((fund) => !fund.mustRemit);
+const REMIT_FUNDS = FUNDS.filter((fund) => fund.mustRemit);
 
 interface DonationFormProps {
   defaultFullName?: string;
@@ -34,7 +31,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function DonationForm({ defaultFullName = "", gcashAvailable, onGive = giveDonation, guest = false }: DonationFormProps) {
   const [amount, setAmount] = useState("500");
-  const [purpose, setPurpose] = useState(PURPOSES[0].title);
+  const [purpose, setPurpose] = useState(PARISH_FUNDS[0].name);
   const [anonymous, setAnonymous] = useState(false);
   const [fullName, setFullName] = useState(defaultFullName);
   const [message, setMessage] = useState("");
@@ -76,13 +73,28 @@ export function DonationForm({ defaultFullName = "", gcashAvailable, onGive = gi
       <PortalFormSection step={2} title="Purpose">
         <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <legend className="sr-only">Purpose of the gift</legend>
-          {PURPOSES.map((item) => (
+          {PARISH_FUNDS.map((item) => (
             <RadioCard
-              key={item.title}
+              key={item.name}
               name="gift-purpose"
-              checked={purpose === item.title}
-              onChange={() => setPurpose(item.title)}
-              title={item.title}
+              checked={purpose === item.name}
+              onChange={() => setPurpose(item.name)}
+              title={item.name}
+              description={item.description}
+            />
+          ))}
+        </fieldset>
+        <fieldset className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <legend className="mb-2 text-sm text-ink-muted">
+            Special collections. The parish passes these on in full to the diocese and the Church.
+          </legend>
+          {REMIT_FUNDS.map((item) => (
+            <RadioCard
+              key={item.name}
+              name="gift-purpose"
+              checked={purpose === item.name}
+              onChange={() => setPurpose(item.name)}
+              title={item.name}
               description={item.description}
             />
           ))}

@@ -219,6 +219,45 @@ function ReportTable({ doc, interactive }: { doc: ReportDocument; interactive: b
   );
 }
 
+/** Donations by fund. Collections the parish passes on in full are totalled on their own (D3). */
+function FundsTable({ funds }: { funds: NonNullable<ReportDocument["funds"]> }) {
+  const group = (title: string, rows: { label: string; amount: number }[], note?: string) =>
+    rows.length === 0 ? null : (
+      <tbody>
+        <tr data-pdf-break>
+          <th colSpan={2} className="pt-3 pb-1 text-left font-semibold text-admin-ink">
+            {title}
+            {note && <span className="ml-2 font-normal text-admin-ink-faint">{note}</span>}
+          </th>
+        </tr>
+        {rows.map((row) => (
+          <tr key={row.label} data-pdf-break>
+            <td className="border-b border-admin-border py-2 pr-3 text-admin-ink">{row.label}</td>
+            <td className="border-b border-admin-border px-2 py-2 text-right tabular-nums text-admin-ink">
+              {formatPeso(row.amount)}
+            </td>
+          </tr>
+        ))}
+        <tr data-pdf-break>
+          <td className="pt-2 pr-3 font-semibold text-admin-green-700">Total</td>
+          <td className="px-2 pt-2 text-right font-semibold tabular-nums text-admin-green-700">
+            {formatPeso(rows.reduce((n, row) => n + row.amount, 0))}
+          </td>
+        </tr>
+      </tbody>
+    );
+
+  return (
+    <section data-pdf-break className="rounded-[14px] border border-admin-border bg-admin-surface p-4 @2xl:p-5">
+      <h3 className="mb-1 font-sans text-admin-group font-semibold text-admin-ink">By fund</h3>
+      <table className="w-full border-collapse text-admin-support">
+        {group("Parish funds", funds.parish)}
+        {group("To pass on in full", funds.remit, "Sent on to the diocese and the Church, not the parish's to spend")}
+      </table>
+    </section>
+  );
+}
+
 export function ReportSheet({
   doc,
   flat = false,
@@ -377,6 +416,12 @@ export function ReportSheet({
       <div className="mt-3.5">
         <ReportTable doc={doc} interactive={interactive} />
       </div>
+
+      {doc.funds && !doc.empty && (
+        <div className="mt-3.5">
+          <FundsTable funds={doc.funds} />
+        </div>
+      )}
 
       {!bare && (
         <p data-pdf-break className="mt-4 px-1 text-[11px] text-admin-ink-faint">

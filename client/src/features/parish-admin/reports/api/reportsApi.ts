@@ -40,6 +40,8 @@ export interface DonationMonthRow {
 export interface DonationPurposeTotal {
   purpose: string;
   amount: number;
+  /** A listed fund the parish passes on in full (D3). */
+  mustRemit: boolean;
 }
 
 export interface IntentionMonthRow {

@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const { sendRecordError } = require('../utils/recordFields');
+const { findFund, fundKey } = require('../constants/funds');
 
 /** "2026-03-01" or nothing; anything else is ignored rather than passed to SQL. */
 function dateParam(value) {
@@ -162,18 +163,26 @@ async function getDonationReport(req, res) {
     const byMonth = new Map(
       monthSpan(result.rows.map((row) => row.month)).map((month) => [month, { month, amount: 0, cash: 0, gcash: 0 }])
     );
+    // Grouped by fund (D3). Typed purposes are grouped ignoring capitals and spacing, so
+    // "Bell tower" and "bell  tower" count once; a listed fund always shows under its own name.
     const purposes = new Map();
     for (const row of result.rows) {
       const bucket = byMonth.get(row.month);
       bucket.amount += row.amount;
       bucket[row.type === 'gcash' ? 'gcash' : 'cash'] += row.amount;
-      purposes.set(row.purpose, (purposes.get(row.purpose) || 0) + row.amount);
+      const fund = findFund(row.purpose);
+      const key = fundKey(row.purpose) || 'unspecified';
+      const entry = purposes.get(key) || {
+        purpose: fund ? fund.name : row.purpose,
+        amount: 0,
+        mustRemit: Boolean(fund?.mustRemit),
+      };
+      entry.amount += row.amount;
+      purposes.set(key, entry);
     }
     res.json({
       rows: [...byMonth.values()],
-      purposes: [...purposes.entries()]
-        .map(([purpose, amount]) => ({ purpose, amount }))
-        .sort((a, b) => b.amount - a.amount),
+      purposes: [...purposes.values()].sort((a, b) => b.amount - a.amount),
     });
   } catch (err) {
     sendRecordError(res, err);

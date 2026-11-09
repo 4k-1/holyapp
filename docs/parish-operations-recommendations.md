@@ -357,6 +357,16 @@ Campaign goals with progress bars were considered and set aside for now.
   Feeding program, Seminarians.
 - **Collections that must be passed on in full:** Peter's Pence, Alay Kapwa, Mission Sunday, Holy
   Land and the diocesan assessment. Mark them "Must remit" and track when each was sent.
+- **Built as:** a fixed list in the code (`server/src/constants/funds.js`, mirrored in
+  `client/src/lib/funds.ts`), not a table. Staff pick a fund or choose "Other…" and type the
+  purpose; a typed name that matches a fund is saved as that fund. The report totals must-remit
+  funds apart under "To pass on in full". The diocesan assessment is left out: it's owed from the
+  parish's own income, not given by people.
+
+##### Parked for later: tracking remittances
+
+Recording each time must-remit money is sent (date, amount, sent to, deposit slip reference, voided
+with a reason, never edited) and showing collected vs sent vs still to send. Needs its own table.
 
 #### D4. Cheque and bank transfer status (priority: high)
 
@@ -490,7 +500,8 @@ change other accounts. So the last admin can't be removed. No work needed.
 | B1–B9 | Proposed |
 | C1–C12 | Proposed |
 | D1, D2 | Done: void or correct (admins only, with a reason) and DON- receipt numbers (migration 029) |
-| D3–D11 | Proposed |
+| D3 | Done: fixed fund list with "Other…"; must-remit funds totalled apart in the report. Remittance tracking parked |
+| D4–D11 | Proposed |
 | Donation campaign goals | Set aside for now |
 | E1, E2 | Proposed |
 | E3 | Already done |

@@ -80,6 +80,8 @@ export interface ReportDocument {
   breakdown: { title: string; slices: ReportSlice[]; money: boolean };
   table: { title: string; headers: string[]; rows: string[][]; totals: string[]; levels: ReportLevel[] };
   csv: { headers: string[]; rows: CsvCell[][] };
+  /** Donations only: totals by fund, with the money the parish passes on in full kept apart (D3). */
+  funds?: { parish: { label: string; amount: number }[]; remit: { label: string; amount: number }[] };
   /** Without an extension; PDF and CSV add their own. */
   filename: string;
 }
@@ -304,7 +306,7 @@ export async function buildReportDocument(
     const total = sum(rows.map((row) => row.amount));
     const cash = sum(rows.map((row) => row.cash));
     const gcash = sum(rows.map((row) => row.gcash));
-    // Purposes are typed in by the office, so keep the four largest and fold the rest into "Other".
+    // Many funds and typed purposes: keep the four largest and fold the rest into "Other".
     const top = purposes.slice(0, purposes.length > 4 ? 3 : 4);
     const rest = sum(purposes.slice(top.length).map((item) => item.amount));
     const slices: ReportSlice[] = [
@@ -333,7 +335,7 @@ export async function buildReportDocument(
         ...(rows.length > 1
           ? [{ label: "Quietest month", value: low ? longMonth(low.month) : "—", note: formatPeso(low?.amount ?? 0) }]
           : []),
-        { label: "Top purpose", value: biggest.label, note: `${share(biggest.value, total)}% of the total` },
+        { label: "Top fund", value: biggest.label, note: `${share(biggest.value, total)}% of the total` },
         { label: "Through GCash", value: `${share(gcash, total)}%`, note: `the rest in cash` },
       ],
       trend: {
@@ -345,7 +347,11 @@ export async function buildReportDocument(
           { id: "gcash", label: "GCash", color: SHEET_COLORS.gold, values: rows.map((row) => row.gcash) },
         ],
       },
-      breakdown: { title: "By purpose", money: true, slices },
+      breakdown: { title: "By fund", money: true, slices },
+      funds: {
+        parish: purposes.filter((p) => !p.mustRemit).map((p) => ({ label: p.purpose, amount: p.amount })),
+        remit: purposes.filter((p) => p.mustRemit).map((p) => ({ label: p.purpose, amount: p.amount })),
+      },
       table: {
         title: "Amount by month",
         headers: ["Month", "Cash", "GCash", "Total"],

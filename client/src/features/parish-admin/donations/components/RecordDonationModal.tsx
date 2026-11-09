@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, AdminField, AdminInput, AdminSelect } from "@/features/parish-admin/components/AdminForm";
+import { findFund, FUNDS } from "@/lib/funds";
 import { correctDonation, recordDonation } from "../api/donationsApi";
 import { donationReceiptNumber } from "../donationsHelpers";
 import { DONATION_TYPES, type Donation } from "../types";
@@ -12,6 +13,9 @@ interface RecordDonationModalProps {
   onClose: () => void;
   onRecorded: () => void;
 }
+
+/** The dropdown's value for a typed purpose that isn't one of the listed funds. */
+const OTHER = "__other";
 
 function todayISO() {
   const now = new Date();
@@ -29,7 +33,10 @@ export function RecordDonationModal({
   const [donationType, setDonationType] = useState<string>(correcting?.donationType ?? "Cash");
   const [amount, setAmount] = useState(correcting ? String(correcting.amount) : "");
   const [donationDate, setDonationDate] = useState(correcting?.donationDate ?? todayISO());
-  const [purpose, setPurpose] = useState(correcting?.purpose ?? "");
+  // A listed fund, or "Other" with the purpose typed in. New gifts start on the General fund.
+  const listed = findFund(correcting?.purpose);
+  const [fund, setFund] = useState(listed ? listed.name : correcting?.purpose ? OTHER : FUNDS[0].name);
+  const [otherPurpose, setOtherPurpose] = useState(listed ? "" : (correcting?.purpose ?? ""));
   const [remarks, setRemarks] = useState(correcting?.remarks ?? "");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -49,6 +56,10 @@ export function RecordDonationModal({
       setError("Select a donation date");
       return;
     }
+    if (fund === OTHER && !otherPurpose.trim()) {
+      setError("Type what the donation is for, or choose a fund");
+      return;
+    }
     if (correcting && reason.trim().length < 5) {
       setError("Say why this donation is being corrected");
       return;
@@ -60,7 +71,7 @@ export function RecordDonationModal({
       donationType,
       amount: amt,
       donationDate,
-      purpose: purpose.trim() || undefined,
+      purpose: fund === OTHER ? otherPurpose.trim() : fund,
       remarks: remarks.trim() || undefined,
     };
     try {
@@ -154,13 +165,36 @@ export function RecordDonationModal({
           <AdminInput type="date" value={donationDate} onChange={(e) => setDonationDate(e.target.value)} />
         </AdminField>
 
-        <AdminField label="Purpose (optional)" className="mb-0">
-          <AdminInput
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-            placeholder="e.g. Church Roof Repair"
-          />
+        <AdminField label="Fund" className="mb-0">
+          <AdminSelect value={fund} onChange={(e) => setFund(e.target.value)}>
+            <optgroup label="Parish funds">
+              {FUNDS.filter((f) => !f.mustRemit).map((f) => (
+                <option key={f.name} value={f.name}>
+                  {f.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="To pass on in full">
+              {FUNDS.filter((f) => f.mustRemit).map((f) => (
+                <option key={f.name} value={f.name}>
+                  {f.name}
+                </option>
+              ))}
+            </optgroup>
+            <option value={OTHER}>Other…</option>
+          </AdminSelect>
         </AdminField>
+
+        {fund === OTHER && (
+          <AdminField label="What is it for?" className="mb-0">
+            <AdminInput
+              value={otherPurpose}
+              onChange={(e) => setOtherPurpose(e.target.value)}
+              placeholder="e.g. Bell tower"
+              autoFocus
+            />
+          </AdminField>
+        )}
 
         <AdminField label="Remarks (optional)" className="mb-0">
           <textarea

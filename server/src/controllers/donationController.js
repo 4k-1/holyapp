@@ -4,6 +4,7 @@ const { voidEntry, correctEntry } = require('../utils/voidEntry');
 const { createNotification } = require('../utils/notify');
 const { requiredText, optionalText, dateValue, dateOnly, sendRecordError } = require('../utils/recordFields');
 const { frontendUrl } = require('../utils/frontendUrl');
+const { findFund, normalizePurpose } = require('../constants/funds');
 const {
   configured: gcashConfigured,
   createGcashCheckout,
@@ -113,7 +114,7 @@ function officeGiftFields(body) {
     type,
     date: dateValue(body?.donationDate, 'Donation date'),
     donorName: optionalText(body?.donorName),
-    purpose: optionalText(body?.purpose),
+    purpose: normalizePurpose(optionalText(body?.purpose)),
     remarks: optionalText(body?.remarks),
   };
 }
@@ -258,7 +259,10 @@ async function giveDonation(req, res) {
   const client = await pool.connect();
   try {
     const amount = parseAmount(req.body?.amount, { min: 20 });
-    const purpose = requiredText(req.body?.purpose, 'Purpose');
+    // Online gifts go only to a listed fund; staff can type others at the office.
+    const fund = findFund(requiredText(req.body?.purpose, 'Purpose'));
+    if (!fund) throw httpError(400, 'Choose one of the parish funds.');
+    const purpose = fund.name;
     const donorName = optionalText(req.body?.donorName);
     const message = optionalText(req.body?.message);
     const guest = !req.user;
