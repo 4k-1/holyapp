@@ -454,6 +454,7 @@ function PartySections({
   // and the last name reaches the right edge, so the rows stay on the same grid lines.
   return (
     <>
+      <PartyBanner role={title === "Bride" ? "Bride" : "Groom"} />
       <RecordSection title={title} note="As written in the register.">
         <AdminField label="First name" className={`mb-0 ${span.third}`}>
           <AdminInput value={party.firstName} onChange={(e) => onChange("firstName", e.target.value)} required />
@@ -575,6 +576,44 @@ function PartySections({
         </div>
       </RecordSection>
     </>
+  );
+}
+
+const PARTY_BANNER = {
+  Groom: {
+    band: "border-[#C9DDF2] bg-[#EAF2FB]",
+    badge: "bg-[#D6EAF8] text-[#2F6FA8] ring-[#2F6FA8]/20",
+    rule: "bg-[#2F6FA8]",
+  },
+  Bride: {
+    band: "border-[#F1CFDA] bg-[#FBEFF3]",
+    badge: "bg-[#F8D6E0] text-[#B85A75] ring-[#B85A75]/20",
+    rule: "bg-[#B85A75]",
+  },
+} as const;
+
+/** Marks where one party's fields begin: same colours as the Groom and Bride cards on the record page. */
+function PartyBanner({ role }: { role: "Groom" | "Bride" }) {
+  const tone = PARTY_BANNER[role];
+  return (
+    <div
+      className={`relative mb-1 mt-6 flex items-center gap-3 overflow-hidden rounded-xl border py-3 pl-5 pr-4 ${tone.band}`}
+      role="presentation"
+    >
+      <span className={`absolute inset-y-0 left-0 w-1 ${tone.rule}`} aria-hidden="true" />
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-serif text-[0.95rem] font-bold ring-1 ring-inset ${tone.badge}`}
+        aria-hidden="true"
+      >
+        {role === "Groom" ? "G" : "B"}
+      </span>
+      <div className="min-w-0">
+        <p className="font-serif text-admin-group font-semibold leading-tight text-admin-ink">
+          {role === "Groom" ? "Groom's information" : "Bride's information"}
+        </p>
+        <p className="text-admin-support text-admin-ink-muted">Name and birth, parents, and consent</p>
+      </div>
+    </div>
   );
 }
 

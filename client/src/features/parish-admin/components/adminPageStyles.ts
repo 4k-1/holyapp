@@ -7,3 +7,9 @@ export const PAGE_TITLE_CLASS =
  * collapses, and only stops growing on very wide monitors.
  */
 export const PAGE_WIDTH_CLASS = "mx-auto w-full max-w-[1920px]";
+
+/**
+ * The narrower column for a single sacramental record (baptism, confirmation, marriage, death).
+ * Its label/value rows stay short enough to read across, with room on both sides.
+ */
+export const RECORD_DETAIL_WIDTH_CLASS = "mx-auto w-full max-w-[1180px] px-1 sm:px-4 lg:px-8";

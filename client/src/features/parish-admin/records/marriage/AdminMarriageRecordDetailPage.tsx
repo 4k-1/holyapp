@@ -38,7 +38,7 @@ import {
 } from "@/features/parish-admin/records/marriageHelpers";
 import type { IssuedRecordCertificate, MarriageParty, MarriagePartyRole } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
-import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
+import { PAGE_TITLE_CLASS, RECORD_DETAIL_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 export function AdminMarriageRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -96,7 +96,7 @@ export function AdminMarriageRecordDetailPage() {
   const certs = record.certificates;
 
   return (
-    <div className={PAGE_WIDTH_CLASS}>
+    <div className={RECORD_DETAIL_WIDTH_CLASS}>
       <RecordDetailBackLink />
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
