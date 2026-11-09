@@ -11,8 +11,10 @@ import { listDonations } from "./api/donationsApi";
 import { DonationSparkline } from "./components/DonationSparkline";
 import { RecordDonationModal } from "./components/RecordDonationModal";
 import { VoidDonationModal } from "./components/VoidDonationModal";
+import { SettleDonationModal } from "./components/SettleDonationModal";
 import {
   countedDonations,
+  waitingDonations,
   donationReceiptNumber,
   donationDateFilterLabel,
   emptyDonationDateFilter,
@@ -42,6 +44,7 @@ export function AdminDonationsPage() {
   const [receiptFor, setReceiptFor] = useState<Donation | null>(null);
   const [voiding, setVoiding] = useState<Donation | null>(null);
   const [correcting, setCorrecting] = useState<Donation | null>(null);
+  const [settling, setSettling] = useState<{ donation: Donation; outcome: "cleared" | "bounced" } | null>(null);
   const [draftFilter, setDraftFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
   const [appliedFilter, setAppliedFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
 
@@ -75,7 +78,10 @@ export function AdminDonationsPage() {
     [donations, appliedFilter]
   );
   const counted = useMemo(() => countedDonations(filtered), [filtered]);
-  const voidedCount = filtered.length - counted.length;
+  const voidedCount = filtered.filter((d) => d.voided).length;
+  const waiting = useMemo(() => waitingDonations(filtered), [filtered]);
+  const waitingTotal = waiting.reduce((sum, d) => sum + d.amount, 0);
+  const bouncedCount = filtered.filter((d) => !d.voided && d.clearing?.status === "bounced").length;
 
   const receiptById = useMemo(
     () => new Map(donations.map((d) => [d.id, donationReceiptNumber(d)])),
@@ -118,6 +124,16 @@ export function AdminDonationsPage() {
           {d.voided && (
             <span className="ml-1.5" title={`Voided by ${d.voided.by}: ${d.voided.reason}`}>
               <AdminBadge tone="red">Voided</AdminBadge>
+            </span>
+          )}
+          {!d.voided && d.clearing?.status === "pending" && (
+            <span className="ml-1.5" title={d.reference ? `${d.reference}${d.bank ? `, ${d.bank}` : ""}` : undefined}>
+              <AdminBadge tone="amber">Waiting to clear</AdminBadge>
+            </span>
+          )}
+          {!d.voided && d.clearing?.status === "bounced" && (
+            <span className="ml-1.5" title={`Marked bounced by ${d.clearing.by ?? "the office"}: ${d.clearing.reason ?? ""}`}>
+              <AdminBadge tone="red">Bounced</AdminBadge>
             </span>
           )}
           {d.replacesId && receiptById.get(d.replacesId) && (
@@ -181,7 +197,15 @@ export function AdminDonationsPage() {
       sortValue: (d) => d.amount,
       className: "text-right",
       render: (d) => (
-        <span className={d.voided ? "text-admin-ink-faint line-through" : "font-semibold text-admin-ink"}>
+        <span
+          className={
+            d.voided || d.clearing?.status === "bounced"
+              ? "text-admin-ink-faint line-through"
+              : d.clearing?.status === "pending"
+                ? "font-semibold text-admin-ink-muted"
+                : "font-semibold text-admin-ink"
+          }
+        >
           {formatAmount(d.amount)}
         </span>
       ),
@@ -193,6 +217,24 @@ export function AdminDonationsPage() {
       render: (d) =>
         d.voided ? null : (
           <span className="inline-flex items-center gap-3 whitespace-nowrap">
+            {canVoid && d.clearing?.status === "pending" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setSettling({ donation: d, outcome: "cleared" })}
+                  className="admin-table__action"
+                >
+                  Mark cleared
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettling({ donation: d, outcome: "bounced" })}
+                  className="admin-table__action text-admin-red-700"
+                >
+                  Bounced
+                </button>
+              </>
+            )}
             <button type="button" onClick={() => setReceiptFor(d)} className="admin-table__action">
               Receipt
             </button>
@@ -295,6 +337,12 @@ export function AdminDonationsPage() {
                   {formatAmount(stats.totalRecorded)}
                 </p>
               </div>
+              {waiting.length > 0 && (
+                <p className="-mt-2 mb-4 text-admin-support text-admin-gold-700">
+                  Waiting to clear: {formatAmount(waitingTotal)} in {waiting.length}{" "}
+                  {waiting.length === 1 ? "cheque or transfer" : "cheques and transfers"}, not counted yet
+                </p>
+              )}
               {!filterActive && hasTrend && (
                 <DonationSparkline data={trend} highlightIndex={trend.length - 1} />
               )}
@@ -311,7 +359,7 @@ export function AdminDonationsPage() {
             title={filterActive ? "Filtered donations" : "All donations"}
             subtitle={`${rows.length} ${rows.length === 1 ? "entry" : "entries"}${
               voidedCount ? ` · ${voidedCount} voided, not counted in totals` : ""
-            }`}
+            }${bouncedCount ? ` · ${bouncedCount} bounced, not counted` : ""}`}
             columns={columns}
             rows={rows}
             getRowKey={(d) => d.id}
@@ -353,6 +401,18 @@ export function AdminDonationsPage() {
           onClose={() => setCorrecting(null)}
           onRecorded={() => {
             setCorrecting(null);
+            reload();
+          }}
+        />
+      )}
+
+      {settling && (
+        <SettleDonationModal
+          donation={settling.donation}
+          outcome={settling.outcome}
+          onClose={() => setSettling(null)}
+          onDone={() => {
+            setSettling(null);
             reload();
           }}
         />

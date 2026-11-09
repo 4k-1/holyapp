@@ -152,6 +152,7 @@ async function donationTotal(parishId, from, to) {
        FROM donation d
        LEFT JOIN payment p ON p.donation_id = d.id
        WHERE d.parish_id = $1 AND (p.id IS NULL OR p.status = 'paid') AND d.voided_at IS NULL
+         AND d.clearing_status = 'cleared'
          AND d.donation_date >= $2 AND d.donation_date < $3
        UNION ALL
        SELECT p.amount_due

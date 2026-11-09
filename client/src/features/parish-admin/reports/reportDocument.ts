@@ -300,7 +300,12 @@ export async function buildReportDocument(
   }
 
   if (kind === "donations") {
-    const { rows, purposes } = await getDonationMonthly(range);
+    const { rows, purposes, waiting } = await getDonationMonthly(range);
+    // D4: cheques and transfers the bank hasn't cleared aren't in the totals; say how much is waiting.
+    const waitingNote =
+      waiting && waiting.count > 0
+        ? ` ${formatAmount(waiting.amount)} in ${countPhrase(waiting.count, "cheque or transfer", "cheques and transfers")} is still waiting to clear and isn't counted.`
+        : "";
     const labels = rows.map((row) => monthLabel(row.month));
     const open = rows.length > 0 && rows[rows.length - 1].month === currentMonth();
     const total = sum(rows.map((row) => row.amount));
@@ -323,7 +328,7 @@ export async function buildReportDocument(
       summary:
         total === 0
           ? `No gifts were recorded for ${period}.`
-          : `Gifts recorded for ${period} total ${formatAmount(total)} over ${countPhrase(rows.length, "month")}.`,
+          : `Gifts recorded for ${period} total ${formatAmount(total)} over ${countPhrase(rows.length, "month")}.${waitingNote}`,
       tiles: [
         { label: "Total given", value: formatPeso(total), change: change(rows.map((row) => row.amount), labels, open) },
         { label: "Cash", value: formatPeso(cash), change: change(rows.map((row) => row.cash), labels, open) },

@@ -41,7 +41,7 @@ describe('Day summary', () => {
     await api(parish.admin).post(`/donations/${voided.body.id}/void`).send({ reason: 'Entered twice' });
     const cheque = await api(parish.admin)
       .post('/donations')
-      .send({ donorName: 'Cheque Donor', donationType: 'Check', amount: 2000, donationDate: '2026-11-01' });
+      .send({ donorName: 'Cheque Donor', donationType: 'Check', amount: 2000, donationDate: '2026-11-01', reference: '0012345' });
     assert.equal(cheque.status, 201);
 
     const intention = await api(parish.staff).post('/intentions/book').send({
@@ -69,7 +69,7 @@ describe('Day summary', () => {
     assert.equal(day.certificates.copies.find((c) => c.id === adminCopy.id).status, 'spoiled');
   });
 
-  it('adds up the money, links each certificate receipt to its copy and leaves voided gifts out', async () => {
+  it('adds up the money, links each certificate receipt to its copy and leaves voided and uncleared gifts out', async () => {
     const day = await summary(parish.staff);
     const fees = day.receipts.filter((r) => r.kind === 'certificate');
     assert.equal(fees.length, 2);
@@ -78,12 +78,15 @@ describe('Day summary', () => {
 
     assert.ok(!day.receipts.some((r) => r.name === 'Voided Donor'));
     assert.equal(day.money.cash, feeTotal + 500 + 150);
-    assert.equal(day.money.other, 2000);
+    // The cheque is still waiting for the bank (D4), so it's shown apart and not counted.
+    assert.equal(day.money.other, 0);
+    assert.equal(day.money.pending, 2000);
+    assert.equal(day.receipts.find((r) => r.name === 'Cheque Donor').clearing, 'pending');
     assert.equal(day.money.gcash, 0);
-    assert.equal(day.money.total, day.money.cash + day.money.other);
+    assert.equal(day.money.total, day.money.cash);
     assert.deepEqual(
       day.money.byKind.map((k) => [k.kind, k.count]),
-      [['certificate', 2], ['intention', 1], ['donation', 2]]
+      [['certificate', 2], ['intention', 1], ['donation', 1]]
     );
   });
 

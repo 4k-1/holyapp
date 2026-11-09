@@ -51,6 +51,9 @@ export interface DayReceipt {
   method: MoneyMethod;
   amount: number;
   by: string;
+  /** D4: a cheque or transfer counts only once the bank clears it. */
+  clearing: "pending" | "cleared" | "bounced";
+  reference: string | null;
 }
 
 export interface DayMoneyLine {
@@ -74,7 +77,7 @@ export interface DaySummary {
     reprints: DayReprint[];
     spoiledCopies: DaySpoiled[];
   };
-  money: { cash: number; gcash: number; other: number; total: number; byKind: DayMoneyLine[] };
+  money: { cash: number; gcash: number; other: number; total: number; pending: number; byKind: DayMoneyLine[] };
   receipts: DayReceipt[];
   warnings: { kind: "unpaid" | "unconfirmed"; certificateId: string; message: string }[];
 }

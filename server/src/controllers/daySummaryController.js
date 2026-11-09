@@ -114,6 +114,7 @@ async function getDaySummary(req, res) {
       // Gifts written down at the office (no online payment), by the day they were entered.
       pool.query(
         `SELECT d.id, d.donation_type AS method, d.amount, d.created_at, d.receipt_no, d.donor_name,
+                d.clearing_status, d.reference,
                 ${fullName('u')} AS by_name
          FROM donation d
          LEFT JOIN app_user u ON u.id = d.recorded_by
@@ -137,6 +138,8 @@ async function getDaySummary(req, res) {
         method: methodBucket(row.method),
         amount: amountOf(row.amount_due),
         by: row.by_name || (row.method === 'gcash' ? 'Paid online' : 'Parish office'),
+        clearing: 'cleared',
+        reference: null,
       })),
       ...gifts.rows.map((row) => ({
         id: row.id,
@@ -148,12 +151,17 @@ async function getDaySummary(req, res) {
         method: methodBucket(row.method),
         amount: amountOf(row.amount),
         by: row.by_name || 'Parish office',
+        // D4: a cheque or transfer counts once the bank clears it.
+        clearing: row.clearing_status,
+        reference: row.reference || null,
       })),
     ].sort((a, b) => new Date(a.at) - new Date(b.at));
 
-    const money = { cash: 0, gcash: 0, other: 0, total: 0 };
+    const money = { cash: 0, gcash: 0, other: 0, total: 0, pending: 0 };
     const byKind = {};
     for (const r of receipts) {
+      if (r.clearing === 'pending') money.pending += r.amount;
+      if (r.clearing !== 'cleared') continue;
       money[r.method] += r.amount;
       money.total += r.amount;
       byKind[r.kind] = byKind[r.kind] || { kind: r.kind, count: 0, cash: 0, gcash: 0, other: 0, total: 0 };

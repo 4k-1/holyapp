@@ -75,7 +75,7 @@ export async function getCertificateMonthly(range: ReportDateRange): Promise<Cer
 
 export async function getDonationMonthly(
   range: ReportDateRange
-): Promise<{ rows: DonationMonthRow[]; purposes: DonationPurposeTotal[] }> {
+): Promise<{ rows: DonationMonthRow[]; purposes: DonationPurposeTotal[]; waiting: { count: number; amount: number } }> {
   return getReport("donations", range);
 }
 

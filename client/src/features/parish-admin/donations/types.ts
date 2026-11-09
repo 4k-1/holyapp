@@ -20,7 +20,21 @@ export interface Donation {
   voided?: { at: string; by: string; reason: string };
   /** The gift this one corrects (that gift is voided). */
   replacesId?: string;
+  /** Cheque number or transfer reference (D4). */
+  reference?: string;
+  /** The cheque's bank. */
+  bank?: string;
+  /**
+   * Cheques and transfers start pending and count only once cleared; bounced ones never count.
+   * Cash and GCash are always cleared.
+   */
+  clearing: { status: ClearingStatus; at?: string; by?: string; reason?: string };
 }
+
+export type ClearingStatus = "pending" | "cleared" | "bounced";
+
+/** Paid in a way the bank has to clear before it counts. */
+export const CLEARING_TYPES: readonly string[] = ["Check", "Bank Transfer"];
 
 export interface DonationTrendPoint {
   label: string;
@@ -34,6 +48,8 @@ export interface NewDonationInput {
   donationDate: string;
   purpose?: string;
   remarks?: string;
+  reference?: string;
+  bank?: string;
 }
 
 export function donationTypeBadgeTone(type: string): "green" | "gold" | "muted" {

@@ -155,9 +155,19 @@ async function getDonationReport(req, res) {
        FROM donation d
        LEFT JOIN payment p ON p.donation_id = d.id
        WHERE d.parish_id = $1 AND (p.id IS NULL OR p.status = 'paid') AND d.voided_at IS NULL
+         AND d.clearing_status = 'cleared'
          AND ($2::date IS NULL OR d.donation_date >= $2::date)
          AND ($3::date IS NULL OR d.donation_date <= $3::date)
        GROUP BY 1, 2, 3`,
+      [req.parishId, from, to]
+    );
+    // Cheques and transfers the bank hasn't cleared yet (D4): shown apart, never in the totals.
+    const waiting = await pool.query(
+      `SELECT COUNT(*)::int AS count, COALESCE(SUM(amount), 0)::float AS amount
+       FROM donation
+       WHERE parish_id = $1 AND voided_at IS NULL AND clearing_status = 'pending'
+         AND ($2::date IS NULL OR donation_date >= $2::date)
+         AND ($3::date IS NULL OR donation_date <= $3::date)`,
       [req.parishId, from, to]
     );
     const byMonth = new Map(
@@ -183,6 +193,7 @@ async function getDonationReport(req, res) {
     res.json({
       rows: [...byMonth.values()],
       purposes: [...purposes.values()].sort((a, b) => b.amount - a.amount),
+      waiting: waiting.rows[0],
     });
   } catch (err) {
     sendRecordError(res, err);

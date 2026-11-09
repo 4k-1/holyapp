@@ -119,7 +119,14 @@ function DaySheet({ day, parishName, forPrint = false }: { day: DaySummary; pari
         <Tile
           label="Total"
           value={formatAmount(money.total)}
-          note={anyOther ? `Includes ${formatAmount(money.other)} cheque / transfer` : undefined}
+          note={
+            [
+              anyOther ? `Includes ${formatAmount(money.other)} cheque / transfer` : "",
+              money.pending > 0 ? `${formatAmount(money.pending)} waiting to clear, not counted` : "",
+            ]
+              .filter(Boolean)
+              .join(" · ") || undefined
+          }
         />
       </div>
 
@@ -230,8 +237,15 @@ function DaySheet({ day, parishName, forPrint = false }: { day: DaySummary; pari
                     : "Donation"}
               </td>
               <td className={td}>{r.name ?? "—"}</td>
-              <td className={td}>{METHOD_LABELS[r.method]}</td>
-              <td className={tdRight}>{formatAmount(r.amount)}</td>
+              <td className={td}>
+                {METHOD_LABELS[r.method]}
+                {r.reference ? ` ${r.reference}` : ""}
+                {r.clearing === "pending" && <span className="block text-admin-gold-700">Waiting to clear</span>}
+                {r.clearing === "bounced" && <span className="block text-admin-red-700">Bounced</span>}
+              </td>
+              <td className={`${tdRight} ${r.clearing === "cleared" ? "" : "text-admin-ink-faint line-through"}`}>
+                {formatAmount(r.amount)}
+              </td>
               <td className={td}>{r.by}</td>
             </tr>
           ))}

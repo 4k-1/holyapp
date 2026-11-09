@@ -18,6 +18,8 @@ const {
 /** Upper bound for a single donation, to catch typos like an extra zero. */
 const MAX_DONATION = 1000000;
 const OFFICE_TYPES = ['Cash', 'GCash', 'Check', 'Bank Transfer'];
+/** Paid in a way the bank has to clear before the money counts (D4). */
+const CLEARING_TYPES = ['Check', 'Bank Transfer'];
 
 function httpError(status, message) {
   const err = new Error(message);
@@ -56,16 +58,20 @@ async function listParishDonations(req, res) {
               d.created_at, u.first_name, u.last_name,
               CASE WHEN p.id IS NULL THEN 'office' ELSE 'online' END AS source,
               d.receipt_no, d.voided_at, d.void_reason, d.replaces_id,
-              NULLIF(TRIM(CONCAT(v.first_name, ' ', v.last_name)), '') AS voided_by_name
+              NULLIF(TRIM(CONCAT(v.first_name, ' ', v.last_name)), '') AS voided_by_name,
+              d.reference, d.bank, d.clearing_status, d.clearing_changed_at, d.bounce_reason,
+              NULLIF(TRIM(CONCAT(cb.first_name, ' ', cb.last_name)), '') AS clearing_by_name
        FROM donation d
        LEFT JOIN app_user u ON u.id = d.recorded_by
        LEFT JOIN app_user v ON v.id = d.voided_by
+       LEFT JOIN app_user cb ON cb.id = d.clearing_changed_by
        LEFT JOIN payment p ON p.donation_id = d.id
        WHERE d.parish_id = $1 AND (p.id IS NULL OR p.status = 'paid')
        UNION ALL
        SELECT p.id, i.parish_id, i.requester_name, 'GCash', p.amount_due, COALESCE(p.paid_at, p.created_at)::date,
               'Mass intention', 'For ' || i.intention_for, p.created_at, NULL, NULL, 'mass_intention',
-              p.receipt_number, NULL, NULL, NULL, NULL
+              p.receipt_number, NULL, NULL, NULL, NULL,
+              NULL, NULL, 'cleared', NULL, NULL, NULL
        FROM payment p
        JOIN mass_intention i ON i.id = p.mass_intention_id
        WHERE i.parish_id = $1 AND p.status = 'paid'
@@ -101,6 +107,14 @@ function toParishDonation(row) {
         }
       : undefined,
     replacesId: row.replaces_id || undefined,
+    reference: row.reference || undefined,
+    bank: row.bank || undefined,
+    clearing: {
+      status: row.clearing_status || 'cleared',
+      at: row.clearing_changed_at ? new Date(row.clearing_changed_at).toISOString() : undefined,
+      by: row.clearing_by_name || undefined,
+      reason: row.bounce_reason || undefined,
+    },
   };
 }
 
@@ -109,7 +123,17 @@ function officeGiftFields(body) {
   const amount = parseAmount(body?.amount);
   const type = requiredText(body?.donationType, 'Donation type');
   if (!OFFICE_TYPES.includes(type)) throw httpError(400, 'Donation type is not valid.');
+  // D4: a cheque needs its number; a transfer may carry its reference. Neither is money in hand
+  // until the bank clears it, so both start pending.
+  const reference = CLEARING_TYPES.includes(type) ? optionalText(body?.reference) : null;
+  if (type === 'Check' && !reference) throw httpError(400, 'Enter the cheque number.');
+  if (reference && reference.length > 60) throw httpError(400, 'Keep the reference under 60 characters.');
+  const bank = type === 'Check' ? optionalText(body?.bank) : null;
+  if (bank && bank.length > 80) throw httpError(400, 'Keep the bank name under 80 characters.');
   return {
+    reference,
+    bank,
+    clearingStatus: CLEARING_TYPES.includes(type) ? 'pending' : 'cleared',
     amount,
     type,
     date: dateValue(body?.donationDate, 'Donation date'),
@@ -123,8 +147,8 @@ function officeGiftFields(body) {
 async function insertOfficeGift(db, { parishId, userId, fields, replacesId = null }) {
   const inserted = await db.query(
     `INSERT INTO donation (parish_id, donor_name, donation_type, amount, donation_date, purpose, remarks, recorded_by,
-                           receipt_no, replaces_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, next_number($1, 'DON'), $9)
+                           receipt_no, replaces_id, reference, bank, clearing_status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, next_number($1, 'DON'), $9, $10, $11, $12)
      RETURNING *`,
     [
       parishId,
@@ -136,6 +160,9 @@ async function insertOfficeGift(db, { parishId, userId, fields, replacesId = nul
       fields.remarks,
       userId,
       replacesId,
+      fields.reference,
+      fields.bank,
+      fields.clearingStatus,
     ]
   );
   return inserted.rows[0];
@@ -191,6 +218,60 @@ async function voidDonation(req, res) {
     sendRecordError(res, err);
   }
 }
+
+/**
+ * Marks a pending cheque or transfer cleared or bounced (D4). Admins only. Once set it stays set;
+ * a mistake is fixed with void or correct. Bounced needs a reason and never counts in totals.
+ */
+function settleDonation(outcome) {
+  return async function settle(req, res) {
+    try {
+      const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+      if (outcome === 'bounced' && reason.length < 5) {
+        throw httpError(400, 'Say why it bounced (at least a few words).');
+      }
+      if (reason.length > 500) throw httpError(400, 'Keep the reason under 500 characters.');
+      if (!/^[0-9a-f-]{36}$/i.test(String(req.params.id))) throw httpError(404, 'Donation not found.');
+      const row = await inTransaction(async (db) => {
+        const found = await db.query('SELECT * FROM donation WHERE id = $1 AND parish_id = $2 FOR UPDATE', [
+          req.params.id,
+          req.parishId,
+        ]);
+        const gift = found.rows[0];
+        if (!gift) throw httpError(404, 'Donation not found.');
+        if (gift.voided_at) throw httpError(400, 'This donation has been voided.');
+        if (gift.clearing_status !== 'pending') {
+          throw httpError(409, `This donation is already marked ${gift.clearing_status}.`);
+        }
+        const updated = await db.query(
+          `UPDATE donation
+           SET clearing_status = $2, clearing_changed_at = NOW(), clearing_changed_by = $3, bounce_reason = $4
+           WHERE id = $1
+           RETURNING *`,
+          [gift.id, outcome, req.user.id, outcome === 'bounced' ? reason : null]
+        );
+        await db.query(
+          `INSERT INTO audit_log (parish_id, actor_id, action, entity_type, entity_id, metadata)
+           VALUES ($1, $2, $3, 'donation', $4, $5)`,
+          [
+            req.parishId,
+            req.user.id,
+            `donation.${outcome}`,
+            gift.id,
+            JSON.stringify({ receiptNo: gift.receipt_no, amount: Number(gift.amount), reason: reason || undefined }),
+          ]
+        );
+        return updated.rows[0];
+      });
+      res.json({ id: row.id, status: row.clearing_status });
+    } catch (err) {
+      sendRecordError(res, err);
+    }
+  };
+}
+
+const clearDonation = settleDonation('cleared');
+const bounceDonation = settleDonation('bounced');
 
 /** Corrects an office gift: voids it and saves the corrected gift, with a new receipt number. Admins only. */
 async function correctDonation(req, res) {
@@ -413,6 +494,8 @@ async function syncMyDonation(req, res) {
 }
 
 module.exports = {
+  clearDonation,
+  bounceDonation,
   listParishDonations,
   recordDonation,
   voidDonation,

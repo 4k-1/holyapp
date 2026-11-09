@@ -33,6 +33,24 @@ export async function voidDonation(id: string, reason: string): Promise<void> {
   }
 }
 
+/** Admins only (D4). A pending cheque or transfer is in the bank: it starts counting. */
+export async function clearDonation(id: string): Promise<void> {
+  try {
+    await apiFetch(`/donations/${encodeURIComponent(id)}/clear`, { method: "POST" });
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Admins only (D4). The cheque or transfer bounced: it stays listed and never counts. */
+export async function bounceDonation(id: string, reason: string): Promise<void> {
+  try {
+    await apiFetch(`/donations/${encodeURIComponent(id)}/bounce`, { method: "POST", body: { reason } });
+  } catch (err) {
+    fail(err);
+  }
+}
+
 /** Admins only. Voids an office gift and saves the corrected one with a new receipt number. */
 export async function correctDonation(id: string, input: NewDonationInput & { reason: string }): Promise<void> {
   try {

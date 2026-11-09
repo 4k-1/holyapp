@@ -3,7 +3,7 @@ import { AdminButton, AdminField, AdminInput, AdminSelect } from "@/features/par
 import { findFund, FUNDS } from "@/lib/funds";
 import { correctDonation, recordDonation } from "../api/donationsApi";
 import { donationReceiptNumber } from "../donationsHelpers";
-import { DONATION_TYPES, type Donation } from "../types";
+import { CLEARING_TYPES, DONATION_TYPES, type Donation } from "../types";
 import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
 interface RecordDonationModalProps {
@@ -38,6 +38,10 @@ export function RecordDonationModal({
   const [fund, setFund] = useState(listed ? listed.name : correcting?.purpose ? OTHER : FUNDS[0].name);
   const [otherPurpose, setOtherPurpose] = useState(listed ? "" : (correcting?.purpose ?? ""));
   const [remarks, setRemarks] = useState(correcting?.remarks ?? "");
+  // D4: cheque number and bank, or the transfer reference.
+  const [reference, setReference] = useState(correcting?.reference ?? "");
+  const [bank, setBank] = useState(correcting?.bank ?? "");
+  const needsClearing = CLEARING_TYPES.includes(donationType);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -54,6 +58,10 @@ export function RecordDonationModal({
     }
     if (!donationDate) {
       setError("Select a donation date");
+      return;
+    }
+    if (donationType === "Check" && !reference.trim()) {
+      setError("Enter the cheque number");
       return;
     }
     if (fund === OTHER && !otherPurpose.trim()) {
@@ -73,6 +81,8 @@ export function RecordDonationModal({
       donationDate,
       purpose: fund === OTHER ? otherPurpose.trim() : fund,
       remarks: remarks.trim() || undefined,
+      reference: needsClearing ? reference.trim() || undefined : undefined,
+      bank: donationType === "Check" ? bank.trim() || undefined : undefined,
     };
     try {
       if (correcting) await correctDonation(correcting.id, { ...input, reason: reason.trim() });
@@ -160,6 +170,26 @@ export function RecordDonationModal({
             />
           </AdminField>
         </div>
+
+        {needsClearing && (
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <AdminField label={donationType === "Check" ? "Cheque number" : "Transfer reference (optional)"} className="mb-0">
+              <AdminInput
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                placeholder={donationType === "Check" ? "e.g. 0012345" : "e.g. FT2611090001"}
+              />
+            </AdminField>
+            {donationType === "Check" && (
+              <AdminField label="Bank (optional)" className="mb-0">
+                <AdminInput value={bank} onChange={(e) => setBank(e.target.value)} placeholder="e.g. BDO" />
+              </AdminField>
+            )}
+            <p className="text-admin-support text-admin-ink-muted sm:col-span-2">
+              Saved as waiting to clear. It counts in the totals once an admin marks it cleared.
+            </p>
+          </div>
+        )}
 
         <AdminField label="Donation date" className="mb-0">
           <AdminInput type="date" value={donationDate} onChange={(e) => setDonationDate(e.target.value)} />

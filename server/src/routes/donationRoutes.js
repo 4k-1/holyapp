@@ -7,6 +7,8 @@ const {
   recordDonation,
   voidDonation,
   correctDonation,
+  clearDonation,
+  bounceDonation,
   listMyDonations,
   giveDonation,
   syncMyDonation,
@@ -30,5 +32,8 @@ router.post('/', ...office, recordDonation);
 const admin = [authenticate, scopeParish, requireParish, requireRole(ROLES.PARISH_ADMIN)];
 router.post('/:id/void', ...admin, voidDonation);
 router.post('/:id/correct', ...admin, correctDonation);
+// Cheques and transfers (D4): marked cleared or bounced once the bank says so.
+router.post('/:id/clear', ...admin, clearDonation);
+router.post('/:id/bounce', ...admin, bounceDonation);
 
 module.exports = router;

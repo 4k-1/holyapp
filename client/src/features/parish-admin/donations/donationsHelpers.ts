@@ -52,9 +52,14 @@ export function donationDateFilterLabel(filter: DonationDateFilter) {
   return `Through ${formatDonationDate(filter.to)}`;
 }
 
-/** Gifts that count toward totals: everything except voided gifts. */
+/** Gifts that count toward totals: not voided, and cleared (cheques and transfers wait for the bank). */
 export function countedDonations(donations: Donation[]) {
-  return donations.filter((d) => !d.voided);
+  return donations.filter((d) => !d.voided && (d.clearing?.status ?? "cleared") === "cleared");
+}
+
+/** Cheques and transfers the bank hasn't cleared yet: shown apart, not counted. */
+export function waitingDonations(donations: Donation[]) {
+  return donations.filter((d) => !d.voided && d.clearing?.status === "pending");
 }
 
 /**
@@ -68,13 +73,21 @@ export function donationReceiptNumber(d: Pick<Donation, "id" | "receiptNo">) {
 /** What goes on a donation's printed receipt; who handed it over is confirmed at print time. */
 export function donationReceipt(d: Donation): Omit<ReceiptData, "receivedFrom"> {
   const forMass = d.source === "mass_intention";
+  const bounced = d.clearing?.status === "bounced";
+  const cheque = [d.donationType === "Check" ? "Cheque" : "Reference", d.reference].join(" ");
+  const notes = [
+    forMass ? d.remarks : undefined,
+    d.reference ? `${cheque}${d.bank ? `, ${d.bank}` : ""}` : undefined,
+    d.clearing?.status === "pending" ? "Not yet cleared by the bank" : undefined,
+    bounced ? `BOUNCED${d.clearing.reason ? `: ${d.clearing.reason}` : ""}` : undefined,
+  ].filter(Boolean);
   return {
-    title: "Acknowledgment Receipt",
+    title: bounced ? "Acknowledgment Receipt (BOUNCED)" : "Acknowledgment Receipt",
     number: donationReceiptNumber(d),
     date: d.donationDate,
     amount: d.amount,
     forText: forMass ? "Mass intention donation" : `Donation — ${d.purpose || "General fund"}`,
-    note: forMass ? d.remarks : undefined,
+    note: notes.length ? notes.join(" · ") : undefined,
     method: d.donationType,
     receivedBy: d.source === "office" ? d.recordedBy : undefined,
   };
