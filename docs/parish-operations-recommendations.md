@@ -291,6 +291,10 @@ Most Philippine parishes have a main church plus several chapels (*kapilya*) and
   Warn when a priest is booked past the limit.
 - Let priests mark days off, retreats and leave. The schedule then won't assign them and suggests a
   substitute.
+- **Parked:** waiting for the parish to confirm who assigns Masses to priests, the daily limits, and
+  whether weddings and funerals count as Masses. Proposed defaults if built: warnings only ("Book
+  anyway"), above 2 Masses on a weekday and 3 on Sundays and holy days, away dates kept on the staff
+  record.
 
 #### C7. Fast funeral booking (priority: medium)
 
