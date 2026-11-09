@@ -11,6 +11,8 @@ import type {
   ScheduleConflict,
   ScheduleEventType,
 } from "../types";
+import { liturgicalSummary, useCalendarCheck } from "../calendarCheck";
+import { CalendarWarningNotice } from "./CalendarWarnings";
 import { ConflictNotice } from "./ConflictNotice";
 import { StaffSelect } from "./StaffSelect";
 import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
@@ -43,6 +45,9 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
   const [address, setAddress] = useState(startsOutside ? event?.location ?? "" : "");
   const [assignee, setAssignee] = useState<AssigneeValue>(assigneeValueOf(event));
   const [conflict, setConflict] = useState<ScheduleConflict | undefined>();
+  const calendar = useCalendarCheck(date, type);
+  const [bookAnywayKey, setBookAnywayKey] = useState("");
+  const bookAnyway = bookAnywayKey === calendar.warningKey;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -68,7 +73,9 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
   }, [date, start, end, assignee, location, event?.id]);
 
   const timeInvalid = Boolean(start && end && start >= end);
-  const canSubmit = Boolean(title.trim() && date && type && location && !timeInvalid && !conflict);
+  const canSubmit = Boolean(
+    title.trim() && date && type && location && !timeInvalid && !conflict && (!calendar.needsBookAnyway || bookAnyway)
+  );
 
   async function handleSubmit() {
     if (!canSubmit || !type) return;
@@ -84,6 +91,7 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
       assigneeId: assignee.assigneeId,
       assignee: assignee.assigneeId ? "" : assignee.assignee.trim(),
       location,
+      calendarOk: calendar.needsBookAnyway && bookAnyway,
     };
     try {
       if (event) await updateScheduleBlock(event.id, input);
@@ -128,6 +136,11 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
           </AdminField>
         </div>
         {timeInvalid && <p className="text-admin-support text-red-700">The end time must be after the start time.</p>}
+        {calendar.day && (calendar.day.title || calendar.day.local.length > 0) && (
+          <p className="-mt-1.5 text-admin-support text-admin-ink-muted">
+            {[liturgicalSummary(calendar.day), ...calendar.day.local].join(" · ")}
+          </p>
+        )}
 
         <AdminField label="Type" className="mb-0">
           <select
@@ -194,6 +207,11 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
           <StaffSelect staff={staff} value={assignee} onChange={setAssignee} />
         </AdminField>
 
+        <CalendarWarningNotice
+          warnings={calendar.warnings}
+          bookAnyway={bookAnyway}
+          onBookAnywayChange={(value) => setBookAnywayKey(value ? calendar.warningKey : "")}
+        />
         {conflict && <ConflictNotice conflict={conflict} />}
         {error && <p className="text-admin-support font-semibold text-red-700">{error}</p>}
       </div>

@@ -8,13 +8,15 @@ import { ScheduleKebabMenu } from "./ScheduleKebabMenu";
 import { AssigneeName } from "./StaffSelect";
 import { EVENT_TYPE_STYLES } from "@/features/parish-admin/schedule/eventTypeStyles";
 import { EVENT_TYPE_LABELS } from "../types";
-import type { ScheduleOccurrence } from "../types";
+import type { LiturgicalDay, ScheduleOccurrence } from "../types";
 
 interface DayAgendaSidebarProps {
   dateStr: string;
   occurrences: ScheduleOccurrence[];
   /** Regular Mass times for the day, from Settings → Mass Schedule. Shown for context, not as events. */
   massTimes?: string[];
+  /** The day in the Church calendar (B5 + C5). */
+  liturgicalDay?: LiturgicalDay;
   todayStr: string;
   onAdd: () => void;
   onAssign: (occurrence: ScheduleOccurrence) => void;
@@ -28,6 +30,7 @@ export function DayAgendaSidebar({
   dateStr,
   occurrences,
   massTimes = [],
+  liturgicalDay,
   todayStr,
   onAdd,
   onAssign,
@@ -83,6 +86,21 @@ export function DayAgendaSidebar({
       </div>
 
       <div className="px-5 py-4">
+        {liturgicalDay && (
+          <div className="mb-3">
+            <p className="text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">
+              {liturgicalDay.seasonLabel}
+            </p>
+            {liturgicalDay.title && (
+              <p className="mt-0.5 text-admin-body font-semibold text-admin-ink">{liturgicalDay.title}</p>
+            )}
+            {[...liturgicalDay.notes, ...liturgicalDay.local].map((note) => (
+              <p key={note} className="mt-0.5 text-admin-support text-admin-gold-700">
+                {note}
+              </p>
+            ))}
+          </div>
+        )}
         {massTimes.length > 0 && (
           <div className="mb-4 rounded-[10px] bg-admin-green-050 px-3.5 py-2.5">
             <p className="text-admin-label font-semibold text-admin-green-900">Regular Masses</p>

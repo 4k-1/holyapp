@@ -483,6 +483,7 @@ async function reserveWeddingDate(req, res) {
       location: schedule.DEFAULT_LOCATION,
       excludeId: row.wedding_event_id || undefined,
     });
+    await schedule.assertCalendarOk(req.parishId, { date, type: 'wedding', calendarOk: req.body?.calendarOk });
 
     let eventId = row.wedding_event_id;
     const title = `Wedding — ${partyName(row, 'groom')} & ${partyName(row, 'bride')}`;

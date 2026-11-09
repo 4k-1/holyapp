@@ -1,11 +1,38 @@
 // src/features/parish-admin/schedule/components/MonthCalendarGrid.tsx
 import { daysInMonth, toISO } from "../scheduleHelpers";
 import { EVENT_TYPE_STYLES } from "@/features/parish-admin/schedule/eventTypeStyles";
-import type { ScheduleOccurrence } from "../types";
+import type { LiturgicalDay, ScheduleOccurrence } from "../types";
+
+/** Liturgical colour of each season, as a thin bar under the day number. */
+const SEASON_BAR: Record<LiturgicalDay["season"], string> = {
+  advent: "bg-violet-400",
+  christmas: "bg-admin-gold-600",
+  lent: "bg-violet-400",
+  triduum: "bg-red-400",
+  easter: "bg-admin-gold-600",
+  ordinary: "bg-admin-green-600/40",
+};
+
+/** Holy Week and Lent days worth naming in a day cell, by how their full title starts. */
+const SHORT_TITLES = ["Ash Wednesday", "Palm Sunday", "Holy Thursday", "Good Friday", "Holy Saturday"];
+
+/** The short label shown in a day cell: the parish's own date, a solemnity, a feast or a Holy Week day. */
+function dayLabel(day?: LiturgicalDay) {
+  if (!day) return "";
+  if (day.local.length > 0) return day.local[0];
+  const short = SHORT_TITLES.find((prefix) => day.title.startsWith(prefix));
+  if (short) return short;
+  if (day.rank === "solemnity" || day.rank === "feast") {
+    return day.title.replace(/^(Solemnity|Feast) of (the )?/, "").replace(/ \(.*\)$/, "");
+  }
+  return "";
+}
 
 interface MonthCalendarGridProps {
   cursor: Date;
   monthData: Record<string, ScheduleOccurrence[]>;
+  /** Each day in the Church calendar (B5 + C5). */
+  calendar?: Record<string, LiturgicalDay>;
   loading: boolean;
   selectedDate: string;
   todayStr: string;
@@ -21,6 +48,7 @@ const TAGS_PER_DAY = 2;
 export function MonthCalendarGrid({
   cursor,
   monthData,
+  calendar = {},
   loading,
   selectedDate,
   todayStr,
@@ -81,6 +109,8 @@ export function MonthCalendarGrid({
             const isToday = c.dateStr === todayStr;
             const isSelected = c.dateStr === selectedDate;
             const extra = occurrences.length - TAGS_PER_DAY;
+            const liturgical = calendar[c.dateStr!];
+            const label = dayLabel(liturgical);
             return (
               <div
                 key={i}
@@ -91,7 +121,7 @@ export function MonthCalendarGrid({
                   weekday: "long",
                   month: "long",
                   day: "numeric",
-                })}, ${occurrences.length} ${occurrences.length === 1 ? "event" : "events"}`}
+                })}${label ? `, ${label}` : ""}, ${occurrences.length} ${occurrences.length === 1 ? "event" : "events"}`}
                 onClick={() => onSelectDate(c.dateStr!)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -105,15 +135,34 @@ export function MonthCalendarGrid({
                     : "border-admin-border hover:border-admin-border-strong hover:bg-admin-surface-alt/60"
                 }`}
               >
-                <div className="px-0.5">
+                <div className="flex items-center gap-1.5 px-0.5">
                   <span
                     className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-admin-support font-semibold tabular-nums ${
-                      isToday ? "bg-admin-green-700 text-white" : "text-admin-ink"
+                      isToday ? "bg-admin-green-700 text-white" : liturgical?.obligation ? "text-red-700" : "text-admin-ink"
                     }`}
                   >
                     {c.num}
                   </span>
+                  {liturgical && (
+                    <span
+                      className={`h-1 w-3 shrink-0 rounded-full ${SEASON_BAR[liturgical.season]}`}
+                      title={liturgical.seasonLabel}
+                      aria-hidden="true"
+                    />
+                  )}
                 </div>
+                {label && (
+                  <span
+                    className={`line-clamp-2 min-w-0 break-words px-0.5 text-[0.6875rem] leading-tight ${
+                      liturgical!.local.length > 0 || liturgical!.rank === "solemnity"
+                        ? "font-semibold text-admin-gold-700"
+                        : "text-admin-ink-muted"
+                    }`}
+                    title={[liturgical!.title, ...liturgical!.local].filter(Boolean).join(" · ")}
+                  >
+                    {label}
+                  </span>
+                )}
                 {occurrences.slice(0, TAGS_PER_DAY).map((o) => (
                   <span
                     key={o.id}

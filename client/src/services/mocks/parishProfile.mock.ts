@@ -8,6 +8,8 @@ export let PARISH_PROFILE: ParishProfile = {
   diocese: "Archdiocese of Cebu",
   phone: "(032) 255 6698",
   email: "office@stonino-parish.ph",
+  fiestaDate: "",
+  localFeasts: [],
 };
 
 export function setParishProfile(next: ParishProfile) {

@@ -9,7 +9,7 @@ import { DayAgendaSidebar } from "./components/DayAgendaSidebar";
 import { EventsListView } from "./components/EventsListView";
 import { ScheduleEventModal } from "./components/ScheduleEventModal";
 import { AssignBlockModal } from "./components/AssignBlockModal";
-import type { ScheduleBlock, ScheduleOccurrence } from "./types";
+import type { LiturgicalDay, ScheduleBlock, ScheduleOccurrence } from "./types";
 import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
 const TODAY_ISO = toISO(new Date());
@@ -23,6 +23,7 @@ export function AdminSchedulePage() {
   const [selectedDate, setSelectedDate] = useState(TODAY_ISO);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [monthData, setMonthData] = useState<Record<string, ScheduleOccurrence[]>>({});
+  const [calendar, setCalendar] = useState<Record<string, LiturgicalDay>>({});
   const [loading, setLoading] = useState(true);
   const [listSearch, setListSearch] = useState("");
 
@@ -35,7 +36,8 @@ export function AdminSchedulePage() {
   const fetchMonth = useCallback(
     () =>
       getOccurrencesForMonth(cursor.getFullYear(), cursor.getMonth()).then((data) => {
-        setMonthData(data);
+        setMonthData(data.occurrences);
+        setCalendar(data.calendar);
         setLoading(false);
       }),
     [cursor]
@@ -133,6 +135,7 @@ export function AdminSchedulePage() {
           <MonthCalendarGrid
             cursor={cursor}
             monthData={eventsByDate}
+            calendar={calendar}
             loading={loading}
             selectedDate={selectedDate}
             todayStr={TODAY_ISO}
@@ -146,6 +149,7 @@ export function AdminSchedulePage() {
               dateStr={selectedDate}
               occurrences={eventsByDate[selectedDate] ?? []}
               massTimes={massTimesByDate[selectedDate] ?? []}
+              liturgicalDay={calendar[selectedDate]}
               todayStr={TODAY_ISO}
               onAdd={() => setAddModalDate(selectedDate)}
               onAssign={setAssignTarget}

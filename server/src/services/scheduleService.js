@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const { NEEDS_RECORDING } = require('../utils/scheduleRecordLink');
 const { isClergyRank, formatPersonName } = require('../constants/personnelRoles');
+const liturgical = require('../utils/liturgicalCalendar');
 const {
   convert24to12,
   dayAbbrev,
@@ -288,6 +289,43 @@ async function assertNoConflict(parishId, { date, start, end, assigneeId, assign
   if (conflict) throw httpError(409, conflictMessage(conflict));
 }
 
+/** The parish's own dates for the liturgical calendar (B5 + C5): fiesta, patron and local feasts. */
+async function loadLocalDates(parishId, db = pool) {
+  const result = await db.query(
+    'SELECT patron, fiesta_date, local_feasts FROM parish_settings WHERE parish_id = $1',
+    [parishId]
+  );
+  const row = result.rows[0] || {};
+  return {
+    patron: row.patron || '',
+    fiestaDate: row.fiesta_date || '',
+    localFeasts: Array.isArray(row.local_feasts) ? row.local_feasts : [],
+  };
+}
+
+/** The day in the Church calendar, and why booking this type of event on it may not be allowed. */
+async function calendarCheck(parishId, date, type) {
+  const local = await loadLocalDates(parishId);
+  return {
+    day: liturgical.liturgicalDay(date, local),
+    warnings: liturgical.bookingWarnings(type, date, local),
+  };
+}
+
+/**
+ * Throws 409 `calendar_warning` when the Church doesn't allow this booking on that day, unless staff
+ * chose to book anyway (`calendarOk`). Notes such as the parish fiesta never stop a booking.
+ */
+async function assertCalendarOk(parishId, { date, type, calendarOk }) {
+  if (calendarOk === true) return;
+  const { warnings } = await calendarCheck(parishId, date, type);
+  const rules = warnings.filter((w) => w.level === 'rule');
+  if (rules.length === 0) return;
+  const err = httpError(409, rules.map((w) => w.message).join(' '));
+  err.details = { code: 'calendar_warning', warnings };
+  throw err;
+}
+
 async function occurrencesForDate(parishId, dateStr) {
   const [recurring, blocks, overrides] = await Promise.all([
     loadRecurring(parishId),
@@ -468,6 +506,9 @@ module.exports = {
   occurrenceDate,
   listAssignableStaff,
   assertNoConflict,
+  assertCalendarOk,
+  calendarCheck,
+  loadLocalDates,
   DEFAULT_LOCATION,
   occurrencesForDate,
   occurrencesForMonth,

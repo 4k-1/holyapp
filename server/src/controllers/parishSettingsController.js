@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
+const { isMonthDay } = require('../utils/liturgicalCalendar');
 
 const SACRAMENTS = ['baptism', 'confirmation', 'marriage', 'death'];
 
@@ -64,7 +65,37 @@ function toProfile(parish, settings) {
     phone: parish.contact,
     email: parish.email || '',
     sealUrl: parish.seal_url || (settings && settings.logo_url) || undefined,
+    fiestaDate: (settings && settings.fiesta_date) || '',
+    localFeasts: (settings && Array.isArray(settings.local_feasts) && settings.local_feasts) || [],
   };
+}
+
+/** The parish's own yearly dates (B5 + C5): a fiesta "MM-DD" and other local feasts { name, date }. */
+function parseLocalDates(body) {
+  const fiestaDate = String(body.fiestaDate || '').trim();
+  if (fiestaDate && !isMonthDay(fiestaDate)) {
+    const err = new Error('The fiesta date is not a valid day of the year.');
+    err.status = 400;
+    throw err;
+  }
+  const list = Array.isArray(body.localFeasts) ? body.localFeasts : [];
+  if (list.length > 30) {
+    const err = new Error('Add at most 30 local feasts.');
+    err.status = 400;
+    throw err;
+  }
+  const localFeasts = list.map((item) => ({
+    name: String((item && item.name) || '').trim().slice(0, 120),
+    date: String((item && item.date) || '').trim(),
+  }));
+  if (localFeasts.some((item) => !item.name || !isMonthDay(item.date))) {
+    const err = new Error('Each local feast needs a name and a valid day of the year.');
+    err.status = 400;
+    throw err;
+  }
+  // Left out (an older screen): keep what's saved.
+  const given = 'fiestaDate' in body || 'localFeasts' in body;
+  return { given, fiestaDate: fiestaDate || null, localFeasts };
 }
 
 function toFee(row) {
@@ -152,7 +183,7 @@ async function getProfile(req, res) {
       return res.status(404).json({ error: 'Parish not found.' });
     }
     const settings = await pool.query(
-      `SELECT patron, diocese, logo_url FROM parish_settings WHERE parish_id = $1`,
+      `SELECT patron, diocese, logo_url, fiesta_date, local_feasts FROM parish_settings WHERE parish_id = $1`,
       [req.parishId]
     );
     res.json({ profile: toProfile(parish.rows[0], settings.rows[0]) });
@@ -173,6 +204,12 @@ async function updateProfile(req, res) {
   if (!name || !address) {
     return res.status(400).json({ error: 'Parish name and address are required.' });
   }
+  let localDates;
+  try {
+    localDates = parseLocalDates(req.body);
+  } catch (err) {
+    return res.status(err.status || 400).json({ error: err.message });
+  }
 
   try {
     await ensureSettings(req.parishId, req.user.id);
@@ -185,10 +222,21 @@ async function updateProfile(req, res) {
     );
     const settings = await pool.query(
       `UPDATE parish_settings
-       SET patron = $1, diocese = $2, logo_url = COALESCE($3, logo_url), updated_by = $4, updated_at = NOW()
+       SET patron = $1, diocese = $2, logo_url = COALESCE($3, logo_url), updated_by = $4, updated_at = NOW(),
+           fiesta_date = CASE WHEN $8 THEN $6 ELSE fiesta_date END,
+           local_feasts = CASE WHEN $8 THEN $7::jsonb ELSE local_feasts END
        WHERE parish_id = $5
-       RETURNING patron, diocese, logo_url`,
-      [patron, diocese, sealUrl, req.user.id, req.parishId]
+       RETURNING patron, diocese, logo_url, fiesta_date, local_feasts`,
+      [
+        patron,
+        diocese,
+        sealUrl,
+        req.user.id,
+        req.parishId,
+        localDates.fiestaDate,
+        JSON.stringify(localDates.localFeasts),
+        localDates.given,
+      ]
     );
     await writeAudit({
       parishId: req.parishId,

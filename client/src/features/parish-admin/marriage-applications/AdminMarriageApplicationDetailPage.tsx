@@ -44,6 +44,8 @@ import {
   weddingDateOf,
   type RequirementGroup,
 } from "@/features/parish-admin/marriage-applications/applicationProgress";
+import { liturgicalSummary, useCalendarCheck } from "@/features/parish-admin/schedule/calendarCheck";
+import { CalendarWarningNotice } from "@/features/parish-admin/schedule/components/CalendarWarnings";
 import {
   CIRCUMSTANCES,
   type DispensationStatus,
@@ -164,6 +166,9 @@ export function AdminMarriageApplicationDetailPage() {
   const [end, setEnd] = useState("10:00");
   const [assignee, setAssignee] = useState<AssigneeValue>(NOBODY);
   const [editingDate, setEditingDate] = useState(false);
+  const weddingCalendar = useCalendarCheck(editingDate ? date : "", "wedding");
+  const [bookAnywayKey, setBookAnywayKey] = useState("");
+  const bookAnyway = bookAnywayKey === weddingCalendar.warningKey;
   const [rejecting, setRejecting] = useState(false);
   const [rejectRemarks, setRejectRemarks] = useState("");
 
@@ -621,6 +626,18 @@ export function AdminMarriageApplicationDetailPage() {
                           className="w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2.5 text-admin-body text-admin-ink"
                         />
                       </AdminField>
+                      {weddingCalendar.day?.title && (
+                        <p className="mb-2 text-admin-support text-admin-ink-muted">
+                          {liturgicalSummary(weddingCalendar.day)}
+                        </p>
+                      )}
+                      <div className="mb-3">
+                        <CalendarWarningNotice
+                          warnings={weddingCalendar.warnings}
+                          bookAnyway={bookAnyway}
+                          onBookAnywayChange={(value) => setBookAnywayKey(value ? weddingCalendar.warningKey : "")}
+                        />
+                      </div>
                       <div className="flex justify-end gap-2">
                         <AdminButton
                           type="button"
@@ -633,7 +650,12 @@ export function AdminMarriageApplicationDetailPage() {
                         <AdminButton
                           type="button"
                           disabled={
-                            saving || !date || !start || !end || start >= end
+                            saving ||
+                            !date ||
+                            !start ||
+                            !end ||
+                            start >= end ||
+                            (weddingCalendar.needsBookAnyway && !bookAnyway)
                           }
                           onClick={() =>
                             run(
@@ -644,6 +666,7 @@ export function AdminMarriageApplicationDetailPage() {
                                   end: convert24to12(end),
                                   assigneeId: assignee.assigneeId,
                                   assignee: assignee.assigneeId ? "" : assignee.assignee.trim(),
+                                  calendarOk: weddingCalendar.needsBookAnyway && bookAnyway,
                                 }),
                               () => setEditingDate(false),
                             )

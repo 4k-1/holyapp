@@ -4,6 +4,7 @@ const { requiredText, optionalText, dateValue, sendRecordError } = require('../u
 const schedule = require('../services/scheduleService');
 const { ROLES } = require('../constants/roles');
 const massTimes = require('../services/massTimeChanges');
+const liturgical = require('../utils/liturgicalCalendar');
 
 /** Runs `work` in a transaction; rolls back if it throws. */
 async function inTransaction(work) {
@@ -62,8 +63,11 @@ async function listMonth(req, res) {
     if (!Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 11) {
       return res.status(400).json({ error: 'year and month are required.' });
     }
-    const occurrences = await schedule.occurrencesForMonth(req.parishId, year, month);
-    res.json({ occurrences });
+    const [occurrences, local] = await Promise.all([
+      schedule.occurrencesForMonth(req.parishId, year, month),
+      schedule.loadLocalDates(req.parishId),
+    ]);
+    res.json({ occurrences, calendar: liturgical.monthCalendar(year, month, local) });
   } catch (err) {
     return send(res, err);
   }
@@ -104,10 +108,21 @@ async function checkConflict(req, res) {
   }
 }
 
+/** The day in the Church calendar and any booking warnings for an event type (B5 + C5). */
+async function calendarDay(req, res) {
+  try {
+    const date = dateValue(req.query.date, 'Date');
+    res.json(await schedule.calendarCheck(req.parishId, date, optionalText(req.query.type)));
+  } catch (err) {
+    return send(res, err);
+  }
+}
+
 async function createBlock(req, res) {
   try {
     const input = parseBlockInput(req.body || {});
     await schedule.assertNoConflict(req.parishId, input);
+    await schedule.assertCalendarOk(req.parishId, { ...input, calendarOk: req.body.calendarOk });
     const id = await schedule.createEvent(req.parishId, req.user.id, input);
     const blocks = await schedule.loadBlocks(req.parishId);
     const block = blocks.find((item) => item.id === id);
@@ -139,6 +154,7 @@ async function updateBlock(req, res) {
     }
     const input = parseBlockInput(req.body || {});
     await schedule.assertNoConflict(req.parishId, { ...input, excludeId: row.id });
+    await schedule.assertCalendarOk(req.parishId, { ...input, calendarOk: req.body.calendarOk });
     await schedule.updateEvent(req.parishId, row.id, input);
     const block = (await schedule.loadBlocks(req.parishId)).find((item) => item.id === row.id);
     await writeAudit({
@@ -366,6 +382,7 @@ module.exports = {
   listBlocks,
   listStaffNames,
   checkConflict,
+  calendarDay,
   createBlock,
   updateBlock,
   assignOccurrence,

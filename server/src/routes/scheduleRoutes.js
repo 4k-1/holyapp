@@ -7,6 +7,7 @@ const {
   listBlocks,
   listStaffNames,
   checkConflict,
+  calendarDay,
   createBlock,
   updateBlock,
   assignOccurrence,
@@ -32,6 +33,7 @@ router.get('/month', ...office, listMonth);
 router.get('/blocks', ...office, listBlocks);
 router.get('/staff', ...office, listStaffNames);
 router.post('/conflicts', ...office, checkConflict);
+router.get('/calendar-day', ...office, calendarDay);
 router.post('/events', ...office, createBlock);
 router.patch('/events/:id', ...office, updateBlock);
 router.post('/assign', ...office, assignOccurrence);

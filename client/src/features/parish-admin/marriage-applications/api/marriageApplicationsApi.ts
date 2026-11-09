@@ -96,7 +96,15 @@ export async function updateMarriageDispensation(
 
 export async function reserveWeddingDate(
   applicationId: string,
-  input: { date: string; start: string; end: string; assigneeId: string | null; assignee: string }
+  input: {
+    date: string;
+    start: string;
+    end: string;
+    assigneeId: string | null;
+    assignee: string;
+    /** Staff chose to book anyway on a day the Church calendar warns about (B5 + C5). */
+    calendarOk?: boolean;
+  }
 ): Promise<MarriageApplication> {
   try {
     const data = await apiFetch<{ application: MarriageApplication }>(

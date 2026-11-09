@@ -2,7 +2,9 @@
 import { useEffect, useState } from "react";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { getParishProfile, updateParishProfile } from "../api/settingsApi";
-import type { ParishProfile } from "../types";
+import type { LocalFeast, ParishProfile } from "../types";
+import { formatMonthDay } from "../monthDay";
+import { MonthDayInput } from "./MonthDayInput";
 import { notifyError } from "@/lib/notify";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import {
@@ -21,9 +23,11 @@ const emptyProfile = (): ParishProfile => ({
   diocese: "",
   phone: "",
   email: "",
+  fiestaDate: "",
+  localFeasts: [],
 });
 
-type Panel = "identity" | "contact";
+type Panel = "identity" | "contact" | "dates";
 
 export function ParishProfileSection() {
   const [saved, setSaved] = useState<ParishProfile>(emptyProfile);
@@ -60,7 +64,17 @@ export function ParishProfileSection() {
     setEditing(null);
   }
 
+  function setFeast(index: number, patch: Partial<LocalFeast>) {
+    setField(
+      "localFeasts",
+      draft.localFeasts.map((feast, i) => (i === index ? { ...feast, ...patch } : feast))
+    );
+  }
+
+  const datesInvalid = draft.localFeasts.some((feast) => !feast.name.trim() || !feast.date);
+
   async function handleSave() {
+    if (editing === "dates" && datesInvalid) return;
     setSaving(true);
     try {
       const result = await updateParishProfile(draft);
@@ -146,6 +160,86 @@ export function ParishProfileSection() {
             <SettingsField label="Phone number" value={saved.phone} />
             <SettingsField label="Email address" value={saved.email} />
             <SettingsField label="Full address" value={saved.address} className="sm:col-span-2" />
+          </SettingsFieldGrid>
+        )}
+      </SettingsPanel>
+
+      <SettingsPanel
+        title="Parish dates"
+        description="Shown on the Schedule calendar. Bookings on these days get a reminder that the church may be busy."
+        action={editButton("dates")}
+      >
+        {editing === "dates" ? (
+          <>
+            <AdminField label="Parish fiesta">
+              <MonthDayInput
+                value={draft.fiestaDate}
+                onChange={(value) => setField("fiestaDate", value)}
+                label="Parish fiesta"
+                allowEmpty
+              />
+            </AdminField>
+            <p className="mb-2 text-admin-label font-semibold text-admin-ink-muted">Other local feasts</p>
+            {draft.localFeasts.length === 0 && (
+              <p className="mb-2 text-admin-support text-admin-ink-faint">None yet, e.g. a chapel's feast day.</p>
+            )}
+            <div className="space-y-2">
+              {draft.localFeasts.map((feast, index) => (
+                <div key={index} className="flex flex-wrap items-center gap-2">
+                  <AdminInput
+                    value={feast.name}
+                    onChange={(e) => setFeast(index, { name: e.target.value })}
+                    placeholder="e.g. San Isidro chapel fiesta"
+                    aria-label="Name of the local feast"
+                    className="min-w-[12rem] flex-1"
+                  />
+                  <MonthDayInput
+                    value={feast.date}
+                    onChange={(value) => setFeast(index, { date: value })}
+                    label={feast.name || "Local feast"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setField("localFeasts", draft.localFeasts.filter((_, i) => i !== index))}
+                    className="rounded-lg px-2 py-1.5 text-admin-support font-semibold text-admin-red-700 hover:bg-admin-red-100"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+            <AdminButton
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="mt-2"
+              onClick={() => setField("localFeasts", [...draft.localFeasts, { name: "", date: "" }])}
+            >
+              + Add a local feast
+            </AdminButton>
+            {datesInvalid && (
+              <p className="mt-2 text-admin-support text-red-700">Give each local feast a name and a date.</p>
+            )}
+            <SettingsFormActions saving={saving} onSave={handleSave} onCancel={cancelEditing} />
+          </>
+        ) : (
+          <SettingsFieldGrid>
+            <SettingsField
+              label="Parish fiesta"
+              value={
+                saved.fiestaDate
+                  ? `${formatMonthDay(saved.fiestaDate)}${saved.patron ? ` (${saved.patron})` : ""}`
+                  : "Not set"
+              }
+            />
+            <SettingsField
+              label="Other local feasts"
+              value={
+                saved.localFeasts.length > 0
+                  ? saved.localFeasts.map((f) => `${f.name}, ${formatMonthDay(f.date)}`).join(" · ")
+                  : "None"
+              }
+            />
           </SettingsFieldGrid>
         )}
       </SettingsPanel>

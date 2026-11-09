@@ -90,6 +90,29 @@ export interface ScheduleConflict {
   message: string;
 }
 
+/** One day in the Church calendar (B5 + C5), worked out by the server. */
+export interface LiturgicalDay {
+  date: string;
+  season: "advent" | "christmas" | "lent" | "triduum" | "easter" | "ordinary";
+  seasonLabel: string;
+  /** The Sunday or celebration, e.g. "3rd Sunday of Lent"; empty on an ordinary weekday. */
+  title: string;
+  rank: "solemnity" | "feast" | "sunday" | "weekday";
+  sunday: boolean;
+  /** A holy day of obligation (every Sunday too). */
+  obligation: boolean;
+  /** e.g. "Holy day of obligation", "Simbang Gabi, day 3 of 9". */
+  notes: string[];
+  /** The parish's own dates: the fiesta and local feasts. */
+  local: string[];
+}
+
+/** Why a booking may not be allowed: a 'rule' needs "Book anyway"; a 'note' is just shown. */
+export interface BookingWarning {
+  level: "rule" | "note";
+  message: string;
+}
+
 /** Places offered when adding an event; any other place can be typed. */
 export const COMMON_LOCATIONS = ["Main church", "Adoration chapel", "Parish hall", "Parish office"];
 

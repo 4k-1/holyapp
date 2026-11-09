@@ -280,6 +280,11 @@ Most Philippine parishes have a main church plus several chapels (*kapilya*) and
   - Weddings during Lent, which many dioceses discourage.
 - Add the parish's own dates: the fiesta, chapel feasts, Simbang Gabi and Holy Week.
 
+- **Done (migration 037):** the calendar is worked out in code, with no table. The Schedule shows each
+  day's season, Sunday or feast, holy days and Simbang Gabi. Funeral Masses and weddings on the days
+  above get a warning that staff can override with "Book anyway"; Lent weddings and the parish's
+  own dates get a note only. The fiesta and local feasts are set under Settings → Parish Profile.
+
 #### C6. Respect priests' limits (priority: medium)
 
 - Canon 905: one Mass a day, or up to three on Sundays and holy days with the bishop's permission.

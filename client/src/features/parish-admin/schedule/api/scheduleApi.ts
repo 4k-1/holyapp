@@ -1,5 +1,14 @@
 import { apiFetch, ApiError } from "@/lib/api";
-import type { AssignableStaff, AssigneeValue, RecurringCommitment, ScheduleBlock, ScheduleConflict, ScheduleOccurrence } from "../types";
+import type {
+  AssignableStaff,
+  AssigneeValue,
+  BookingWarning,
+  LiturgicalDay,
+  RecurringCommitment,
+  ScheduleBlock,
+  ScheduleConflict,
+  ScheduleOccurrence,
+} from "../types";
 
 /**
  * A removed Mass time with intentions still booked on it. `options`: Mass times left on all those dates;
@@ -58,15 +67,30 @@ export async function listAssignableStaff(): Promise<AssignableStaff[]> {
   }
 }
 
-export async function getOccurrencesForMonth(
-  year: number,
-  month: number
-): Promise<Record<string, ScheduleOccurrence[]>> {
+export interface MonthSchedule {
+  occurrences: Record<string, ScheduleOccurrence[]>;
+  /** Each day in the Church calendar, keyed by ISO date. */
+  calendar: Record<string, LiturgicalDay>;
+}
+
+export async function getOccurrencesForMonth(year: number, month: number): Promise<MonthSchedule> {
   try {
-    const data = await apiFetch<{ occurrences: Record<string, ScheduleOccurrence[]> }>(
-      `/schedule/month?year=${year}&month=${month}`
+    const data = await apiFetch<Partial<MonthSchedule>>(`/schedule/month?year=${year}&month=${month}`);
+    return { occurrences: data.occurrences ?? {}, calendar: data.calendar ?? {} };
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** The day in the Church calendar, and warnings for booking this type of event on it. */
+export async function getCalendarDay(
+  date: string,
+  type: string
+): Promise<{ day: LiturgicalDay; warnings: BookingWarning[] }> {
+  try {
+    return await apiFetch<{ day: LiturgicalDay; warnings: BookingWarning[] }>(
+      `/schedule/calendar-day?date=${encodeURIComponent(date)}&type=${encodeURIComponent(type)}`
     );
-    return data.occurrences ?? {};
   } catch (err) {
     fail(err);
   }
@@ -106,7 +130,10 @@ export async function checkConflict(
   }
 }
 
-export async function addScheduleBlock(input: Omit<ScheduleBlock, "id">): Promise<ScheduleBlock> {
+/** `calendarOk`: staff chose to book anyway on a day the Church calendar warns about. */
+type BlockInput = Omit<ScheduleBlock, "id"> & { calendarOk?: boolean };
+
+export async function addScheduleBlock(input: BlockInput): Promise<ScheduleBlock> {
   try {
     const data = await apiFetch<{ block: ScheduleBlock }>("/schedule/events", {
       method: "POST",
@@ -119,7 +146,7 @@ export async function addScheduleBlock(input: Omit<ScheduleBlock, "id">): Promis
 }
 
 /** Edits an event that was added by hand. */
-export async function updateScheduleBlock(id: string, input: Omit<ScheduleBlock, "id">): Promise<ScheduleBlock> {
+export async function updateScheduleBlock(id: string, input: BlockInput): Promise<ScheduleBlock> {
   try {
     const data = await apiFetch<{ block: ScheduleBlock }>(`/schedule/events/${encodeURIComponent(id)}`, {
       method: "PATCH",

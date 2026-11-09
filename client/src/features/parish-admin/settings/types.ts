@@ -11,6 +11,16 @@ export interface ParishProfile {
   email: string;
   /** URL of the uploaded seal/logo image, if one has been set. */
   sealUrl?: string;
+  /** The parish fiesta as "MM-DD", or "" (B5 + C5). */
+  fiestaDate: string;
+  /** Other yearly local dates, e.g. a chapel's feast. */
+  localFeasts: LocalFeast[];
+}
+
+export interface LocalFeast {
+  name: string;
+  /** "MM-DD" */
+  date: string;
 }
 
 export interface ServiceFee {
