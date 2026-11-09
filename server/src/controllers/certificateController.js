@@ -325,11 +325,6 @@ async function issueCertificateRow(client, request, actorId, parishId) {
      WHERE parish_id = $1 AND record_type = $2 AND record_id = $3`,
     [parishId, request.record_type, request.record_id]
   );
-  const count = await client.query(
-    `SELECT COUNT(*)::int AS n FROM certificate WHERE parish_id = $1 AND record_type = $2`,
-    [parishId, request.record_type]
-  );
-
   if (prior.rows.length > 0) {
     await client.query(
       `UPDATE certificate
@@ -343,7 +338,13 @@ async function issueCertificateRow(client, request, actorId, parishId) {
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '')
     .slice(0, 5) || 'CERT';
-  const code = `CF-${prefix}-${String(count.rows[0].n + 1).padStart(4, '0')}-01`;
+  // Counted per sacrament (not per prefix), so changing the prefix in Settings doesn't restart it.
+  const count = await client.query('SELECT count_year, count_value FROM next_count($1, $2)', [
+    parishId,
+    `CERT-${PREFIXES[request.record_type]}`,
+  ]);
+  const { count_year: year, count_value: n } = count.rows[0];
+  const code = `${prefix}-${year}-${String(n).padStart(6, '0')}`;
   const hash = crypto.randomBytes(16).toString('hex');
   const verifyUrl = `${frontendUrl()}/verify/${hash}`;
   const id = crypto.randomUUID();
@@ -687,7 +688,8 @@ async function listRecordCertificates(parishId, recordType, recordId) {
   try {
     const result = await pool.query(
       `SELECT c.id, c.certificate_code, c.status, c.issued_at, c.record_type, c.qr_code,
-              NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS issued_by_name
+              NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS issued_by_name,
+              (SELECT COUNT(*)::int FROM certificate_reprint rp WHERE rp.certificate_id = c.id) AS reprints
        FROM certificate c
        LEFT JOIN app_user u ON u.id = c.issued_by
        WHERE c.parish_id = $1 AND c.record_type = $2 AND c.record_id = $3
@@ -703,6 +705,7 @@ async function listRecordCertificates(parishId, recordType, recordId) {
       status: labels[row.status] || 'Valid',
       code: row.certificate_code,
       verifyUrl: row.qr_code || undefined,
+      reprints: row.reprints || 0,
     }));
   } catch (err) {
     if (err.code === '42703') return [];
@@ -751,6 +754,88 @@ async function revokeCertificate(req, res) {
       metadata: { reason },
     });
     return res.json({ id: certificate.id, state: 'invalid', reason });
+  } catch (err) {
+    await rollback(client);
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    return sendError(res, err);
+  } finally {
+    client.release();
+  }
+}
+
+const REPRINT_REASONS = new Set(['paper_jam', 'printer_error', 'print_quality', 'other']);
+
+async function loadOfficeCertificate(client, id, parishId, lock = false) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(id))) return null;
+  const result = await client.query(
+    `SELECT c.*, r.id AS request_id, r.requested_by
+     FROM certificate c
+     LEFT JOIN certificate_request r ON r.certificate_id = c.id
+     WHERE c.id = $1 AND c.parish_id = $2
+     ${lock ? 'FOR UPDATE OF c' : ''}`,
+    [id, parishId]
+  );
+  return result.rows[0] || null;
+}
+
+/** An issued copy as it was printed (from its snapshot), for the office to view or reprint. */
+async function getOfficeCertificate(req, res) {
+  try {
+    const row = await loadOfficeCertificate(pool, req.params.id, req.parishId);
+    if (!row) return res.status(404).json({ error: 'Certificate not found.' });
+    return res.json({ certificate: toIssuedCertificate(row) });
+  } catch (err) {
+    return sendError(res, err);
+  }
+}
+
+/**
+ * Logs a reprint of a valid copy (who, when, why) before it is printed again. A reprint keeps
+ * the copy's number and is not counted as a new copy.
+ */
+async function reprintCertificate(req, res) {
+  const reason = String((req.body && req.body.reason) || '');
+  const note = text(req.body && req.body.note, 500);
+  if (!REPRINT_REASONS.has(reason)) {
+    return res.status(400).json({ error: 'Choose why this copy is being reprinted.' });
+  }
+  if (reason === 'other' && !note) {
+    return res.status(400).json({ error: 'Say why this copy is being reprinted.' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const row = await loadOfficeCertificate(client, req.params.id, req.parishId, true);
+    if (!row) throw httpError(404, 'Certificate not found.');
+    if (row.status !== 'valid') {
+      throw httpError(400, 'Only a valid copy can be reprinted. Issue a new copy instead.');
+    }
+    const inserted = await client.query(
+      `INSERT INTO certificate_reprint (certificate_id, parish_id, reason, note, printed_by)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, printed_at`,
+      [row.id, req.parishId, reason, note || null, req.user.id]
+    );
+    const total = await client.query(
+      'SELECT COUNT(*)::int AS n FROM certificate_reprint WHERE certificate_id = $1',
+      [row.id]
+    );
+    await client.query('COMMIT');
+
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'certificate.reprinted',
+      entityType: 'certificate',
+      entityId: row.id,
+      metadata: { code: row.certificate_code, reason, note: note || null },
+    });
+    return res.status(201).json({
+      reprint: { id: inserted.rows[0].id, reason, note: note || null },
+      reprints: total.rows[0].n,
+      certificate: toIssuedCertificate(row),
+    });
   } catch (err) {
     await rollback(client);
     if (err.status) return res.status(err.status).json({ error: err.message });
@@ -839,5 +924,7 @@ module.exports = {
   revokeCertificate,
   listRecordCertificates,
   toIssuedCertificate,
+  getOfficeCertificate,
+  reprintCertificate,
   issueFromRecord,
 };

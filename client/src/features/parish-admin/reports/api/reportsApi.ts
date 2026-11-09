@@ -23,6 +23,9 @@ export interface CertificateMonthRow {
   death: number;
   online: number;
   walkin: number;
+  /** Copies issued that month; reprints are counted apart and aren't new copies. */
+  issued: number;
+  reprinted: number;
 }
 
 export interface DonationMonthRow {

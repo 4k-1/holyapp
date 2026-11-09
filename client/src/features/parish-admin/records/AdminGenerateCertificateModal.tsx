@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { AdminDialog, AdminDialogFooter, AdminDialogHeader } from "@/features/parish-admin/components/AdminDialog";
-import { AdminButton, PrintIcon } from "@/features/parish-admin/components/AdminForm";
+import { AdminButton, AdminInput, AdminSelect, PrintIcon } from "@/features/parish-admin/components/AdminForm";
 import {
   CertificateDocument,
   CertificatePreviewStage,
@@ -8,10 +8,16 @@ import {
 } from "@/features/parish-admin/components/CertificateDocument";
 import { CERT_PREVIEW_STAGE_BG, sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
 import { printElement, waitForQrCode } from "@/features/parish-admin/requests/printUtils";
+import {
+  getIssuedCertificate,
+  REPRINT_REASONS,
+  reprintCertificate,
+  type ReprintReason,
+} from "@/features/parish-admin/requests/api/requestsAdminApi";
 import { getCertificateAppearance } from "@/features/parish-admin/settings/api/certificateConfigApi";
 import { useAsync } from "@/hooks/useAsync";
 import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
-import type { Parish, SacramentType } from "@/types";
+import type { IssuedCertificate, Parish, SacramentType } from "@/types";
 
 interface AdminGenerateCertificateModalProps {
   parish: Parish;
@@ -41,17 +47,32 @@ export function AdminGenerateCertificateModal({
   const [error, setError] = useState("");
   const [issuedCert, setIssuedCert] = useState<IssuedRecordCertificate | undefined>(issued);
   const [justIssued, setJustIssued] = useState(false);
+  const [reprints, setReprints] = useState(issued?.reprints ?? 0);
+  const [askingReprint, setAskingReprint] = useState(false);
+  const [reason, setReason] = useState<ReprintReason | "">("");
+  const [reasonNote, setReasonNote] = useState("");
+  // The copy as it was issued: a reprint shows that, not the record as it is now.
+  const savedId = issuedCert?.id;
+  const { data: loadedCopy, loading: loadingSaved } = useAsync(
+    () => (savedId ? getIssuedCertificate(savedId) : Promise.resolve(null)),
+    [savedId]
+  );
+  // Fetched straight after issuing, so the first print already matches every later reprint.
+  const [freshCopy, setFreshCopy] = useState<IssuedCertificate | null>(null);
+  const saved = freshCopy && freshCopy.id === savedId ? freshCopy : loadedCopy;
 
   const title = sacramentCertTitles[sacramentType];
   const printable = issuedCert?.status === "Valid";
   // Anything that isn't a valid issued copy prints only as a watermarked specimen.
   const specimen = !printable;
   const busy = issuing || printing;
+  // Copies issued before snapshots were kept have no saved layout; those show the record as it is.
+  const base: CertificateFields = saved?.fields.printed ? { ...fields, ...saved.fields } : fields;
   const previewFields: CertificateFields = {
-    ...fields,
+    ...base,
     certCode: issuedCert?.code ?? fields.certCode,
     verifyUrl: printable ? (issuedCert?.verifyUrl ?? fields.verifyUrl) : undefined,
-    issuedOn: issuedCert?.date ?? fields.issuedOn,
+    issuedOn: saved?.fields.issuedOn ?? issuedCert?.date ?? fields.issuedOn,
     specimen,
   };
 
@@ -74,6 +95,8 @@ export function AdminGenerateCertificateModal({
     try {
       const next = await onIssue();
       newest = next.certificates.find((c) => c.status === "Valid") ?? next.certificates.at(-1);
+      const copyId = newest?.id;
+      if (copyId) setFreshCopy(await getIssuedCertificate(copyId).catch(() => null));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't issue this copy. Nothing was printed.");
     } finally {
@@ -86,6 +109,34 @@ export function AdminGenerateCertificateModal({
     if (newest.status === "Valid") await print(true);
   }
 
+  /** Logs who reprinted the copy and why, then prints the same copy again. */
+  async function handleReprint() {
+    if (!issuedCert?.id) return;
+    if (!reason) {
+      setError("Choose why this copy is being reprinted.");
+      return;
+    }
+    if (reason === "other" && !reasonNote.trim()) {
+      setError("Say why this copy is being reprinted.");
+      return;
+    }
+    setError("");
+    setPrinting(true);
+    try {
+      const result = await reprintCertificate(issuedCert.id, reason, reasonNote.trim() || undefined);
+      setReprints(result.reprints);
+      setAskingReprint(false);
+      setReason("");
+      setReasonNote("");
+      onIssued?.({ ...issuedCert, reprints: result.reprints });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't record the reprint. Nothing was printed.");
+      setPrinting(false);
+      return;
+    }
+    await print(true);
+  }
+
   const subtitle = issuedCert
     ? `${subjectName} · ${issuedCert.code}${printable ? "" : ` · ${issuedCert.status}`}`
     : `${subjectName} · Preview — not yet issued`;
@@ -94,9 +145,13 @@ export function AdminGenerateCertificateModal({
     ? "Issue & print records this copy and gives it its code and QR, then prints it. A preview prints marked SPECIMEN – NOT VALID."
     : !printable
       ? `This copy is ${issuedCert.status.toLowerCase()} and can't be printed. Issue a new copy from the record instead.`
-      : justIssued
-        ? `Issued as ${issuedCert.code}. If the printout failed, use Reprint: it prints this same copy and isn't counted again.`
-        : "Reprint prints this same copy with the same code. It isn't counted as a new copy.";
+      : askingReprint
+        ? "Why is this copy being reprinted? It keeps the same number and isn't counted as a new copy."
+        : justIssued && reprints === 0
+          ? `Issued as ${issuedCert.code}. If the printout failed, use Reprint: it prints this same copy and isn't counted again.`
+          : `Reprint prints this copy as it was issued, with the same number. It isn't counted as a new copy.${
+              reprints > 0 ? ` Reprinted ${reprints}×.` : ""
+            }`;
 
   return (
     <AdminDialog onClose={onClose} busy={busy} panelClassName="max-w-[720px]">
@@ -123,8 +178,12 @@ export function AdminGenerateCertificateModal({
         <p className={`w-full text-admin-support ${error ? "font-semibold text-red-700" : "text-admin-ink-muted"}`}>
           {error || note}
         </p>
-        <AdminButton variant="secondary" onClick={onClose} disabled={busy}>
-          Close
+        <AdminButton
+          variant="secondary"
+          onClick={askingReprint ? () => setAskingReprint(false) : onClose}
+          disabled={busy}
+        >
+          {askingReprint ? "Back" : "Close"}
         </AdminButton>
         {!issuedCert && (
           <>
@@ -138,11 +197,50 @@ export function AdminGenerateCertificateModal({
             </AdminButton>
           </>
         )}
-        {printable && (
-          <AdminButton onClick={() => print(true)} disabled={loading || busy}>
+        {printable && !askingReprint && (
+          <AdminButton
+            onClick={() => {
+              setError("");
+              setAskingReprint(true);
+            }}
+            disabled={loading || loadingSaved || busy}
+          >
             <PrintIcon />
-            {printing ? "Preparing…" : "Reprint"}
+            Reprint
           </AdminButton>
+        )}
+        {printable && askingReprint && (
+          <>
+            <AdminSelect
+              value={reason}
+              onChange={(e) => setReason(e.target.value as ReprintReason)}
+              className="w-auto min-w-[200px]"
+              aria-label="Reason for reprinting"
+              autoFocus
+            >
+              <option value="" disabled>
+                Reason for reprinting…
+              </option>
+              {REPRINT_REASONS.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </AdminSelect>
+            {reason === "other" && (
+              <AdminInput
+                value={reasonNote}
+                onChange={(e) => setReasonNote(e.target.value)}
+                placeholder="What happened?"
+                className="w-auto min-w-[200px]"
+                aria-label="What happened"
+              />
+            )}
+            <AdminButton onClick={handleReprint} disabled={busy}>
+              <PrintIcon />
+              {printing ? "Preparing…" : "Log & reprint"}
+            </AdminButton>
+          </>
         )}
       </AdminDialogFooter>
     </AdminDialog>

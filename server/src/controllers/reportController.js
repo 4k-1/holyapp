@@ -75,11 +75,30 @@ async function getCertificateReport(req, res) {
        GROUP BY 1, 2, 3, 4`,
       [req.parishId, from, to]
     );
+    // Copies issued (by the day they were issued) and reprints, counted apart: a reprint isn't a new copy.
+    const copies = await pool.query(
+      `SELECT to_char(issued_at, 'YYYY-MM') AS month, 'issued' AS kind, COUNT(*)::int AS n
+       FROM certificate
+       WHERE parish_id = $1
+         AND ($2::date IS NULL OR issued_at >= $2::date)
+         AND ($3::date IS NULL OR issued_at < $3::date + 1)
+       GROUP BY 1
+       UNION ALL
+       SELECT to_char(printed_at, 'YYYY-MM'), 'reprinted', COUNT(*)::int
+       FROM certificate_reprint
+       WHERE parish_id = $1
+         AND ($2::date IS NULL OR printed_at >= $2::date)
+         AND ($3::date IS NULL OR printed_at < $3::date + 1)
+       GROUP BY 1`,
+      [req.parishId, from, to]
+    );
     const byMonth = new Map(
-      monthSpan(result.rows.map((row) => row.month)).map((month) => [
+      monthSpan([...result.rows, ...copies.rows].map((row) => row.month)).map((month) => [
         month,
         {
           month,
+          issued: 0,
+          reprinted: 0,
           pending: 0,
           processing: 0,
           released: 0,
@@ -104,6 +123,10 @@ async function getCertificateReport(req, res) {
       bucket[stage] += row.n;
       if (row.record_type in bucket) bucket[row.record_type] += row.n;
       bucket[row.channel === 'walkin' ? 'walkin' : 'online'] += row.n;
+    }
+    for (const row of copies.rows) {
+      const bucket = byMonth.get(row.month);
+      if (bucket) bucket[row.kind] += row.n;
     }
     res.json({ rows: [...byMonth.values()] });
   } catch (err) {

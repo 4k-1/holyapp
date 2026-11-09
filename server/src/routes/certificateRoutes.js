@@ -7,6 +7,8 @@ const {
   listMyCertificates,
   downloadPdf,
   revokeCertificate,
+  getOfficeCertificate,
+  reprintCertificate,
 } = require('../controllers/certificateController');
 
 const router = express.Router();
@@ -27,6 +29,22 @@ router.post(
   requireParish,
   requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
   revokeCertificate
+);
+router.get(
+  '/:id',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  getOfficeCertificate
+);
+router.post(
+  '/:id/reprints',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  reprintCertificate
 );
 router.get(
   '/:id/pdf',

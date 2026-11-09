@@ -53,7 +53,7 @@ function validateAppearance(value: CertificateAppearance): FieldErrors {
   if (!value.signatoryName.trim()) errors.signatoryName = "Enter the name that will print under the signature line.";
   if (!value.signatoryTitle.trim()) errors.signatoryTitle = "Enter the office or title under that name.";
   if (!/^[A-Z0-9]{2,5}$/.test(value.numberingPrefix)) {
-    errors.numberingPrefix = "Use 2 to 5 letters or numbers. This becomes the middle of CF-XXX-…";
+    errors.numberingPrefix = "Use 2 to 5 letters or numbers. It starts each certificate number, e.g. BAP-2026-000143.";
   }
   return errors;
 }

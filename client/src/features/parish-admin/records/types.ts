@@ -36,6 +36,8 @@ export interface IssuedRecordCertificate {
   code: string;
   /** Where the copy's QR code points; sent by the server for each issued copy. */
   verifyUrl?: string;
+  /** How many times this copy has been reprinted. */
+  reprints?: number;
 }
 
 export type LegitimacyStatus = "Legitimate" | "Illegitimate";

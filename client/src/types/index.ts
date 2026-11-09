@@ -1,3 +1,4 @@
+import type { PrintedRecord } from "@/features/parish-admin/components/certificate/certificateData";
 export type Role = "super_admin" | "parish_admin" | "parish_staff" | "parishioner";
 
 /** Mirrors `user_status` in the identity schema. */
@@ -141,6 +142,10 @@ export interface IssuedCertificateFields {
   fatherName?: string;
   notations?: string[];
   verifyUrl?: string;
+  /** The full record as it was printed when the copy was issued. */
+  printed?: PrintedRecord;
+  /** ISO date the copy was issued. */
+  issuedOn?: string;
 }
 
 export interface IssuedCertificate {

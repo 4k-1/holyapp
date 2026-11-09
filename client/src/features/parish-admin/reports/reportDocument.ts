@@ -220,6 +220,8 @@ export async function buildReportDocument(
     const pending = sum(rows.map((row) => row.pending));
     const rejected = sum(rows.map((row) => row.rejected));
     const online = sum(rows.map((row) => row.online));
+    const issued = sum(rows.map((row) => row.issued));
+    const reprinted = sum(rows.map((row) => row.reprinted));
     const bySacrament = [
       { label: "Baptism", value: sum(rows.map((row) => row.baptism)) },
       { label: "Confirmation", value: sum(rows.map((row) => row.confirmation)) },
@@ -229,16 +231,17 @@ export async function buildReportDocument(
     const busiest = peak(rows, monthTotal);
     return {
       ...base,
-      empty: total === 0,
+      empty: total === 0 && issued === 0,
       summary:
-        total === 0
+        (total === 0
           ? `No certificate requests came in for ${period}.`
-          : `The office took in ${countPhrase(total, "certificate request")} for ${period} and released ${share(released, total)}% of them.`,
+          : `The office took in ${countPhrase(total, "certificate request")} for ${period} and released ${share(released, total)}% of them.`) +
+        ` ${countPhrase(issued, "copy", "copies")} issued, ${reprinted} reprinted.`,
       tiles: [
         { label: "Requests", value: total.toLocaleString(), change: change(rows.map(monthTotal), labels, open) },
         { label: "Released", value: released.toLocaleString(), change: change(rows.map((row) => row.released), labels, open) },
         { label: "In the office", value: (processing + pending).toLocaleString(), change: change(rows.map((row) => row.processing + row.pending), labels, open) },
-        { label: "Rejected", value: rejected.toLocaleString(), change: null },
+        { label: "Copies issued", value: issued.toLocaleString(), change: change(rows.map((row) => row.issued), labels, open) },
       ],
       highlights: total === 0 ? [] : [
         { label: "Still in the office", value: String(processing + pending), note: `${pending} pending, ${processing} processing` },
@@ -267,19 +270,23 @@ export async function buildReportDocument(
       },
       table: {
         title: "Requests by month",
-        headers: ["Month", "Pending", "Processing", "Released", "Rejected", "Total"],
-        rows: rows.map((row, index) => [labels[index], row.pending, row.processing, row.released, row.rejected, monthTotal(row)].map(String)),
-        totals: ["Total", String(pending), String(processing), String(released), String(rejected), String(total)],
+        headers: ["Month", "Pending", "Processing", "Released", "Rejected", "Total", "Copies issued", "Reprinted"],
+        rows: rows.map((row, index) =>
+          [labels[index], row.pending, row.processing, row.released, row.rejected, monthTotal(row), row.issued, row.reprinted].map(String)
+        ),
+        totals: [
+          "Total", String(pending), String(processing), String(released), String(rejected), String(total), String(issued), String(reprinted),
+        ],
         levels: levels(rows.map(monthTotal)),
       },
       csv: {
         headers: [
           "Month", "Pending", "Processing", "Released", "Rejected", "Total",
-          "Baptism", "Confirmation", "Marriage", "Death", "Online", "Walk-in",
+          "Baptism", "Confirmation", "Marriage", "Death", "Online", "Walk-in", "Copies issued", "Reprinted",
         ],
         rows: rows.map((row) => [
           row.month, row.pending, row.processing, row.released, row.rejected, monthTotal(row),
-          row.baptism, row.confirmation, row.marriage, row.death, row.online, row.walkin,
+          row.baptism, row.confirmation, row.marriage, row.death, row.online, row.walkin, row.issued, row.reprinted,
         ]),
       },
     };

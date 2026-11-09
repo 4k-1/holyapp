@@ -16,7 +16,6 @@ export function appendIssuedCertificate(
   sacramentType: SacramentType,
   by = "Admin Immaculada"
 ): IssuedRecordCertificate {
-  const seq = String(record.certificates.length + 1).padStart(2, "0");
   const issued: IssuedRecordCertificate = {
     type: sacramentCertTitles[sacramentType],
     date: new Date().toLocaleDateString("en-US", {
@@ -26,11 +25,7 @@ export function appendIssuedCertificate(
     }),
     by,
     status: "Valid",
-    code: formatCertificateCode(
-      peekNumberingPrefix(sacramentType),
-      `${record.bookNumber}${record.pageNumber}`,
-      seq
-    ),
+    code: formatCertificateCode(peekNumberingPrefix(sacramentType), new Date().getFullYear(), record.certificates.length + 1),
   };
 
   record.certificates.forEach((c) => {
