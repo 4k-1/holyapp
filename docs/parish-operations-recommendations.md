@@ -444,6 +444,17 @@ Several titles per person, honorifics and dated assignments are already covered 
   schedule, Mass intentions, settings. Start from presets (Secretary, Cashier, Records encoder,
   Read-only) that the admin can adjust.
 
+#### Parked for later: the design agreed so far
+
+- Areas: Registers, Certificates, Donations & money, Mass intentions, Schedule, Marriage
+  applications. Settings, staff accounts, voids and clearing cheques stay admin-only.
+- Levels per area: Off, View, Manage. Admins always have every area.
+- Presets: Secretary, Cashier, Records encoder, Read-only, adjustable per area.
+- The sidebar and buttons follow access, and the server checks every route.
+- Existing staff start with Manage on every area, so nobody is locked out.
+- 8.2 (diocese and vicariate roles) waits until a diocese runs several parishes; build E1 so it
+  can sit on top later.
+
 ### E2. Handover when someone leaves (priority: high)
 
 - **Today:** deactivating a person only changes their status. Their future schedule assignments and
@@ -505,7 +516,8 @@ change other accounts. So the last admin can't be removed. No work needed.
 | D4 | Done: cheque number and bank, or transfer reference; cheques and transfers wait to clear and count only once an admin marks them cleared; bounced needs a reason and never counts (migration 032) |
 | D5–D11 | Proposed |
 | Donation campaign goals | Set aside for now |
-| E1, E2 | Proposed |
+| E1 | Parked (2026-11-09): design noted under E1; not started |
+| E2 | Proposed |
 | E3 | Already done |
 | E4–E6 | Proposed |
 | E7 | Done: untitled staff sign-ins show "Staff"; the edit form asks for a real title |

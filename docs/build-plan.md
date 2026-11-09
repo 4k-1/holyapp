@@ -70,7 +70,7 @@ What the parish is struggling with now.
 
 | Item | Work | Needs |
 | --- | --- | --- |
-| E1 + 8.2 | Per-area access per person, on a `role_assignment` table (parish scope only for now) | — |
+| E1 + 8.2 | **Parked** (see E1). Per-area access per person, on a `role_assignment` table (parish scope only for now) | — |
 | 4 | Several titles per staff member; records who the parish priest is | — |
 | E6 | Parish priest approves without being the admin | 4, E1 |
 | E4 | Staff-added register entries wait for approval; no certificate until approved | E6 |
