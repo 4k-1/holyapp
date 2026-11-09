@@ -3,8 +3,14 @@ import { useEffect, useState } from "react";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { addScheduleBlock, checkConflict, listAssignableStaff, updateScheduleBlock } from "../api/scheduleApi";
 import { convert24to12, to24Hour } from "../scheduleHelpers";
-import { COMMON_LOCATIONS, EVENT_TYPE_LABELS } from "../types";
-import type { AssignableStaff, ScheduleBlock, ScheduleConflict, ScheduleEventType } from "../types";
+import { assigneeValueOf, COMMON_LOCATIONS, EVENT_TYPE_LABELS } from "../types";
+import type {
+  AssignableStaff,
+  AssigneeValue,
+  ScheduleBlock,
+  ScheduleConflict,
+  ScheduleEventType,
+} from "../types";
 import { ConflictNotice } from "./ConflictNotice";
 import { StaffSelect } from "./StaffSelect";
 import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
@@ -35,7 +41,7 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
     event?.location && !startsOutside ? event.location : COMMON_LOCATIONS[0]
   );
   const [address, setAddress] = useState(startsOutside ? event?.location ?? "" : "");
-  const [assignee, setAssignee] = useState(event?.assignee ?? "");
+  const [assignee, setAssignee] = useState<AssigneeValue>(assigneeValueOf(event));
   const [conflict, setConflict] = useState<ScheduleConflict | undefined>();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -51,7 +57,8 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
     if (!date || !start || !end || start >= end) return;
     const t = setTimeout(async () => {
       const result = await checkConflict(date, convert24to12(start), convert24to12(end), {
-        assignee: assignee || undefined,
+        assigneeId: assignee.assigneeId,
+        assignee: assignee.assignee.trim() || undefined,
         location: location || undefined,
         excludeId: event?.id,
       });
@@ -74,7 +81,8 @@ export function ScheduleEventModal({ event, defaultDate, onClose, onSaved }: Sch
       end: convert24to12(end),
       type,
       source: "manual",
-      assignee,
+      assigneeId: assignee.assigneeId,
+      assignee: assignee.assigneeId ? "" : assignee.assignee.trim(),
       location,
     };
     try {

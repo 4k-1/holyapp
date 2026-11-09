@@ -4,6 +4,7 @@ import { AdminBadge } from "@/components/ui/AdminBadge";
 import { markRecordStatus } from "../api/scheduleApi";
 import { getRecordFormPath, getRecordFormPrefill } from "../recordLinkHelpers";
 import { ScheduleKebabMenu } from "./ScheduleKebabMenu";
+import { AssigneeName } from "./StaffSelect";
 import { EVENT_TYPE_STYLES } from "@/features/parish-admin/schedule/eventTypeStyles";
 import { EVENT_TYPE_LABELS } from "../types";
 import type { ScheduleOccurrence } from "../types";
@@ -147,7 +148,7 @@ export function DayAgendaSidebar({
                         className="text-admin-support font-semibold text-admin-green-700 hover:underline"
                         title={`View all events for ${o.assignee}`}
                       >
-                        {o.assignee}
+                        <AssigneeName name={o.assignee} guest={o.guest} />
                       </button>
                     ) : (
                       <span className="text-admin-support font-medium text-admin-amber-700">Unassigned</span>

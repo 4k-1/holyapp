@@ -57,6 +57,8 @@ export interface MarriageWeddingEvent {
   end: string;
   title: string;
   assignee: string;
+  assigneeId?: string | null;
+  guest?: boolean;
 }
 
 export interface MarriageApplication {

@@ -52,6 +52,21 @@ function httpError(status, message) {
   return err;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The name as shown ("Fr. Juan Santos, SVD"), always from the Staff record. */
+const PERSON_NAME = `concat_ws(' ', p.honorific, p.full_name) || COALESCE(', ' || p.post_nominals, '')`;
+
+/**
+ * Who is assigned (C2): a person on the staff list by id, with their current name, or a guest by the name typed
+ * in (a visiting priest). The text column is kept only for guests.
+ */
+function assigneeOf(personId, personName, guestName) {
+  if (personId) return { assigneeId: personId, assignee: personName || '', guest: false };
+  const name = String(guestName || '').trim();
+  return { assigneeId: null, assignee: name, guest: name !== '' };
+}
+
 function toRecurring(row) {
   return {
     id: row.id,
@@ -59,7 +74,7 @@ function toRecurring(row) {
     type: row.event_type,
     days: row.days || [],
     slots: Array.isArray(row.slots) ? row.slots : [],
-    assignee: row.assignee || '',
+    ...assigneeOf(row.assigned_to, row.assigned_personnel_name, row.assignee),
     showOnOverview: row.show_on_overview !== false,
   };
 }
@@ -73,7 +88,7 @@ function toBlock(row) {
     title: row.title,
     type: row.event_type,
     source: row.source || 'manual',
-    assignee: row.assignee_name || row.assigned_personnel_name || '',
+    ...assigneeOf(row.assigned_to, row.assigned_personnel_name, row.assignee_name),
     location: row.location || '',
     recordStatus: row.record_status || undefined,
     showOnOverview: row.show_on_overview !== false,
@@ -88,6 +103,8 @@ function getOccurrencesForDate(dateStr, recurring, blocks, overrides) {
     if (!rc.days.includes(day)) continue;
     for (const slot of rc.slots) {
       const occId = `${rc.id}-${dateStr}-${slot.start}`;
+      // A change for this one Mass wins over the regular assignment.
+      const who = overrides[occId] || rc;
       occurrences.push({
         id: occId,
         date: dateStr,
@@ -96,7 +113,9 @@ function getOccurrencesForDate(dateStr, recurring, blocks, overrides) {
         title: rc.label,
         type: rc.type,
         source: 'recurring',
-        assignee: overrides[occId] || rc.assignee || '',
+        assigneeId: who.assigneeId || null,
+        assignee: who.assignee || '',
+        guest: Boolean(who.guest),
         location: DEFAULT_LOCATION,
         showOnOverview: rc.showOnOverview !== false,
         isRecurringOccurrence: true,
@@ -123,28 +142,46 @@ const EVENT_SELECT = `
          to_char(e.start_datetime, 'YYYY-MM-DD') AS event_date,
          to_char(e.start_datetime, 'HH24:MI') AS start_24,
          to_char(COALESCE(e.end_datetime, e.start_datetime + interval '1 hour'), 'HH24:MI') AS end_24,
-         concat_ws(' ', p.honorific, p.full_name) || COALESCE(', ' || p.post_nominals, '') AS assigned_personnel_name
+         ${PERSON_NAME} AS assigned_personnel_name
   FROM event e
   LEFT JOIN parish_personnel p ON p.id = e.assigned_to
 `;
 
+const RECURRING_SELECT = `
+  SELECT c.*, ${PERSON_NAME} AS assigned_personnel_name
+  FROM parish_recurring_commitment c
+  LEFT JOIN parish_personnel p ON p.id = c.assigned_to
+`;
+
 async function loadRecurring(parishId) {
   const result = await pool.query(
-    `SELECT * FROM parish_recurring_commitment
-     WHERE parish_id = $1
-     ORDER BY created_at`,
+    `${RECURRING_SELECT}
+     WHERE c.parish_id = $1
+     ORDER BY c.created_at`,
     [parishId]
   );
   return result.rows.map(toRecurring);
 }
 
+async function loadCommitment(parishId, id) {
+  const result = await pool.query(`${RECURRING_SELECT} WHERE c.parish_id = $1 AND c.id = $2`, [parishId, id]);
+  return result.rows[0] ? toRecurring(result.rows[0]) : null;
+}
+
+/** Changes for single Masses, by occurrence id. A cleared change falls back to the regular assignment. */
 async function loadOverrides(parishId) {
   const result = await pool.query(
-    `SELECT occurrence_id, assignee FROM parish_schedule_override WHERE parish_id = $1`,
+    `SELECT o.occurrence_id, o.assigned_to, o.assignee, ${PERSON_NAME} AS assigned_personnel_name
+     FROM parish_schedule_override o
+     LEFT JOIN parish_personnel p ON p.id = o.assigned_to
+     WHERE o.parish_id = $1`,
     [parishId]
   );
   const map = {};
-  for (const row of result.rows) map[row.occurrence_id] = row.assignee || '';
+  for (const row of result.rows) {
+    const who = assigneeOf(row.assigned_to, row.assigned_personnel_name, row.assignee);
+    if (who.assigneeId || who.guest) map[row.occurrence_id] = who;
+  }
   return map;
 }
 
@@ -174,19 +211,28 @@ async function ensureDefaultMassSchedule(parishId, userId) {
   }
 }
 
-async function resolvePersonnelId(parishId, name) {
-  const text = String(name || '').trim();
-  if (!text) return null;
+/**
+ * Reads who to assign from a request body: `assigneeId` (someone on the staff list) or `assignee` (a guest's
+ * name). Returns { assigneeId, assignee } with `assignee` set only for a guest; nobody is { null, '' }.
+ */
+function assigneeInput(body = {}) {
+  const id = String(body.assigneeId || '').trim();
+  if (id) {
+    if (!UUID.test(id)) throw httpError(400, 'Choose someone from the staff list.');
+    return { assigneeId: id, assignee: '' };
+  }
+  return { assigneeId: null, assignee: String(body.assignee || '').trim().slice(0, 255) };
+}
+
+/** The person must be on this parish's staff list. Returns their name as shown, or the guest's name. */
+async function checkAssignee(parishId, { assigneeId, assignee }) {
+  if (!assigneeId) return assignee || '';
   const result = await pool.query(
-    // The picker sends the name as shown ("Fr. Juan Santos"); a bare name still matches too.
-    `SELECT p.id FROM parish_personnel p
-     WHERE p.parish_id = $1
-       AND (lower(p.full_name) = lower($2) OR lower(concat_ws(' ', p.honorific, p.full_name) || COALESCE(', ' || p.post_nominals, '')) = lower($2))
-     ORDER BY lower(concat_ws(' ', p.honorific, p.full_name) || COALESCE(', ' || p.post_nominals, '')) = lower($2) DESC
-     LIMIT 1`,
-    [parishId, text]
+    `SELECT ${PERSON_NAME} AS name FROM parish_personnel p WHERE p.id = $1 AND p.parish_id = $2`,
+    [assigneeId, parishId]
   );
-  return result.rows[0]?.id || null;
+  if (!result.rows[0]) throw httpError(400, 'Choose someone from the staff list.');
+  return result.rows[0].name;
 }
 
 /** Clergy first so priests are easy to find when assigning; everyone carries their role for identification. */
@@ -210,9 +256,9 @@ async function listAssignableStaff(parishId) {
 }
 
 /** Throws 409 when the new time clashes with an event in the same place or with the same priest. */
-async function assertNoConflict(parishId, { date, start, end, assignee, location, excludeId }) {
+async function assertNoConflict(parishId, { date, start, end, assigneeId, assignee, location, excludeId }) {
   const occurrences = await occurrencesForDate(parishId, date);
-  const conflict = findConflict(occurrences, start, end, { excludeId, assignee, location });
+  const conflict = findConflict(occurrences, start, end, { excludeId, assigneeId, assignee, location });
   if (conflict) throw httpError(409, conflictMessage(conflict));
 }
 
@@ -275,7 +321,7 @@ function scheduleLabelForDate(dateStr, schedule) {
 }
 
 async function createEvent(parishId, userId, input) {
-  const assignedTo = await resolvePersonnelId(parishId, input.assignee);
+  await checkAssignee(parishId, input);
   const inserted = await pool.query(
     `INSERT INTO event (
        parish_id, event_type, title, description, start_datetime, end_datetime,
@@ -293,8 +339,8 @@ async function createEvent(parishId, userId, input) {
       toTimestamp(input.date, input.end),
       input.location || null,
       userId,
-      assignedTo,
-      input.assignee || '',
+      input.assigneeId || null,
+      input.assigneeId ? null : input.assignee || null,
       input.source || 'manual',
       input.recordStatus || null,
       input.showOnOverview !== false,
@@ -311,7 +357,7 @@ function occurrenceDate(occurrenceId) {
 }
 
 async function updateEvent(parishId, eventId, input) {
-  const assignedTo = await resolvePersonnelId(parishId, input.assignee);
+  await checkAssignee(parishId, input);
   await pool.query(
     `UPDATE event
      SET title = $1, event_type = $2, start_datetime = $3, end_datetime = $4, location = $5,
@@ -323,8 +369,8 @@ async function updateEvent(parishId, eventId, input) {
       toTimestamp(input.date, input.start),
       toTimestamp(input.date, input.end),
       input.location || null,
-      assignedTo,
-      input.assignee || '',
+      input.assigneeId || null,
+      input.assigneeId ? null : input.assignee || null,
       input.showOnOverview !== false,
       eventId,
       parishId,
@@ -332,10 +378,11 @@ async function updateEvent(parishId, eventId, input) {
   );
 }
 
-async function assignOccurrence(parishId, occurrenceId, assignee) {
-  const uuid =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(occurrenceId);
-  if (assignee) {
+/** `who` is { assigneeId, assignee } from assigneeInput. Returns the name as shown. */
+async function assignOccurrence(parishId, occurrenceId, who) {
+  const uuid = UUID.test(occurrenceId);
+  const name = await checkAssignee(parishId, who);
+  if (who.assigneeId || who.assignee) {
     let date = occurrenceDate(occurrenceId);
     if (uuid) {
       const found = await pool.query(
@@ -351,31 +398,32 @@ async function assignOccurrence(parishId, occurrenceId, assignee) {
           date,
           start: occurrence.start,
           end: occurrence.end,
-          assignee,
+          assigneeId: who.assigneeId,
+          assignee: who.assignee,
           excludeId: occurrenceId,
         });
       }
     }
   }
-  const assignedTo = await resolvePersonnelId(parishId, assignee);
   if (uuid) {
     const updated = await pool.query(
       `UPDATE event
        SET assigned_to = $1, assignee_name = $2, updated_at = NOW()
        WHERE id = $3 AND parish_id = $4
        RETURNING id`,
-      [assignedTo, assignee || '', occurrenceId, parishId]
+      [who.assigneeId || null, who.assigneeId ? null : who.assignee || null, occurrenceId, parishId]
     );
     if (!updated.rowCount) throw httpError(404, 'Event not found.');
-    return;
+    return name;
   }
   await pool.query(
-    `INSERT INTO parish_schedule_override (parish_id, occurrence_id, assignee)
-     VALUES ($1, $2, $3)
+    `INSERT INTO parish_schedule_override (parish_id, occurrence_id, assigned_to, assignee)
+     VALUES ($1, $2, $3, $4)
      ON CONFLICT (parish_id, occurrence_id)
-     DO UPDATE SET assignee = EXCLUDED.assignee`,
-    [parishId, occurrenceId, assignee || '']
+     DO UPDATE SET assigned_to = EXCLUDED.assigned_to, assignee = EXCLUDED.assignee`,
+    [parishId, occurrenceId, who.assigneeId || null, who.assigneeId ? '' : who.assignee || '']
   );
+  return name;
 }
 
 module.exports = {
@@ -384,10 +432,13 @@ module.exports = {
   toBlock,
   getOccurrencesForDate,
   loadRecurring,
+  loadCommitment,
   loadOverrides,
   loadBlocks,
   ensureDefaultMassSchedule,
-  resolvePersonnelId,
+  assigneeInput,
+  checkAssignee,
+  occurrenceDate,
   listAssignableStaff,
   assertNoConflict,
   DEFAULT_LOCATION,

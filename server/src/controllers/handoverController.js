@@ -1,5 +1,6 @@
-// E2: handover when someone leaves. Lists what a person still holds (upcoming events, the Parish
-// Priest title, the certificate signatory) and, in one step, passes each on and sets them inactive.
+// E2: handover when someone leaves. Lists what a person still holds (upcoming events, regular Masses,
+// the Parish Priest title, the certificate signatory) and, in one step, passes each on and sets them
+// inactive.
 // A sign-in is suspended at the same time and its saved sign-ins are cancelled.
 
 const pool = require('../config/db');
@@ -7,6 +8,9 @@ const { writeAudit } = require('../utils/audit');
 const { sendRecordError } = require('../utils/recordFields');
 const { PARISH_PRIEST, rankForHonorific } = require('../constants/personnelRoles');
 const { displayNameOf, titlesOf, toPerson, holdsParishPriest, httpError } = require('../utils/personnel');
+const { occurrenceDate } = require('../services/scheduleService');
+const { to24Hour } = require('../utils/scheduleTime');
+const { manilaToday } = require('../constants/purposes');
 
 const MAX_TITLES = 6;
 
@@ -30,6 +34,50 @@ async function upcomingEvents(db, parishId, personId) {
   return result.rows;
 }
 
+/**
+ * Changes for a single upcoming Mass that name the person (C2), shaped like events so they are handed over the
+ * same way. Their id is the occurrence id ("<commitment id>-2026-11-15-6:00 AM").
+ */
+async function upcomingMassChanges(db, parishId, personId) {
+  const result = await db.query(
+    `SELECT o.occurrence_id, c.label
+     FROM parish_schedule_override o
+     JOIN parish_recurring_commitment c ON c.parish_id = o.parish_id AND o.occurrence_id LIKE c.id::text || '-%'
+     WHERE o.parish_id = $1 AND o.assigned_to = $2`,
+    [parishId, personId]
+  );
+  const today = manilaToday();
+  return result.rows
+    .filter((row) => occurrenceDate(row.occurrence_id))
+    .map((row) => {
+      const date = occurrenceDate(row.occurrence_id);
+      const time = row.occurrence_id.slice(row.occurrence_id.lastIndexOf(date) + date.length + 1);
+      return { id: row.occurrence_id, title: row.label, event_type: 'mass', event_date: date, start_24: to24Hour(time) };
+    })
+    .filter((row) => row.event_date && row.event_date >= today)
+    .sort((a, b) => (a.event_date + a.start_24).localeCompare(b.event_date + b.start_24));
+}
+
+/** Regular Masses and other standing commitments the person is assigned to. */
+async function regularCommitments(db, parishId, personId) {
+  const result = await db.query(
+    `SELECT id, label, event_type, days, slots FROM parish_recurring_commitment
+     WHERE parish_id = $1 AND assigned_to = $2
+     ORDER BY created_at`,
+    [parishId, personId]
+  );
+  return result.rows;
+}
+
+/** Events first, then single-Mass changes, soonest first. */
+async function upcomingItems(db, parishId, personId) {
+  const [events, changes] = await Promise.all([
+    upcomingEvents(db, parishId, personId),
+    upcomingMassChanges(db, parishId, personId),
+  ]);
+  return [...events, ...changes].sort((a, b) => (a.event_date + a.start_24).localeCompare(b.event_date + b.start_24));
+}
+
 /** Certificate settings signed with this person's name ("Fr. Juan Santos" matches Juan Santos). */
 async function signedSettings(db, parishId, person) {
   const result = await db.query(
@@ -48,8 +96,9 @@ async function getHandover(req, res) {
     const person = await loadPerson(pool, req.parishId, req.params.id);
     if (!person) return res.status(404).json({ error: 'Person not found.' });
 
-    const [events, signed, others] = await Promise.all([
-      upcomingEvents(pool, req.parishId, person.id),
+    const [events, regular, signed, others] = await Promise.all([
+      upcomingItems(pool, req.parishId, person.id),
+      regularCommitments(pool, req.parishId, person.id),
       signedSettings(pool, req.parishId, person),
       pool.query(
         `SELECT * FROM parish_personnel WHERE parish_id = $1 AND status = 'active' AND id <> $2 ORDER BY full_name`,
@@ -66,6 +115,13 @@ async function getHandover(req, res) {
         eventType: e.event_type,
         date: e.event_date,
         time: e.start_24,
+      })),
+      regular: regular.map((r) => ({
+        id: r.id,
+        label: r.label,
+        type: r.event_type,
+        days: r.days || [],
+        times: (Array.isArray(r.slots) ? r.slots : []).map((s) => s.start),
       })),
       parishPriest: holdsParishPriest(titlesOf(person)),
       signatory: signed.length ? { name: signed[0].signatory_name, types: signed.map((s) => s.certificate_type) } : null,
@@ -107,8 +163,9 @@ async function giveParishPriest(db, parishId, toId, leavingId) {
 
 /**
  * POST /personnel/:id/leave
- * Body: { events: [{ id, to }], parishPriestTo, signAs }. `to` is a person id or null (left
- * unassigned); an upcoming event missing from the list is left unassigned too. `signAs` puts the
+ * Body: { events: [{ id, to }], regular: [{ id, to }], parishPriestTo, signAs }. `to` is a person id
+ * or null (left unassigned); an upcoming event or regular Mass missing from its list is left
+ * unassigned too. A single-Mass change left unassigned goes back to that Mass's regular assignment. `signAs` puts the
  * new Parish Priest's name on certificate settings signed with the leaving person's name.
  * All of it, or none of it.
  */
@@ -125,29 +182,55 @@ async function leave(req, res) {
     // Lock the person so two handovers can't run at once.
     await client.query('SELECT id FROM parish_personnel WHERE id = $1 FOR UPDATE', [person.id]);
 
-    // 1. Upcoming events.
-    const events = await upcomingEvents(client, req.parishId, person.id);
+    // 1. Upcoming events and changes for single Masses.
+    const events = await upcomingItems(client, req.parishId, person.id);
     const chosen = new Map(
       (Array.isArray(req.body?.events) ? req.body.events : []).map((e) => [String(e?.id), e?.to ? String(e.to) : null])
     );
     const targets = new Map();
+    async function targetFor(to, title) {
+      if (!to) return null;
+      if (!targets.has(to)) {
+        const target = await loadPerson(client, req.parishId, to);
+        if (!target || target.status !== 'active' || target.id === person.id) {
+          throw httpError(400, `Choose an active person for "${title}".`);
+        }
+        targets.set(to, target);
+      }
+      return targets.get(to);
+    }
     const moved = [];
     for (const event of events) {
       const to = chosen.get(event.id) || null;
-      if (to) {
-        if (!targets.has(to)) {
-          const target = await loadPerson(client, req.parishId, to);
-          if (!target || target.status !== 'active' || target.id === person.id) {
-            throw httpError(400, `Choose an active person for "${event.title}".`);
-          }
-          targets.set(to, target);
-        }
+      const target = await targetFor(to, event.title);
+      if (event.event_type === 'mass' && !/^[0-9a-f-]{36}$/i.test(event.id)) {
+        await client.query(
+          `UPDATE parish_schedule_override SET assigned_to = $1, assignee = '' WHERE parish_id = $2 AND occurrence_id = $3`,
+          [to, req.parishId, event.id]
+        );
+      } else {
+        await client.query(
+          'UPDATE event SET assigned_to = $1, assignee_name = NULL, updated_at = NOW() WHERE id = $2',
+          [to, event.id]
+        );
       }
+      moved.push({ eventId: event.id, title: event.title, to: target ? displayNameOf(target) : null });
+    }
+
+    // 1b. Regular Masses.
+    const regular = await regularCommitments(client, req.parishId, person.id);
+    const chosenRegular = new Map(
+      (Array.isArray(req.body?.regular) ? req.body.regular : []).map((r) => [String(r?.id), r?.to ? String(r.to) : null])
+    );
+    const movedRegular = [];
+    for (const commitment of regular) {
+      const to = chosenRegular.get(commitment.id) || null;
+      const target = await targetFor(to, commitment.label);
       await client.query(
-        'UPDATE event SET assigned_to = $1, assignee_name = NULL, updated_at = NOW() WHERE id = $2',
-        [to, event.id]
+        `UPDATE parish_recurring_commitment SET assigned_to = $1, assignee = '', updated_at = NOW() WHERE id = $2`,
+        [to, commitment.id]
       );
-      moved.push({ eventId: event.id, title: event.title, to: to ? displayNameOf(targets.get(to)) : null });
+      movedRegular.push({ id: commitment.id, label: commitment.label, to: target ? displayNameOf(target) : null });
     }
 
     // 2. The Parish Priest title. The leaving person keeps it on record; only active people count.
@@ -197,6 +280,7 @@ async function leave(req, res) {
       metadata: {
         name: displayNameOf(person),
         events: moved,
+        regular: movedRegular,
         parishPriestTo: newPriest ? displayNameOf(newPriest) : null,
         signatoryChanged: signedTypes,
         signInSuspended: Boolean(person.user_id),
@@ -206,8 +290,8 @@ async function leave(req, res) {
     const saved = await loadPerson(pool, req.parishId, person.id);
     res.json({
       person: toPerson(saved),
-      moved: moved.filter((m) => m.to).length,
-      unassigned: moved.filter((m) => !m.to).length,
+      moved: [...moved, ...movedRegular].filter((m) => m.to).length,
+      unassigned: [...moved, ...movedRegular].filter((m) => !m.to).length,
     });
   } catch (err) {
     try {

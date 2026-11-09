@@ -21,7 +21,12 @@ export interface RecurringCommitment {
   days: DayAbbrev[];
   /** One or more start–end windows on each active day */
   slots: { start: string; end: string }[];
+  /** The person's current name, or a guest's typed name. */
   assignee: string;
+  /** Their staff record (C2); null for a guest or nobody. */
+  assigneeId?: string | null;
+  /** A typed name for someone not on the staff list. */
+  guest?: boolean;
   /** Hide from the month-view dots / week overview (still shows in day agenda) */
   showOnOverview?: boolean;
 }
@@ -36,7 +41,12 @@ export interface ScheduleBlock {
   type: ScheduleEventType;
   /** "manual" | "recurring" | or the originating module, e.g. "Sacrament", "Marriage Process" */
   source: string;
+  /** The person's current name, or a guest's typed name. */
   assignee: string;
+  /** Their staff record (C2); null for a guest or nobody. */
+  assigneeId?: string | null;
+  /** A typed name for someone not on the staff list. */
+  guest?: boolean;
   /** Where it happens; regular Masses are in the main church. Blank on older entries. */
   location?: string;
   recordStatus?: "Pending" | "Recorded";
@@ -49,6 +59,25 @@ export interface AssignableStaff {
   name: string;
   role: string;
   clergy: boolean;
+}
+
+/** Who is chosen in a staff picker: a staff record id, or (with no id) a guest's typed name. */
+export interface AssigneeValue {
+  assigneeId: string | null;
+  assignee: string;
+}
+
+export const NOBODY: AssigneeValue = { assigneeId: null, assignee: "" };
+
+export function assigneeValueOf(item?: { assigneeId?: string | null; assignee?: string } | null): AssigneeValue {
+  if (!item) return NOBODY;
+  return { assigneeId: item.assigneeId ?? null, assignee: item.assignee ?? "" };
+}
+
+/** Same choice? Staff by id, guests by name. */
+export function sameAssignee(a: AssigneeValue, b: AssigneeValue) {
+  if (a.assigneeId || b.assigneeId) return a.assigneeId === b.assigneeId;
+  return a.assignee.trim().toLowerCase() === b.assignee.trim().toLowerCase();
 }
 
 /** A clash found when scheduling: same priest or same place at an overlapping time. */

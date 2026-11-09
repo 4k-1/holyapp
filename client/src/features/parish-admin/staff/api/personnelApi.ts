@@ -89,7 +89,10 @@ export async function removePerson(id: string): Promise<void> {
 export interface Handover {
   person: ParishPerson;
   isSelf: boolean;
+  /** Upcoming events, and changes to a single Mass that name them. */
   events: { id: string; title: string; eventType: string; date: string; time: string }[];
+  /** Regular Masses and other weekly commitments they are assigned to (C2). */
+  regular: { id: string; label: string; type: string; days: string[]; times: string[] }[];
   parishPriest: boolean;
   signatory: { name: string; types: string[] } | null;
   candidates: { id: string; name: string; role: string; clergy: boolean; priest: boolean }[];
@@ -98,6 +101,8 @@ export interface Handover {
 export interface LeaveInput {
   /** `to` null leaves the event unassigned. */
   events: { id: string; to: string | null }[];
+  /** `to` null leaves the regular Mass with no usual priest. */
+  regular: { id: string; to: string | null }[];
   parishPriestTo: string | null;
   signAs: boolean;
 }

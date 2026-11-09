@@ -1,5 +1,5 @@
 import { apiFetch, ApiError } from "@/lib/api";
-import type { AssignableStaff, RecurringCommitment, ScheduleBlock, ScheduleConflict, ScheduleOccurrence } from "../types";
+import type { AssignableStaff, AssigneeValue, RecurringCommitment, ScheduleBlock, ScheduleConflict, ScheduleOccurrence } from "../types";
 
 function fail(err: unknown): never {
   if (err instanceof ApiError) throw new Error(err.message);
@@ -51,12 +51,20 @@ export async function checkConflict(
   date: string,
   start: string,
   end: string,
-  opts: { excludeId?: string; assignee?: string; location?: string } = {}
+  opts: { excludeId?: string; assigneeId?: string | null; assignee?: string; location?: string } = {}
 ): Promise<ScheduleConflict | undefined> {
   try {
     const data = await apiFetch<{ conflict: ScheduleOccurrence | null; message: string | null }>("/schedule/conflicts", {
       method: "POST",
-      body: { date, start, end, excludeId: opts.excludeId, assignee: opts.assignee, location: opts.location },
+      body: {
+        date,
+        start,
+        end,
+        excludeId: opts.excludeId,
+        assigneeId: opts.assigneeId || undefined,
+        assignee: opts.assignee,
+        location: opts.location,
+      },
     });
     return data.conflict ? { occurrence: data.conflict, message: data.message ?? "" } : undefined;
   } catch (err) {
@@ -89,11 +97,12 @@ export async function updateScheduleBlock(id: string, input: Omit<ScheduleBlock,
   }
 }
 
-export async function reassignOccurrence(occurrenceId: string, assignee: string): Promise<void> {
+/** `who`: a staff record id, or a guest's name. */
+export async function reassignOccurrence(occurrenceId: string, who: AssigneeValue): Promise<void> {
   try {
     await apiFetch("/schedule/assign", {
       method: "POST",
-      body: { occurrenceId, assignee },
+      body: { occurrenceId, assigneeId: who.assigneeId || undefined, assignee: who.assignee },
     });
   } catch (err) {
     fail(err);

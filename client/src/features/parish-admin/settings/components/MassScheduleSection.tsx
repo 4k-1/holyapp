@@ -1,14 +1,22 @@
 // src/features/parish-admin/settings/components/MassScheduleSection.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import {
   addRecurringCommitment,
+  listAssignableStaff,
   listRecurringCommitments,
   removeRecurringCommitment,
   updateRecurringCommitment,
 } from "@/features/parish-admin/schedule/api/scheduleApi";
 import { convert24to12, parseTimeToMinutes, to24Hour } from "@/features/parish-admin/schedule/scheduleHelpers";
-import type { DayAbbrev, RecurringCommitment } from "@/features/parish-admin/schedule/types";
+import { AssigneeName, StaffSelect } from "@/features/parish-admin/schedule/components/StaffSelect";
+import {
+  assigneeValueOf,
+  type AssignableStaff,
+  type AssigneeValue,
+  type DayAbbrev,
+  type RecurringCommitment,
+} from "@/features/parish-admin/schedule/types";
 import { useAsync } from "@/hooks/useAsync";
 import { askConfirm, notifyError } from "@/lib/notify";
 import { SettingsPanel, SettingsPillButton } from "./SettingsUI";
@@ -124,6 +132,11 @@ export function MassScheduleSection() {
                     <p className="mt-0.5 text-admin-support text-admin-ink-muted">
                       {daysText(rc.days)} ·{" "}
                       <span className="font-semibold tabular-nums text-admin-green-800">{timesText(rc)}</span>
+                      {rc.assignee && (
+                        <>
+                          {" "}· <AssigneeName name={rc.assignee} guest={rc.guest} />
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -182,8 +195,14 @@ function MassScheduleForm({
       minutes: Math.max(15, parseTimeToMinutes(s.end) - parseTimeToMinutes(s.start)) || DEFAULT_MASS_MINUTES,
     })) ?? [{ start: "06:00", minutes: DEFAULT_MASS_MINUTES }]
   );
+  const [celebrant, setCelebrant] = useState<AssigneeValue>(assigneeValueOf(initial));
+  const [staff, setStaff] = useState<AssignableStaff[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    listAssignableStaff().then(setStaff).catch(() => setStaff([]));
+  }, []);
 
   function toggleDay(day: DayAbbrev) {
     setDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
@@ -201,7 +220,8 @@ function MassScheduleForm({
       type: "mass" as const,
       days,
       slots: times.map((t) => ({ start: convert24to12(t.start), end: convert24to12(addMinutes24(t.start, t.minutes)) })),
-      assignee: "",
+      assigneeId: celebrant.assigneeId,
+      assignee: celebrant.assigneeId ? "" : celebrant.assignee.trim(),
       showOnOverview: false,
     };
     try {
@@ -278,6 +298,13 @@ function MassScheduleForm({
             + Add another time
           </button>
         </fieldset>
+
+        <AdminField label="Usually said by (optional)">
+          <StaffSelect staff={staff} value={celebrant} onChange={setCelebrant} emptyLabel="Varies / not set" />
+          <p className="mt-1 text-admin-support text-admin-ink-muted">
+            You can still change the priest for a single Mass on the Schedule page.
+          </p>
+        </AdminField>
 
         {error && (
           <p className="text-admin-body font-semibold text-admin-red-700" role="alert">

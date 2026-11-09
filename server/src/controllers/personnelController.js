@@ -2,7 +2,7 @@ const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { requiredText, optionalText, sendRecordError } = require('../utils/recordFields');
 const { PERSONNEL_ROLES, rankForHonorific, splitHonorific } = require('../constants/personnelRoles');
-const { toPerson, assertCanBeParishPriest, holdsParishPriest, httpError } = require('../utils/personnel');
+const { toPerson, displayNameOf, assertCanBeParishPriest, holdsParishPriest, httpError } = require('../utils/personnel');
 
 const MAX_TITLES = 6;
 
@@ -165,8 +165,8 @@ async function updatePerson(req, res) {
 }
 
 /**
- * Removes someone without a staff account. Events they were assigned to keep their name as text, so past
- * schedules still show who served; only the link to this row is cleared.
+ * Removes someone without a staff account. Events and Masses they were assigned to keep their name as a guest's,
+ * so past schedules still show who served; only the link to this row is cleared.
  */
 async function removePerson(req, res) {
   const client = await pool.connect();
@@ -181,7 +181,16 @@ async function removePerson(req, res) {
       throw httpError(400, 'This person has a staff account. Deactivate it under Settings → Staff Accounts instead.');
     }
     await client.query('BEGIN');
-    await client.query('UPDATE event SET assigned_to = NULL WHERE assigned_to = $1', [row.id]);
+    const name = displayNameOf(row);
+    await client.query('UPDATE event SET assigned_to = NULL, assignee_name = $2 WHERE assigned_to = $1', [row.id, name]);
+    await client.query('UPDATE parish_recurring_commitment SET assigned_to = NULL, assignee = $2 WHERE assigned_to = $1', [
+      row.id,
+      name,
+    ]);
+    await client.query('UPDATE parish_schedule_override SET assigned_to = NULL, assignee = $2 WHERE assigned_to = $1', [
+      row.id,
+      name,
+    ]);
     await client.query('DELETE FROM parish_personnel WHERE id = $1', [row.id]);
     await client.query('COMMIT');
     await writeAudit({

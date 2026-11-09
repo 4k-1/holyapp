@@ -8,6 +8,7 @@ import { getRecordFormPath, getRecordFormPrefill } from "../recordLinkHelpers";
 import { parseTimeToMinutes, toISO } from "../scheduleHelpers";
 import { EVENT_TYPE_LABELS, EVENT_TYPE_STYLES } from "../types";
 import type { ScheduleBlock, ScheduleEventType } from "../types";
+import { AssigneeName } from "./StaffSelect";
 
 const TODAY_ISO = toISO(new Date());
 
@@ -214,7 +215,7 @@ export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange, on
                           onClick={() => onSearchQueryChange(b.assignee)}
                           className="text-admin-support font-semibold text-admin-green-700 hover:underline"
                         >
-                          {b.assignee}
+                          <AssigneeName name={b.assignee} guest={b.guest} />
                         </button>
                       ) : (
                         "—"

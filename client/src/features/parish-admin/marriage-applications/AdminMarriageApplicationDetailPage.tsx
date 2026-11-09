@@ -52,7 +52,12 @@ import {
 } from "@/features/parish-admin/marriage-applications/types";
 import { listAssignableStaff } from "@/features/parish-admin/schedule/api/scheduleApi";
 import { StaffSelect } from "@/features/parish-admin/schedule/components/StaffSelect";
-import type { AssignableStaff } from "@/features/parish-admin/schedule/types";
+import {
+  assigneeValueOf,
+  NOBODY,
+  type AssignableStaff,
+  type AssigneeValue,
+} from "@/features/parish-admin/schedule/types";
 import {
   convert24to12,
   to24Hour,
@@ -157,7 +162,7 @@ export function AdminMarriageApplicationDetailPage() {
   const [date, setDate] = useState("");
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("10:00");
-  const [assignee, setAssignee] = useState("");
+  const [assignee, setAssignee] = useState<AssigneeValue>(NOBODY);
   const [editingDate, setEditingDate] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [rejectRemarks, setRejectRemarks] = useState("");
@@ -181,7 +186,7 @@ export function AdminMarriageApplicationDetailPage() {
       setStart(to24Hour(from));
       setEnd(to24Hour(to || from));
     }
-    setAssignee(next.weddingEvent?.assignee || "");
+    setAssignee(assigneeValueOf(next.weddingEvent));
   }
 
   const fetchApplication = useCallback(
@@ -637,7 +642,8 @@ export function AdminMarriageApplicationDetailPage() {
                                   date,
                                   start: convert24to12(start),
                                   end: convert24to12(end),
-                                  assignee,
+                                  assigneeId: assignee.assigneeId,
+                                  assignee: assignee.assigneeId ? "" : assignee.assignee.trim(),
                                 }),
                               () => setEditingDate(false),
                             )

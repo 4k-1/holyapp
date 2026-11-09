@@ -31,7 +31,7 @@ function parseBlockInput(body) {
     end: requiredText(body.end, 'End time'),
     type: requiredText(body.type, 'Type'),
     source: optionalText(body.source) || 'manual',
-    assignee: optionalText(body.assignee) || '',
+    ...schedule.assigneeInput(body),
     location: optionalText(body.location),
     showOnOverview: body.showOnOverview !== false,
   };
@@ -78,7 +78,7 @@ async function checkConflict(req, res) {
     const occurrences = await schedule.occurrencesForDate(req.parishId, date);
     const conflict = schedule.findConflict(occurrences, start, end, {
       excludeId: optionalText(req.body?.excludeId) || undefined,
-      assignee: optionalText(req.body?.assignee) || undefined,
+      ...schedule.assigneeInput(req.body || {}),
       location: optionalText(req.body?.location) || undefined,
     });
     res.json({ conflict: conflict || null, message: conflict ? schedule.conflictMessage(conflict) : null });
@@ -130,7 +130,7 @@ async function updateBlock(req, res) {
       action: 'schedule.event_updated',
       entityType: 'event',
       entityId: row.id,
-      metadata: { title: input.title, date: input.date, location: input.location, assignee: input.assignee },
+      metadata: { title: input.title, date: input.date, location: input.location, assignee: block?.assignee || '' },
     });
     res.json({ block });
   } catch (err) {
@@ -141,15 +141,15 @@ async function updateBlock(req, res) {
 async function assignOccurrence(req, res) {
   try {
     const occurrenceId = requiredText(req.body?.occurrenceId, 'Occurrence');
-    const assignee = optionalText(req.body?.assignee) || '';
-    await schedule.assignOccurrence(req.parishId, occurrenceId, assignee);
+    const who = schedule.assigneeInput(req.body || {});
+    const assignee = await schedule.assignOccurrence(req.parishId, occurrenceId, who);
     await writeAudit({
       parishId: req.parishId,
       actorId: req.user.id,
       action: 'schedule.assigned',
       entityType: 'event',
       entityId: occurrenceId,
-      metadata: { assignee },
+      metadata: { assignee, assigneeId: who.assigneeId },
     });
     res.json({ ok: true });
   } catch (err) {
@@ -197,7 +197,7 @@ function parseRecurring(body) {
     type: requiredText(body.type, 'Type'),
     days,
     slots,
-    assignee: optionalText(body.assignee) || '',
+    ...schedule.assigneeInput(body),
     showOnOverview: body.showOnOverview !== false,
   };
 }
@@ -206,23 +206,25 @@ async function createRecurring(req, res) {
   try {
     const input = parseRecurring(req.body || {});
     await assertCanEditRecurring(req, input.type);
+    await schedule.checkAssignee(req.parishId, input);
     const inserted = await pool.query(
       `INSERT INTO parish_recurring_commitment
-         (parish_id, label, event_type, days, slots, assignee, show_on_overview, created_by)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8)
-       RETURNING *`,
+         (parish_id, label, event_type, days, slots, assigned_to, assignee, show_on_overview, created_by)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9)
+       RETURNING id`,
       [
         req.parishId,
         input.label,
         input.type,
         input.days,
         JSON.stringify(input.slots),
+        input.assigneeId,
         input.assignee,
         input.showOnOverview,
         req.user.id,
       ]
     );
-    res.status(201).json({ commitment: schedule.toRecurring(inserted.rows[0]) });
+    res.status(201).json({ commitment: await schedule.loadCommitment(req.parishId, inserted.rows[0].id) });
   } catch (err) {
     return send(res, err);
   }
@@ -232,17 +234,19 @@ async function updateRecurring(req, res) {
   try {
     const input = parseRecurring(req.body || {});
     await assertCanEditRecurring(req, input.type, req.params.id);
+    await schedule.checkAssignee(req.parishId, input);
     const updated = await pool.query(
       `UPDATE parish_recurring_commitment
        SET label = $1, event_type = $2, days = $3, slots = $4::jsonb,
-           assignee = $5, show_on_overview = $6, updated_at = NOW()
-       WHERE id = $7 AND parish_id = $8
-       RETURNING *`,
+           assigned_to = $5, assignee = $6, show_on_overview = $7, updated_at = NOW()
+       WHERE id = $8 AND parish_id = $9
+       RETURNING id`,
       [
         input.label,
         input.type,
         input.days,
         JSON.stringify(input.slots),
+        input.assigneeId,
         input.assignee,
         input.showOnOverview,
         req.params.id,
@@ -250,7 +254,7 @@ async function updateRecurring(req, res) {
       ]
     );
     if (!updated.rowCount) return res.status(404).json({ error: 'Commitment not found.' });
-    res.json({ commitment: schedule.toRecurring(updated.rows[0]) });
+    res.json({ commitment: await schedule.loadCommitment(req.parishId, req.params.id) });
   } catch (err) {
     return send(res, err);
   }

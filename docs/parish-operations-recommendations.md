@@ -241,6 +241,11 @@ Most Philippine parishes have a main church plus several chapels (*kapilya*) and
 - **Today:** `assignee` is plain text, matched to staff by name (`resolvePersonnelId`). A misspelling
   or a renamed staff member quietly breaks the conflict check.
 - **Add:** store the staff ID. Mark visiting priests as guests.
+- **Done (migration 035):** events, regular Masses and single-Mass changes store the person's ID
+  (`assigned_to`); the name shown always comes from the Staff record. Clashes are checked by ID. A
+  visiting priest is typed in as a guest, shown with a Guest tag and not clash-checked against staff.
+  Regular Masses can have a usual priest (Settings → Mass Schedule), and the handover form passes
+  them on. Removing someone keeps their name on past items as a guest.
 
 #### C3. Count travel and preparation time in conflict checks (priority: medium)
 

@@ -2,7 +2,13 @@
 import { useEffect, useState } from "react";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { checkConflict, listAssignableStaff, reassignOccurrence } from "../api/scheduleApi";
-import type { AssignableStaff, ScheduleConflict, ScheduleOccurrence } from "../types";
+import {
+  assigneeValueOf,
+  sameAssignee,
+  type AssignableStaff,
+  type ScheduleConflict,
+  type ScheduleOccurrence,
+} from "../types";
 import { ConflictNotice } from "./ConflictNotice";
 import { StaffSelect } from "./StaffSelect";
 import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
@@ -15,7 +21,10 @@ interface AssignBlockModalProps {
 
 export function AssignBlockModal({ occurrence, onClose, onAssigned }: AssignBlockModalProps) {
   const [staff, setStaff] = useState<AssignableStaff[]>([]);
-  const [selected, setSelected] = useState(occurrence.assignee || "");
+  const [selected, setSelected] = useState(assigneeValueOf(occurrence));
+  const current = assigneeValueOf(occurrence);
+  const chosen = Boolean(selected.assigneeId || selected.assignee.trim());
+  const changed = !sameAssignee(selected, current);
   const [conflict, setConflict] = useState<ScheduleConflict | undefined>();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -26,20 +35,24 @@ export function AssignBlockModal({ occurrence, onClose, onAssigned }: AssignBloc
 
   // Only the person matters here: the event's time and place are already set.
   useEffect(() => {
-    if (!selected || selected === occurrence.assignee) return;
+    if (!chosen || !changed) return;
     let cancelled = false;
-    checkConflict(occurrence.date, occurrence.start, occurrence.end, {
-      assignee: selected,
-      excludeId: occurrence.id,
-    }).then((result) => {
-      if (!cancelled) setConflict(result);
-    });
+    const t = setTimeout(() => {
+      checkConflict(occurrence.date, occurrence.start, occurrence.end, {
+        assigneeId: selected.assigneeId,
+        assignee: selected.assignee,
+        excludeId: occurrence.id,
+      }).then((result) => {
+        if (!cancelled) setConflict(result);
+      });
+    }, 250);
     return () => {
       cancelled = true;
+      clearTimeout(t);
     };
-  }, [selected, occurrence]);
+  }, [selected, chosen, changed, occurrence]);
 
-  const shownConflict = selected && selected !== occurrence.assignee ? conflict : undefined;
+  const shownConflict = chosen && changed ? conflict : undefined;
 
   async function handleSubmit() {
     setSubmitting(true);

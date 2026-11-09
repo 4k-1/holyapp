@@ -67,17 +67,26 @@ function sameText(a, b) {
 }
 
 /**
+ * Same person: staff are compared by their record id (C2), so two people with the same name never clash and a
+ * renamed person still does. A guest (a typed name, no id) only clashes with a guest of the same name.
+ */
+function samePerson({ assigneeId, assignee }, b) {
+  if (assigneeId) return b.assigneeId === assigneeId;
+  return !b.assigneeId && sameText(assignee, b.assignee);
+}
+
+/**
  * Overlapping events may run side by side (a house blessing during a wedding) unless they share a place or a
  * priest. Returns the first clashing occurrence with `reason` set to 'priest' or 'place', or undefined.
  */
-function findConflict(occurrences, start, end, { excludeId, assignee, location } = {}) {
+function findConflict(occurrences, start, end, { excludeId, assigneeId, assignee, location } = {}) {
   const startMin = parseTimeToMinutes(start);
   const endMin = parseTimeToMinutes(end);
   for (const b of occurrences) {
     if (excludeId && b.id === excludeId) continue;
     const overlaps = startMin < parseTimeToMinutes(b.end) && endMin > parseTimeToMinutes(b.start);
     if (!overlaps) continue;
-    if (sameText(assignee, b.assignee)) return { ...b, reason: 'priest' };
+    if (samePerson({ assigneeId, assignee }, b)) return { ...b, reason: 'priest' };
     if (sameText(location, b.location)) return { ...b, reason: 'place' };
   }
   return undefined;

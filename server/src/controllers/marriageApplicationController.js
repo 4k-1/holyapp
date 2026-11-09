@@ -472,13 +472,14 @@ async function reserveWeddingDate(req, res) {
     const date = dateValue(req.body?.date, 'Wedding date');
     const start = requiredText(req.body?.start, 'Start time');
     const end = requiredText(req.body?.end, 'End time');
-    const assignee = optionalText(req.body?.assignee) || '';
+    const who = schedule.assigneeInput(req.body || {});
+    await schedule.checkAssignee(req.parishId, who);
     // Weddings are celebrated in the church, so they clash with anything else there or with the same priest.
     await schedule.assertNoConflict(req.parishId, {
       date,
       start,
       end,
-      assignee,
+      ...who,
       location: schedule.DEFAULT_LOCATION,
       excludeId: row.wedding_event_id || undefined,
     });
@@ -486,7 +487,6 @@ async function reserveWeddingDate(req, res) {
     let eventId = row.wedding_event_id;
     const title = `Wedding — ${partyName(row, 'groom')} & ${partyName(row, 'bride')}`;
     if (eventId) {
-      const assignedTo = await schedule.resolvePersonnelId(req.parishId, assignee);
       const { toTimestamp } = require('../utils/scheduleTime');
       const updatedEvent = await pool.query(
         `UPDATE event
@@ -495,7 +495,7 @@ async function reserveWeddingDate(req, res) {
              location = COALESCE(location, $8)
          WHERE id = $6 AND parish_id = $7
          RETURNING id`,
-        [title, toTimestamp(date, start), toTimestamp(date, end), assignedTo, assignee, eventId, req.parishId, schedule.DEFAULT_LOCATION]
+        [title, toTimestamp(date, start), toTimestamp(date, end), who.assigneeId, who.assigneeId ? null : who.assignee || null, eventId, req.parishId, schedule.DEFAULT_LOCATION]
       );
       if (!updatedEvent.rowCount) eventId = null;
     }
@@ -507,7 +507,7 @@ async function reserveWeddingDate(req, res) {
         end,
         type: 'wedding',
         source: 'Marriage Process',
-        assignee,
+        ...who,
         location: schedule.DEFAULT_LOCATION,
         marriageApplicationId: row.id,
       });

@@ -42,14 +42,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /**
- * E2: before someone is set inactive, pass on what they still hold (upcoming events, the Parish Priest
- * title, the certificate signatory). Their sign-in, if any, is suspended in the same step.
+ * E2: before someone is set inactive, pass on what they still hold (upcoming events, regular Masses, the Parish
+ * Priest title, the certificate signatory). Their sign-in, if any, is suspended in the same step.
  */
 export function HandoverModal({ personId, personName, onClose, onDone }: HandoverModalProps) {
   const [data, setData] = useState<Handover | null>(null);
   const [loadError, setLoadError] = useState("");
   const [allTo, setAllTo] = useState(UNASSIGNED);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [regularTo, setRegularTo] = useState<Record<string, string>>({});
   const [priestTo, setPriestTo] = useState(UNASSIGNED);
   const [signAs, setSignAs] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,7 +69,9 @@ export function HandoverModal({ personId, personName, onClose, onDone }: Handove
   const name = data?.person.name ?? personName;
   const priests = data?.candidates.filter((c) => c.priest) ?? [];
   const targetFor = (eventId: string) => overrides[eventId] ?? allTo;
-  const holdsNothing = data && data.events.length === 0 && !data.parishPriest && !data.signatory;
+  const regular = data?.regular ?? [];
+  const holdsNothing =
+    data && data.events.length === 0 && regular.length === 0 && !data.parishPriest && !data.signatory;
 
   async function handleSave() {
     if (!data) return;
@@ -77,6 +80,7 @@ export function HandoverModal({ personId, personName, onClose, onDone }: Handove
     try {
       const person = await leavePerson(personId, {
         events: data.events.map((e) => ({ id: e.id, to: targetFor(e.id) || null })),
+        regular: regular.map((r) => ({ id: r.id, to: regularTo[r.id] || null })),
         parishPriestTo: data.parishPriest ? priestTo || null : null,
         signAs: Boolean(data.signatory && priestTo && signAs),
       });
@@ -167,6 +171,34 @@ export function HandoverModal({ personId, personName, onClose, onDone }: Handove
                 </ul>
                 <p className="mt-1.5 text-admin-support text-admin-ink-muted">
                   Unassigned events stay on the schedule with no one assigned.
+                </p>
+              </Section>
+            )}
+
+            {regular.length > 0 && (
+              <Section title={`Regular Masses (${regular.length})`}>
+                <ul className="divide-y divide-admin-border rounded-lg border border-admin-border">
+                  {regular.map((r) => (
+                    <li key={r.id} className="grid grid-cols-1 items-center gap-2 px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_220px]">
+                      <div className="min-w-0">
+                        <p className="truncate text-admin-body font-medium text-admin-ink">{r.label}</p>
+                        <p className="text-admin-support text-admin-ink-muted">
+                          {r.days.join(", ")} · {r.times.join(", ")}
+                        </p>
+                      </div>
+                      <select
+                        value={regularTo[r.id] ?? UNASSIGNED}
+                        onChange={(ev) => setRegularTo((prev) => ({ ...prev, [r.id]: ev.target.value }))}
+                        className={selectClass}
+                        aria-label={`Who usually says ${r.label}`}
+                      >
+                        {personOptions()}
+                      </select>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1.5 text-admin-support text-admin-ink-muted">
+                  Unassigned Masses stay on the schedule with no usual priest.
                 </p>
               </Section>
             )}

@@ -95,7 +95,7 @@ and gets more expensive the longer it waits.
 | Item | Work | Needs |
 | --- | --- | --- |
 | B6 + C10 | `place` table for church and chapels (also used by donations and intentions) | — |
-| C2 | Assign staff by ID, not typed name | 4 |
+| C2 | **Done.** Assign staff by ID, not typed name; guests for visiting priests (migration 035) | — |
 | C1 | Change or cancel one occasion of a recurring event; date ranges for patterns | — |
 | C4 | Notifications on changes; move intentions off cancelled Masses | Job queue (8.9) |
 | B5 + C5 | Liturgical calendar and booking warnings | — |
