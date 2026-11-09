@@ -88,7 +88,7 @@ and gets more expensive the longer it waits.
 | B2 | **B2a done:** purpose on every copy, marriage copies valid 6 months. **B2b to do:** No Record, Sponsor's Certificate, letter of release, banns | — |
 | B3 | Godparent checks; late baptism entries | E6 |
 | 3 | E-signatures on certificates | File storage, 4 |
-| 5 | Marriage requirements | — |
+| 5 | **5a done:** parish-editable list, special cases, document dates checked against the wedding (migration 034). **5b to do:** banns as a parish step | — |
 
 ## Phase 4 — Schedule
 

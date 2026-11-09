@@ -27,6 +27,7 @@ import {
   getMarriageApplication,
   rejectMarriageApplication,
   reserveWeddingDate,
+  updateMarriageCircumstances,
   updateMarriageDispensation,
   verifyMarriageRequirement,
 } from "@/features/parish-admin/marriage-applications/api/marriageApplicationsApi";
@@ -43,10 +44,11 @@ import {
   weddingDateOf,
   type RequirementGroup,
 } from "@/features/parish-admin/marriage-applications/applicationProgress";
-import type {
-  DispensationStatus,
-  MarriageApplication,
-  MarriageRequirement,
+import {
+  CIRCUMSTANCES,
+  type DispensationStatus,
+  type MarriageApplication,
+  type MarriageRequirement,
 } from "@/features/parish-admin/marriage-applications/types";
 import { listAssignableStaff } from "@/features/parish-admin/schedule/api/scheduleApi";
 import { StaffSelect } from "@/features/parish-admin/schedule/components/StaffSelect";
@@ -94,6 +96,18 @@ function formatReceived(iso: string | null) {
     month: "short",
     day: "numeric",
   });
+}
+
+/** "2027-05-08" → "8 May 2027". */
+function formatDocDate(iso: string | null) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function todayIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function formatDay(iso: string | null) {
@@ -657,6 +671,36 @@ export function AdminMarriageApplicationDetailPage() {
           </div>
 
           <RailCard
+            title="About the couple"
+            icon={<HeartIcon className="h-4 w-4" />}
+            description="Each yes adds the papers that case needs."
+          >
+            <ul className="space-y-2">
+              {CIRCUMSTANCES.map((c) => (
+                <li key={c.key}>
+                  <label className="flex items-start gap-2 text-admin-body text-admin-ink">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={application.circumstances?.[c.key] === true}
+                      disabled={saving || closed}
+                      onChange={(e) =>
+                        run(() =>
+                          updateMarriageCircumstances(application.id, {
+                            ...application.circumstances,
+                            [c.key]: e.target.checked,
+                          }),
+                        )
+                      }
+                    />
+                    <span>{c.question}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </RailCard>
+
+          <RailCard
             title="Dispensation"
             icon={<FileIcon className="h-4 w-4" />}
             description="Diocesan permission, e.g. when one party isn't a baptized Catholic."
@@ -950,12 +994,13 @@ export function AdminMarriageApplicationDetailPage() {
                         key={item.id}
                         item={item}
                         disabled={saving || closed}
-                        onChange={(submitted) =>
+                        onChange={(submitted, documentDate) =>
                           run(() =>
                             verifyMarriageRequirement(
                               application.id,
                               item.id,
                               submitted,
+                              documentDate,
                             ),
                           )
                         }
@@ -1057,10 +1102,14 @@ function RequirementRow({
 }: {
   item: MarriageRequirement;
   disabled: boolean;
-  onChange: (submitted: boolean) => void;
+  onChange: (submitted: boolean, documentDate?: string) => void;
 }) {
   const { label } = requirementGroup(item);
   const missing = !item.submitted;
+  // A document that expires asks for the date printed on it before it's marked received.
+  const [askingDate, setAskingDate] = useState(false);
+  const [docDate, setDocDate] = useState("");
+  const stale = item.submitted && (item.expired || item.expiresBeforeWedding);
   return (
     <li
       className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-admin-border py-3 first:border-t-0"
@@ -1081,13 +1130,20 @@ function RequirementRow({
         </span>
         <div className="min-w-0">
           <p className="text-admin-body text-admin-ink">{label}</p>
+          {item.note && !item.submitted && <p className="text-admin-support text-admin-ink-muted">{item.note}</p>}
           <p className="text-admin-support text-admin-ink-muted">
             {item.submitted
               ? `Received ${formatReceived(item.verifiedAt)}${item.verifiedByName ? ` · ${item.verifiedByName}` : ""}`
               : item.required
                 ? "Not received yet"
                 : "Optional"}
+            {item.submitted && item.expiresOn && ` · dated ${formatDocDate(item.documentDate)}, good until ${formatDocDate(item.expiresOn)}`}
           </p>
+          {stale && (
+            <p className="mt-0.5 text-admin-support font-semibold text-admin-red-700">
+              {item.expired ? "Expired. Ask for a newer copy." : "Expires before the wedding. Ask for a newer copy."}
+            </p>
+          )}
         </div>
       </div>
       {item.submitted ? (
@@ -1108,15 +1164,44 @@ function RequirementRow({
             Undo
           </button>
         )
+      ) : askingDate ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <AdminInput
+            type="date"
+            value={docDate}
+            max={todayIso()}
+            onChange={(e) => setDocDate(e.target.value)}
+            aria-label={`Date on the ${label}`}
+            className="w-auto"
+          />
+          <AdminButton
+            type="button"
+            size="sm"
+            disabled={disabled || !docDate}
+            onClick={() => {
+              onChange(true, docDate);
+              setAskingDate(false);
+            }}
+          >
+            Save
+          </AdminButton>
+          <button
+            type="button"
+            onClick={() => setAskingDate(false)}
+            className="text-admin-support font-semibold text-admin-ink-muted underline hover:text-admin-ink"
+          >
+            Cancel
+          </button>
+        </div>
       ) : (
         <AdminButton
           type="button"
           variant="secondary"
           size="sm"
           disabled={disabled}
-          onClick={() => onChange(true)}
+          onClick={() => (item.validForDays ? setAskingDate(true) : onChange(true))}
         >
-          Mark received
+          {item.validForDays ? "Mark received…" : "Mark received"}
         </AdminButton>
       )}
     </li>

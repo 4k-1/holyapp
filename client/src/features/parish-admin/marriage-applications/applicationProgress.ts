@@ -19,7 +19,11 @@ export const STAGE_LABEL: Record<ApplicationStage, string> = {
 
 export const STAGE_ORDER: ApplicationStage[] = ["documents", "interview", "precana", "banns", "date", "cleared", "closed"];
 
+const STEP_FOR_KEY: Record<string, PrepStep> = { interview: "interview", precana: "precana", banns: "banns" };
+
 export function requirementStep(item: MarriageRequirement): PrepStep {
+  // Built-in items are known by their key, so a renamed one stays in its step.
+  if (item.key) return STEP_FOR_KEY[item.key] ?? "documents";
   if (/interview/i.test(item.name)) return "interview";
   if (/pre-?cana|marriage preparation/i.test(item.name)) return "precana";
   if (/banns/i.test(item.name)) return "banns";
@@ -31,6 +35,11 @@ export type RequirementGroup = "Groom" | "Bride" | "Couple" | "Preparation";
 /** Document names carry their party, e.g. "Baptismal certificate (groom)"; other documents belong to the couple. */
 export function requirementGroup(item: MarriageRequirement): { group: RequirementGroup; label: string } {
   if (requirementStep(item) !== "documents") return { group: "Preparation", label: item.name };
+  const party = item.key?.match(/_(groom|bride)$/)?.[1];
+  if (party) {
+    const label = item.name.replace(/\s*\((groom|bride)\)\s*$/i, "");
+    return { group: party === "groom" ? "Groom" : "Bride", label };
+  }
   const match = item.name.match(/^(.*?)\s*\((groom|bride)\)\s*$/i);
   if (!match) return { group: "Couple", label: item.name };
   return { group: match[2].toLowerCase() === "groom" ? "Groom" : "Bride", label: match[1] };

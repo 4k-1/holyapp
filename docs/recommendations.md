@@ -8,7 +8,7 @@ Everything suggested so far, with its status. Started 2026-11-05.
 | 2 | [Hot reload in Docker on Windows](#2-hot-reload-in-docker-on-windows) | Done |
 | 3 | [E-signatures on certificates](#3-e-signatures-on-certificates) | Proposed |
 | 4 | [Several titles per staff member](#4-several-titles-per-staff-member) | Done (no title history) |
-| 5 | [Marriage requirements](#5-marriage-requirements) | Proposed |
+| 5 | [Marriage requirements](#5-marriage-requirements) | 5a done; banns as a parish step (5b) to do |
 | 6 | [Admin pages fill the screen](#6-admin-pages-fill-the-screen) | Done |
 | 7 | [Short reference numbers](#7-short-reference-numbers) | Done, with follow-ups |
 | 8 | [Super admin and diocesan rollout](#8-super-admin-and-diocesan-rollout) | Proposed |
@@ -105,7 +105,15 @@ full name, the primary title and a "+N" chip. **Parked:** dated titles and histo
 
 ## 5. Marriage requirements
 
-**Proposed.**
+**5a done (2026-11-09).** Migration 034; list in `server/src/constants/marriageRequirements.js`.
+Built-in items carry a permanent `template_key`, so renamed or turned-off items stay that way (the
+name-matching bug is fixed). CENOMAR for each party. Six yes/no questions on the application add the
+papers for special cases; the Art. 34 affidavit replaces the license (`skip_when`). Documents with a
+validity need the date printed on them; the checklist flags "Expired" or "Expires before the wedding",
+and the wedding date can't be confirmed with such a document. Settings → Marriage Requirements lets
+the admin rename, turn off, add items and set validity and notes. Simpler than proposed: no
+`applies_to` column (party is in the key) and nothing is deleted, only turned off.
+**5b to do:** the banns as a parish step with the three Sunday dates.
 
 ### What the research found
 - **Universal Church law** sets who may marry, what blocks a marriage and the form of the ceremony. Canon 1066 requires the priest to confirm nothing blocks the marriage; canon 1067 leaves the method to each country's bishops.

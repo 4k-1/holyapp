@@ -9,6 +9,7 @@ const {
   createApplication,
   verifyRequirement,
   updateDispensation,
+  updateCircumstances,
   reserveWeddingDate,
   confirmWeddingDate,
   rejectApplication,
@@ -30,6 +31,7 @@ router.post('/', ...office, createApplication);
 router.get('/:id', ...signedIn, getApplication);
 router.patch('/:id/requirements/:requirementId', ...office, verifyRequirement);
 router.patch('/:id/dispensation', ...office, updateDispensation);
+router.patch('/:id/circumstances', ...office, updateCircumstances);
 router.post('/:id/reserve-date', ...office, reserveWeddingDate);
 router.post('/:id/confirm-date', ...office, confirmWeddingDate);
 router.post('/:id/reject', ...office, rejectApplication);

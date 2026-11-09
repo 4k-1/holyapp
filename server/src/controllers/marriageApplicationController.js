@@ -10,20 +10,14 @@ const {
   sendRecordError,
 } = require('../utils/recordFields');
 const schedule = require('../services/scheduleService');
+const { TEMPLATES, normalizeCircumstances, applies } = require('../constants/marriageRequirements');
+const { manilaToday } = require('../constants/purposes');
 
-const DEFAULT_REQUIREMENTS = [
-  'Baptismal certificate (groom)',
-  'Baptismal certificate (bride)',
-  'Confirmation certificate (groom)',
-  'Confirmation certificate (bride)',
-  'Civil birth certificate (groom)',
-  'Civil birth certificate (bride)',
-  'CENOMAR',
-  'Marriage license',
-  'Pre-Cana / marriage preparation',
-  'Canonical interview',
-  'Banns published (three Sundays)',
-];
+/** "2026-11-09" + 180 → "2027-05-08". */
+function addDays(isoDate, days) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
 
 function httpError(status, message) {
   const err = new Error(message);
@@ -37,13 +31,28 @@ function partyName(row, who) {
     .join(' ');
 }
 
-function toRequirement(row) {
+/**
+ * One checklist line. `weddingDate` (or today) decides whether a dated document is still good:
+ * expiresOn is the last day it is accepted.
+ */
+function toRequirement(row, weddingDate) {
+  const documentDate = dateOnly(row.document_date) || null;
+  const expiresOn = documentDate && row.valid_for_days ? addDays(documentDate, row.valid_for_days) : null;
+  const today = manilaToday();
   return {
     id: row.id,
     typeId: row.requirement_type_id,
+    key: row.template_key || null,
     name: row.requirement_name,
+    note: row.note || '',
+    condition: row.condition || 'always',
     required: row.is_required,
+    validForDays: row.valid_for_days || null,
     submitted: row.submitted,
+    documentDate,
+    expiresOn,
+    expired: Boolean(expiresOn && expiresOn < today),
+    expiresBeforeWedding: Boolean(expiresOn && weddingDate && weddingDate > today && expiresOn < weddingDate),
     verifiedBy: row.verified_by || null,
     verifiedAt: row.verified_at ? new Date(row.verified_at).toISOString() : null,
     verifiedByName: row.verified_by_name || null,
@@ -75,6 +84,7 @@ function toApplication(row, requirements = [], event = null) {
     weddingEventId: row.wedding_event_id || null,
     weddingDateStatus: row.wedding_date_status || 'none',
     weddingEvent: event,
+    circumstances: normalizeCircumstances(row.circumstances),
     requirements,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
     updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
@@ -82,29 +92,38 @@ function toApplication(row, requirements = [], event = null) {
 }
 
 /**
- * Adds any default requirement the parish doesn't have yet (e.g. the banns, added after the first release),
- * then gives open applications a row for each new type. Confirmed and closed applications are left alone.
+ * Adds any built-in requirement the parish has never had, matched by its permanent key, so an item
+ * the parish renamed or turned off is left alone. Then gives open applications a row for each new
+ * type. Confirmed and closed applications are left alone.
  */
 async function ensureRequirementTypes(parishId, userId) {
   const existing = await pool.query(
-    'SELECT requirement_name FROM marriage_requirement_type WHERE parish_id = $1',
+    'SELECT template_key FROM marriage_requirement_type WHERE parish_id = $1 AND template_key IS NOT NULL',
     [parishId]
   );
-  const have = new Set(existing.rows.map((row) => row.requirement_name));
-  const missing = DEFAULT_REQUIREMENTS.filter((name) => !have.has(name));
+  const have = new Set(existing.rows.map((row) => row.template_key));
+  const missing = TEMPLATES.filter((t) => !have.has(t.key));
   if (missing.length === 0) return;
-  for (const name of missing) {
+  for (const t of missing) {
     await pool.query(
-      `INSERT INTO marriage_requirement_type (parish_id, requirement_name, is_required, created_by)
-       VALUES ($1, $2, true, $3)`,
-      [parishId, name, userId]
+      `INSERT INTO marriage_requirement_type
+         (parish_id, requirement_name, is_required, created_by, template_key, condition, skip_when,
+          valid_for_days, sort_order, note)
+       VALUES ($1, $2, true, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (parish_id, template_key) WHERE template_key IS NOT NULL DO NOTHING`,
+      [parishId, t.name, userId, t.key, t.condition || 'always', t.skipWhen || null, t.days || null, t.order, t.note || null]
     );
   }
-  await pool.query(
+  await addMissingRows(pool, parishId);
+}
+
+/** Every open application gets a row for every active requirement type of its parish. */
+async function addMissingRows(db, parishId) {
+  await db.query(
     `INSERT INTO marriage_application_requirement (marriage_application_id, requirement_type_id)
      SELECT a.id, t.id
      FROM marriage_application a
-     JOIN marriage_requirement_type t ON t.parish_id = a.parish_id
+     JOIN marriage_requirement_type t ON t.parish_id = a.parish_id AND t.active
      WHERE a.parish_id = $1
        AND a.status NOT IN ('approved', 'rejected', 'completed')
        AND NOT EXISTS (
@@ -115,18 +134,31 @@ async function ensureRequirementTypes(parishId, userId) {
   );
 }
 
-async function loadRequirements(applicationId) {
+/**
+ * The couple's checklist: only the requirements that apply to them (their answers, and items the
+ * parish hasn't turned off). An item already received stays on the list even if it no longer applies.
+ */
+async function loadRequirements(row, weddingDate) {
   const result = await pool.query(
-    `SELECT r.*, t.requirement_name, t.is_required,
+    `SELECT r.*, t.requirement_name, t.is_required, t.template_key, t.condition, t.skip_when,
+            t.valid_for_days, t.note, t.active,
             NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS verified_by_name
      FROM marriage_application_requirement r
      JOIN marriage_requirement_type t ON t.id = r.requirement_type_id
      LEFT JOIN app_user u ON u.id = r.verified_by
      WHERE r.marriage_application_id = $1
-     ORDER BY t.created_at`,
-    [applicationId]
+     ORDER BY t.sort_order, t.created_at`,
+    [row.id]
   );
-  return result.rows.map(toRequirement);
+  const answers = normalizeCircumstances(row.circumstances);
+  return result.rows
+    .filter((item) => item.submitted || applies(item, answers))
+    .map((item) => toRequirement(item, weddingDate));
+}
+
+/** The reserved wedding date, or the date the couple asked for. */
+function weddingDateOf(row, event) {
+  return (event && event.date) || dateOnly(row.preferred_wedding_date) || null;
 }
 
 async function loadWeddingEvent(eventId) {
@@ -148,10 +180,8 @@ async function loadApplication(parishId, id) {
 }
 
 async function hydrate(row) {
-  const [requirements, event] = await Promise.all([
-    loadRequirements(row.id),
-    loadWeddingEvent(row.wedding_event_id),
-  ]);
+  const event = await loadWeddingEvent(row.wedding_event_id);
+  const requirements = await loadRequirements(row, weddingDateOf(row, event));
   return toApplication(row, requirements, event);
 }
 
@@ -160,7 +190,7 @@ function requiredComplete(requirements) {
 }
 
 async function maybeAdvanceRequirements(row) {
-  const requirements = await loadRequirements(row.id);
+  const requirements = await loadRequirements(row, null);
   if (row.status === 'pending' && requiredComplete(requirements)) {
     const updated = await pool.query(
       `UPDATE marriage_application
@@ -255,9 +285,9 @@ async function createApplication(req, res) {
          parish_id, groom_first_name, groom_middle_name, groom_last_name,
          bride_first_name, bride_middle_name, bride_last_name,
          status, remarks, created_by, parishioner_id,
-         dispensation_needed, dispensation_status, dispensation_notes
+         dispensation_needed, dispensation_status, dispensation_notes, circumstances
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11, $12, $13)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11, $12, $13, $14::jsonb)
        RETURNING *`,
       [
         req.parishId,
@@ -273,11 +303,12 @@ async function createApplication(req, res) {
         body.dispensationNeeded === true,
         body.dispensationNeeded === true ? 'pending' : 'none',
         optionalText(body.dispensationNotes),
+        JSON.stringify(normalizeCircumstances(body.circumstances)),
       ]
     );
     const row = inserted.rows[0];
     const types = await client.query(
-      'SELECT id FROM marriage_requirement_type WHERE parish_id = $1 ORDER BY created_at',
+      'SELECT id FROM marriage_requirement_type WHERE parish_id = $1 AND active ORDER BY sort_order, created_at',
       [req.parishId]
     );
     for (const type of types.rows) {
@@ -329,20 +360,32 @@ async function verifyRequirement(req, res) {
     if (row.status === 'rejected' || row.status === 'completed') {
       throw httpError(400, 'This application can no longer be updated.');
     }
-    const updated = await pool.query(
-      `UPDATE marriage_application_requirement r
+    const found = await pool.query(
+      `SELECT r.id, t.valid_for_days, t.requirement_name
+       FROM marriage_application_requirement r
+       JOIN marriage_requirement_type t ON t.id = r.requirement_type_id
+       WHERE r.id = $1 AND r.marriage_application_id = $2`,
+      [req.params.requirementId, row.id]
+    );
+    const item = found.rows[0];
+    if (!item) return res.status(404).json({ error: 'Requirement not found.' });
+
+    // A document that expires needs the date printed on it, so the app can check it against the wedding.
+    let documentDate = null;
+    if (submitted && item.valid_for_days) {
+      documentDate = dateValue(req.body?.documentDate, 'Date on the document', { required: false });
+      if (!documentDate) throw httpError(400, `Enter the date on the ${item.requirement_name}.`);
+      if (documentDate > manilaToday()) throw httpError(400, 'The date on the document cannot be in the future.');
+    }
+    await pool.query(
+      `UPDATE marriage_application_requirement
        SET submitted = $1,
            verified_by = $2,
-           verified_at = CASE WHEN $1 THEN NOW() ELSE NULL END
-       FROM marriage_application a
-       WHERE r.id = $3
-         AND r.marriage_application_id = a.id
-         AND a.id = $4
-         AND a.parish_id = $5
-       RETURNING r.id`,
-      [submitted, submitted ? req.user.id : null, req.params.requirementId, row.id, req.parishId]
+           verified_at = CASE WHEN $1 THEN NOW() ELSE NULL END,
+           document_date = $3
+       WHERE id = $4`,
+      [submitted, submitted ? req.user.id : null, documentDate, item.id]
     );
-    if (!updated.rowCount) return res.status(404).json({ error: 'Requirement not found.' });
     const next = await maybeAdvanceRequirements(row);
     await writeAudit({
       parishId: req.parishId,
@@ -350,9 +393,37 @@ async function verifyRequirement(req, res) {
       action: submitted ? 'marriage_application.requirement_verified' : 'marriage_application.requirement_cleared',
       entityType: 'marriage_application',
       entityId: row.id,
-      metadata: { requirementId: req.params.requirementId },
+      metadata: { requirementId: req.params.requirementId, name: item.requirement_name, documentDate },
     });
     res.json({ application: await hydrate(next) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** The couple's yes/no answers; they decide which conditional requirements are on the checklist. */
+async function updateCircumstances(req, res) {
+  try {
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row) return res.status(404).json({ error: 'Application not found.' });
+    if (['rejected', 'completed'].includes(row.status)) {
+      throw httpError(400, 'This application can no longer be updated.');
+    }
+    const circumstances = normalizeCircumstances(req.body?.circumstances);
+    const updated = await pool.query(
+      `UPDATE marriage_application SET circumstances = $1::jsonb, updated_at = NOW()
+       WHERE id = $2 AND parish_id = $3 RETURNING *`,
+      [JSON.stringify(circumstances), row.id, req.parishId]
+    );
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'marriage_application.circumstances_updated',
+      entityType: 'marriage_application',
+      entityId: row.id,
+      metadata: { circumstances },
+    });
+    res.json({ application: await hydrate(updated.rows[0]) });
   } catch (err) {
     return sendRecordError(res, err);
   }
@@ -485,9 +556,14 @@ async function confirmWeddingDate(req, res) {
     if (row.wedding_date_status !== 'reserved' || !row.wedding_event_id) {
       throw httpError(400, 'Reserve a wedding date before confirming it.');
     }
-    const requirements = await loadRequirements(row.id);
+    const event = await loadWeddingEvent(row.wedding_event_id);
+    const requirements = await loadRequirements(row, weddingDateOf(row, event));
     if (!requiredComplete(requirements)) {
       throw httpError(400, 'Verify every required document before confirming the wedding date.');
+    }
+    const stale = requirements.find((item) => item.submitted && (item.expired || item.expiresBeforeWedding));
+    if (stale) {
+      throw httpError(400, `The ${stale.name} expires before the wedding. Ask for a newer copy first.`);
     }
     if (row.dispensation_needed && row.dispensation_status !== 'granted') {
       throw httpError(400, 'Dispensation must be granted before the wedding date is confirmed.');
@@ -552,6 +628,9 @@ async function rejectApplication(req, res) {
 }
 
 module.exports = {
+  updateCircumstances,
+  ensureRequirementTypes,
+  addMissingRows,
   listApplications,
   getApplication,
   listMine,
