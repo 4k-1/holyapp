@@ -1,14 +1,8 @@
 import { useState } from "react";
-import { AdminButton, AdminField, AdminInput, AdminSelect } from "@/features/parish-admin/components/AdminForm";
-import {
-  addPerson,
-  updatePerson,
-  type ClergyRank,
-  type ParishPerson,
-  type PersonTitle,
-} from "../api/personnelApi";
+import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { addPerson, updatePerson, type ParishPerson, type PersonTitle } from "../api/personnelApi";
 import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
-import { CLERGY_RANK_OPTIONS, HONORIFIC_SUGGESTIONS, rankForTitle } from "../staffRoles";
+import { HONORIFIC_SUGGESTIONS } from "../staffRoles";
 
 interface StaffPersonModalProps {
   person?: ParishPerson;
@@ -20,7 +14,7 @@ interface StaffPersonModalProps {
 const MAX_TITLES = 6;
 const selectClass = "w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink";
 
-/** Adds someone to the staff list, or edits their name parts, clergy status, titles and contact (item 4). */
+/** Adds someone to the staff list, or edits their name parts, titles and contact (item 4). The honorific decides clergy status. */
 export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPersonModalProps) {
   const firstRole = roles[0] ?? "Parish Priest";
   const [honorific, setHonorific] = useState(person?.honorific ?? "");
@@ -29,9 +23,6 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
   const [titles, setTitles] = useState<PersonTitle[]>(
     person?.titles?.length ? person.titles : [{ title: person?.role ?? firstRole, scope: null }]
   );
-  const [clergyRank, setClergyRank] = useState<ClergyRank>(person?.clergyRank ?? rankForTitle(firstRole));
-  // A new person's clergy status follows their first title until it is chosen by hand.
-  const [rankTouched, setRankTouched] = useState(Boolean(person));
   const [contact, setContact] = useState(person?.contact ?? "");
   const [status, setStatus] = useState<"active" | "inactive">(person?.status ?? "active");
   const [saving, setSaving] = useState(false);
@@ -40,7 +31,6 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
 
   function setTitle(index: number, patch: Partial<PersonTitle>) {
     setTitles((list) => list.map((t, i) => (i === index ? { ...t, ...patch } : t)));
-    if (index === 0 && patch.title && !rankTouched) setClergyRank(rankForTitle(patch.title));
   }
 
   function makePrimary(index: number) {
@@ -62,7 +52,6 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
       const input = {
         honorific: honorific.trim(),
         postNominals: postNominals.trim(),
-        clergyRank,
         titles: titles.map((t) => ({ title: t.title, scope: t.scope?.trim() || null })),
         contact: contact.trim(),
         ...(nameLocked ? {} : { name: name.trim() }),
@@ -126,22 +115,9 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
             Shown as <span className="font-semibold text-admin-ink">{preview}</span>
           </p>
         )}
-
-        <AdminField label="Clergy status" className="mb-0">
-          <AdminSelect
-            value={clergyRank}
-            onChange={(e) => {
-              setClergyRank(e.target.value as ClergyRank);
-              setRankTouched(true);
-            }}
-          >
-            {CLERGY_RANK_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </AdminSelect>
-        </AdminField>
+        <p className="-mt-1 text-admin-support text-admin-ink-muted">
+          Fr. or Msgr. marks a priest, Dcn. a deacon, and Sr. or Bro. a sister or brother.
+        </p>
 
         <div>
           <p className="mb-1.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">Titles</p>

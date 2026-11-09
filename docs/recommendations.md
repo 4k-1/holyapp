@@ -72,8 +72,9 @@ Everything marked Done is committed on the `sprint-5` branch. The hosting, email
 
 **Done (2026-11-09), simpler than proposed below.** Migration 033 adds `honorific`, `post_nominals`,
 `clergy_rank`, `role_scope` and `other_titles` (a JSON list) to `parish_personnel`; no `personnel_title`
-table. `role_title` stays as the primary title. Clergy comes from `clergy_rank`, so a chaplain stays
-clergy. Only one active Parish Priest per parish, and only a priest (checked in the app, on both the
+table. `role_title` stays as the primary title. Clergy comes from `clergy_rank`, which the server
+works out from the honorific on every save (Fr./Msgr. priest, Dcn. deacon, Sr./Bro. religious, else
+lay; no separate field), so a chaplain stays clergy. Only one active Parish Priest per parish, and only someone with Fr. or Msgr. (checked in the app, on both the
 Staff list and Staff accounts). Up to 6 titles, each with an optional "where". The staff list shows the
 full name, the primary title and a "+N" chip. **Parked:** dated titles and history ("who was pastor in
 2019?"); add the table from the design below if that is needed.

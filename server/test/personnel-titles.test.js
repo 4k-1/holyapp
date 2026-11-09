@@ -23,7 +23,6 @@ describe('Staff titles', () => {
       name: 'Pedro Cruz',
       honorific: 'Rev. Fr.',
       postNominals: 'SVD',
-      clergyRank: 'priest',
       titles: [{ title: 'Parish Priest' }, { title: 'Chaplain', scope: 'St. Jude School' }],
     });
     assert.equal(res.status, 201, JSON.stringify(res.body));
@@ -32,6 +31,7 @@ describe('Staff titles', () => {
     assert.equal(pastor.plainName, 'Pedro Cruz');
     assert.equal(pastor.role, 'Parish Priest');
     assert.equal(pastor.clergy, true);
+    assert.equal(pastor.clergyRank, 'priest');
     assert.deepEqual(pastor.titles, [
       { title: 'Parish Priest', scope: null },
       { title: 'Chaplain', scope: 'St. Jude School' },
@@ -47,12 +47,18 @@ describe('Staff titles', () => {
   });
 
   it('allows only one active Parish Priest, and only a priest', async () => {
-    const second = await add({ name: 'Fr. Mark Lim', clergyRank: 'priest', titles: [{ title: 'Parish Priest' }] });
+    const second = await add({ name: 'Fr. Mark Lim', titles: [{ title: 'Parish Priest' }] });
     assert.equal(second.status, 409);
     assert.match(second.body.error, /Rev\. Fr\. Pedro Cruz, SVD is the Parish Priest/);
 
-    const lay = await add({ name: 'Ana Reyes', clergyRank: 'lay', titles: [{ title: 'Parish Priest' }] });
+    const lay = await add({ name: 'Mark Lim', titles: [{ title: 'Parish Priest' }] });
     assert.equal(lay.status, 400);
+    assert.match(lay.body.error, /Add Fr\. or Msgr\./);
+
+    const noFr = await api(parish.admin)
+      .post('/staff')
+      .send({ name: 'Noel Uy', email: `uy.${Date.now()}@holyapp.test`, role: 'Parish Priest', accessRole: 'staff' });
+    assert.equal(noFr.status, 400);
 
     // Through Staff accounts too.
     const email = `noel.${Date.now()}@holyapp.test`;
@@ -71,7 +77,7 @@ describe('Staff titles', () => {
     assert.equal(moved.status, 200, JSON.stringify(moved.body));
     assert.equal(moved.body.person.clergy, true, 'still a priest without the title');
 
-    const next = await add({ name: 'Fr. Mark Lim', clergyRank: 'priest', titles: [{ title: 'Parish Priest' }] });
+    const next = await add({ name: 'Fr. Mark Lim', titles: [{ title: 'Parish Priest' }] });
     assert.equal(next.status, 201);
   });
 
@@ -81,6 +87,24 @@ describe('Staff titles', () => {
     const pedro = res.body.staff.find((s) => s.id === pastor.id);
     assert.equal(pedro.clergy, true);
     assert.equal(pedro.name, 'Rev. Fr. Pedro Cruz, SVD');
+  });
+
+  it('works out clergy status from the honorific', async () => {
+    const cases = [
+      ['Dcn.', 'deacon', true],
+      ['Sr.', 'religious', false],
+      ['Mr.', 'lay', false],
+      ['', 'lay', false],
+    ];
+    for (const [honorific, rank, clergy] of cases) {
+      const res = await add({ name: `Test ${rank} ${honorific}`, honorific, titles: [{ title: 'Catechist' }] });
+      assert.equal(res.status, 201, JSON.stringify(res.body));
+      assert.equal(res.body.person.clergyRank, rank, honorific);
+      assert.equal(res.body.person.clergy, clergy, honorific);
+    }
+    const changed = await api(parish.admin).patch(`/personnel/${pastor.id}`).send({ honorific: 'Mr.' });
+    assert.equal(changed.body.person.clergy, false, 'dropping Fr. makes them lay');
+    await api(parish.admin).patch(`/personnel/${pastor.id}`).send({ honorific: 'Rev. Fr.' });
   });
 
   it('refuses unknown or repeated titles, and an empty list', async () => {

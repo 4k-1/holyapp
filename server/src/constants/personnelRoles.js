@@ -1,6 +1,6 @@
 /**
  * Titles for people in the parish staff directory, with or without a system account. A person can hold
- * several (item 4); whether they are clergy comes from their clergy rank, not from a title.
+ * several (item 4); whether they are clergy comes from their honorific ("Fr."), not from a title.
  * Mirrored by client/src/features/parish-admin/staff/staffRoles.ts.
  */
 const CLERGY_ROLES = Object.freeze(['Parish Priest', 'Parochial Vicar', 'Guest Priest', 'Priest', 'Chaplain', 'Deacon']);
@@ -30,10 +30,21 @@ function isClergy(role) {
   return CLERGY_ROLES.includes(role);
 }
 
-/** The rank a new person most likely has, from their first title. */
-function rankForTitle(title) {
-  if (title === 'Deacon') return 'deacon';
-  if (CLERGY_ROLES.includes(title)) return 'priest';
+/**
+ * Clergy status from the honorific: "Fr.", "Rev. Fr.", "Msgr.", "Most Rev." → priest; "Dcn." → deacon;
+ * "Sr.", "Bro." → religious; anything else or none → lay. Stored in clergy_rank on every save.
+ */
+function rankForHonorific(honorific) {
+  const words = String(honorific || '')
+    .toLowerCase()
+    .replace(/\./g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+  const has = (...list) => words.some((w) => list.includes(w));
+  if (has('dcn', 'deacon', 'deac')) return 'deacon';
+  if (has('fr', 'father', 'msgr', 'monsignor', 'bishop', 'bp', 'archbishop', 'abp', 'cardinal')) return 'priest';
+  if (has('sr', 'sister', 'bro', 'brother', 'mother', 'mo')) return 'religious';
+  if (has('rev', 'reverend')) return 'priest';
   return 'lay';
 }
 
@@ -61,7 +72,7 @@ module.exports = {
   CLERGY_RANKS,
   isClergy,
   isClergyRank,
-  rankForTitle,
+  rankForHonorific,
   splitHonorific,
   formatPersonName,
 };

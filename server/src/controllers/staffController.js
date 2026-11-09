@@ -4,8 +4,8 @@ const { hashPassword } = require('../utils/password');
 const { writeAudit } = require('../utils/audit');
 const { notifyStaffRoleChange } = require('../utils/notify');
 
-const { PERSONNEL_ROLES, rankForTitle, splitHonorific, formatPersonName } = require('../constants/personnelRoles');
-const { assertOneParishPriest } = require('../utils/personnel');
+const { PERSONNEL_ROLES, rankForHonorific, splitHonorific, formatPersonName } = require('../constants/personnelRoles');
+const { assertCanBeParishPriest } = require('../utils/personnel');
 
 const JOB_TITLES = new Set(PERSONNEL_ROLES);
 const DEV_PASSWORD = 'password123';
@@ -73,23 +73,24 @@ async function upsertPersonnel({ parishId, userId, fullName, roleTitle, status }
   const personnelStatus = status === 'active' ? 'active' : 'inactive';
   const typed = splitHonorific(fullName);
   const person = existing.rows[0];
-  if (roleTitle === 'Parish Priest' && personnelStatus === 'active') {
-    await assertOneParishPriest(pool, parishId, person ? person.id : null);
+  const honorific = typed.honorific || person?.honorific || null;
+  if (roleTitle === 'Parish Priest') {
+    await assertCanBeParishPriest(pool, { parishId, personId: person ? person.id : null, honorific, status: personnelStatus });
   }
   if (person) {
     await pool.query(
       `UPDATE parish_personnel
-       SET full_name = $1, role_title = $2, status = $3, honorific = COALESCE($5, honorific),
+       SET full_name = $1, role_title = $2, status = $3, honorific = $5, clergy_rank = $6,
            role_scope = CASE WHEN role_title = $2 THEN role_scope END, updated_at = NOW()
        WHERE user_id = $4`,
-      [typed.name, roleTitle, personnelStatus, userId, typed.honorific]
+      [typed.name, roleTitle, personnelStatus, userId, honorific, rankForHonorific(honorific)]
     );
     return;
   }
   await pool.query(
     `INSERT INTO parish_personnel (parish_id, full_name, role_title, contact_info, user_id, status, honorific, clergy_rank)
      VALUES ($1, $2, $3, NULL, $4, $5, $6, $7)`,
-    [parishId, typed.name, roleTitle, userId, personnelStatus, typed.honorific, rankForTitle(roleTitle)]
+    [parishId, typed.name, roleTitle, userId, personnelStatus, typed.honorific, rankForHonorific(typed.honorific)]
   );
 }
 
@@ -126,7 +127,7 @@ async function createStaff(req, res) {
     let person = null;
     if (personnelId) {
       const found = await pool.query(
-        'SELECT id, full_name, role_title, user_id FROM parish_personnel WHERE id = $1 AND parish_id = $2',
+        'SELECT id, full_name, honorific, role_title, user_id FROM parish_personnel WHERE id = $1 AND parish_id = $2',
         [personnelId, req.parishId]
       );
       person = found.rows[0];
@@ -145,7 +146,14 @@ async function createStaff(req, res) {
     }
 
     // Check the one-Parish-Priest rule before anything is saved.
-    if (roleTitle === 'Parish Priest') await assertOneParishPriest(pool, req.parishId, person ? person.id : null);
+    if (roleTitle === 'Parish Priest') {
+      await assertCanBeParishPriest(pool, {
+        parishId: req.parishId,
+        personId: person ? person.id : null,
+        honorific: splitHonorific(name).honorific || person?.honorific,
+        status: 'active',
+      });
+    }
     const { firstName, lastName } = splitName(splitHonorific(name).name);
     const passwordHash = await hashPassword(DEV_PASSWORD);
     const userRole = accessToRole(accessRole);
@@ -216,8 +224,13 @@ async function updateStaff(req, res) {
       return res.status(409).json({ error: 'An account with this email already exists.' });
     }
 
-    if (roleTitle === 'Parish Priest' && current.status === 'active') {
-      await assertOneParishPriest(pool, req.parishId, current.personnel_id);
+    if (roleTitle === 'Parish Priest') {
+      await assertCanBeParishPriest(pool, {
+        parishId: req.parishId,
+        personId: current.personnel_id,
+        honorific: splitHonorific(name).honorific || current.honorific,
+        status: current.status,
+      });
     }
     const { firstName, lastName } = splitName(splitHonorific(name).name);
     const nextRole = accessToRole(accessRole);

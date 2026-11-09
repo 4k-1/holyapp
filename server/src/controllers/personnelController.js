@@ -1,14 +1,8 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { requiredText, optionalText, sendRecordError } = require('../utils/recordFields');
-const {
-  PERSONNEL_ROLES,
-  PARISH_PRIEST,
-  CLERGY_RANKS,
-  rankForTitle,
-  splitHonorific,
-} = require('../constants/personnelRoles');
-const { toPerson, assertOneParishPriest, holdsParishPriest, httpError } = require('../utils/personnel');
+const { PERSONNEL_ROLES, rankForHonorific, splitHonorific } = require('../constants/personnelRoles');
+const { toPerson, assertCanBeParishPriest, holdsParishPriest, httpError } = require('../utils/personnel');
 
 const MAX_TITLES = 6;
 
@@ -38,17 +32,9 @@ function parseTitles(body, fallback) {
   });
 }
 
-function parseRank(value, fallback) {
-  if (value === undefined || value === null || value === '') return fallback;
-  if (!CLERGY_RANKS.includes(value)) throw httpError(400, 'Clergy status is not valid.');
-  return value;
-}
-
-/** A Parish Priest must be a priest; and only one active person may hold the title. */
-async function checkTitles(db, { parishId, personId, titles, rank, status }) {
-  if (!holdsParishPriest(titles)) return;
-  if (rank !== 'priest') throw httpError(400, `The ${PARISH_PRIEST} must have clergy status Priest.`);
-  if (status === 'active') await assertOneParishPriest(db, parishId, personId);
+/** A Parish Priest must be a priest (by honorific); and only one active person may hold the title. */
+async function checkTitles(db, { parishId, personId, titles, honorific, status }) {
+  if (holdsParishPriest(titles)) await assertCanBeParishPriest(db, { parishId, personId, honorific, status });
 }
 
 /** Everyone who serves the parish: priests and staff, with or without a sign-in account. */
@@ -72,10 +58,10 @@ async function createPerson(req, res) {
     // "Fr. Juan Santos" typed in one box still works: the honorific is split off.
     const typed = splitHonorific(requiredText(req.body?.name, 'Name'));
     const titles = parseTitles(req.body);
-    const rank = parseRank(req.body?.clergyRank, rankForTitle(titles[0].title));
     const honorific = shortText(req.body?.honorific, 'honorific', 30) || typed.honorific;
     const postNominals = shortText(req.body?.postNominals, 'letters after the name', 30);
-    await checkTitles(pool, { parishId: req.parishId, personId: null, titles, rank, status: 'active' });
+    const rank = rankForHonorific(honorific);
+    await checkTitles(pool, { parishId: req.parishId, personId: null, titles, honorific, status: 'active' });
     const inserted = await pool.query(
       `INSERT INTO parish_personnel (parish_id, full_name, role_title, role_scope, other_titles, contact_info, status,
                                      honorific, post_nominals, clergy_rank)
@@ -108,8 +94,8 @@ async function createPerson(req, res) {
 }
 
 /**
- * Name and status of people with an account follow their staff account, so only their titles, clergy
- * status, honorific and contact change here. People without an account can be renamed and set inactive.
+ * Name and status of people with an account follow their staff account, so only their titles,
+ * honorific (which sets clergy status) and contact change here. People without an account can be renamed and set inactive.
  */
 async function updatePerson(req, res) {
   try {
@@ -121,7 +107,6 @@ async function updatePerson(req, res) {
     if (!row) return res.status(404).json({ error: 'Person not found.' });
 
     const titles = parseTitles(req.body, [{ title: row.role_title, scope: row.role_scope }, ...(row.other_titles || [])]);
-    const rank = parseRank(req.body?.clergyRank, row.clergy_rank);
     const contact = req.body?.contact !== undefined ? optionalText(req.body.contact) : row.contact_info;
     let honorific = req.body?.honorific !== undefined ? shortText(req.body.honorific, 'honorific', 30) : row.honorific;
     const postNominals =
@@ -143,7 +128,8 @@ async function updatePerson(req, res) {
     } else if (req.body?.status !== undefined && req.body.status !== row.status) {
       throw httpError(400, 'This person has a staff account. Change their status under Staff accounts.');
     }
-    await checkTitles(pool, { parishId: req.parishId, personId: row.id, titles, rank, status });
+    const rank = rankForHonorific(honorific);
+    await checkTitles(pool, { parishId: req.parishId, personId: row.id, titles, honorific, status });
 
     const updated = await pool.query(
       `UPDATE parish_personnel

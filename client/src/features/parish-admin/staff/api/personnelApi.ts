@@ -16,12 +16,13 @@ export interface ParishPerson {
   plainName: string;
   honorific: string;
   postNominals: string;
+  /** Worked out from the honorific. */
   clergyRank: ClergyRank;
   /** The primary title. */
   role: string;
   /** All titles, primary first. */
   titles: PersonTitle[];
-  /** From the clergy status: priests and deacons. */
+  /** Priests and deacons, from the honorific. */
   clergy: boolean;
   contact: string;
   status: "active" | "inactive";
@@ -33,7 +34,6 @@ export interface PersonInput {
   name?: string;
   honorific?: string;
   postNominals?: string;
-  clergyRank?: ClergyRank;
   /** Primary first. */
   titles?: PersonTitle[];
   role?: string;

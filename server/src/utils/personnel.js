@@ -1,6 +1,6 @@
 // Shared by the Staff list and Staff accounts: how a person reads, and the one-Parish-Priest rule (item 4).
 
-const { PARISH_PRIEST, formatPersonName, isClergyRank } = require('../constants/personnelRoles');
+const { PARISH_PRIEST, formatPersonName, isClergyRank, rankForHonorific } = require('../constants/personnelRoles');
 
 function httpError(status, message) {
   const err = new Error(message);
@@ -62,4 +62,23 @@ function holdsParishPriest(titles) {
   return titles.some((t) => t.title === PARISH_PRIEST);
 }
 
-module.exports = { titlesOf, displayNameOf, toPerson, assertOneParishPriest, holdsParishPriest, httpError };
+/**
+ * Before someone is saved as Parish Priest: their honorific must make them a priest, and no other
+ * active person may hold the title. Call before anything is written.
+ */
+async function assertCanBeParishPriest(db, { parishId, personId, honorific, status }) {
+  if (rankForHonorific(honorific) !== 'priest') {
+    throw httpError(400, `Add Fr. or Msgr. before their name to make them ${PARISH_PRIEST}.`);
+  }
+  if (status === 'active') await assertOneParishPriest(db, parishId, personId);
+}
+
+module.exports = {
+  titlesOf,
+  displayNameOf,
+  toPerson,
+  assertOneParishPriest,
+  assertCanBeParishPriest,
+  holdsParishPriest,
+  httpError,
+};

@@ -71,7 +71,7 @@ What the parish is struggling with now.
 | Item | Work | Needs |
 | --- | --- | --- |
 | E1 + 8.2 | **Parked** (see E1). Per-area access per person, on a `role_assignment` table (parish scope only for now) | — |
-| 4 | **Done.** Several titles per staff member, name in parts, clergy status; one Parish Priest (migration 033). Title history parked | — |
+| 4 | **Done.** Several titles per staff member, name in parts, clergy status from the honorific; one Parish Priest (migration 033). Title history parked | — |
 | E6 | Parish priest approves without being the admin | 4, E1 |
 | E4 | Staff-added register entries wait for approval; no certificate until approved | E6 |
 | E2 | Handover when someone leaves | — |
