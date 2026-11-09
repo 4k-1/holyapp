@@ -199,7 +199,8 @@ async function getDashboard(req, res) {
       ),
       pool.query(
         `SELECT COUNT(*)::int AS n FROM event
-         WHERE parish_id = $1 AND record_status = 'Pending' AND status <> 'cancelled' AND start_datetime < NOW()`,
+         WHERE parish_id = $1 AND record_status = 'Pending' AND status <> 'cancelled'
+           AND start_datetime < (NOW() AT TIME ZONE 'Asia/Manila')`,
         [parishId]
       ),
       donationTotal(parishId, monthStart, nextMonthStart),
@@ -276,8 +277,8 @@ async function getDashboard(req, res) {
         id: 'records',
         bold: plural(pendingRecords.rows[0].n, 'past event'),
         rest: pendingRecords.rows[0].n === 1 ? ' still needs to be recorded in the register.' : ' still need to be recorded in the register.',
-        href: 'schedule',
-        cta: 'Open schedule',
+        href: 'schedule?needs=record',
+        cta: 'See the list',
       });
     }
     if (unassigned > 0) {

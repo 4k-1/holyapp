@@ -321,6 +321,15 @@ After a baptism, wedding or funeral has taken place, keep a "Recorded in registe
 until the register entry is made. Ideally the entry is created from the event, with the names and
 date filled in. This builds on the existing Pending / Recorded flag.
 
+- **Done (migration 036):** baptisms, confirmations, weddings and funerals are marked "Needs
+  recording" when added (upcoming ones were marked by the migration; past ones were left alone).
+  "Input record" opens the right register form with the date and priest filled in, and a wedding
+  booked through a marriage application brings the couple's names. Each entry keeps the event it came
+  from (`schedule_event_id`), and the event lists its entries. A wedding or funeral closes when its
+  entry is saved. Baptisms and confirmations are batches: "Save and add the next" keeps the date,
+  priest and book for the next person, and staff close the session with "All recorded". The
+  dashboard links to a "Needs recording" list on the Schedule page.
+
 #### C12. Public and shared views (priority: low)
 
 - A printable weekly schedule for the bulletin board and Sunday announcements.

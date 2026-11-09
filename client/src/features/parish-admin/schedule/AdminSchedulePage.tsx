@@ -1,5 +1,6 @@
 // src/features/parish-admin/schedule/AdminSchedulePage.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { getOccurrencesForMonth } from "./api/scheduleApi";
 import { splitRegularMasses, toISO } from "./scheduleHelpers";
@@ -14,7 +15,10 @@ import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/A
 const TODAY_ISO = toISO(new Date());
 
 export function AdminSchedulePage() {
-  const [view, setView] = useState<"calendar" | "list">("calendar");
+  // The dashboard links here with ?needs=record to list sacraments still to be written in the register.
+  const [searchParams] = useSearchParams();
+  const needsRecording = searchParams.get("needs") === "record";
+  const [view, setView] = useState<"calendar" | "list">(needsRecording ? "list" : "calendar");
   const [cursor, setCursor] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(TODAY_ISO);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -122,6 +126,7 @@ export function AdminSchedulePage() {
           onSearchQueryChange={setListSearch}
           onEdit={setEditTarget}
           reloadKey={listVersion}
+          initialNeedsRecording={needsRecording}
         />
       ) : (
         <div className={`grid grid-cols-1 items-start gap-4 ${sidebarCollapsed ? "" : "lg:grid-cols-[minmax(0,1fr)_360px]"}`}>

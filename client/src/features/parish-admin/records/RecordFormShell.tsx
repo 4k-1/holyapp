@@ -14,6 +14,7 @@ export function RecordFormShell({
   notice,
   submitting,
   submitLabel,
+  nextLabel,
   onSubmit,
   children,
 }: {
@@ -23,6 +24,8 @@ export function RecordFormShell({
   notice?: ReactNode;
   submitting: boolean;
   submitLabel: string;
+  /** A second save button that keeps the form open for the next entry (a batch from the schedule). */
+  nextLabel?: string;
   onSubmit: (e: FormEvent) => void;
   children: ReactNode;
 }) {
@@ -50,6 +53,11 @@ export function RecordFormShell({
           <AdminButton variant="secondary" type="button" onClick={() => navigate(-1)}>
             Cancel
           </AdminButton>
+          {nextLabel && (
+            <AdminButton variant="secondary" type="submit" form={formId} disabled={submitting} data-next="true">
+              {nextLabel}
+            </AdminButton>
+          )}
           <AdminButton type="submit" form={formId} disabled={submitting}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="h-3.5 w-3.5">
               <polyline points="20 6 9 17 4 12" strokeLinecap="round" strokeLinejoin="round" />

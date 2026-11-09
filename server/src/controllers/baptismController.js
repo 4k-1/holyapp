@@ -10,6 +10,7 @@ const {
   recordStatus,
 } = require('../utils/recordFields');
 const { findParishRecord, archivedListClause } = require('../utils/recordQuery');
+const { scheduleEventFor, linkScheduleEvent } = require('../utils/scheduleRecordLink');
 const { listRecordCertificates } = require('./certificateController');
 const { listBaptismAnnotations } = require('../utils/baptismAnnotation');
 const { parseGodparents, saveGodparents, listGodparents } = require('../utils/baptismGodparents');
@@ -48,6 +49,8 @@ function legitimacyToDb(value) {
 
 function toBaptismalRecord(row) {
   return {
+    // The schedule event it was recorded from (C11), if any.
+    scheduleEventId: row.schedule_event_id || null,
     id: row.id,
     parishId: row.parish_id,
     firstName: row.first_name,
@@ -163,6 +166,7 @@ async function createBaptism(req, res) {
 
     const record = await inTransaction(async (db) => {
       const source = await parseLedgerSource(db, req.parishId, req.body || {});
+      const eventId = await scheduleEventFor(db, { parishId: req.parishId, table: 'baptism', body: req.body });
       const inserted = await db.query(
         `INSERT INTO baptism (
          parish_id, first_name, middle_name, last_name, sex,
@@ -222,6 +226,8 @@ async function createBaptism(req, res) {
         inserted.rows[0].ledger_page_id = source.pageId;
         inserted.rows[0].ledger_row = source.row;
       }
+      await linkScheduleEvent(db, { table: 'baptism', recordId: inserted.rows[0].id, eventId });
+      inserted.rows[0].schedule_event_id = eventId;
       const created = toBaptismalRecord(inserted.rows[0]);
       await saveGodparents(db, created.id, godparents);
       created.godparents = await listGodparents(db, created.id);

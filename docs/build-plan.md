@@ -94,14 +94,14 @@ and gets more expensive the longer it waits.
 
 | Item | Work | Needs |
 | --- | --- | --- |
-| B6 + C10 | `place` table for church and chapels (also used by donations and intentions) | — |
+| B6 + C10 | **Parked.** `place` table for church and chapels (also used by donations and intentions) | — |
 | C2 | **Done.** Assign staff by ID, not typed name; guests for visiting priests (migration 035) | — |
 | C1 | **Not needed:** Masses aren't changed one date at a time. Date ranges for patterns are parked. **Done instead:** Mass time changes in Settings carry booked intentions | — |
 | C4 | Notifications on changes; move intentions off cancelled Masses | Job queue (8.9) |
 | B5 + C5 | Liturgical calendar and booking warnings | — |
 | C3, C6 | Travel buffers; priests' Mass limits and days off | C2, place table |
 | B7 + C7 | Funeral fast booking; emergency sick calls | C2 |
-| C11 | Reminder to record the sacrament in the register | — |
+| C11 | **Done.** Reminder to record the sacrament in the register; batches closed by hand (migration 036) | — |
 
 ## Phase 5 — Parish life
 

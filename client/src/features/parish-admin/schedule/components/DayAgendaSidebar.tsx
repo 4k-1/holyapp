@@ -2,7 +2,8 @@
 import { useNavigate } from "react-router";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { markRecordStatus } from "../api/scheduleApi";
-import { getRecordFormPath, getRecordFormPrefill } from "../recordLinkHelpers";
+import { getRecordFormPath, getRecordFormPrefill, isBatchEvent } from "../recordLinkHelpers";
+import { RecordedEntries } from "./RecordedEntries";
 import { ScheduleKebabMenu } from "./ScheduleKebabMenu";
 import { AssigneeName } from "./StaffSelect";
 import { EVENT_TYPE_STYLES } from "@/features/parish-admin/schedule/eventTypeStyles";
@@ -115,12 +116,13 @@ export function DayAgendaSidebar({
                     <ScheduleKebabMenu
                       items={[
                         o.recordStatus === "Pending" && {
-                          label: "Input record",
+                          label: isBatchEvent(o.type) ? "Add a register entry" : "Input record",
                           primary: true,
                           onClick: () => handleInputRecord(o),
                         },
+                        // A baptism session is closed by hand once every child is in the register.
                         o.recordStatus === "Pending" && {
-                          label: "Already recorded",
+                          label: isBatchEvent(o.type) ? "All recorded" : "Already recorded",
                           onClick: () => handleMarkRecorded(o),
                         },
                         !o.isRecurringOccurrence && o.source === "manual" && { label: "Edit", onClick: () => onEdit(o) },
@@ -133,6 +135,7 @@ export function DayAgendaSidebar({
                     />
                   </div>
                   <p className="mt-0.5 text-admin-body font-semibold text-admin-ink">{o.title}</p>
+                  <RecordedEntries entries={o.recorded} />
                   {o.location && <p className="text-admin-support text-admin-ink-muted">{o.location}</p>}
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
                     <span className={`rounded px-1.5 py-0.5 text-[0.6875rem] font-semibold ${style.pill ?? `${style.dot} text-white`}`}>

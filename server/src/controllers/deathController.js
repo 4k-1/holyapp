@@ -13,6 +13,7 @@ const {
 } = require('../utils/recordFields');
 const { annotateFromSacrament } = require('../utils/baptismAnnotation');
 const { findParishRecord, archivedListClause } = require('../utils/recordQuery');
+const { scheduleEventFor, linkScheduleEvent } = require('../utils/scheduleRecordLink');
 const { listRecordCertificates } = require('./certificateController');
 
 const SACRAMENTS = new Set(['last_rites', 'burial_mass', 'confession', 'communion']);
@@ -35,6 +36,8 @@ function toSacrament(row) {
 
 function toDeathRecord(row, kin = [], sacramentsReceived = []) {
   return {
+    // The schedule event it was recorded from (C11), if any.
+    scheduleEventId: row.schedule_event_id || null,
     id: row.id,
     parishId: row.parish_id,
     firstName: row.first_name,
@@ -191,6 +194,9 @@ async function createDeath(req, res) {
       ]
     );
     const deathRow = inserted.rows[0];
+    const eventId = await scheduleEventFor(client, { parishId: req.parishId, table: 'death', body });
+    await linkScheduleEvent(client, { table: 'death', recordId: deathRow.id, eventId });
+    deathRow.schedule_event_id = eventId;
 
     const kinRows = [];
     for (const person of kin) {

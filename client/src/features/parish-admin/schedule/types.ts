@@ -50,6 +50,10 @@ export interface ScheduleBlock {
   /** Where it happens; regular Masses are in the main church. Blank on older entries. */
   location?: string;
   recordStatus?: "Pending" | "Recorded";
+  /** Register entries made from this event (C11); a baptism session can have several. */
+  recorded?: { id: string; register: "baptismal" | "confirmation" | "marriage" | "death"; name: string }[];
+  /** A wedding booked through a marriage application. */
+  marriageApplicationId?: string | null;
   showOnOverview?: boolean;
 }
 

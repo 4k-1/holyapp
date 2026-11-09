@@ -137,7 +137,9 @@ export async function getDashboardView(): Promise<DashboardView> {
         chipTone: "green",
         label: "Events this week",
         value: String(weekEvents.length),
-        delta: stats.pendingRecords ? `${stats.pendingRecords} need recording` : "All recorded",
+        delta: stats.pendingRecords
+          ? `${stats.pendingRecords} ${stats.pendingRecords === 1 ? "needs" : "need"} recording`
+          : "All recorded",
       },
     ],
     quickActions: QUICK_ACTIONS,

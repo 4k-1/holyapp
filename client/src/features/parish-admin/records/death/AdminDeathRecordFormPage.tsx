@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import {
   AdminButton,
   AdminField,
@@ -15,6 +15,8 @@ import {
   updateDeathRecord,
 } from "@/features/parish-admin/records/api/deathRecordsApi";
 import { BaptismalRecordLinkField } from "@/features/parish-admin/records/BaptismalRecordLinkField";
+import { schedulePrefillOf } from "@/features/parish-admin/records/scheduleLink";
+import { ScheduleLinkNotice } from "@/features/parish-admin/records/ScheduleLinkNotice";
 import {
   DEATH_SACRAMENT_LABELS,
   DEATH_SACRAMENT_OPTIONS,
@@ -106,7 +108,12 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
     [parish.id, id, mode]
   );
 
-  const [form, setForm] = useState<FormState>(emptyForm);
+  const location = useLocation();
+  // Opened from a funeral on the schedule (C11): the funeral day is usually the burial day.
+  const prefill = mode === "create" ? schedulePrefillOf(location.state) : null;
+  const [form, setForm] = useState<FormState>(() =>
+    prefill ? { ...emptyForm(), dateOfBurial: prefill.date ?? "", minister: prefill.priest ?? "" } : emptyForm()
+  );
   const [submitting, setSubmitting] = useState(false);
 
   // Fill the form once the record being edited has loaded.
@@ -234,6 +241,7 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
           lastName: k.lastName || undefined,
         })),
       sacramentsReceived: form.sacramentsReceived.map((sacramentName) => ({ sacramentName })),
+      ...(prefill ? { scheduleEventId: prefill.scheduleBlockId } : {}),
     };
     try {
       if (mode === "edit") {
@@ -251,6 +259,7 @@ export function AdminDeathRecordFormPage({ mode }: { mode: "create" | "edit" }) 
     <RecordFormShell
       title={`${mode === "edit" ? "Edit" : "Add"} Death Record`}
       subtitle="Enter details exactly as they appear in the parish death register."
+      notice={prefill && <ScheduleLinkNotice prefill={prefill} saved={[]} />}
       submitting={submitting}
       submitLabel={mode === "edit" ? "Save changes" : "Confirm & add record"}
       onSubmit={handleSubmit}

@@ -4,7 +4,8 @@ import { useNavigate } from "react-router";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminInput, AdminSelect } from "@/features/parish-admin/components/AdminForm";
 import { listAllBlocks, markRecordStatus } from "../api/scheduleApi";
-import { getRecordFormPath, getRecordFormPrefill } from "../recordLinkHelpers";
+import { getRecordFormPath, getRecordFormPrefill, isBatchEvent } from "../recordLinkHelpers";
+import { RecordedEntries } from "./RecordedEntries";
 import { parseTimeToMinutes, toISO } from "../scheduleHelpers";
 import { EVENT_TYPE_LABELS, EVENT_TYPE_STYLES } from "../types";
 import type { ScheduleBlock, ScheduleEventType } from "../types";
@@ -20,13 +21,23 @@ interface EventsListViewProps {
   onEdit: (block: ScheduleBlock) => void;
   /** Changes when the parent saved an event, so the list fetches again. */
   reloadKey: number;
+  /** Start on past sacraments still to be written in the register (from the dashboard). */
+  initialNeedsRecording?: boolean;
 }
 
-export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange, onEdit, reloadKey }: EventsListViewProps) {
+export function EventsListView({
+  onViewDay,
+  searchQuery,
+  onSearchQueryChange,
+  onEdit,
+  reloadKey,
+  initialNeedsRecording = false,
+}: EventsListViewProps) {
   const navigate = useNavigate();
   const [blocks, setBlocks] = useState<ScheduleBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<"All" | ScheduleEventType>("All");
+  const [needsRecording, setNeedsRecording] = useState(initialNeedsRecording);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -70,6 +81,8 @@ export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange, on
     );
   }
   if (typeFilter !== "All") filtered = filtered.filter((b) => b.type === typeFilter);
+  // Sacraments that have taken place and aren't in the register yet (C11).
+  if (needsRecording) filtered = filtered.filter((b) => b.recordStatus === "Pending" && b.date <= TODAY_ISO);
   if (dateFrom) filtered = filtered.filter((b) => b.date >= dateFrom);
   if (dateTo) filtered = filtered.filter((b) => b.date <= dateTo);
   filtered.sort((a, b) => {
@@ -116,6 +129,15 @@ export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange, on
               {EVENT_TYPE_LABELS[t]}
             </option>
           ))}
+        </AdminSelect>
+        <AdminSelect
+          value={needsRecording ? "record" : "all"}
+          onChange={(e) => setNeedsRecording(e.target.value === "record")}
+          aria-label="Filter by register status"
+          className="w-full sm:w-auto"
+        >
+          <option value="all">All events</option>
+          <option value="record">Needs recording</option>
         </AdminSelect>
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <AdminInput
@@ -223,7 +245,12 @@ export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange, on
                     </td>
                     <td className="px-4 py-2.5">
                       {b.recordStatus ? (
-                        <AdminBadge tone={b.recordStatus === "Pending" ? "gold" : "green"}>{b.recordStatus}</AdminBadge>
+                        <>
+                          <AdminBadge tone={b.recordStatus === "Pending" ? "gold" : "green"}>
+                            {b.recordStatus === "Pending" ? "Needs recording" : "Recorded"}
+                          </AdminBadge>
+                          <RecordedEntries entries={b.recorded} />
+                        </>
                       ) : (
                         <AdminBadge tone={isPast ? "muted" : "green"}>{isPast ? "Past" : "Upcoming"}</AdminBadge>
                       )}
@@ -249,7 +276,15 @@ export function EventsListView({ onViewDay, searchQuery, onSearchQueryChange, on
                             onClick={() => handleInputRecord(b)}
                             className="whitespace-nowrap shrink-0 text-admin-support font-semibold text-admin-green-700 hover:underline"
                           >
-                            Input record
+                            {isBatchEvent(b.type) ? "Add entry" : "Input record"}
+                          </button>
+                        )}
+                        {b.recordStatus === "Pending" && (
+                          <button
+                            onClick={() => markRecordStatus(b.id, "Recorded").then(load)}
+                            className="whitespace-nowrap shrink-0 text-admin-support font-semibold text-admin-ink-muted hover:underline"
+                          >
+                            {isBatchEvent(b.type) ? "All recorded" : "Already recorded"}
                           </button>
                         )}
                       </div>

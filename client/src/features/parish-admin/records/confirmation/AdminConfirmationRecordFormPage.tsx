@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import {
   AdminField,
   AdminFormPage,
@@ -15,6 +15,8 @@ import {
   updateConfirmationRecord,
 } from "@/features/parish-admin/records/api/confirmationRecordsApi";
 import { BaptismalRecordLinkField } from "@/features/parish-admin/records/BaptismalRecordLinkField";
+import { savedWithNext, schedulePrefillOf } from "@/features/parish-admin/records/scheduleLink";
+import { ScheduleLinkNotice } from "@/features/parish-admin/records/ScheduleLinkNotice";
 import { useAsync } from "@/hooks/useAsync";
 import type { BaptismalRecord } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
@@ -74,14 +76,22 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { recordId = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const id = decodeURIComponent(recordId);
+  // Opened from a confirmation on the schedule (C11).
+  const prefill = mode === "create" ? schedulePrefillOf(location.state) : null;
+  const [saved, setSaved] = useState<string[]>([]);
 
   const { data: existing, loading: existingLoading } = useAsync(
     () => (mode === "edit" ? getConfirmationRecord(parish.id, id) : Promise.resolve(undefined)),
     [parish.id, id, mode]
   );
 
-  const [form, setForm] = useState<FormState>(emptyForm);
+  const [form, setForm] = useState<FormState>(() =>
+    prefill
+      ? { ...emptyForm(), dateOfConfirmation: prefill.date ?? "", minister: prefill.priest ?? "" }
+      : emptyForm()
+  );
   const [submitting, setSubmitting] = useState(false);
 
   // Fill the form once the record being edited has loaded.
@@ -182,12 +192,28 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
       pageNumber: form.pageNumber,
       entryNumber: form.entryNumber,
       remarks: form.remarks || undefined,
+      ...(prefill ? { scheduleEventId: prefill.scheduleBlockId } : {}),
     };
+    const next = savedWithNext(e);
     try {
       if (mode === "edit") {
         await updateConfirmationRecord(parish.id, id, input);
       } else {
         await createConfirmationRecord(parish.id, input);
+      }
+      if (next) {
+        // Same session: keep the date, place, minister and book; clear the person.
+        setSaved((prev) => [...prev, [form.firstName, form.lastName].filter(Boolean).join(" ")]);
+        setForm({
+          ...emptyForm(),
+          dateOfConfirmation: form.dateOfConfirmation,
+          placeOfConfirmation: form.placeOfConfirmation,
+          minister: form.minister,
+          bookNumber: form.bookNumber,
+          pageNumber: form.pageNumber,
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
       }
       navigate(-1);
     } finally {
@@ -199,8 +225,10 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
     <RecordFormShell
       title={`${mode === "edit" ? "Edit" : "Add"} Confirmation Record`}
       subtitle="Enter details exactly as they appear in the parish confirmation register."
+      notice={prefill && <ScheduleLinkNotice prefill={prefill} saved={saved} />}
       submitting={submitting}
       submitLabel={mode === "edit" ? "Save changes" : "Confirm & add record"}
+      nextLabel={prefill?.batch ? "Save and add the next" : undefined}
       onSubmit={handleSubmit}
     >
       <RecordSection title="Person confirmed" note="As written in the register.">

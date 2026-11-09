@@ -14,7 +14,8 @@ import {
   getBaptismalRecord,
   updateBaptismalRecord,
 } from "@/features/parish-admin/records/api/baptismalRecordsApi";
-import { markRecordStatus } from "@/features/parish-admin/schedule/api/scheduleApi";
+import { savedWithNext, schedulePrefillOf } from "@/features/parish-admin/records/scheduleLink";
+import { ScheduleLinkNotice } from "@/features/parish-admin/records/ScheduleLinkNotice";
 import { useAsync } from "@/hooks/useAsync";
 import type { Godparent, LegitimacyStatus } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
@@ -61,13 +62,6 @@ interface FormState {
   godparent2Middle: string;
   godparent2Last: string;
   godparent2Role: GodparentRole | "";
-}
-
-interface ScheduleLinkPrefill {
-  subjectNameHint?: string;
-  date?: string;
-  priest?: string;
-  scheduleBlockId?: string;
 }
 
 const emptyForm = (placeOfBaptism = ""): FormState => ({
@@ -131,7 +125,9 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   // Opened from the register check screen with a ledger row, or from the schedule.
   const ledger = mode === "create" && isLedgerHandoff(location.state) ? location.state : null;
   const [ledgerDraft] = useState(() => (ledger ? draftFromLedgerRow(ledger) : null));
-  const prefill = mode === "create" && !ledger ? (location.state as ScheduleLinkPrefill | null) : null;
+  const prefill = mode === "create" && !ledger ? schedulePrefillOf(location.state) : null;
+  // Children already saved from this baptism session.
+  const [saved, setSaved] = useState<string[]>([]);
 
   const { data: existing, loading: existingLoading } = useAsync(
     () => (mode === "edit" ? getBaptismalRecord(parish.id, id) : Promise.resolve(undefined)),
@@ -250,15 +246,29 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       godparents: godparentsOf(form),
       // Made from a scanned register row: link the record to that page and row.
       ...(ledger?.ledgerPageId ? { ledgerPageId: ledger.ledgerPageId, ledgerRow: ledger.row } : {}),
+      // Opened from the schedule: link the entry to that baptism session.
+      ...(prefill ? { scheduleEventId: prefill.scheduleBlockId } : {}),
     };
+    const next = savedWithNext(e);
     try {
       if (mode === "edit") {
         await updateBaptismalRecord(parish.id, id, input);
       } else {
         await createBaptismalRecord(parish.id, input);
       }
-      if (prefill?.scheduleBlockId) {
-        await markRecordStatus(prefill.scheduleBlockId, "Recorded");
+      if (next) {
+        // Same session: keep the date, place, minister and book; clear the child.
+        setSaved((prev) => [...prev, [form.firstName, form.lastName].filter(Boolean).join(" ")]);
+        setForm({
+          ...emptyForm(parish.name),
+          dateOfBaptism: form.dateOfBaptism,
+          placeOfBaptism: form.placeOfBaptism,
+          minister: form.minister,
+          bookNumber: form.bookNumber,
+          pageNumber: form.pageNumber,
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
       }
       navigate(-1);
     } finally {
@@ -277,15 +287,13 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       notice={
         ledger && ledgerDraft ? (
           <LedgerSourcePanel handoff={ledger} notes={ledgerDraft.notes} />
-        ) : prefill && (
-          <p className="mb-4 rounded-[8px] border border-admin-gold-600/30 bg-admin-gold-100/40 px-3 py-2 text-admin-support text-admin-gold-700">
-            Linked from schedule: <span className="font-semibold">{prefill.subjectNameHint || "Untitled block"}</span>
-            {prefill.date ? ` · ${prefill.date}` : ""}
-          </p>
+        ) : (
+          prefill && <ScheduleLinkNotice prefill={prefill} saved={saved} person="child" />
         )
       }
       submitting={submitting}
       submitLabel={mode === "edit" ? "Save changes" : "Confirm & add record"}
+      nextLabel={prefill?.batch ? "Save and add the next" : undefined}
       onSubmit={handleSubmit}
     >
       <RecordSection title="Person baptized" note="As written in the register.">

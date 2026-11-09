@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { NEEDS_RECORDING } = require('../utils/scheduleRecordLink');
 const { isClergyRank, formatPersonName } = require('../constants/personnelRoles');
 const {
   convert24to12,
@@ -91,6 +92,10 @@ function toBlock(row) {
     ...assigneeOf(row.assigned_to, row.assigned_personnel_name, row.assignee_name),
     location: row.location || '',
     recordStatus: row.record_status || undefined,
+    /** Register entries made from it: [{ id, register, name }]. */
+    recorded: row.recorded || [],
+    /** A wedding booked through a marriage application. */
+    marriageApplicationId: row.marriage_application_id || null,
     showOnOverview: row.show_on_overview !== false,
   };
 }
@@ -142,9 +147,30 @@ const EVENT_SELECT = `
          to_char(e.start_datetime, 'YYYY-MM-DD') AS event_date,
          to_char(e.start_datetime, 'HH24:MI') AS start_24,
          to_char(COALESCE(e.end_datetime, e.start_datetime + interval '1 hour'), 'HH24:MI') AS end_24,
-         ${PERSON_NAME} AS assigned_personnel_name
+         ${PERSON_NAME} AS assigned_personnel_name,
+         rec.recorded
   FROM event e
   LEFT JOIN parish_personnel p ON p.id = e.assigned_to
+  -- Register entries made from this event (C11): a baptism session can have several.
+  LEFT JOIN LATERAL (
+    SELECT json_agg(json_build_object('id', r.id, 'register', r.register, 'name', r.name) ORDER BY r.created_at) AS recorded
+    FROM (
+      SELECT id, 'baptismal' AS register, concat_ws(' ', first_name, last_name) AS name, created_at
+        FROM baptism WHERE schedule_event_id = e.id AND archived_at IS NULL
+      UNION ALL
+      SELECT id, 'confirmation', concat_ws(' ', first_name, last_name), created_at
+        FROM confirmation WHERE schedule_event_id = e.id AND archived_at IS NULL
+      UNION ALL
+      SELECT m.id, 'marriage', (
+               SELECT string_agg(concat_ws(' ', mp.first_name, mp.last_name), ' & ' ORDER BY mp.role)
+               FROM marriage_party mp WHERE mp.marriage_id = m.id
+             ), m.created_at
+        FROM marriage m WHERE m.schedule_event_id = e.id AND m.archived_at IS NULL
+      UNION ALL
+      SELECT id, 'death', concat_ws(' ', first_name, last_name), created_at
+        FROM death WHERE schedule_event_id = e.id AND archived_at IS NULL
+    ) r
+  ) rec ON true
 `;
 
 const RECURRING_SELECT = `
@@ -342,7 +368,8 @@ async function createEvent(parishId, userId, input) {
       input.assigneeId || null,
       input.assigneeId ? null : input.assignee || null,
       input.source || 'manual',
-      input.recordStatus || null,
+      // Sacraments wait to be written in the register (C11).
+      input.recordStatus || (NEEDS_RECORDING.includes(input.type) ? 'Pending' : null),
       input.showOnOverview !== false,
       input.marriageApplicationId || null,
     ]

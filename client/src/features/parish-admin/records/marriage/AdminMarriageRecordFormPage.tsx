@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import {
   AdminButton,
   AdminField,
@@ -18,6 +18,9 @@ import {
 } from "@/features/parish-admin/records/api/marriageRecordsApi";
 import { BaptismalRecordLinkField } from "@/features/parish-admin/records/BaptismalRecordLinkField";
 import { getMarriageParty } from "@/features/parish-admin/records/marriageHelpers";
+import { schedulePrefillOf } from "@/features/parish-admin/records/scheduleLink";
+import { ScheduleLinkNotice } from "@/features/parish-admin/records/ScheduleLinkNotice";
+import { getMarriageApplication } from "@/features/parish-admin/marriage-applications/api/marriageApplicationsApi";
 import { useAsync } from "@/hooks/useAsync";
 import type { BaptismalRecord, CivilStatus, MarriagePartyRole } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
@@ -187,14 +190,56 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { recordId = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const id = decodeURIComponent(recordId);
+  // Opened from a wedding on the schedule (C11).
+  const prefill = mode === "create" ? schedulePrefillOf(location.state) : null;
 
   const { data: existing, loading: existingLoading } = useAsync(
     () => (mode === "edit" ? getMarriageRecord(parish.id, id) : Promise.resolve(undefined)),
     [parish.id, id, mode]
   );
 
-  const [form, setForm] = useState<FormState>(() => emptyForm(parish.name));
+  const [form, setForm] = useState<FormState>(() =>
+    prefill
+      ? {
+          ...emptyForm(parish.name),
+          dateOfMarriage: prefill.date ?? "",
+          timeOfMarriage: prefill.time ?? "",
+          minister: prefill.priest ?? "",
+        }
+      : emptyForm(parish.name)
+  );
+
+  // A wedding booked through a marriage application brings the couple's names.
+  const applicationId = prefill?.marriageApplicationId ?? null;
+  useEffect(() => {
+    if (!applicationId) return;
+    let live = true;
+    getMarriageApplication(applicationId)
+      .then((app) => {
+        if (!live) return;
+        setForm((prev) => ({
+          ...prev,
+          groom: {
+            ...prev.groom,
+            firstName: prev.groom.firstName || app.groomFirstName,
+            middleName: prev.groom.middleName || app.groomMiddleName,
+            lastName: prev.groom.lastName || app.groomLastName,
+          },
+          bride: {
+            ...prev.bride,
+            firstName: prev.bride.firstName || app.brideFirstName,
+            middleName: prev.bride.middleName || app.brideMiddleName,
+            lastName: prev.bride.lastName || app.brideLastName,
+          },
+        }));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [applicationId]);
   const [submitting, setSubmitting] = useState(false);
 
   // Fill the form once the record being edited has loaded.
@@ -293,6 +338,7 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
       entryNumber: form.entryNumber,
       remarks: form.remarks || undefined,
       parties: [partyFromForm("Groom", form.groom), partyFromForm("Bride", form.bride)],
+      ...(prefill ? { scheduleEventId: prefill.scheduleBlockId } : {}),
     };
     try {
       if (mode === "edit") {
@@ -310,6 +356,7 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
     <RecordFormShell
       title={`${mode === "edit" ? "Edit" : "Add"} Marriage Record`}
       subtitle="Enter details exactly as they appear in the parish marriage register."
+      notice={prefill && <ScheduleLinkNotice prefill={prefill} saved={[]} />}
       submitting={submitting}
       submitLabel={mode === "edit" ? "Save changes" : "Confirm & add record"}
       onSubmit={handleSubmit}

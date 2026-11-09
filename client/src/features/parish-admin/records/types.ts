@@ -75,6 +75,8 @@ export interface SacramentSponsorAssignment {
 }
 
 export interface BaptismalRecord {
+  /** The schedule event it was recorded from (C11). */
+  scheduleEventId?: string | null;
   id: string;
   parishId: string;
   firstName: string;
@@ -136,6 +138,8 @@ export interface BaptismalSearchCriteria {
 }
 
 export interface ConfirmationRecord {
+  /** The schedule event it was recorded from (C11). */
+  scheduleEventId?: string | null;
   id: string;
   parishId: string;
   firstName: string;
@@ -215,6 +219,8 @@ export interface MarriageParty {
 }
 
 export interface MarriageRecord {
+  /** The schedule event it was recorded from (C11). */
+  scheduleEventId?: string | null;
   id: string;
   parishId: string;
   placeOfMarriage: string;
@@ -260,6 +266,8 @@ export interface DeathSacramentReceived {
 }
 
 export interface DeathRecord {
+  /** The schedule event it was recorded from (C11). */
+  scheduleEventId?: string | null;
   id: string;
   parishId: string;
   firstName: string;
