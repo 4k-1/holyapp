@@ -28,6 +28,7 @@ import { SuperAdminAuditPage } from "@/features/super-admin/pages/SuperAdminAudi
 import { SuperAdminReportsPage } from "@/features/super-admin/pages/SuperAdminReportsPage";
 import { SuperAdminSettingsPage } from "@/features/super-admin/pages/SuperAdminSettingsPage";
 import { VerifyCertificatePage } from "@/features/verification/VerifyCertificatePage";
+import { CertificateTemplatePreviewPage } from "@/features/parish-admin/certificates/CertificateTemplatePreviewPage";
 
 
 // inside createBrowserRouter([...]) array:
@@ -115,6 +116,13 @@ export const router = createBrowserRouter([
         loader: requireRole(["parishioner"]),
         hydrateFallbackElement: <PageLoader />,
         children: parishionerRoutes,
+      },
+      {
+        // Full-page print preview of the certificate templates, outside the admin chrome.
+        path: "admin/certificate-templates",
+        loader: requireRole(["parish_admin", "parish_staff"]),
+        hydrateFallbackElement: <PageLoader />,
+        element: <CertificateTemplatePreviewPage />,
       },
       {
         path: "admin",

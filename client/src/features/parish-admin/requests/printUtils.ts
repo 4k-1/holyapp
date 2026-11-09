@@ -1,4 +1,8 @@
-import { CERT_SERIF, CERT_SERIF_STYLESHEET } from "@/features/parish-admin/components/certificate/constants";
+import {
+  CERT_BLACKLETTER_STYLESHEET,
+  CERT_SERIF,
+  CERT_SERIF_STYLESHEET,
+} from "@/features/parish-admin/components/certificate/constants";
 
 /**
  * Prints an element's HTML. Prefers a popup so staff can see the copy;
@@ -14,6 +18,29 @@ function escapeHtml(value: string) {
     .replace(/"/g, "&quot;");
 }
 
+const CERTIFICATE_SHEETS = ".pcert, .mcert";
+
+/**
+ * The printed certificates (ParishCertificate, and Form 97 for marriage) are styled by class,
+ * with their own paper size, so their stylesheets go into the print document with them.
+ */
+function parishCertificateCss(el: HTMLElement) {
+  if (!el.matches(CERTIFICATE_SHEETS) && !el.querySelector(CERTIFICATE_SHEETS)) return "";
+  const css: string[] = [];
+  for (const sheet of Array.from(document.styleSheets)) {
+    let text: string;
+    try {
+      text = Array.from(sheet.cssRules, (rule) => rule.cssText).join("\n");
+    } catch {
+      continue; // a stylesheet from another origin
+    }
+    if (text.includes(".pcert") || text.includes(".mcert")) css.push(text);
+  }
+  return `${css.join("\n")}
+  .print-shell { max-width: none; width: max-content; }
+  @media print { .print-shell { margin: 0; } }`;
+}
+
 function printDocumentHtml(el: HTMLElement, docTitle: string) {
   return `<!DOCTYPE html>
 <html>
@@ -22,6 +49,7 @@ function printDocumentHtml(el: HTMLElement, docTitle: string) {
 <meta charset="utf-8" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="${CERT_SERIF_STYLESHEET}" rel="stylesheet" />
+<link href="${CERT_BLACKLETTER_STYLESHEET}" rel="stylesheet" />
 <style>
   * { box-sizing: border-box; }
   html, body {
@@ -35,6 +63,7 @@ function printDocumentHtml(el: HTMLElement, docTitle: string) {
     html, body { background: #fff; }
     .print-shell { margin: 0 auto; }
   }
+${parishCertificateCss(el)}
 </style>
 </head>
 <body><div class="print-shell">${el.outerHTML}</div></body>

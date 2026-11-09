@@ -115,5 +115,28 @@ export function deathCertificateFields(
     registerRef: certificateRegisterRef(rec),
     deathDate: formatSharedDate(rec.dateOfDeath),
     certCode: extras?.certCode,
+    printed: {
+      type: "DEATH",
+      nameOfDeceased: recordFullName(rec),
+      ageYears: rec.age,
+      ageMonths: rec.ageMonths,
+      ageDays: rec.ageDays,
+      fatherName: kinNamed(rec, "father"),
+      motherName: kinNamed(rec, "mother"),
+      address: rec.residence,
+      dateOfDeath: rec.dateOfDeath,
+      dateOfBurial: rec.dateOfBurial,
+      placeOfBurial: rec.placeOfBurial,
+      minister: rec.minister,
+      bookNo: rec.bookNumber,
+      pageNo: rec.pageNumber,
+      lineNo: rec.entryNumber,
+    },
   };
+}
+
+/** Parents are kept only as next-of-kin rows whose relation is typed by hand ("Father"). */
+function kinNamed(rec: DeathRecord, relation: "father" | "mother") {
+  const kin = (rec.kin ?? []).find((k) => k.relationToDeceased.trim().toLowerCase() === relation);
+  return kin ? [kin.firstName, kin.lastName].filter(Boolean).join(" ") || undefined : undefined;
 }

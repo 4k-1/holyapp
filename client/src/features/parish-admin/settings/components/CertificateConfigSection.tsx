@@ -3,8 +3,10 @@ import { Link, useOutletContext } from "react-router-dom";
 import { CandleIcon, DoveIcon, DropletIcon, HeartIcon } from "@/components/ui/icons/SacramentIcons";
 import {
   CertificateDocument,
+  CertificatePreviewStage,
   type CertificateFields,
 } from "@/features/parish-admin/components/CertificateDocument";
+import { CERT_PREVIEW_STAGE_BG } from "@/features/parish-admin/components/certificate/constants";
 import { SAMPLE_CERTIFICATE } from "@/features/parish-admin/components/certificate/sampleCertificate";
 import { AdminButton, AdminField, AdminInput, AdminTextarea } from "@/features/parish-admin/components/AdminForm";
 import { normalizeNumberingPrefix, previewCertificateCode } from "@/features/parish-admin/certificates/numbering";
@@ -287,13 +289,20 @@ export function CertificateConfigSection() {
         </SettingsPanel>
 
         <SettingsPanel title="Preview" description="Sample names only — not an issued certificate.">
-          <CertificateDocument
-            parish={parish}
-            sacramentType={activeType}
-            subjectName={sample.name}
-            fields={previewFields}
-            appearance={appearance}
-          />
+          <div
+            className="relative h-[min(78vh,720px)] overflow-hidden rounded-[10px] p-3"
+            style={{ background: CERT_PREVIEW_STAGE_BG }}
+          >
+            <CertificatePreviewStage>
+              <CertificateDocument
+                parish={parish}
+                sacramentType={activeType}
+                subjectName={sample.name}
+                fields={previewFields}
+                appearance={appearance}
+              />
+            </CertificatePreviewStage>
+          </div>
         </SettingsPanel>
       </div>
     </div>

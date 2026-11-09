@@ -184,6 +184,21 @@ export function baptismCertificateFields(
     fatherName: recordFatherName(rec),
     certCode: extras?.certCode,
     notations: baptismCertificateNotations(rec.annotations ?? []),
+    printed: {
+      type: "BAPTISM",
+      childName: recordFullName(rec),
+      fatherName: recordFatherName(rec),
+      motherName: recordMotherName(rec),
+      placeOfBirth: rec.placeOfBirth,
+      dateOfBirth: rec.dateOfBirth,
+      dateOfBaptism: rec.dateOfBaptism,
+      minister: rec.minister,
+      sponsors: (rec.godparents ?? []).map((g) => fullName(g)),
+      bookNo: rec.bookNumber,
+      pageNo: rec.pageNumber,
+      lineNo: rec.entryNumber,
+      remarks: baptismCertificateNotations(rec.annotations ?? []),
+    },
   };
 }
 

@@ -99,6 +99,149 @@ function snapshotFrom(request, record, code, verifyUrl, config) {
   return fields;
 }
 
+function joinName(...parts) {
+  return parts.map((p) => (p == null ? '' : String(p).trim())).filter(Boolean).join(' ') || null;
+}
+
+async function sponsorNames(client, recordType, recordId) {
+  const result = await client.query(
+    `SELECT s.first_name, s.middle_name, s.last_name
+     FROM sacrament_sponsor_assignment a
+     JOIN sponsor s ON s.id = a.sponsor_id
+     WHERE a.sacrament_type = $1 AND a.sacrament_record_id = $2
+     ORDER BY a.is_primary DESC, a.created_at, s.last_name`,
+    [recordType, recordId]
+  );
+  return result.rows.map((r) => joinName(r.first_name, r.middle_name, r.last_name)).filter(Boolean);
+}
+
+/**
+ * Everything the printed certificate shows, copied from the record when the certificate is
+ * issued (see client/src/features/parish-admin/components/certificate/certificateData.ts).
+ * Dates stay ISO; the template writes them out in full.
+ */
+async function printedRecord(client, recordType, record) {
+  const register = {
+    bookNo: record.book_number || null,
+    pageNo: record.page_number || null,
+    lineNo: record.entry_number || null,
+  };
+  if (recordType === 'baptism') {
+    const annotations = await client.query(
+      `SELECT notes FROM annotation WHERE baptism_id = $1 ORDER BY annotated_at`,
+      [record.id]
+    );
+    const remarks = annotations.rows.map((r) => (r.notes || '').trim()).filter(Boolean);
+    return {
+      type: 'BAPTISM',
+      childName: joinName(record.first_name, record.middle_name, record.last_name),
+      fatherName: joinName(record.father_first_name, record.father_last_name),
+      motherName: joinName(record.mother_first_name, record.mother_last_name),
+      placeOfBirth: record.place_of_birth || null,
+      dateOfBirth: dateStamp(record.date_of_birth) || null,
+      dateOfBaptism: dateStamp(record.date_of_baptism) || null,
+      minister: record.minister || null,
+      sponsors: await sponsorNames(client, 'baptism', record.id),
+      remarks,
+      ...register,
+    };
+  }
+  if (recordType === 'confirmation') {
+    return {
+      type: 'CONFIRMATION',
+      personConfirmed: joinName(record.first_name, record.middle_name, record.last_name),
+      address: record.address || null,
+      placeOfBaptism: record.baptism_place || null,
+      fatherName: joinName(record.father_first_name, record.father_last_name),
+      motherName: joinName(record.mother_first_name, record.mother_last_name),
+      sponsors: await sponsorNames(client, 'confirmation', record.id),
+      minister: record.minister || null,
+      dateConfirmed: dateStamp(record.date_of_confirmation) || null,
+      ...register,
+    };
+  }
+  if (recordType === 'death') {
+    // Parents are kept only as free-text next-of-kin rows ("Father", "Mother").
+    const kin = await client.query(
+      `SELECT relation_to_deceased, first_name, last_name FROM death_kin WHERE death_id = $1`,
+      [record.id]
+    );
+    const parent = (relation) => {
+      const row = kin.rows.find((k) => String(k.relation_to_deceased || '').trim().toLowerCase() === relation);
+      return row ? joinName(row.first_name, row.last_name) : null;
+    };
+    return {
+      type: 'DEATH',
+      nameOfDeceased: joinName(record.first_name, record.middle_name, record.last_name),
+      ageYears: record.age == null ? null : record.age,
+      ageMonths: record.age_months == null ? null : record.age_months,
+      ageDays: record.age_days == null ? null : record.age_days,
+      fatherName: parent('father'),
+      motherName: parent('mother'),
+      address: record.residence || null,
+      dateOfDeath: dateStamp(record.date_of_death) || null,
+      dateOfBurial: dateStamp(record.date_of_burial) || null,
+      placeOfBurial: record.place_of_burial || null,
+      minister: record.minister || null,
+      ...register,
+    };
+  }
+  if (recordType === 'marriage') {
+    const parties = await client.query(
+      `SELECT * FROM marriage_party WHERE marriage_id = $1`,
+      [record.id]
+    );
+    const consents = await client.query(
+      `SELECT c.* FROM marriage_consent_person c
+       JOIN marriage_party p ON p.id = c.marriage_party_id
+       WHERE p.marriage_id = $1`,
+      [record.id]
+    );
+    const formName = (first, middle, last) => ({ first: first || null, middle: middle || null, last: last || null });
+    // Stored as husband/wife (the client calls them Groom/Bride).
+    const party = (...roles) => {
+      const p = parties.rows.find((row) => roles.includes(String(row.role).toLowerCase()));
+      if (!p) return { name: {}, father: {}, mother: {} };
+      const consent = consents.rows.find((c) => c.marriage_party_id === p.id);
+      return {
+        name: formName(p.first_name, p.middle_name, p.last_name),
+        dateOfBirth: dateStamp(p.date_of_birth) || null,
+        placeOfBirth: p.birthplace || null,
+        sex: p.sex || null,
+        citizenship: p.citizenship || null,
+        residence: p.address || null,
+        religion: p.religion || null,
+        civilStatus: p.civil_status || null,
+        father: formName(p.father_first_name, p.father_middle_initial, p.father_last_name),
+        fatherCitizenship: p.father_citizenship || null,
+        mother: formName(p.mother_first_name, p.mother_middle_initial, p.mother_last_name),
+        motherCitizenship: p.mother_citizenship || null,
+        consent: consent
+          ? {
+              name: formName(consent.first_name, consent.middle_initial, consent.last_name),
+              relationship: consent.relation || null,
+              residence: consent.residence || null,
+            }
+          : null,
+      };
+    };
+    return {
+      type: 'MARRIAGE',
+      husband: party('husband', 'groom'),
+      wife: party('wife', 'bride'),
+      placeOfMarriage: record.place_of_marriage || null,
+      marriageAddress: record.marriage_address || null,
+      dateOfMarriage: dateStamp(record.date_of_marriage) || null,
+      timeOfMarriage: record.time_of_marriage ? String(record.time_of_marriage).slice(0, 5) : null,
+      solemnizingOfficer: record.minister || null,
+      officerReligion: 'Roman Catholic',
+      witnesses: [record.witness_one, record.witness_two].filter(Boolean),
+      ...register,
+    };
+  }
+  return null;
+}
+
 function toIssuedCertificate(row) {
   const snapshot = row.snapshot && typeof row.snapshot === 'object' ? row.snapshot : {};
   return {
@@ -125,6 +268,8 @@ function toIssuedCertificate(row) {
       notations: Array.isArray(snapshot.notations) ? snapshot.notations : undefined,
       certCode: row.certificate_code || undefined,
       verifyUrl: row.qr_code || undefined,
+      printed: snapshot.printed || undefined,
+      issuedOn: dateStamp(row.issued_at) || undefined,
     },
   };
 }
@@ -204,6 +349,7 @@ async function issueCertificateRow(client, request, actorId, parishId) {
   const id = crypto.randomUUID();
   const holder = (request.subject_details && request.subject_details.subjectName) || 'Certificate subject';
   const snapshot = snapshotFrom(request, record, code, verifyUrl, config);
+  snapshot.printed = await printedRecord(client, request.record_type, record);
 
   await client.query(
     `INSERT INTO certificate (
@@ -540,7 +686,7 @@ async function downloadPdf(req, res) {
 async function listRecordCertificates(parishId, recordType, recordId) {
   try {
     const result = await pool.query(
-      `SELECT c.id, c.certificate_code, c.status, c.issued_at, c.record_type,
+      `SELECT c.id, c.certificate_code, c.status, c.issued_at, c.record_type, c.qr_code,
               NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS issued_by_name
        FROM certificate c
        LEFT JOIN app_user u ON u.id = c.issued_by
@@ -556,6 +702,7 @@ async function listRecordCertificates(parishId, recordType, recordId) {
       by: row.issued_by_name || 'Parish office',
       status: labels[row.status] || 'Valid',
       code: row.certificate_code,
+      verifyUrl: row.qr_code || undefined,
     }));
   } catch (err) {
     if (err.code === '42703') return [];

@@ -1,0 +1,576 @@
+/*
+ * Printed parish certificates (ParishCertificate.tsx). Sized in real units so the screen
+ * preview and the printed page are the same layout:
+ *   BAPTISM            A5 portrait     148 × 210 mm
+ *   CONFIRMATION/DEATH Letter portrait 8.5 × 11 in (215.9 × 279.4 mm)
+ * Named pages give each sheet its own paper size, so another sheet's plain @page rule
+ * (the receipts use A4) doesn't change it.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap");
+
+@page parish-cert-a5 {
+  size: 148mm 210mm;
+  margin: 0;
+}
+
+@page parish-cert-letter {
+  size: 8.5in 11in;
+  margin: 0;
+}
+
+.pcert {
+  --pcert-ink: #111;
+  --pcert-muted: #444;
+  --pcert-rule: #0e3b46; /* deep logo teal, only for the frame and title */
+  --pcert-line: #222;
+
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  color: var(--pcert-ink);
+  font-family: "Times New Roman", Times, "Liberation Serif", "Nimbus Roman", serif;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.pcert *,
+.pcert *::before,
+.pcert *::after {
+  box-sizing: border-box;
+}
+
+.pcert p {
+  margin: 0;
+}
+
+/* Preview stages size their sheet slot for the older 580px certificate; let this one keep its paper width. */
+.cert-fit-sheet:has(> .pcert) {
+  width: max-content !important;
+}
+
+/* ---------- Paper sizes ---------- */
+
+.pcert--a5 {
+  page: parish-cert-a5;
+  width: 148mm;
+  height: 210mm;
+  padding: 11mm;
+  font-size: 10.5pt;
+  line-height: 1.45;
+}
+
+.pcert--letter {
+  page: parish-cert-letter;
+  width: 215.9mm;
+  height: 279.4mm;
+  padding: 14mm;
+  font-size: 12pt;
+  line-height: 1.5;
+}
+
+/* Thin border inside the margins; everything sits inside it. */
+.pcert__frame {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 0.35mm solid var(--pcert-rule);
+  outline: 0.15mm solid var(--pcert-rule);
+  outline-offset: -1.2mm;
+}
+
+.pcert--a5 .pcert__frame {
+  padding: 5.5mm 5mm 5mm;
+}
+
+.pcert--letter .pcert__frame {
+  padding: 8mm 15mm 8mm;
+}
+
+/* ---------- Parish header ---------- */
+
+.pcert__header {
+  display: grid;
+  align-items: center;
+  text-align: center;
+}
+
+.pcert--a5 .pcert__header {
+  grid-template-columns: 19mm 1fr 19mm;
+  column-gap: 3mm;
+}
+
+.pcert--letter .pcert__header {
+  grid-template-columns: 24mm 1fr 24mm;
+  column-gap: 5mm;
+}
+
+.pcert__logo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  border-radius: 9999px;
+}
+
+.pcert__logo--initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0.3mm solid var(--pcert-rule);
+  color: var(--pcert-rule);
+  font-weight: 700;
+  font-size: 1.6em;
+}
+
+.pcert__parish-name {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.pcert--a5 .pcert__parish-name {
+  font-size: 11.5pt;
+}
+
+.pcert--letter .pcert__parish-name {
+  font-size: 15pt;
+}
+
+.pcert__parish-address {
+  margin-top: 0.8mm;
+  color: var(--pcert-muted);
+  font-size: 0.85em;
+  line-height: 1.25;
+}
+
+.pcert .pcert__title {
+  margin: 0;
+  font-family: inherit;
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--pcert-rule);
+  line-height: 1.2;
+}
+
+.pcert--a5 .pcert__title {
+  margin-top: 4mm;
+  font-size: 15pt;
+}
+
+.pcert--letter .pcert__title {
+  margin-top: 6mm;
+  font-size: 18pt;
+}
+
+.pcert__subtitle {
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.pcert--a5 .pcert__subtitle {
+  margin-top: 3mm;
+  font-size: 10.5pt;
+}
+
+/* ---------- Body ---------- */
+
+.pcert__body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pcert--a5 .pcert__body {
+  margin-top: 3mm;
+}
+
+.pcert--letter .pcert__body {
+  margin-top: 7mm;
+}
+
+.pcert__nowrap {
+  white-space: nowrap;
+}
+
+/* An underlined value. Long values wrap inside it; blanks keep the line. */
+.pcert__fill {
+  display: inline-block;
+  min-height: 1.45em;
+  padding: 0 1.5mm;
+  border-bottom: 0.25mm solid var(--pcert-line);
+  text-align: center;
+  vertical-align: baseline;
+  overflow-wrap: anywhere;
+}
+
+.pcert__fill--strong {
+  font-weight: 700;
+  font-size: 1.1em;
+}
+
+.pcert__fill--tight {
+  font-size: 0.88em;
+  line-height: 1.3;
+}
+
+.pcert__fill--strong.pcert__fill--tight {
+  font-size: 1em;
+}
+
+.pcert__fill--tighter {
+  font-size: 0.8em;
+  line-height: 1.25;
+}
+
+.pcert__fill--strong.pcert__fill--tighter {
+  font-size: 0.92em;
+}
+
+.pcert__fill--xs {
+  min-width: 11mm;
+}
+
+.pcert__fill--sm {
+  min-width: 15mm;
+}
+
+.pcert__fill--md {
+  min-width: 24mm;
+}
+
+.pcert__fill--lg {
+  min-width: 40mm;
+}
+
+/* ---------- A5 Birth & Baptism: label, then a line to the right margin ---------- */
+
+.pcert .pcert__title--blackletter {
+  font-family: "UnifrakturMaguntia", "Old English Text MT", "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.pcert.pcert--a5 .pcert__title--blackletter {
+  margin-top: 3.5mm;
+  font-size: 21pt;
+  line-height: 1.1;
+}
+
+.pcert.pcert--letter .pcert__title--blackletter {
+  margin-top: 6mm;
+  font-size: 30pt;
+  line-height: 1.1;
+}
+
+.pcert__subtitle--blackletter {
+  font-family: "UnifrakturMaguntia", "Old English Text MT", "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.pcert--a5 .pcert__subtitle--blackletter {
+  margin-top: 0.8mm;
+  font-size: 13pt;
+}
+
+/*
+ * Like the parish's printed form: the lines follow one another at an even pitch right under
+ * the heading, and whatever room is left falls between the last line and the signature.
+ */
+.pcert__bap {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 2.5mm;
+  font-size: 10pt;
+}
+
+.pcert--a5 .pcert__bap {
+  margin-top: 3.5mm;
+}
+
+.pcert__bap--dense {
+  gap: 0.9mm;
+}
+
+.pcert__bap-line {
+  display: flex;
+  align-items: baseline;
+  gap: 1.6mm;
+}
+
+.pcert__bap-line > span:not(.pcert__fill) {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.pcert__bap-line > .pcert__fill {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 1.3em;
+  line-height: 1.3;
+  border-bottom-width: 0.15mm;
+}
+
+/* On the [day] day of [month], Year [year] */
+.pcert__bap-date > .pcert__fill:nth-of-type(1) {
+  flex: 0.9 1 0;
+}
+
+.pcert__bap-date > .pcert__fill:nth-of-type(2) {
+  flex: 1.5 1 0;
+}
+
+.pcert__bap-date > .pcert__fill:nth-of-type(3) {
+  flex: 1 1 0;
+}
+
+.pcert__bap-rite {
+  margin: 0.4mm 0 0.2mm !important;
+  text-align: center;
+  font-family: "UnifrakturMaguntia", "Old English Text MT", "Times New Roman", serif;
+  font-size: 10.8pt;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* As appears on the Baptismal Book No. [ ] Page No. [ ] Line No. [ ] of this Church */
+.pcert__bap-register {
+  display: block;
+  font-size: 8.8pt;
+  white-space: nowrap;
+}
+
+.pcert__bap-register .pcert__fill {
+  min-width: 7mm;
+  padding: 0 1mm;
+  border-bottom-width: 0.2mm;
+}
+
+.pcert__verse {
+  margin-top: 1.4mm !important;
+  font-size: 7.4pt;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--pcert-muted);
+}
+
+.pcert__remarks {
+  font-size: 9pt;
+  font-style: italic;
+  line-height: 1.35;
+}
+
+/* ---------- Letter: label … value list ---------- */
+
+.pcert__salutation {
+  font-weight: 700;
+}
+
+.pcert__intro {
+  margin-top: 5mm !important;
+  text-indent: 12mm;
+  text-align: justify;
+}
+
+.pcert__entries {
+  display: grid;
+  grid-template-columns: 62mm 1fr;
+  column-gap: 3mm;
+  row-gap: 1.8mm;
+  margin: 6mm 0 0 8mm;
+}
+
+.pcert__label {
+  display: flex;
+  align-items: baseline;
+  gap: 1mm;
+  white-space: nowrap;
+}
+
+/* Dotted leader from the label to the value column. */
+.pcert__label::after {
+  content: "";
+  flex: 1 1 auto;
+  min-width: 4mm;
+  border-bottom: 0.35mm dotted var(--pcert-ink);
+  transform: translateY(-0.9mm);
+}
+
+.pcert__value {
+  min-height: 1.5em;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.pcert__value > span {
+  display: block;
+}
+
+/* Blank value: an underline the width of the column. */
+.pcert__value--blank {
+  border-bottom: 0.25mm solid var(--pcert-line);
+}
+
+.pcert__closing {
+  margin-top: 7mm !important;
+  text-indent: 12mm;
+  text-align: justify;
+}
+
+.pcert__closing .pcert__fill {
+  text-indent: 0;
+}
+
+.pcert__signoff {
+  margin-top: 8mm !important;
+}
+
+/* ---------- Footer: QR area (left) and signature (right) ---------- */
+
+.pcert__footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.pcert--a5 .pcert__footer {
+  gap: 4mm;
+  margin-top: 3mm;
+}
+
+.pcert--letter .pcert__footer {
+  gap: 8mm;
+  margin-top: 6mm;
+}
+
+.pcert__verify {
+  display: flex;
+  align-items: center;
+  gap: 2.5mm;
+  min-width: 0;
+}
+
+/* The QR square, white quiet zone included. */
+.pcert__qr {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.pcert--a5 .pcert__qr {
+  width: 25mm;
+  height: 25mm;
+  padding: 1.5mm;
+}
+
+.pcert--letter .pcert__qr {
+  width: 30mm;
+  height: 30mm;
+  padding: 2mm;
+}
+
+.pcert__qr img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.pcert__qr--placeholder {
+  border: 0.3mm dashed #777;
+  color: #777;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.pcert__verify-text {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 6.5pt;
+  line-height: 1.35;
+  color: var(--pcert-muted);
+}
+
+.pcert--letter .pcert__verify-text {
+  font-size: 7.5pt;
+}
+
+.pcert__verify-text > * {
+  display: block;
+  white-space: nowrap;
+}
+
+.pcert__verify-text strong {
+  color: var(--pcert-ink);
+  font-weight: 700;
+}
+
+.pcert__mono {
+  font-family: Consolas, "Courier New", monospace;
+  color: var(--pcert-ink);
+  letter-spacing: 0.02em;
+}
+
+.pcert__signature {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.pcert--a5 .pcert__signature {
+  width: 52mm;
+}
+
+.pcert--letter .pcert__signature {
+  width: 72mm;
+}
+
+.pcert__signoff-in-sig {
+  text-align: left;
+  margin-bottom: 10mm !important;
+}
+
+.pcert__sign-line {
+  border-top: 0.3mm solid var(--pcert-ink);
+}
+
+.pcert--a5 .pcert__sign-line {
+  margin-top: 11mm;
+}
+
+.pcert__sign-name {
+  margin-top: 1mm !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  min-height: 1.3em;
+}
+
+.pcert__sign-title {
+  font-size: 0.9em;
+}
+
+/* ---------- Printing ---------- */
+
+@media print {
+  .pcert {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  /* A hair under the paper height so rounding never spills onto a second page. */
+  .pcert--a5 {
+    height: 209.5mm;
+  }
+
+  .pcert--letter {
+    height: 278.9mm;
+  }
+}

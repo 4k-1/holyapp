@@ -102,5 +102,20 @@ export function confirmationCertificateFields(
     motherName: mother || undefined,
     fatherName: father || undefined,
     certCode: extras?.certCode,
+    printed: {
+      type: "CONFIRMATION",
+      personConfirmed: recordFullName(rec),
+      address: rec.address,
+      placeOfBaptism: rec.baptismPlace,
+      fatherName: father || undefined,
+      motherName: mother || undefined,
+      // Sponsors aren't recorded for confirmations yet.
+      sponsors: [],
+      minister: rec.minister,
+      dateConfirmed: rec.dateOfConfirmation,
+      bookNo: rec.bookNumber,
+      pageNo: rec.pageNumber,
+      lineNo: rec.entryNumber,
+    },
   };
 }

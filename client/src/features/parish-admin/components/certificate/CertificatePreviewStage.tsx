@@ -85,13 +85,15 @@ function FitStage({ children }: { children: ReactNode }) {
       const natH = sheet.offsetHeight;
       const availW = stage.clientWidth;
       const fullscreen = stage.closest("[data-cert-preview-fullscreen]");
+      // Inside an AdminDialog the stage grows with the sheet, so its own height can't be the limit.
+      const dialogPanel = stage.closest("[data-admin-dialog-panel]");
       let availH: number;
       if (fullscreen instanceof HTMLElement) {
         availH = Math.max(160, fullscreen.clientHeight - 8);
-      } else if (stage.clientHeight > 80) {
+      } else if (!dialogPanel && stage.clientHeight > 80) {
         availH = stage.clientHeight;
       } else {
-        const panel = stage.closest("[data-admin-dialog-panel]");
+        const panel = dialogPanel;
         const header = panel?.querySelector("[data-admin-dialog-header]");
         const footer = panel?.querySelector("[data-admin-dialog-footer]");
         const panelMax = Math.min(window.innerHeight * 0.92, 840);
@@ -134,6 +136,7 @@ function FitStage({ children }: { children: ReactNode }) {
       >
         <div
           ref={sheetRef}
+          className="cert-fit-sheet"
           style={{
             width: CERT_SHEET_WIDTH,
             transform: `scale(${fit.scale})`,

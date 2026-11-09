@@ -41,7 +41,14 @@ export function AdminGenerateCertificateModal({
 
   const title = sacramentCertTitles[sacramentType];
   const liveCode = issuedCert?.code;
-  const previewFields: CertificateFields = { ...fields, certCode: liveCode ?? fields.certCode };
+  // The server sends each issued copy's verify link (the QR target) alongside its code.
+  const liveVerifyUrl = (issuedCert as (IssuedRecordCertificate & { verifyUrl?: string }) | undefined)?.verifyUrl;
+  const previewFields: CertificateFields = {
+    ...fields,
+    certCode: liveCode ?? fields.certCode,
+    verifyUrl: liveVerifyUrl ?? fields.verifyUrl,
+    issuedOn: issuedCert?.date ?? fields.issuedOn,
+  };
 
   function handlePrint() {
     if (!printRef.current) return;

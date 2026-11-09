@@ -19,6 +19,10 @@ export const CERT_SERIF = "'Cormorant Garamond', ui-serif, Georgia, 'Times New R
 export const CERT_SERIF_STYLESHEET =
   "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap";
 
+/** Blackletter for the baptism certificate's heading and rite line. */
+export const CERT_BLACKLETTER_STYLESHEET =
+  "https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap";
+
 export const sacramentCertTitles: Record<SacramentType, string> = {
   baptism: "Certificate of Baptism",
   confirmation: "Certificate of Confirmation",

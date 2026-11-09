@@ -7,6 +7,8 @@ import type {
   MarriageSearchCriteria,
 } from "@/features/parish-admin/records/types";
 import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName } from "@/features/parish-admin/records/baptismalHelpers";
+import type { MarriageCertificateParty } from "@/features/parish-admin/components/certificate/certificateData";
+import { toIsoDate } from "@/features/parish-admin/components/certificate/certificateFromFields";
 
 export { initials, certStatusTone } from "@/features/parish-admin/records/baptismalHelpers";
 
@@ -152,5 +154,47 @@ export function marriageCertificateFields(
     registerRef: certificateRegisterRef(rec),
     marriageDate: formatSharedDate(rec.dateOfMarriage),
     certCode: extras?.certCode,
+    printed: {
+      type: "MARRIAGE",
+      husband: certificateParty(getMarriageParty(rec, "Groom")),
+      wife: certificateParty(getMarriageParty(rec, "Bride")),
+      placeOfMarriage: rec.placeOfMarriage,
+      marriageAddress: rec.marriageAddress,
+      dateOfMarriage: toIsoDate(rec.dateOfMarriage),
+      timeOfMarriage: rec.timeOfMarriage,
+      solemnizingOfficer: rec.minister,
+      officerReligion: "Roman Catholic",
+      witnesses: [rec.witnessOne, rec.witnessTwo].filter(Boolean),
+      bookNo: rec.bookNumber,
+      pageNo: rec.pageNumber,
+      lineNo: rec.entryNumber,
+    },
+  };
+}
+
+/** One column of the Certificate of Marriage (Form 97, items 1 to 14). */
+function certificateParty(party: MarriageParty | undefined): MarriageCertificateParty {
+  if (!party) return { name: {}, father: {}, mother: {} };
+  const consent = party.consentPersons?.[0];
+  return {
+    name: { first: party.firstName, middle: party.middleName, last: party.lastName },
+    dateOfBirth: toIsoDate(party.dateOfBirth),
+    placeOfBirth: party.birthplace,
+    sex: party.sex,
+    citizenship: party.citizenship,
+    residence: party.address,
+    religion: party.religion,
+    civilStatus: party.civilStatus,
+    father: { first: party.fatherFirstName, middle: party.fatherMiddleInitial, last: party.fatherLastName },
+    fatherCitizenship: party.fatherCitizenship,
+    mother: { first: party.motherFirstName, middle: party.motherMiddleInitial, last: party.motherLastName },
+    motherCitizenship: party.motherCitizenship,
+    consent: consent
+      ? {
+          name: { first: consent.firstName, middle: consent.middleInitial, last: consent.lastName },
+          relationship: consent.relation,
+          residence: consent.residence,
+        }
+      : undefined,
   };
 }
