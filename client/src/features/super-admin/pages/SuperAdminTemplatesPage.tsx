@@ -267,7 +267,7 @@ function TemplatePreviewModal({
               parish={parish}
               sacramentType={template.sacramentType}
               subjectName={sample.name}
-              fields={sample.fields}
+              fields={{ ...sample.fields, specimen: true }}
               appearance={appearance}
             />
           </CertificatePreviewStage>

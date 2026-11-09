@@ -109,3 +109,23 @@ export function printElement(el: HTMLElement, docTitle: string) {
     w.close();
   }, 250);
 }
+
+/**
+ * Waits until the issued copy has been drawn (QR code in place, no specimen watermark), so a copy
+ * printed straight after issuing doesn't go out with a blank QR box. Gives up after `timeoutMs`.
+ */
+export async function waitForQrCode(getEl: () => HTMLElement | null, timeoutMs = 4000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const el = getEl();
+    const box = el?.querySelector(".pcert__qr");
+    const ready =
+      el &&
+      !el.querySelector(".cert-specimen") &&
+      box &&
+      !box.classList.contains("pcert__qr--placeholder") &&
+      (box.querySelector("img") as HTMLImageElement | null)?.complete;
+    if (ready) return;
+    await new Promise((resolve) => setTimeout(resolve, 60));
+  }
+}

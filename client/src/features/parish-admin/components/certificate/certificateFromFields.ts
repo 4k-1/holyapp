@@ -19,6 +19,7 @@ export interface LegacyCertificateFields {
   verifyUrl?: string;
   printed?: PrintedRecord;
   issuedOn?: string;
+  specimen?: boolean;
 }
 
 const TYPE_FOR: Record<SacramentType, PrintedRecord["type"]> = {
@@ -149,5 +150,6 @@ export function certificateDataFrom({
     signatory: { name: appearance?.signatoryName, title: appearance?.signatoryTitle },
     issuedOn: toIsoDate(fields.issuedOn) ?? todayIso(),
     verification,
+    specimen: fields.specimen || undefined,
   } as CertificateData;
 }

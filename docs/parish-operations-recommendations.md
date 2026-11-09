@@ -470,7 +470,8 @@ change other accounts. So the last admin can't be removed. No work needed.
 
 | Item | Status |
 | --- | --- |
-| A1–A7 | Proposed |
+| A1 | Done: one Issue & print button; previews print "SPECIMEN – NOT VALID" with no QR; Reprint keeps the code |
+| A2–A7 | Proposed |
 | B1–B9 | Proposed |
 | C1–C12 | Proposed |
 | D1, D2 | Done: void or correct (admins only, with a reason) and DON- receipt numbers (migration 029) |

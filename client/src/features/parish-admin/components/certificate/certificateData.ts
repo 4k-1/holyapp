@@ -57,6 +57,8 @@ interface CertificateBase {
    * Absent while previewing: the QR area then shows a "QR CODE" placeholder of the same size.
    */
   verification?: CertificateVerification;
+  /** A preview of a copy not yet issued: printed with a "SPECIMEN – NOT VALID" watermark. */
+  specimen?: boolean;
 }
 
 export interface BaptismCertificateData extends CertificateBase {

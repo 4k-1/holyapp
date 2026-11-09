@@ -574,3 +574,54 @@
     height: 278.9mm;
   }
 }
+
+/* ---------- Specimen watermark (a preview of a copy not yet issued) ---------- */
+
+.mcert__page {
+  position: relative;
+}
+
+.cert-specimen {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.cert-specimen__text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: rotate(-32deg);
+  padding: 3mm 8mm;
+  border: 1.2mm solid rgba(190, 30, 45, 0.45);
+  color: rgba(190, 30, 45, 0.45);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 20mm;
+  font-weight: 700;
+  letter-spacing: 2mm;
+  line-height: 1;
+  white-space: nowrap;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.cert-specimen__text small {
+  margin-top: 2mm;
+  font-size: 9mm;
+  letter-spacing: 1.5mm;
+}
+
+.pcert--letter .cert-specimen__text,
+.mcert .cert-specimen__text {
+  font-size: 28mm;
+}
+
+.pcert--letter .cert-specimen__text small,
+.mcert .cert-specimen__text small {
+  font-size: 12mm;
+}

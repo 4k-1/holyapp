@@ -34,6 +34,8 @@ export interface IssuedRecordCertificate {
   by: string;
   status: IssuedCertificateStatus;
   code: string;
+  /** Where the copy's QR code points; sent by the server for each issued copy. */
+  verifyUrl?: string;
 }
 
 export type LegitimacyStatus = "Legitimate" | "Illegitimate";

@@ -12,6 +12,7 @@ import {
 import { ageText, dateParts, fullDate, present } from "./certificateFormat";
 import { VerificationArea } from "./CertificateVerification";
 import { MarriageCertificate } from "./MarriageCertificate";
+import { SpecimenMark } from "./SpecimenMark";
 import "./parishCertificate.css";
 
 const TITLES: Record<CertificateType, string> = {
@@ -50,6 +51,7 @@ export const ParishCertificate = forwardRef<HTMLDivElement, ParishCertificatePro
       className={`pcert pcert--${paper === "A5" ? "a5" : "letter"}`}
       data-certificate-type={data.type}
     >
+      {data.specimen && <SpecimenMark />}
       <div className="pcert__frame">
         <ParishHeader parish={data.parish} />
         {/* Blackletter, in the style of the parish's printed forms. */}

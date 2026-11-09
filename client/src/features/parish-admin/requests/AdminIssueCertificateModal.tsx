@@ -105,6 +105,8 @@ export function AdminIssueCertificateModal({
     ...baseFields,
     certCode: certCode || baseFields.certCode,
     verifyUrl: verifyUrl || undefined,
+    // Until the copy is issued (it then has a code), it prints only as a watermarked specimen.
+    specimen: !certCode,
   };
 
   return (
@@ -168,7 +170,7 @@ export function AdminIssueCertificateModal({
                   {!isDigital && (
                     <AdminButton variant="ghost" size="sm" className="py-0.5" onClick={handlePrintCertificate}>
                       <PrintIcon />
-                      Print certificate
+                      {certCode ? "Print certificate" : "Print preview"}
                     </AdminButton>
                   )}
                 </div>

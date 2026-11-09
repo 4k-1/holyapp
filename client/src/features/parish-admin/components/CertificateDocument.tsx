@@ -25,6 +25,8 @@ export interface CertificateFields {
   printed?: PrintedRecord;
   /** ISO date the certificate was issued; today when absent. */
   issuedOn?: string;
+  /** Not yet issued: prints with a "SPECIMEN – NOT VALID" watermark. */
+  specimen?: boolean;
 }
 
 interface CertificateDocumentProps {
