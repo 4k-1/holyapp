@@ -13,7 +13,7 @@ Everything suggested so far, with its status. Started 2026-11-05.
 | 7 | [Short reference numbers](#7-short-reference-numbers) | Done, with follow-ups |
 | 8 | [Super admin and diocesan rollout](#8-super-admin-and-diocesan-rollout) | Proposed |
 
-Nothing below is committed yet unless it says so.
+Everything marked Done is committed on the `sprint-5` branch. The hosting, email and database plan is in `holyapp-tech-stack-plan.pdf`.
 
 ---
 
