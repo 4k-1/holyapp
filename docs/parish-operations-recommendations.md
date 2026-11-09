@@ -478,4 +478,5 @@ change other accounts. So the last admin can't be removed. No work needed.
 | Donation campaign goals | Set aside for now |
 | E1, E2 | Proposed |
 | E3 | Already done |
-| E4–E7 | Proposed |
+| E4–E6 | Proposed |
+| E7 | Done: untitled staff sign-ins show "Staff"; the edit form asks for a real title |

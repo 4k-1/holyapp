@@ -25,7 +25,10 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
   const isEditing = !!account;
   const [name, setName] = useState(account?.name ?? "");
   const [email, setEmail] = useState(account?.email ?? "");
-  const [role, setRole] = useState<StaffRole>(account?.role ?? STAFF_ROLES[0]);
+  /** Accounts with no recognised title are listed as "Staff", which isn't a choice here; ask for a real one. */
+  const [role, setRole] = useState<StaffRole>(
+    account ? (STAFF_ROLES.includes(account.role) ? account.role : "") : STAFF_ROLES[0]
+  );
   const [accessRole, setAccessRole] = useState<StaffAccessRole>(account?.accessRole ?? "staff");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -60,6 +63,10 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
     }
     if (!EMAIL_RE.test(email.trim())) {
       setError("Enter a valid email address.");
+      return;
+    }
+    if (!linkedPerson && !role) {
+      setError("Choose a role.");
       return;
     }
     setSaving(true);
@@ -165,6 +172,11 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
         {(isEditing || source === "new") && (
           <AdminField label="Role" className="mb-0">
             <select value={role} onChange={(e) => setRole(e.target.value as StaffRole)} className={selectClass}>
+              {!role && (
+                <option value="" disabled>
+                  Choose a role
+                </option>
+              )}
               {STAFF_ROLES.map((r) => (
                 <option key={r} value={r}>
                   {r}

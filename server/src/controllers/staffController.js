@@ -16,7 +16,7 @@ function displayName(row) {
 
 function jobTitle(row) {
   if (JOB_TITLES.has(row.role_title)) return row.role_title;
-  return row.role === ROLES.PARISH_ADMIN ? 'Admin Staff' : 'Priest';
+  return row.role === ROLES.PARISH_ADMIN ? 'Admin Staff' : 'Staff';
 }
 
 function toStaff(row) {

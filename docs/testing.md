@@ -60,5 +60,6 @@ docker compose exec -e TEST_DATABASE_URL=postgresql://holyapp:holyapp_dev@postgr
 | `donations.test.js` | Donations save and list; bad amounts, methods and dates are refused |
 | `auth.test.js` | Sign-in with right and wrong passwords, unknown emails and suspended accounts |
 | `donation-voids.test.js` | Receipt numbers never repeat or skip, even when saved at once; void and correct are admin-only, need a reason, are logged and leave the totals |
+| `staff.test.js` | Staff sign-ins with no title show "Staff" (admins "Admin Staff"), and a chosen title shows |
 
 Not covered yet: the client screens, and running the tests on GitHub for every push.

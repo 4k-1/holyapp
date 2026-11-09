@@ -47,7 +47,7 @@ Makes the later phases cheap and safe.
 | Server tests | supertest and a throwaway test database; start with the endpoints that handle money and registers |
 | Void / correct block | One pattern: never overwrite, void or correct with a reason, audited. Used by B1, D1, A3 |
 | Running numbers | Extend the counter from migration 026 for any sequence. Used by A2, D2 |
-| 8.9 File storage | For seals, signatures (item 3) and ledger scans |
+| 8.9 File storage | For seals, signatures (item 3) and ledger scans. **Postponed:** waits on the hosting decision; build it just before e-signatures (item 3) |
 | E7 | Fix the "Priest" fallback label in `staffController.jobTitle()` |
 
 ## Phase 1 — Certificates and money you can trust
@@ -137,7 +137,7 @@ and gets more expensive the longer it waits.
 
 | Phase | Status |
 | --- | --- |
-| 0 — Foundations | In progress: work committed to `feature/ocr`; migration runner done ([migrations.md](migrations.md)); server tests started ([testing.md](testing.md)); running numbers and void/correct blocks done, first used by donations (D1, D2) |
+| 0 — Foundations | In progress: work committed to `feature/ocr`; migration runner done ([migrations.md](migrations.md)); server tests started ([testing.md](testing.md)); running numbers and void/correct blocks done, first used by donations (D1, D2); E7 done; file storage postponed until hosting is decided |
 | 1 — Certificates and money | Not started |
 | 2 — Who can do what | Not started |
 | 3 — Registers and validity | Not started |
