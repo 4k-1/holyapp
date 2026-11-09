@@ -101,7 +101,7 @@ and gets more expensive the longer it waits.
 | B5 + C5 | **Done.** Church calendar worked out in code (seasons, Sundays, solemnities, Philippine holy days, Simbang Gabi) on the Schedule; funeral Mass and wedding warnings with "Book anyway"; parish fiesta and local feasts in Settings (migration 037) | — |
 | C3 | **Parked** with the place table. Travel buffers between places | Place table |
 | C6 | **Parked** until the parish confirms who assigns Masses, the limits, and what counts as a Mass. Priests' Mass limits and days off | — |
-| B7 + C7 | Funeral fast booking; emergency sick calls | C2 |
+| B7 + C7 | Funeral fast booking. **Emergency sick calls parked** (not essential for now) | C2 |
 | C11 | **Done.** Reminder to record the sacrament in the register; batches closed by hand (migration 036) | — |
 
 ## Phase 5 — Parish life
