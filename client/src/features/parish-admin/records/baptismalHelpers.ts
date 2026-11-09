@@ -147,20 +147,47 @@ export function baptismCertificateDisplayRef(
   return certificateRegisterRef(rec);
 }
 
-const CERTIFICATE_NOTATION: Record<LinkableAnnotationCategory, (date: string) => string> = {
-  Confirmation: (date) => `Notation: Confirmed on ${date}.`,
-  Marriage: (date) => `Notation: Married on ${date}.`,
-  Death: (date) => `Notation: Died on ${date}.`,
+const CERTIFICATE_VERB: Record<LinkableAnnotationCategory, string> = {
+  Confirmation: "Confirmed",
+  Marriage: "Married",
+  Death: "Died",
 };
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function longDate(iso: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return match ? `${Number(match[3])} ${MONTHS[Number(match[2]) - 1]} ${match[1]}` : "";
+}
+
+function sentence(text: string) {
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
+/**
+ * One line of the certificate's Remarks: the sacrament, its date and the detail staff typed, e.g.
+ * "Confirmed on 25 September 2026 at Santuario." Mirrors server/src/utils/certificateRemarks.js,
+ * which writes the issued copy, so the preview and the printout read the same.
+ */
 export function baptismCertificateNotationLine(
   annotation: Pick<RecordAnnotation, "category" | "date" | "note">
 ) {
-  if (annotation.category === "Other") {
-    const note = annotation.note.trim();
-    return note ? `Notation: ${note}` : "";
-  }
-  return CERTIFICATE_NOTATION[annotation.category](annotation.date);
+  const note = annotation.note.trim().replace(/\s+/g, " ");
+  if (annotation.category === "Other") return note ? sentence(note) : "";
+
+  const verb = CERTIFICATE_VERB[annotation.category];
+  const date = longDate(annotation.date);
+  const base = date ? `${verb} on ${date}` : verb;
+  if (!note) return `${base}.`;
+
+  // "Confirmed at Santuario." already says what happened; keep only the detail after the verb.
+  const rest = note.replace(new RegExp(String.raw`^${verb}\b\s*`, "i"), "").replace(/\.$/, "").trim();
+  if (!rest) return `${base}.`;
+  if (/^(at|in|by|with|to)\b/i.test(rest)) return `${base} ${rest}.`;
+  return `${base}. ${sentence(rest.charAt(0).toUpperCase() + rest.slice(1))}`;
 }
 
 export function baptismCertificateNotations(annotations: RecordAnnotation[]) {

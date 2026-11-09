@@ -6,6 +6,8 @@ const { writeAudit } = require('../utils/audit');
 const { frontendUrl } = require('../utils/frontendUrl');
 const { loadRequest, toCertificateRequest, receiptNumberFor } = require('./certificateRequestController');
 const { feeAmount } = require('../utils/serviceFee');
+const { listBaptismAnnotations } = require('../utils/baptismAnnotation');
+const { certificateRemarks } = require('../utils/certificateRemarks');
 
 const RECORD_TABLES = {
   baptism: 'baptism',
@@ -127,11 +129,8 @@ async function printedRecord(client, recordType, record) {
     lineNo: record.entry_number || null,
   };
   if (recordType === 'baptism') {
-    const annotations = await client.query(
-      `SELECT notes FROM annotation WHERE baptism_id = $1 ORDER BY annotated_at`,
-      [record.id]
-    );
-    const remarks = annotations.rows.map((r) => (r.notes || '').trim()).filter(Boolean);
+    // Same wording as the preview: "Confirmed on 25 September 2026 at Santuario."
+    const remarks = certificateRemarks(await listBaptismAnnotations(client, record.id));
     return {
       type: 'BAPTISM',
       childName: joinName(record.first_name, record.middle_name, record.last_name),

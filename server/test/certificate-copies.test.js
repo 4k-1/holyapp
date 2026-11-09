@@ -177,12 +177,28 @@ describe('Reprints', () => {
     assert.doesNotMatch(JSON.stringify(res.body.certificate.fields.printed), /Changed/);
   });
 
+  it('writes each register note on the copy with the sacrament, date and detail', async () => {
+    const record = await createBaptism(parish.staff, { firstName: 'Remarks' });
+    await pool.query(
+      `INSERT INTO annotation (baptism_id, annotation_type, annotated_by, notes, event_date)
+       VALUES ($1, 'confirmation', $2, 'Confirmed at Santuario.', '2026-09-25'),
+              ($1, 'marriage', $2, 'Married at St. Therese', '2026-10-03')`,
+      [record.id, parish.staff.id]
+    );
+    const issued = await issue(parish.staff, record);
+    const res = await api(parish.staff).get(`/certificates/${issued.id}`);
+    assert.deepEqual(res.body.certificate.fields.printed.remarks, [
+      'Confirmed on 25 September 2026 at Santuario.',
+      'Married on 3 October 2026 at St. Therese.',
+    ]);
+  });
+
   it('counts issued copies and reprints apart in the report', async () => {
     const res = await api(parish.admin).get('/reports/certificates');
     assert.equal(res.status, 200);
     const issued = res.body.rows.reduce((n, r) => n + r.issued, 0);
     const reprinted = res.body.rows.reduce((n, r) => n + r.reprinted, 0);
-    assert.equal(issued, 3);
+    assert.equal(issued, 4);
     assert.equal(reprinted, 2);
   });
 });
