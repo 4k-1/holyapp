@@ -59,6 +59,10 @@ interface CertificateBase {
   verification?: CertificateVerification;
   /** A preview of a copy not yet issued: printed with a "SPECIMEN – NOT VALID" watermark. */
   specimen?: boolean;
+  /** What the copy is for (B2), printed under the QR code. */
+  purpose?: string;
+  /** Marriage copies: the last day it is accepted (ISO date). */
+  validUntil?: string;
 }
 
 export interface BaptismCertificateData extends CertificateBase {

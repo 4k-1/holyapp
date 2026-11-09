@@ -35,6 +35,12 @@ interface Verification {
   signatoryTitle?: string;
   footerText?: string;
   reason?: string;
+  /** What the copy was issued for (B2). */
+  purpose?: string;
+  /** Marriage copies: the last day it is accepted. */
+  validUntil?: string;
+  /** Past `validUntil`: no longer accepted for marriage, though the record stands. */
+  expiredForMarriage?: boolean;
   fields?: VerificationFields;
 }
 
@@ -315,8 +321,21 @@ function Result({
               <Row label="Reference number">
                 <span className="font-mono text-[0.875rem]">{data.code}</span>
               </Row>
+              {data.purpose && <Row label="Issued for">{data.purpose}</Row>}
+              {data.validUntil && (
+                <Row label="Valid for marriage until">
+                  {formatIssued(data.validUntil)}
+                  {data.expiredForMarriage && <span className="ml-1.5 font-semibold text-[#8f2f27]">(expired)</span>}
+                </Row>
+              )}
               <Row label="Register status">{spoiled ? "Void (spoiled when printed)" : STATUS_LABEL[data.status]}</Row>
             </dl>
+            {data.status === "valid" && data.expiredForMarriage && (
+              <Notice className={TONES.gold.notice}>
+                <span className="font-semibold">Expired for marriage use.</span> This copy was issued for marriage and is
+                accepted for 6 months. The record is still valid; ask {data.parishName} for a new copy.
+              </Notice>
+            )}
             {data.status === "superseded" && (
               <Notice className={tone.notice}>
                 A newer certificate has been issued for this record. Please ask {data.parishName} for the current copy.

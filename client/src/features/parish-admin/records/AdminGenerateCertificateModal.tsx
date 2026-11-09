@@ -19,6 +19,7 @@ import { getCertificateAppearance } from "@/features/parish-admin/settings/api/c
 import { useAsync } from "@/hooks/useAsync";
 import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
 import type { IssuedCertificate, Parish, SacramentType } from "@/types";
+import { OTHER_PURPOSE, PURPOSES, validUntilFor } from "@/lib/purposes";
 
 interface AdminGenerateCertificateModalProps {
   parish: Parish;
@@ -27,8 +28,14 @@ interface AdminGenerateCertificateModalProps {
   fields: CertificateFields;
   issued?: IssuedRecordCertificate;
   onClose: () => void;
-  onIssue: () => Promise<{ certificates: IssuedRecordCertificate[] }>;
+  /** Records a new copy for `purpose` (B2). */
+  onIssue: (purpose: string) => Promise<{ certificates: IssuedRecordCertificate[] }>;
   onIssued?: (cert: IssuedRecordCertificate) => void;
+}
+
+function todayIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function AdminGenerateCertificateModal({
@@ -55,6 +62,10 @@ export function AdminGenerateCertificateModal({
   // A printed copy stays "not confirmed" until someone says it printed correctly (A3).
   const [confirmed, setConfirmed] = useState(issued?.printConfirmed !== false);
   const [justSpoiled, setJustSpoiled] = useState(false);
+  // What the new copy is for (B2): a listed purpose, or "Other…" with a typed one.
+  const [purposeChoice, setPurposeChoice] = useState("");
+  const [purposeOther, setPurposeOther] = useState("");
+  const purpose = purposeChoice === OTHER_PURPOSE ? purposeOther.trim() : purposeChoice;
   // The copy as it was issued: a reprint shows that, not the record as it is now.
   const savedId = issuedCert?.id;
   const { data: loadedCopy, loading: loadingSaved } = useAsync(
@@ -77,6 +88,9 @@ export function AdminGenerateCertificateModal({
     certCode: issuedCert?.code ?? fields.certCode,
     verifyUrl: printable ? (issuedCert?.verifyUrl ?? fields.verifyUrl) : undefined,
     issuedOn: saved?.fields.issuedOn ?? issuedCert?.date ?? fields.issuedOn,
+    // An issued copy shows the purpose it was issued for; a preview shows the one chosen.
+    purpose: issuedCert ? saved?.fields.purpose : purpose || undefined,
+    validUntil: issuedCert ? saved?.fields.validUntil : purpose ? validUntilFor(purpose, todayIso()) : undefined,
     specimen,
   };
 
@@ -93,11 +107,15 @@ export function AdminGenerateCertificateModal({
 
   /** Records the copy on the server first; only a recorded copy (with its code and QR) is printed. */
   async function handleIssueAndPrint() {
+    if (!purpose) {
+      setError(purposeChoice === OTHER_PURPOSE ? "Type what the certificate is for." : "Choose what the certificate is for.");
+      return;
+    }
     setIssuing(true);
     setError("");
     let newest: IssuedRecordCertificate | undefined;
     try {
-      const next = await onIssue();
+      const next = await onIssue(purpose);
       newest = next.certificates.find((c) => c.status === "Valid") ?? next.certificates.at(-1);
       const copyId = newest?.id;
       if (copyId) setFreshCopy(await getIssuedCertificate(copyId).catch(() => null));
@@ -159,6 +177,8 @@ export function AdminGenerateCertificateModal({
     setJustSpoiled(false);
     setReprints(0);
     setConfirmed(true);
+    setPurposeChoice("");
+    setPurposeOther("");
   }
 
   const subtitle = issuedCert
@@ -166,7 +186,7 @@ export function AdminGenerateCertificateModal({
     : `${subjectName} · Preview — not yet issued`;
 
   const note = !issuedCert
-    ? "Issue & print records this copy and gives it its code and QR, then prints it. A preview prints marked SPECIMEN – NOT VALID."
+    ? "Choose what it's for, then Issue & print records this copy with its code and QR and prints it. A preview prints marked SPECIMEN – NOT VALID."
     : justSpoiled
       ? `${issuedCert.code} is void. Its number stays used. Issue a new copy to give the parishioner a good certificate.`
       : !printable
@@ -232,6 +252,37 @@ export function AdminGenerateCertificateModal({
         </AdminButton>
         {!issuedCert && (
           <>
+            <AdminSelect
+              value={purposeChoice}
+              onChange={(e) => {
+                setPurposeChoice(e.target.value);
+                setError("");
+              }}
+              className="w-auto min-w-[190px]"
+              aria-label="What the certificate is for"
+              disabled={busy}
+            >
+              <option value="" disabled>
+                What is it for?
+              </option>
+              {PURPOSES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+              <option value={OTHER_PURPOSE}>Other…</option>
+            </AdminSelect>
+            {purposeChoice === OTHER_PURPOSE && (
+              <AdminInput
+                value={purposeOther}
+                onChange={(e) => setPurposeOther(e.target.value)}
+                placeholder="e.g. Scholarship"
+                className="w-auto min-w-[170px]"
+                aria-label="Other purpose"
+                maxLength={120}
+                autoFocus
+              />
+            )}
             <AdminButton variant="secondary" onClick={() => print(false)} disabled={loading || busy}>
               <PrintIcon />
               Print preview

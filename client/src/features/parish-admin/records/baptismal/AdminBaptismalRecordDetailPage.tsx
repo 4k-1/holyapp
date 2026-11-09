@@ -332,7 +332,7 @@ export function AdminBaptismalRecordDetailPage() {
           fields={baptismCertificateFields(record)}
           issued={certificateModal === "new" ? undefined : certificateModal}
           onClose={() => setCertificateModal(null)}
-          onIssue={() => generateBaptismalCertificate(parish.id, record.id)}
+          onIssue={(purpose) => generateBaptismalCertificate(parish.id, record.id, purpose)}
           onIssued={(cert) => {
             setCertificateModal(cert);
             refetch();

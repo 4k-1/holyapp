@@ -55,11 +55,12 @@ export async function updateBaptismalRecord(
 
 export async function generateBaptismalCertificate(
   parishId: string,
-  recordId: string
+  recordId: string,
+  purpose: string
 ): Promise<BaptismalRecord> {
   await apiFetch<{ certificates: BaptismalRecord["certificates"] }>(
     `/records/baptism/${encodeURIComponent(recordId)}/certificates`,
-    { method: "POST", body: {} }
+    { method: "POST", body: { purpose } }
   );
   const record = await getBaptismalRecord(parishId, recordId);
   if (!record) throw new Error("Record not found.");

@@ -21,7 +21,7 @@ describe('Walk-in certificate issuing', () => {
 
   it('creates the request, the paid receipt and the certificate together', async () => {
     const record = await createBaptism(parish.staff);
-    const res = await api(parish.staff).post(`/records/baptism/${record.id}/certificates`);
+    const res = await api(parish.staff).post(`/records/baptism/${record.id}/certificates`).send({ purpose: 'School enrollment' });
     assert.equal(res.status, 201);
     assert.equal(res.body.certificates.length, 1);
 
@@ -49,7 +49,7 @@ describe('Walk-in certificate issuing', () => {
 
   it("charges the parish's own fee", async () => {
     const record = await createBaptism(parish.staff, { firstName: 'Fee' });
-    const res = await api(parish.staff).post(`/records/baptism/${record.id}/certificates`);
+    const res = await api(parish.staff).post(`/records/baptism/${record.id}/certificates`).send({ purpose: 'School enrollment' });
     assert.equal(res.status, 201);
     const payment = await pool.query(
       `SELECT p.amount_due FROM payment p
@@ -65,7 +65,7 @@ describe('Walk-in certificate issuing', () => {
     const archived = await api(parish.admin).post(`/records/baptism/${record.id}/archive`);
     assert.equal(archived.status, 200);
 
-    const res = await api(parish.staff).post(`/records/baptism/${record.id}/certificates`);
+    const res = await api(parish.staff).post(`/records/baptism/${record.id}/certificates`).send({ purpose: 'School enrollment' });
     assert.equal(res.status, 400);
     const left = await pool.query('SELECT count(*)::int AS n FROM certificate_request WHERE record_id = $1', [
       record.id,
@@ -75,7 +75,7 @@ describe('Walk-in certificate issuing', () => {
 
   it('keeps parishioners from issuing certificates', async () => {
     const record = await createBaptism(parish.staff, { firstName: 'Blocked' });
-    const res = await api(parish.parishioner).post(`/records/baptism/${record.id}/certificates`);
+    const res = await api(parish.parishioner).post(`/records/baptism/${record.id}/certificates`).send({ purpose: 'School enrollment' });
     assert.equal(res.status, 403);
   });
 });

@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { optionalUuid } = require('../utils/recordFields');
 const { feeAmount } = require('../utils/serviceFee');
+const { normalizePurpose } = require('../constants/purposes');
 
 const SACRAMENTS = ['baptism', 'confirmation', 'marriage', 'death'];
 const DELIVERIES = ['pickup', 'digital'];
@@ -107,7 +108,7 @@ function validateIntake(body) {
   if (!SACRAMENTS.includes(sacrament)) return 'Choose a sacrament.';
   if (!DELIVERIES.includes(delivery)) return 'Choose how the certificate should be delivered.';
 
-  const purpose = text(body.purpose, 255);
+  const purpose = normalizePurpose(body.purpose);
   if (!purpose) return 'Purpose is required.';
 
   const relationship = text(body.relationship, 80);

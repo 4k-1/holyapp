@@ -7,7 +7,7 @@ const { pool, api, createParish, createBaptism } = require('./helpers');
 after(() => pool.end());
 
 async function issue(user, record) {
-  const res = await api(user).post(`/records/baptism/${record.id}/certificates`);
+  const res = await api(user).post(`/records/baptism/${record.id}/certificates`).send({ purpose: 'School enrollment' });
   assert.equal(res.status, 201);
   return res.body.certificates.find((c) => c.status === 'Valid');
 }

@@ -25,6 +25,10 @@ export interface CertificateFields {
   printed?: PrintedRecord;
   /** ISO date the certificate was issued; today when absent. */
   issuedOn?: string;
+  /** What the copy is for (B2), printed under the QR code. */
+  purpose?: string;
+  /** Marriage copies: the last day it is accepted (ISO date). */
+  validUntil?: string;
   /** Not yet issued: prints with a "SPECIMEN – NOT VALID" watermark. */
   specimen?: boolean;
 }

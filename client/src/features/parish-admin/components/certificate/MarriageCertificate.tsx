@@ -676,7 +676,12 @@ function BackPage({ data, appUrl }: { data: MarriageCertificateData; appUrl: str
           <span>Parish register: {register || "Book ____, Page ____, Line ____"}</span>
           <span>Copy issued on the {issued ?? "________________"}</span>
         </div>
-        <VerificationArea verification={data.verification} appUrl={appUrl} />
+        <VerificationArea
+          verification={data.verification}
+          appUrl={appUrl}
+          purpose={data.purpose}
+          validUntil={data.validUntil}
+        />
       </footer>
     </section>
   );

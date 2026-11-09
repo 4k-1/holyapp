@@ -250,7 +250,7 @@ export function AdminDeathRecordDetailPage() {
           fields={deathCertificateFields(record)}
           issued={certificateModal === "new" ? undefined : certificateModal}
           onClose={() => setCertificateModal(null)}
-          onIssue={() => generateDeathCertificate(parish.id, record.id)}
+          onIssue={(purpose) => generateDeathCertificate(parish.id, record.id, purpose)}
           onIssued={(cert) => {
             setCertificateModal(cert);
             refetch();

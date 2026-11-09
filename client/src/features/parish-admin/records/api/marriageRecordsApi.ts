@@ -81,11 +81,12 @@ export async function unarchiveMarriageRecord(_parishId: string, recordId: strin
 
 export async function generateMarriageCertificate(
   parishId: string,
-  recordId: string
+  recordId: string,
+  purpose: string
 ): Promise<MarriageRecord> {
   await apiFetch(`/records/marriage/${encodeURIComponent(recordId)}/certificates`, {
     method: "POST",
-    body: {},
+    body: { purpose },
   });
   const record = await getMarriageRecord(parishId, recordId);
   if (!record) throw new Error("Record not found.");

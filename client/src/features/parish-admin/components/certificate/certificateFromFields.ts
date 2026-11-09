@@ -19,6 +19,8 @@ export interface LegacyCertificateFields {
   verifyUrl?: string;
   printed?: PrintedRecord;
   issuedOn?: string;
+  purpose?: string;
+  validUntil?: string;
   specimen?: boolean;
 }
 
@@ -151,5 +153,7 @@ export function certificateDataFrom({
     issuedOn: toIsoDate(fields.issuedOn) ?? todayIso(),
     verification,
     specimen: fields.specimen || undefined,
+    purpose: present(fields.purpose),
+    validUntil: toIsoDate(fields.validUntil),
   } as CertificateData;
 }

@@ -8,6 +8,7 @@ const { loadRequest, toCertificateRequest, receiptNumberFor } = require('./certi
 const { feeAmount } = require('../utils/serviceFee');
 const { listBaptismAnnotations } = require('../utils/baptismAnnotation');
 const { certificateRemarks } = require('../utils/certificateRemarks');
+const { normalizePurpose, validUntilFor, manilaToday } = require('../constants/purposes');
 
 const RECORD_TABLES = {
   baptism: 'baptism',
@@ -91,6 +92,12 @@ function snapshotFrom(request, record, code, verifyUrl, config) {
     signatoryTitle: config.signatory_title || null,
     footerText: config.footer_text || null,
   };
+  // B2: what the copy is for; a marriage copy is accepted for 6 months from today.
+  const purpose = normalizePurpose(request.purpose);
+  if (purpose) {
+    fields.purpose = purpose;
+    fields.validUntil = validUntilFor(purpose, manilaToday());
+  }
   const dateKey = {
     baptism: 'baptismDate',
     confirmation: 'confirmationDate',
@@ -269,6 +276,8 @@ function toIssuedCertificate(row) {
       verifyUrl: row.qr_code || undefined,
       printed: snapshot.printed || undefined,
       issuedOn: dateStamp(row.issued_at) || undefined,
+      purpose: snapshot.purpose || undefined,
+      validUntil: snapshot.validUntil || undefined,
     },
   };
 }
@@ -598,6 +607,9 @@ async function verifyCertificate(req, res) {
       signatoryTitle: snapshot.signatoryTitle || '',
       footerText: snapshot.footerText || '',
       reason: row.status === 'invalid' ? row.invalidation_reason : undefined,
+      purpose: snapshot.purpose || undefined,
+      validUntil: snapshot.validUntil || undefined,
+      expiredForMarriage: Boolean(snapshot.validUntil && snapshot.validUntil < manilaToday()),
       voidKind: row.status === 'invalid' ? row.void_kind || 'revoked' : undefined,
       fields: {
         requestId: snapshot.requestId || '',
@@ -665,6 +677,8 @@ async function downloadPdf(req, res) {
       ['Mother', snapshot.motherName],
       ['Father', snapshot.fatherName],
       ['Issued', prettyDate(row.issued_at)],
+      ['Issued for', snapshot.purpose],
+      ['Valid for marriage until', prettyDate(snapshot.validUntil)],
       ['Status', row.status],
     ];
     for (const [label, value] of lines) {
@@ -996,6 +1010,8 @@ function issueFromRecord(recordType) {
       if (!record) throw httpError(404, 'Record not found.');
       if (record.archived_at) throw httpError(400, 'Archived records cannot be issued from.');
 
+      const purpose = normalizePurpose(req.body?.purpose);
+      if (!purpose) throw httpError(400, 'Choose what the certificate is for.');
       const holder = holderFromRow(recordType, record);
       const details = { subjectName: holder };
       const created = await client.query(
@@ -1005,7 +1021,7 @@ function issueFromRecord(recordType) {
          )
          VALUES ($1, 'walkin', $2, $3, $4, 1, 'processing', $5, $5, 'digital', $6::jsonb)
          RETURNING *`,
-        [req.parishId, recordType, record.id, 'Walk-in issuance', req.user.id, JSON.stringify(details)]
+        [req.parishId, recordType, record.id, purpose, req.user.id, JSON.stringify(details)]
       );
       const request = created.rows[0];
       const amount = await feeAmount(client, req.parishId, recordType, 1);
@@ -1031,7 +1047,7 @@ function issueFromRecord(recordType) {
         action: 'certificate.issued',
         entityType: recordType,
         entityId: record.id,
-        metadata: { source: 'register' },
+        metadata: { source: 'register', purpose },
       });
       const certificates = await listRecordCertificates(req.parishId, recordType, record.id);
       return res.status(201).json({ certificates });

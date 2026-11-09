@@ -85,7 +85,7 @@ and gets more expensive the longer it waits.
 | Item | Work | Needs |
 | --- | --- | --- |
 | B1 | More annotation types, corrections as margin notes, sealed adoption records | Void block, E1 |
-| B2 | Purpose on each request; No Record, Sponsor's Certificate, letter of release, banns | — |
+| B2 | **B2a done:** purpose on every copy, marriage copies valid 6 months. **B2b to do:** No Record, Sponsor's Certificate, letter of release, banns | — |
 | B3 | Godparent checks; late baptism entries | E6 |
 | 3 | E-signatures on certificates | File storage, 4 |
 | 5 | Marriage requirements | — |

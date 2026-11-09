@@ -62,7 +62,12 @@ export const ParishCertificate = forwardRef<HTMLDivElement, ParishCertificatePro
         {data.type === "DEATH" && <DeathBody data={data} />}
 
         <footer className="pcert__footer">
-          <VerificationArea verification={data.verification} appUrl={appUrl} />
+          <VerificationArea
+            verification={data.verification}
+            appUrl={appUrl}
+            purpose={data.purpose}
+            validUntil={data.validUntil}
+          />
           <SignatureBlock
             signatory={data.signatory}
             fallbackTitle="Parish Priest"

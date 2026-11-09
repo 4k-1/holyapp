@@ -244,7 +244,7 @@ export function AdminMarriageRecordDetailPage() {
           fields={marriageCertificateFields(record)}
           issued={certificateModal === "new" ? undefined : certificateModal}
           onClose={() => setCertificateModal(null)}
-          onIssue={() => generateMarriageCertificate(parish.id, record.id)}
+          onIssue={(purpose) => generateMarriageCertificate(parish.id, record.id, purpose)}
           onIssued={(cert) => {
             setCertificateModal(cert);
             refetch();

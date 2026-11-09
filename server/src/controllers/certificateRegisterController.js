@@ -4,6 +4,7 @@
 
 const pool = require('../config/db');
 const { sendRecordError } = require('../utils/recordFields');
+const { normalizePurpose } = require('../constants/purposes');
 
 const RECORD_PATHS = { baptism: 'baptismal', confirmation: 'confirmation', marriage: 'marriage', death: 'death' };
 /** A long range stops here; the page asks for narrower dates. */
@@ -70,8 +71,8 @@ async function listIssuedCopies(req, res) {
         issuedAt: row.issued_at,
         issuedBy: row.issued_by_name || 'Parish office',
         channel,
-        // Walk-ins are entered at the window with no stated purpose.
-        purpose: row.purpose && row.purpose !== 'Walk-in issuance' ? row.purpose : null,
+        // Walk-ins before B2 were saved as "Walk-in issuance", with no real purpose.
+        purpose: normalizePurpose(row.purpose),
         receiptNumber: row.receipt_number || null,
         status: statusOf(row),
         voidReason: row.void_kind ? row.invalidation_reason : null,

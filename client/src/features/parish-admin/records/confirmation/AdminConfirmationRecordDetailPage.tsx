@@ -240,7 +240,7 @@ export function AdminConfirmationRecordDetailPage() {
           fields={confirmationCertificateFields(record)}
           issued={certificateModal === "new" ? undefined : certificateModal}
           onClose={() => setCertificateModal(null)}
-          onIssue={() => generateConfirmationCertificate(parish.id, record.id)}
+          onIssue={(purpose) => generateConfirmationCertificate(parish.id, record.id, purpose)}
           onIssued={(cert) => {
             setCertificateModal(cert);
             refetch();

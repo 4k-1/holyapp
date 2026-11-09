@@ -54,7 +54,7 @@ describe('Parish separation', () => {
   });
 
   it("doesn't issue a certificate from another parish's register entry", async () => {
-    const res = await api(parishB.staff).post(`/records/baptism/${recordA.id}/certificates`);
+    const res = await api(parishB.staff).post(`/records/baptism/${recordA.id}/certificates`).send({ purpose: 'School enrollment' });
     assert.equal(res.status, 404);
     const certs = await pool.query('SELECT count(*)::int AS n FROM certificate_request WHERE record_id = $1', [
       recordA.id,

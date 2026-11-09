@@ -142,6 +142,9 @@ What a certificate is for decides what it may show and how long it's valid.
   - Sponsor's Certificate (confirms someone can be a godparent)
   - Letter of release, when a baptism or wedding happens in another parish
   - Certificate of Banns
+- **B2a done (2026-11-09):** `server/src/constants/purposes.js` (mirrored by `client/src/lib/purposes.ts`).
+  The purpose and end date are saved with the copy, so reprints match. 6 months is fixed for now
+  (`MARRIAGE_VALID_MONTHS`). **B2b**, the other documents, comes later, one at a time.
 
 ### B3. Check godparent eligibility and allow late baptism entries (priority: high)
 
@@ -512,7 +515,9 @@ change other accounts. So the last admin can't be removed. No work needed.
 | A4 | Done: day summary (read-only, printable) and receipt numbers shown with each copy. The saved close with sign-offs is parked |
 | A5, A6 | Proposed |
 | A7 | Done: Reports → Certificates lists every copy (number, sacrament, holder, issued, by, how, purpose, receipt, times printed, status) with search and filters; CSV, PDF and print follow the filters. Replaces the month table |
-| B1–B9 | Proposed |
+| B1 | Proposed |
+| B2 | Part done (B2a): fixed purpose list with "Other…" (walk-ins must choose one); the copy prints it under the QR code; marriage copies print "For marriage purposes" and a 6-month end date, and the QR page says when one has expired. Hiding sensitive notes waits for B1. New documents (No Record, Sponsor's, letter of release, banns) are B2b, not started |
+| B3–B9 | Proposed |
 | C1–C12 | Proposed |
 | D1, D2 | Done: void or correct (admins only, with a reason) and DON- receipt numbers (migration 029) |
 | D3 | Done: fixed fund list with "Other…"; must-remit funds totalled apart in the report. Remittance tracking parked |

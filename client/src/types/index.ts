@@ -146,6 +146,10 @@ export interface IssuedCertificateFields {
   printed?: PrintedRecord;
   /** ISO date the copy was issued. */
   issuedOn?: string;
+  /** What the copy is for (B2), printed under the QR code. */
+  purpose?: string;
+  /** Marriage copies: the last day it is accepted (ISO date). */
+  validUntil?: string;
 }
 
 export interface IssuedCertificate {

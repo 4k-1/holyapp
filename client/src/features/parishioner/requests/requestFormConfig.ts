@@ -1,6 +1,7 @@
 import { CandleIcon, DoveIcon, DropletIcon, HeartIcon } from "@/components/ui/icons/SacramentIcons";
 import type { CurrentUser, DeliveryMethod, SacramentType } from "@/types";
 import type { RequestFormState } from "@/features/parishioner/requests/types";
+import { PURPOSES as SHARED_PURPOSES } from "@/lib/purposes";
 
 /** The request as the parishioner fills it in; nothing is chosen for them up front. */
 export interface RequestDraft {
@@ -72,7 +73,8 @@ export const SACRAMENT_OPTIONS: { type: SacramentType; label: string; descriptio
 
 export const RELATIONSHIPS = ["Parent", "Child", "Spouse", "Sibling", "Grandchild", "Legal guardian", "Other relative", "Other"];
 
-export const PURPOSES = ["School enrollment", "Employment", "Marriage preparation", "Personal records", "Other"];
+/** The shared list (lib/purposes.ts) plus "Other", which asks for a typed purpose. */
+export const PURPOSES = [...SHARED_PURPOSES, "Other"];
 
 export const DELIVERY_OPTIONS: { key: DeliveryMethod; label: string; description: string }[] = [
   { key: "digital", label: "Digital copy", description: "Sent to your Certificate Wallet once the parish releases it" },

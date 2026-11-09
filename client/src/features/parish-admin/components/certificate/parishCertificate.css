@@ -514,6 +514,17 @@
   font-weight: 700;
 }
 
+/* B2: "Issued for: …" or "For marriage purposes", under the hash. */
+.pcert__verify-text .pcert__purpose {
+  margin-top: 0.8mm;
+  color: var(--pcert-ink);
+}
+
+.pcert__verify-text strong.pcert__purpose {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 .pcert__mono {
   font-family: Consolas, "Courier New", monospace;
   color: var(--pcert-ink);
