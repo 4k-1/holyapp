@@ -59,6 +59,49 @@ describe('Certificate numbers', () => {
   });
 });
 
+describe('Certificate prefixes in Settings', () => {
+  const save = (user, certificates) => api(user).put('/parish/settings/certificates').send({ certificates });
+  const look = (prefix) => ({
+    signatoryName: 'Fr. Test',
+    signatoryTitle: 'Parish Priest',
+    numberingPrefix: prefix,
+    footerText: 'Test footer',
+  });
+
+  it('refuses the same prefix for two sacraments', async () => {
+    const parish = await createParish('Prefix clash');
+    const res = await save(parish.admin, { baptism: look('MC'), confirmation: look('MC') });
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /MC is set for both/);
+
+    const alone = await save(parish.admin, { confirmation: look('BAP') });
+    assert.equal(alone.status, 400, 'also against a prefix saved earlier for another sacrament');
+
+    const stored = await pool.query(
+      "SELECT numbering_prefix FROM certificate_configuration WHERE parish_id = $1 AND certificate_type = 'confirmation'",
+      [parish.id]
+    );
+    assert.notEqual(stored.rows[0]?.numbering_prefix, 'MC', 'nothing was saved');
+  });
+
+  it("refuses a prefix already printed on another sacrament's certificates", async () => {
+    const parish = await createParish('Prefix history');
+    await issue(parish.staff, await createBaptism(parish.staff));
+    const moved = await save(parish.admin, { baptism: look('MCB') });
+    assert.equal(moved.status, 200);
+    const reused = await save(parish.admin, { confirmation: look('BAP') });
+    assert.equal(reused.status, 400);
+    assert.match(reused.body.error, /already printed on this parish's baptism certificates/);
+  });
+
+  it('lets each parish use the same prefix as another parish', async () => {
+    const one = await createParish('Prefix one');
+    const two = await createParish('Prefix two');
+    assert.equal((await save(one.admin, { baptism: look('XB') })).status, 200);
+    assert.equal((await save(two.admin, { baptism: look('XB') })).status, 200);
+  });
+});
+
 describe('Reprints', () => {
   let parish;
   let copy;

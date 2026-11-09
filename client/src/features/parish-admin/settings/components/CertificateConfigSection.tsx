@@ -48,12 +48,19 @@ function sameAppearance(a: CertificateAppearance, b: CertificateAppearance) {
   );
 }
 
-function validateAppearance(value: CertificateAppearance): FieldErrors {
+function validateAppearance(config: CertificateConfigBySacrament, type: SacramentType): FieldErrors {
+  const value = config[type];
   const errors: FieldErrors = {};
   if (!value.signatoryName.trim()) errors.signatoryName = "Enter the name that will print under the signature line.";
   if (!value.signatoryTitle.trim()) errors.signatoryTitle = "Enter the office or title under that name.";
   if (!/^[A-Z0-9]{2,5}$/.test(value.numberingPrefix)) {
     errors.numberingPrefix = "Use 2 to 5 letters or numbers. It starts each certificate number, e.g. BAP-2026-000143.";
+  } else {
+    // Numbers are counted per sacrament, so a shared prefix would give two certificates the same number.
+    const clash = SACRAMENTS.find((s) => s.type !== type && config[s.type].numberingPrefix === value.numberingPrefix);
+    if (clash) {
+      errors.numberingPrefix = `${value.numberingPrefix} is already the ${clash.label.toLowerCase()} prefix. Each certificate needs its own.`;
+    }
   }
   return errors;
 }
@@ -114,7 +121,7 @@ export function CertificateConfigSection() {
 
   async function handleSave() {
     if (!draft) return;
-    const nextErrors = validateAppearance(draft[activeType]);
+    const nextErrors = validateAppearance(draft, activeType);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       setSaveError("Fix the highlighted fields on this sacrament before saving.");
@@ -122,11 +129,11 @@ export function CertificateConfigSection() {
     }
 
     const otherInvalid = (Object.keys(draft) as SacramentType[]).find(
-      (type) => type !== activeType && Object.keys(validateAppearance(draft[type])).length > 0
+      (type) => type !== activeType && Object.keys(validateAppearance(draft, type)).length > 0
     );
     if (otherInvalid) {
       setActiveType(otherInvalid);
-      setErrors(validateAppearance(draft[otherInvalid]));
+      setErrors(validateAppearance(draft, otherInvalid));
       setSaveError("Another sacrament still has incomplete appearance fields.");
       return;
     }
@@ -138,8 +145,8 @@ export function CertificateConfigSection() {
       setSaved(cloneConfig(result));
       setDraft(cloneConfig(result));
       setJustSaved(true);
-    } catch {
-      setSaveError("Couldn't save certificate appearance. Try again.");
+    } catch (err) {
+      setSaveError(err instanceof Error && err.message ? err.message : "Couldn't save certificate appearance. Try again.");
     } finally {
       setSaving(false);
     }

@@ -282,10 +282,58 @@ async function getCertificates(req, res) {
   }
 }
 
+const PREFIX_FORMAT = /^[A-Z0-9]{2,5}$/;
+
+function normalizePrefix(value) {
+  return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+/**
+ * Each sacrament needs its own prefix: certificate numbers are counted per sacrament, so two
+ * sacraments sharing a prefix would both issue e.g. MC-2026-000001. A prefix already printed on
+ * another sacrament's certificates is refused for the same reason. Returns an error message or null.
+ */
+async function prefixProblem(parishId, body) {
+  const current = await pool.query(
+    'SELECT certificate_type, numbering_prefix FROM certificate_configuration WHERE parish_id = $1',
+    [parishId]
+  );
+  const prefixes = {};
+  for (const row of current.rows) prefixes[row.certificate_type] = row.numbering_prefix;
+  for (const type of SACRAMENTS) {
+    if (body[type]) prefixes[type] = normalizePrefix(body[type].numberingPrefix);
+  }
+
+  for (const type of SACRAMENTS) {
+    const prefix = prefixes[type] || DEFAULT_CERTS[type].numberingPrefix;
+    if (!PREFIX_FORMAT.test(prefix)) {
+      return `The ${type} prefix must be 2 to 5 letters or numbers.`;
+    }
+    const clash = SACRAMENTS.find(
+      (other) => other !== type && (prefixes[other] || DEFAULT_CERTS[other].numberingPrefix) === prefix
+    );
+    if (clash) {
+      return `${prefix} is set for both ${clash} and ${type}. Give each certificate its own prefix.`;
+    }
+    const used = await pool.query(
+      `SELECT record_type FROM certificate
+       WHERE parish_id = $1 AND record_type <> $2 AND certificate_code LIKE $3
+       LIMIT 1`,
+      [parishId, type, `${prefix}-%`]
+    );
+    if (used.rows[0]) {
+      return `${prefix} is already printed on this parish's ${used.rows[0].record_type} certificates. Choose another prefix for ${type}.`;
+    }
+  }
+  return null;
+}
+
 async function updateCertificates(req, res) {
   const body = req.body.certificates || req.body;
   try {
     await ensureCertificates(req.parishId, req.user.id);
+    const problem = await prefixProblem(req.parishId, body);
+    if (problem) return res.status(400).json({ error: problem });
     for (const type of SACRAMENTS) {
       const appearance = body[type];
       if (!appearance) continue;
@@ -301,7 +349,7 @@ async function updateCertificates(req, res) {
         [
           String(appearance.signatoryName || '').trim(),
           String(appearance.signatoryTitle || '').trim(),
-          String(appearance.numberingPrefix || '').trim().toUpperCase(),
+          normalizePrefix(appearance.numberingPrefix),
           String(appearance.footerText || '').trim(),
           req.user.id,
           req.parishId,
