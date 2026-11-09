@@ -89,6 +89,13 @@ async function getCertificateReport(req, res) {
        WHERE parish_id = $1
          AND ($2::date IS NULL OR printed_at >= $2::date)
          AND ($3::date IS NULL OR printed_at < $3::date + 1)
+       GROUP BY 1
+       UNION ALL
+       SELECT to_char(invalidated_at, 'YYYY-MM'), 'spoiled', COUNT(*)::int
+       FROM certificate
+       WHERE parish_id = $1 AND void_kind = 'spoiled'
+         AND ($2::date IS NULL OR invalidated_at >= $2::date)
+         AND ($3::date IS NULL OR invalidated_at < $3::date + 1)
        GROUP BY 1`,
       [req.parishId, from, to]
     );
@@ -99,6 +106,7 @@ async function getCertificateReport(req, res) {
           month,
           issued: 0,
           reprinted: 0,
+          spoiled: 0,
           pending: 0,
           processing: 0,
           released: 0,

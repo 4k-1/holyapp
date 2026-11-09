@@ -10,6 +10,7 @@ import {
 import { CERT_PREVIEW_STAGE_BG, sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
 import { getRequestCopyCount } from "@/features/parish-admin/requests/adminRequestHelpers";
 import { printElement } from "@/features/parish-admin/requests/printUtils";
+import { PrintCheck } from "@/features/parish-admin/components/certificate/PrintCheck";
 import {
   issueCertificate,
   markReadyForPickup,
@@ -58,6 +59,9 @@ export function AdminIssueCertificateModal({
   const [certCode, setCertCode] = useState("");
   const [verifyUrl, setVerifyUrl] = useState("");
   const [issueError, setIssueError] = useState<string | null>(null);
+  const [certificateId, setCertificateId] = useState("");
+  // After the issued copy is printed: "Did it print correctly?" (A3).
+  const [printCheck, setPrintCheck] = useState<"none" | "asking" | "confirmed" | "spoiled">("none");
 
 
   async function handleConfirm() {
@@ -69,6 +73,7 @@ export function AdminIssueCertificateModal({
         ? await issueCertificate(request.id)
         : await markReadyForPickup(request.id);
       setCertCode(result.certificateCode);
+      setCertificateId(result.certificateId ?? "");
       setVerifyUrl(result.verifyUrl);
       setDone(true);
     } catch (err) {
@@ -86,7 +91,12 @@ export function AdminIssueCertificateModal({
   function handlePrintCertificate() {
     if (!printRef.current) return;
     printElement(printRef.current, `${sacramentCertTitles[request.sacramentType]} — ${request.referenceNo}`);
+    if (done && certificateId && printCheck === "none") setPrintCheck("asking");
   }
+
+  // Once the issued copy has been printed here, further printouts go through Reprint on the
+  // record page, so each one is logged with a reason.
+  const canPrintIssued = !isDigital && printCheck === "none";
 
   const previewName = linked ? recordFullName(linked) : subjectName;
   const baseFields: CertificateFields = linked
@@ -167,7 +177,7 @@ export function AdminIssueCertificateModal({
                   <h4 className="font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                     Certificate preview
                   </h4>
-                  {!isDigital && (
+                  {!isDigital && (!done || canPrintIssued) && (
                     <AdminButton variant="ghost" size="sm" className="py-0.5" onClick={handlePrintCertificate}>
                       <PrintIcon />
                       {certCode ? "Print certificate" : "Print preview"}
@@ -199,7 +209,7 @@ export function AdminIssueCertificateModal({
                     subjectName={previewName}
                     certCode={certCode}
                     copies={copies}
-                    onPrint={!isDigital ? handlePrintCertificate : undefined}
+                    onPrint={canPrintIssued ? handlePrintCertificate : undefined}
                   />
                 ) : (
                   <div className="rounded-[10px] border border-admin-border bg-admin-surface-alt p-4">
@@ -250,9 +260,27 @@ export function AdminIssueCertificateModal({
       {/* Footer */}
       <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
         {issueError && <p className="mr-auto text-admin-body text-admin-red-700">{issueError}</p>}
+        {done && printCheck === "asking" && (
+          <PrintCheck
+            certificateId={certificateId}
+            code={certCode}
+            onConfirmed={() => setPrintCheck("confirmed")}
+            onSpoiled={() => setPrintCheck("spoiled")}
+          />
+        )}
+        {done && printCheck === "confirmed" && (
+          <p className="mr-auto text-admin-support text-admin-ink-muted">
+            Printout confirmed. For another printout, use Reprint on the record page so it's logged.
+          </p>
+        )}
+        {done && printCheck === "spoiled" && (
+          <p className="mr-auto text-admin-support font-semibold text-red-700">
+            {certCode} is void as spoiled. Issue a new copy from the record page for this request.
+          </p>
+        )}
         {done ? (
           <>
-            {!isDigital && (
+            {canPrintIssued && (
               <AdminButton variant="secondary" onClick={handlePrintCertificate}>
                 <PrintIcon />
                 Print certificate

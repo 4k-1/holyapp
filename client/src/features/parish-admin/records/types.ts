@@ -9,7 +9,7 @@ export const LINKABLE_ANNOTATION_CATEGORIES: LinkableAnnotationCategory[] = [
 
 export type RecordStatus = "Active" | "Archived";
 
-export type IssuedCertificateStatus = "Valid" | "Superseded" | "Invalid";
+export type IssuedCertificateStatus = "Valid" | "Superseded" | "Invalid" | "Spoiled";
 
 export interface RecordAnnotation {
   id: string;
@@ -38,6 +38,8 @@ export interface IssuedRecordCertificate {
   verifyUrl?: string;
   /** How many times this copy has been reprinted. */
   reprints?: number;
+  /** Someone checked the printout and said it printed correctly (digital copies: always). */
+  printConfirmed?: boolean;
 }
 
 export type LegitimacyStatus = "Legitimate" | "Illegitimate";

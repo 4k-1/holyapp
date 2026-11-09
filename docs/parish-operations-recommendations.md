@@ -472,7 +472,8 @@ change other accounts. So the last admin can't be removed. No work needed.
 | --- | --- |
 | A1 | Done: one Issue & print button; previews print "SPECIMEN – NOT VALID" with no QR; Reprint keeps the code |
 | A2 | Done: BAP-2026-000143 numbers (migration 030), reprints logged with a reason and printed as issued, issued and reprinted counted apart in the report |
-| A3–A7 | Proposed |
+| A3 | Done: "Did it print correctly?" after each print (Yes / No, reprint / Spoiled); unanswered copies on the dashboard; spoiled copies void with a reason, keep their number and scan as void (migration 031) |
+| A4–A7 | Proposed |
 | B1–B9 | Proposed |
 | C1–C12 | Proposed |
 | D1, D2 | Done: void or correct (admins only, with a reason) and DON- receipt numbers (migration 029) |

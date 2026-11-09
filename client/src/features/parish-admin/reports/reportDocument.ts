@@ -222,6 +222,7 @@ export async function buildReportDocument(
     const online = sum(rows.map((row) => row.online));
     const issued = sum(rows.map((row) => row.issued));
     const reprinted = sum(rows.map((row) => row.reprinted));
+    const spoiled = sum(rows.map((row) => row.spoiled ?? 0));
     const bySacrament = [
       { label: "Baptism", value: sum(rows.map((row) => row.baptism)) },
       { label: "Confirmation", value: sum(rows.map((row) => row.confirmation)) },
@@ -236,7 +237,7 @@ export async function buildReportDocument(
         (total === 0
           ? `No certificate requests came in for ${period}.`
           : `The office took in ${countPhrase(total, "certificate request")} for ${period} and released ${share(released, total)}% of them.`) +
-        ` ${countPhrase(issued, "copy", "copies")} issued, ${reprinted} reprinted.`,
+        ` ${countPhrase(issued, "copy", "copies")} issued, ${reprinted} reprinted, ${spoiled} spoiled.`,
       tiles: [
         { label: "Requests", value: total.toLocaleString(), change: change(rows.map(monthTotal), labels, open) },
         { label: "Released", value: released.toLocaleString(), change: change(rows.map((row) => row.released), labels, open) },
@@ -270,23 +271,27 @@ export async function buildReportDocument(
       },
       table: {
         title: "Requests by month",
-        headers: ["Month", "Pending", "Processing", "Released", "Rejected", "Total", "Copies issued", "Reprinted"],
+        headers: ["Month", "Pending", "Processing", "Released", "Rejected", "Total", "Copies issued", "Reprinted", "Spoiled"],
         rows: rows.map((row, index) =>
-          [labels[index], row.pending, row.processing, row.released, row.rejected, monthTotal(row), row.issued, row.reprinted].map(String)
+          [
+            labels[index], row.pending, row.processing, row.released, row.rejected, monthTotal(row),
+            row.issued, row.reprinted, row.spoiled ?? 0,
+          ].map(String)
         ),
         totals: [
-          "Total", String(pending), String(processing), String(released), String(rejected), String(total), String(issued), String(reprinted),
+          "Total", String(pending), String(processing), String(released), String(rejected), String(total),
+          String(issued), String(reprinted), String(spoiled),
         ],
         levels: levels(rows.map(monthTotal)),
       },
       csv: {
         headers: [
           "Month", "Pending", "Processing", "Released", "Rejected", "Total",
-          "Baptism", "Confirmation", "Marriage", "Death", "Online", "Walk-in", "Copies issued", "Reprinted",
+          "Baptism", "Confirmation", "Marriage", "Death", "Online", "Walk-in", "Copies issued", "Reprinted", "Spoiled",
         ],
         rows: rows.map((row) => [
           row.month, row.pending, row.processing, row.released, row.rejected, monthTotal(row),
-          row.baptism, row.confirmation, row.marriage, row.death, row.online, row.walkin, row.issued, row.reprinted,
+          row.baptism, row.confirmation, row.marriage, row.death, row.online, row.walkin, row.issued, row.reprinted, row.spoiled ?? 0,
         ]),
       },
     };

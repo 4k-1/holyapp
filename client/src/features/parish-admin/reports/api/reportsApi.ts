@@ -26,6 +26,8 @@ export interface CertificateMonthRow {
   /** Copies issued that month; reprints are counted apart and aren't new copies. */
   issued: number;
   reprinted: number;
+  /** Printed copies voided because they came out wrong. Their numbers stay used. */
+  spoiled: number;
 }
 
 export interface DonationMonthRow {

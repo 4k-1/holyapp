@@ -8,6 +8,7 @@ import {
 } from "@/features/parish-admin/components/CertificateDocument";
 import { CERT_PREVIEW_STAGE_BG, sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
 import { printElement, waitForQrCode } from "@/features/parish-admin/requests/printUtils";
+import { PrintCheck } from "@/features/parish-admin/components/certificate/PrintCheck";
 import {
   getIssuedCertificate,
   REPRINT_REASONS,
@@ -51,6 +52,9 @@ export function AdminGenerateCertificateModal({
   const [askingReprint, setAskingReprint] = useState(false);
   const [reason, setReason] = useState<ReprintReason | "">("");
   const [reasonNote, setReasonNote] = useState("");
+  // A printed copy stays "not confirmed" until someone says it printed correctly (A3).
+  const [confirmed, setConfirmed] = useState(issued?.printConfirmed !== false);
+  const [justSpoiled, setJustSpoiled] = useState(false);
   // The copy as it was issued: a reprint shows that, not the record as it is now.
   const savedId = issuedCert?.id;
   const { data: loadedCopy, loading: loadingSaved } = useAsync(
@@ -105,6 +109,8 @@ export function AdminGenerateCertificateModal({
     if (!newest) return;
     setIssuedCert(newest);
     setJustIssued(true);
+    setJustSpoiled(false);
+    setConfirmed(newest.printConfirmed !== false);
     onIssued?.(newest);
     if (newest.status === "Valid") await print(true);
   }
@@ -128,7 +134,8 @@ export function AdminGenerateCertificateModal({
       setAskingReprint(false);
       setReason("");
       setReasonNote("");
-      onIssued?.({ ...issuedCert, reprints: result.reprints });
+      setConfirmed(false);
+      onIssued?.({ ...issuedCert, reprints: result.reprints, printConfirmed: false });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't record the reprint. Nothing was printed.");
       setPrinting(false);
@@ -137,14 +144,35 @@ export function AdminGenerateCertificateModal({
     await print(true);
   }
 
+  const checking = printable && !confirmed && !askingReprint && Boolean(issuedCert?.id) && !busy;
+
+  function startReprint() {
+    setError("");
+    setAskingReprint(true);
+  }
+
+  /** After a spoiled copy: back to the preview, ready to issue a good copy with a new number. */
+  function issueAnother() {
+    setIssuedCert(undefined);
+    setFreshCopy(null);
+    setJustIssued(false);
+    setJustSpoiled(false);
+    setReprints(0);
+    setConfirmed(true);
+  }
+
   const subtitle = issuedCert
     ? `${subjectName} · ${issuedCert.code}${printable ? "" : ` · ${issuedCert.status}`}`
     : `${subjectName} · Preview — not yet issued`;
 
   const note = !issuedCert
     ? "Issue & print records this copy and gives it its code and QR, then prints it. A preview prints marked SPECIMEN – NOT VALID."
-    : !printable
+    : justSpoiled
+      ? `${issuedCert.code} is void. Its number stays used. Issue a new copy to give the parishioner a good certificate.`
+      : !printable
       ? `This copy is ${issuedCert.status.toLowerCase()} and can't be printed. Issue a new copy from the record instead.`
+      : checking
+        ? "Check the paper before handing it over. If nobody answers, this copy stays on the dashboard as not confirmed."
       : askingReprint
         ? "Why is this copy being reprinted? It keeps the same number and isn't counted as a new copy."
         : justIssued && reprints === 0
@@ -175,6 +203,23 @@ export function AdminGenerateCertificateModal({
       </div>
 
       <AdminDialogFooter className="flex-wrap">
+        {checking && issuedCert?.id && (
+          <PrintCheck
+            certificateId={issuedCert.id}
+            code={issuedCert.code}
+            onReprint={startReprint}
+            onConfirmed={() => {
+              setConfirmed(true);
+              onIssued?.({ ...issuedCert, printConfirmed: true });
+            }}
+            onSpoiled={() => {
+              const spoiled = { ...issuedCert, status: "Spoiled" as const };
+              setIssuedCert(spoiled);
+              setJustSpoiled(true);
+              onIssued?.(spoiled);
+            }}
+          />
+        )}
         <p className={`w-full text-admin-support ${error ? "font-semibold text-red-700" : "text-admin-ink-muted"}`}>
           {error || note}
         </p>
@@ -197,14 +242,13 @@ export function AdminGenerateCertificateModal({
             </AdminButton>
           </>
         )}
-        {printable && !askingReprint && (
-          <AdminButton
-            onClick={() => {
-              setError("");
-              setAskingReprint(true);
-            }}
-            disabled={loading || loadingSaved || busy}
-          >
+        {justSpoiled && (
+          <AdminButton onClick={issueAnother} disabled={busy}>
+            Issue a new copy
+          </AdminButton>
+        )}
+        {printable && !askingReprint && !checking && (
+          <AdminButton onClick={startReprint} disabled={loading || loadingSaved || busy}>
             <PrintIcon />
             Reprint
           </AdminButton>

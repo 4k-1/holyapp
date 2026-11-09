@@ -284,7 +284,8 @@ async function paidRow(client, requestId) {
   return payment.rows[0] || null;
 }
 
-async function issueCertificateRow(client, request, actorId, parishId) {
+/** `printed`: a paper copy, left "not confirmed" until someone checks the printout (A3). */
+async function issueCertificateRow(client, request, actorId, parishId, { printed = true } = {}) {
   const table = RECORD_TABLES[request.record_type];
   const recordResult = await client.query(
     `SELECT * FROM ${table} WHERE id = $1 AND parish_id = $2`,
@@ -354,11 +355,14 @@ async function issueCertificateRow(client, request, actorId, parishId) {
   await client.query(
     `INSERT INTO certificate (
        id, record_type, record_id, parish_id, version, hash, previous_certificate_id,
-       status, pdf_url, qr_code, issued_by, certificate_code, holder_name, snapshot
+       status, pdf_url, qr_code, issued_by, certificate_code, holder_name, snapshot,
+       print_confirmed_at, print_confirmed_by
      )
      VALUES (
        $1, $2, $3, $4, $5, $6, $7,
-       'valid', $8, $9, $10, $11, $12, $13::jsonb
+       'valid', $8, $9, $10, $11, $12, $13::jsonb,
+       CASE WHEN $14::boolean THEN NULL ELSE NOW() END,
+       CASE WHEN $14::boolean THEN NULL ELSE $10::uuid END
      )`,
     [
       id,
@@ -374,6 +378,7 @@ async function issueCertificateRow(client, request, actorId, parishId) {
       code,
       holder.slice(0, 255),
       JSON.stringify(snapshot),
+      printed,
     ]
   );
 
@@ -435,7 +440,10 @@ async function finishIssue(req, res, mode) {
         verifyUrl: existing.rows[0] && existing.rows[0].qr_code,
       };
     } else {
-      issued = await issueCertificateRow(client, request, req.user.id, req.parishId);
+      // A digital copy is never printed, so there is nothing to confirm.
+      issued = await issueCertificateRow(client, request, req.user.id, req.parishId, {
+        printed: mode !== 'digital',
+      });
     }
 
     if (mode === 'digital') {
@@ -466,6 +474,7 @@ async function finishIssue(req, res, mode) {
     });
     return res.json({
       request: toCertificateRequest(row),
+      certificateId: issued.id,
       certificateCode: issued.code,
       verifyUrl: issued.verifyUrl,
     });
@@ -561,7 +570,7 @@ async function verifyCertificate(req, res) {
   try {
     const result = await pool.query(
       `SELECT c.status, c.certificate_code, c.holder_name, c.record_type, c.issued_at,
-              c.invalidation_reason, c.snapshot, c.qr_code,
+              c.invalidation_reason, c.snapshot, c.qr_code, c.void_kind,
               p.name AS parish_name, p.address AS parish_address, p.slug AS parish_slug
        FROM certificate c
        JOIN parish p ON p.id = c.parish_id
@@ -589,6 +598,7 @@ async function verifyCertificate(req, res) {
       signatoryTitle: snapshot.signatoryTitle || '',
       footerText: snapshot.footerText || '',
       reason: row.status === 'invalid' ? row.invalidation_reason : undefined,
+      voidKind: row.status === 'invalid' ? row.void_kind || 'revoked' : undefined,
       fields: {
         requestId: snapshot.requestId || '',
         registerRef: snapshot.registerRef || '—',
@@ -688,7 +698,8 @@ async function listRecordCertificates(parishId, recordType, recordId) {
     const result = await pool.query(
       `SELECT c.id, c.certificate_code, c.status, c.issued_at, c.record_type, c.qr_code,
               NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS issued_by_name,
-              (SELECT COUNT(*)::int FROM certificate_reprint rp WHERE rp.certificate_id = c.id) AS reprints
+              (SELECT COUNT(*)::int FROM certificate_reprint rp WHERE rp.certificate_id = c.id) AS reprints,
+              c.print_confirmed_at, c.void_kind
        FROM certificate c
        LEFT JOIN app_user u ON u.id = c.issued_by
        WHERE c.parish_id = $1 AND c.record_type = $2 AND c.record_id = $3
@@ -701,10 +712,11 @@ async function listRecordCertificates(parishId, recordType, recordId) {
       type: TITLES[row.record_type] || 'Certificate',
       date: dateStamp(row.issued_at),
       by: row.issued_by_name || 'Parish office',
-      status: labels[row.status] || 'Valid',
+      status: row.void_kind === 'spoiled' ? 'Spoiled' : labels[row.status] || 'Valid',
       code: row.certificate_code,
       verifyUrl: row.qr_code || undefined,
       reprints: row.reprints || 0,
+      printConfirmed: Boolean(row.print_confirmed_at),
     }));
   } catch (err) {
     if (err.code === '42703') return [];
@@ -736,6 +748,7 @@ async function revokeCertificate(req, res) {
     await client.query(
       `UPDATE certificate
        SET status = 'invalid',
+           void_kind = 'revoked',
            invalidated_by = $1,
            invalidated_at = NOW(),
            invalidation_reason = $2
@@ -810,6 +823,11 @@ async function reprintCertificate(req, res) {
     if (row.status !== 'valid') {
       throw httpError(400, 'Only a valid copy can be reprinted. Issue a new copy instead.');
     }
+    // The new printout needs checking again.
+    await client.query(
+      'UPDATE certificate SET print_confirmed_at = NULL, print_confirmed_by = NULL WHERE id = $1',
+      [row.id]
+    );
     const inserted = await client.query(
       `INSERT INTO certificate_reprint (certificate_id, parish_id, reason, note, printed_by)
        VALUES ($1, $2, $3, $4, $5)
@@ -841,6 +859,107 @@ async function reprintCertificate(req, res) {
     return sendError(res, err);
   } finally {
     client.release();
+  }
+}
+
+/** "Yes, it printed correctly": the copy is confirmed by this person, now. */
+async function confirmPrint(req, res) {
+  try {
+    const row = await loadOfficeCertificate(pool, req.params.id, req.parishId);
+    if (!row) return res.status(404).json({ error: 'Certificate not found.' });
+    if (row.status !== 'valid') {
+      return res.status(400).json({ error: 'Only a valid copy can be confirmed.' });
+    }
+    if (!row.print_confirmed_at) {
+      await pool.query(
+        `UPDATE certificate SET print_confirmed_at = NOW(), print_confirmed_by = $1
+         WHERE id = $2 AND print_confirmed_at IS NULL`,
+        [req.user.id, row.id]
+      );
+      await writeAudit({
+        parishId: req.parishId,
+        actorId: req.user.id,
+        action: 'certificate.print_confirmed',
+        entityType: 'certificate',
+        entityId: row.id,
+        metadata: { code: row.certificate_code },
+      });
+    }
+    return res.json({ id: row.id, printConfirmed: true });
+  } catch (err) {
+    return sendError(res, err);
+  }
+}
+
+/**
+ * The printout came out wrong and must not be used: the copy is voided as spoiled, with a reason.
+ * Its number stays used (no gap) and its QR code shows it as void. A good copy is issued anew.
+ */
+async function spoilCertificate(req, res) {
+  const reason = text(req.body && req.body.reason, 1000);
+  if (reason.length < 5) {
+    return res.status(400).json({ error: 'Say what was wrong with the printout.' });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const row = await loadOfficeCertificate(client, req.params.id, req.parishId, true);
+    if (!row) throw httpError(404, 'Certificate not found.');
+    if (row.status !== 'valid') throw httpError(400, 'Only a valid copy can be marked spoiled.');
+    await client.query(
+      `UPDATE certificate
+       SET status = 'invalid', void_kind = 'spoiled',
+           invalidated_by = $1, invalidated_at = NOW(), invalidation_reason = $2
+       WHERE id = $3`,
+      [req.user.id, reason, row.id]
+    );
+    await client.query('COMMIT');
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'certificate.spoiled',
+      entityType: 'certificate',
+      entityId: row.id,
+      metadata: { code: row.certificate_code, reason },
+    });
+    return res.json({ id: row.id, status: 'Spoiled', reason });
+  } catch (err) {
+    await rollback(client);
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    return sendError(res, err);
+  } finally {
+    client.release();
+  }
+}
+
+const RECORD_PATHS = { baptism: 'baptismal', confirmation: 'confirmation', marriage: 'marriage', death: 'death' };
+
+/** Valid printed copies nobody has confirmed yet, oldest first, for the dashboard. */
+async function listUnconfirmed(req, res) {
+  try {
+    const result = await pool.query(
+      `SELECT c.id, c.certificate_code, c.holder_name, c.record_type, c.record_id, c.issued_at,
+              NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS issued_by_name
+       FROM certificate c
+       LEFT JOIN app_user u ON u.id = c.issued_by
+       WHERE c.parish_id = $1 AND c.status = 'valid' AND c.print_confirmed_at IS NULL
+       ORDER BY c.issued_at ASC
+       LIMIT 50`,
+      [req.parishId]
+    );
+    return res.json({
+      certificates: result.rows.map((row) => ({
+        id: row.id,
+        code: row.certificate_code,
+        holderName: row.holder_name,
+        sacramentType: row.record_type,
+        recordPath: `records/${RECORD_PATHS[row.record_type] || row.record_type}/${row.record_id}`,
+        issuedAt: row.issued_at,
+        issuedBy: row.issued_by_name || 'Parish office',
+      })),
+    });
+  } catch (err) {
+    return sendError(res, err);
   }
 }
 
@@ -925,5 +1044,8 @@ module.exports = {
   toIssuedCertificate,
   getOfficeCertificate,
   reprintCertificate,
+  confirmPrint,
+  spoilCertificate,
+  listUnconfirmed,
   issueFromRecord,
 };

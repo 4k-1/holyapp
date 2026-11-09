@@ -54,6 +54,10 @@ function describe(row) {
       return { text: 'Certificate request declined', detail: m.reason || subject };
     case 'certificate.issued':
       return { text: 'Certificate issued', detail: m.code ? `${m.code} · by ${who}` : `By ${who}` };
+    case 'certificate.reprinted':
+      return { text: 'Certificate reprinted', detail: `${m.code ? `${m.code} · ` : ''}by ${who}` };
+    case 'certificate.spoiled':
+      return { text: 'Printed certificate spoiled and voided', detail: `${m.code ? `${m.code} · ` : ''}${m.reason || `by ${who}`}` };
     case 'certificate.released':
       return { text: 'Certificate released', detail: m.releasedTo ? `To ${m.releasedTo}` : `By ${who}` };
     case 'baptism.created':
@@ -96,6 +100,8 @@ const ACTIVITY_ACTIONS = [
   'certificate_request.rejected',
   'certificate.issued',
   'certificate.released',
+  'certificate.reprinted',
+  'certificate.spoiled',
   'baptism.created',
   'confirmation.created',
   'annotation.recorded',

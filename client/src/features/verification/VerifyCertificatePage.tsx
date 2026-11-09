@@ -22,6 +22,8 @@ interface VerificationFields {
 
 interface Verification {
   status: "valid" | "superseded" | "invalid";
+  /** For a void copy: withdrawn later ("revoked") or spoiled when printed. */
+  voidKind?: "revoked" | "spoiled";
   code: string;
   holderName: string;
   sacramentType: SacramentType;
@@ -100,6 +102,14 @@ const OUTCOMES: Record<Outcome, { tone: Tone; icon: "check" | "alert" | "cross";
     title: "Verification is unavailable right now",
     detail: "The verification service didn't respond. The certificate may still be valid.",
   },
+};
+
+/** A copy that printed wrongly and was voided at the office before it was handed over. */
+const SPOILED = {
+  tone: "red" as const,
+  icon: "cross" as const,
+  title: "Void certificate",
+  detail: "This copy was spoiled when it was printed and the parish office voided it. It is not a valid certificate.",
 };
 
 /** Parish seals kept in the app until the API serves uploaded ones. */
@@ -267,7 +277,8 @@ function Result({
   hash: string;
   checkedAt: Date;
 }) {
-  const copy = OUTCOMES[outcome];
+  const spoiled = outcome === "invalid" && data?.voidKind === "spoiled";
+  const copy = spoiled ? SPOILED : OUTCOMES[outcome];
   const tone = TONES[copy.tone];
   const checked = checkedAt.toLocaleString("en-US", {
     month: "long",
@@ -304,7 +315,7 @@ function Result({
               <Row label="Reference number">
                 <span className="font-mono text-[0.875rem]">{data.code}</span>
               </Row>
-              <Row label="Register status">{STATUS_LABEL[data.status]}</Row>
+              <Row label="Register status">{spoiled ? "Void (spoiled when printed)" : STATUS_LABEL[data.status]}</Row>
             </dl>
             {data.status === "superseded" && (
               <Notice className={tone.notice}>

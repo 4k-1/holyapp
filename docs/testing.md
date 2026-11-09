@@ -61,6 +61,7 @@ docker compose exec -e TEST_DATABASE_URL=postgresql://holyapp:holyapp_dev@postgr
 | `auth.test.js` | Sign-in with right and wrong passwords, unknown emails and suspended accounts |
 | `donation-voids.test.js` | Receipt numbers never repeat or skip, even when saved at once; void and correct are admin-only, need a reason, are logged and leave the totals |
 | `certificate-copies.test.js` | Certificate numbers count per parish and year without repeats, even when issued at once, and carry on after a prefix change; reprints need a reason, are logged, stay one copy and print as issued; the report counts copies and reprints apart; Settings refuses a prefix another sacrament uses or has printed |
+| `certificate-prints.test.js` | New printed copies stay unconfirmed until someone confirms; a reprint asks again; spoiled copies need a reason, keep their number, scan as void and can't be reprinted; other parishes and parishioners are kept out |
 | `staff.test.js` | Staff sign-ins with no title show "Staff" (admins "Admin Staff"), and a chosen title shows |
 
 Not covered yet: the client screens, and running the tests on GitHub for every push.

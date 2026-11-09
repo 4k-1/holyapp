@@ -51,6 +51,7 @@ export async function confirmRequestPayment(requestId: string): Promise<Certific
 
 export interface IssueCertificateResult {
   request: CertificateRequest;
+  certificateId?: string;
   certificateCode: string;
   verifyUrl: string;
 }
@@ -128,4 +129,40 @@ export async function reprintCertificate(
     if (err instanceof ApiError) throw new Error(err.message, { cause: err });
     throw new Error("Unable to reach the server.", { cause: err });
   }
+}
+
+async function officePost<T>(path: string, body: unknown, fallback: string): Promise<T> {
+  try {
+    return await apiFetch<T>(path, { method: "POST", auth: true, body });
+  } catch (err) {
+    if (err instanceof ApiError) throw new Error(err.message, { cause: err });
+    throw new Error(fallback, { cause: err });
+  }
+}
+
+/** "Yes, it printed correctly." */
+export function confirmCertificatePrint(certificateId: string): Promise<{ id: string; printConfirmed: boolean }> {
+  return officePost(`/certificates/${certificateId}/confirm-print`, {}, "Unable to reach the server.");
+}
+
+/** The printout came out wrong: void this copy as spoiled. It keeps its number; issue a new copy instead. */
+export function spoilCertificate(certificateId: string, reason: string): Promise<{ id: string }> {
+  return officePost(`/certificates/${certificateId}/spoil`, { reason }, "Unable to reach the server.");
+}
+
+export interface UnconfirmedCertificate {
+  id: string;
+  code: string;
+  holderName: string;
+  sacramentType: string;
+  /** Under the parish admin route, e.g. "records/baptismal/<id>". */
+  recordPath: string;
+  issuedAt: string;
+  issuedBy: string;
+}
+
+/** Printed copies nobody has confirmed yet, oldest first. */
+export async function listUnconfirmedCertificates(): Promise<UnconfirmedCertificate[]> {
+  const data = await apiFetch<{ certificates: UnconfirmedCertificate[] }>("/certificates/unconfirmed", { auth: true });
+  return data.certificates ?? [];
 }

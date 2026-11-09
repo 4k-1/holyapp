@@ -9,11 +9,18 @@ const {
   revokeCertificate,
   getOfficeCertificate,
   reprintCertificate,
+  confirmPrint,
+  spoilCertificate,
+  listUnconfirmed,
 } = require('../controllers/certificateController');
 
 const router = express.Router();
+const office = [authenticate, scopeParish, requireParish, requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF)];
 
 router.get('/verify/:hash', verifyCertificate);
+router.get('/unconfirmed', ...office, listUnconfirmed);
+router.post('/:id/confirm-print', ...office, confirmPrint);
+router.post('/:id/spoil', ...office, spoilCertificate);
 router.get(
   '/mine',
   authenticate,

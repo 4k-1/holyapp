@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { getDashboardView } from "./api/dashboardApi";
+import { UnconfirmedPrintsCard } from "./UnconfirmedPrintsCard";
 import type { ActivityItem, AttentionItem, DashboardStat, DotTone, QuickAction, TodayMass, UpcomingEvent } from "./types";
 import "./AdminDashboardPage.css";
 
@@ -137,6 +138,8 @@ export function AdminDashboardPage() {
           </ul>
         </section>
       )}
+
+      <UnconfirmedPrintsCard />
 
       {secondaryActions.length > 1 && (
         <nav className="mb-5 flex flex-wrap gap-2 sm:mb-6" aria-label="More quick actions">
