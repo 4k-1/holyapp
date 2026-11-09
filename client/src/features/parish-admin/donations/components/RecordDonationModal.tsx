@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
-import { recordDonation } from "../api/donationsApi";
-import { DONATION_TYPES } from "../types";
+import { correctDonation, recordDonation } from "../api/donationsApi";
+import { donationReceiptNumber } from "../donationsHelpers";
+import { DONATION_TYPES, type Donation } from "../types";
 import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
 interface RecordDonationModalProps {
   parishId: string;
+  /** When set, the form corrects this gift: it's voided and the corrected gift saved with a new receipt number. */
+  correcting?: Donation;
   onClose: () => void;
   onRecorded: () => void;
 }
@@ -17,16 +20,18 @@ function todayISO() {
 
 export function RecordDonationModal({
   parishId,
+  correcting,
   onClose,
   onRecorded,
 }: RecordDonationModalProps) {
-  const [anonymous, setAnonymous] = useState(false);
-  const [donorName, setDonorName] = useState("");
-  const [donationType, setDonationType] = useState<string>("Cash");
-  const [amount, setAmount] = useState("");
-  const [donationDate, setDonationDate] = useState(todayISO());
-  const [purpose, setPurpose] = useState("");
-  const [remarks, setRemarks] = useState("");
+  const [anonymous, setAnonymous] = useState(Boolean(correcting && !correcting.donorName));
+  const [donorName, setDonorName] = useState(correcting?.donorName ?? "");
+  const [donationType, setDonationType] = useState<string>(correcting?.donationType ?? "Cash");
+  const [amount, setAmount] = useState(correcting ? String(correcting.amount) : "");
+  const [donationDate, setDonationDate] = useState(correcting?.donationDate ?? todayISO());
+  const [purpose, setPurpose] = useState(correcting?.purpose ?? "");
+  const [remarks, setRemarks] = useState(correcting?.remarks ?? "");
+  const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -44,17 +49,23 @@ export function RecordDonationModal({
       setError("Select a donation date");
       return;
     }
+    if (correcting && reason.trim().length < 5) {
+      setError("Say why this donation is being corrected");
+      return;
+    }
     setError("");
     setSubmitting(true);
+    const input = {
+      donorName: anonymous ? undefined : donorName.trim(),
+      donationType,
+      amount: amt,
+      donationDate,
+      purpose: purpose.trim() || undefined,
+      remarks: remarks.trim() || undefined,
+    };
     try {
-      await recordDonation(parishId, {
-        donorName: anonymous ? undefined : donorName.trim(),
-        donationType,
-        amount: amt,
-        donationDate,
-        purpose: purpose.trim() || undefined,
-        remarks: remarks.trim() || undefined,
-      });
+      if (correcting) await correctDonation(correcting.id, { ...input, reason: reason.trim() });
+      else await recordDonation(parishId, input);
       onRecorded();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't record this donation.");
@@ -71,8 +82,14 @@ export function RecordDonationModal({
     >
       <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
         <div>
-          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Record donation</h3>
-          <p className="mt-0.5 text-admin-support text-admin-ink-muted">Log a donation received by the parish</p>
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
+            {correcting ? "Correct donation" : "Record donation"}
+          </h3>
+          <p className="mt-0.5 text-admin-support text-admin-ink-muted">
+            {correcting
+              ? `Receipt ${donationReceiptNumber(correcting)} will be voided and the corrected gift saved with a new receipt number.`
+              : "Log a donation received by the parish"}
+          </p>
         </div>
         <button
           onClick={onClose}
@@ -154,6 +171,17 @@ export function RecordDonationModal({
           />
         </AdminField>
 
+        {correcting && (
+          <AdminField label="Reason for the correction" className="mb-0">
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Typed ₱5,000 instead of ₱500"
+              className="w-full min-h-[64px] resize-y rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink"
+            />
+          </AdminField>
+        )}
+
         {error && <p className="text-admin-support font-semibold text-red-700">{error}</p>}
       </div>
 
@@ -162,7 +190,7 @@ export function RecordDonationModal({
           Cancel
         </AdminButton>
         <AdminButton onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "Recording…" : "Record donation"}
+          {correcting ? (submitting ? "Saving…" : "Save correction") : submitting ? "Recording…" : "Record donation"}
         </AdminButton>
       </div>
     </AdminModalFrame>

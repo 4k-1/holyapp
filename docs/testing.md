@@ -59,5 +59,6 @@ docker compose exec -e TEST_DATABASE_URL=postgresql://holyapp:holyapp_dev@postgr
 | `certificates.test.js` | A walk-in issue creates request, paid receipt and certificate together, at the parish's fee |
 | `donations.test.js` | Donations save and list; bad amounts, methods and dates are refused |
 | `auth.test.js` | Sign-in with right and wrong passwords, unknown emails and suspended accounts |
+| `donation-voids.test.js` | Receipt numbers never repeat or skip, even when saved at once; void and correct are admin-only, need a reason, are logged and leave the totals |
 
 Not covered yet: the client screens, and running the tests on GitHub for every push.

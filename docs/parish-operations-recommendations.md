@@ -473,7 +473,8 @@ change other accounts. So the last admin can't be removed. No work needed.
 | A1–A7 | Proposed |
 | B1–B9 | Proposed |
 | C1–C12 | Proposed |
-| D1–D11 | Proposed |
+| D1, D2 | Done: void or correct (admins only, with a reason) and DON- receipt numbers (migration 029) |
+| D3–D11 | Proposed |
 | Donation campaign goals | Set aside for now |
 | E1, E2 | Proposed |
 | E3 | Already done |

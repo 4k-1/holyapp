@@ -76,6 +76,10 @@ function describe(row) {
       return { text: `Online donation · ${peso(m.amount)}`, detail: subject || 'GCash' };
     case 'donation.recorded':
       return { text: `Donation recorded · ${peso(m.amount)}`, detail: `${m.type || ''} · by ${who}` };
+    case 'donation.voided':
+      return m.corrected ? null : { text: 'Donation voided', detail: `${m.reason || ''} · by ${who}` };
+    case 'donation.corrected':
+      return { text: 'Donation corrected', detail: `${m.reason || ''} · by ${who}` };
     case 'schedule.event_created':
       return { text: `Added to the schedule: ${m.title || 'an event'}`, detail: [shortDate(m.date), `by ${who}`].filter(Boolean).join(' · ') };
     case 'personnel.added':
@@ -101,6 +105,8 @@ const ACTIVITY_ACTIONS = [
   'mass_intention.donation_received',
   'donation.received',
   'donation.recorded',
+  'donation.voided',
+  'donation.corrected',
   'schedule.event_created',
   'personnel.added',
 ];
@@ -139,7 +145,7 @@ async function donationTotal(parishId, from, to) {
        SELECT d.amount
        FROM donation d
        LEFT JOIN payment p ON p.donation_id = d.id
-       WHERE d.parish_id = $1 AND (p.id IS NULL OR p.status = 'paid')
+       WHERE d.parish_id = $1 AND (p.id IS NULL OR p.status = 'paid') AND d.voided_at IS NULL
          AND d.donation_date >= $2 AND d.donation_date < $3
        UNION ALL
        SELECT p.amount_due

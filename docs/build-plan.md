@@ -137,7 +137,7 @@ and gets more expensive the longer it waits.
 
 | Phase | Status |
 | --- | --- |
-| 0 — Foundations | In progress: work committed to `feature/ocr`; migration runner done ([migrations.md](migrations.md)); server tests started ([testing.md](testing.md)) |
+| 0 — Foundations | In progress: work committed to `feature/ocr`; migration runner done ([migrations.md](migrations.md)); server tests started ([testing.md](testing.md)); running numbers and void/correct blocks done, first used by donations (D1, D2) |
 | 1 — Certificates and money | Not started |
 | 2 — Who can do what | Not started |
 | 3 — Registers and validity | Not started |

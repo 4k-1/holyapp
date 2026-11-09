@@ -5,10 +5,15 @@ import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { PrintReceiptDialog } from "@/features/parish-admin/components/PrintReceiptDialog";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { isParishAdminRole } from "@/features/parish-admin/permissions";
 import { listDonations } from "./api/donationsApi";
 import { DonationSparkline } from "./components/DonationSparkline";
 import { RecordDonationModal } from "./components/RecordDonationModal";
+import { VoidDonationModal } from "./components/VoidDonationModal";
 import {
+  countedDonations,
+  donationReceiptNumber,
   donationDateFilterLabel,
   emptyDonationDateFilter,
   filterDonationsByDate,
@@ -27,11 +32,16 @@ import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/A
 
 export function AdminDonationsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
+  const user = useCurrentUser();
+  // Voiding and correcting money is for the admin only, as a check on the office.
+  const canVoid = isParishAdminRole(user?.role);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [receiptFor, setReceiptFor] = useState<Donation | null>(null);
+  const [voiding, setVoiding] = useState<Donation | null>(null);
+  const [correcting, setCorrecting] = useState<Donation | null>(null);
   const [draftFilter, setDraftFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
   const [appliedFilter, setAppliedFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
 
@@ -56,38 +66,73 @@ export function AdminDonationsPage() {
     fetchDonations();
   }, [fetchDonations]);
 
-  const trend = useMemo(() => monthlyTrend(donations), [donations]);
+  // Voided gifts stay in the table but count toward no total, trend or donor count.
+  const trend = useMemo(() => monthlyTrend(countedDonations(donations)), [donations]);
   const hasTrend = trend.some((point) => point.value > 0);
 
   const filtered = useMemo(
     () => filterDonationsByDate(donations, appliedFilter),
     [donations, appliedFilter]
   );
+  const counted = useMemo(() => countedDonations(filtered), [filtered]);
+  const voidedCount = filtered.length - counted.length;
+
+  const receiptById = useMemo(
+    () => new Map(donations.map((d) => [d.id, donationReceiptNumber(d)])),
+    [donations]
+  );
 
   const filterActive = Boolean(appliedFilter.from || appliedFilter.to);
   const filterLabel = donationDateFilterLabel(appliedFilter);
 
   const stats = useMemo(() => {
-    const totalRecorded = filtered.reduce((sum, d) => sum + d.amount, 0);
-    const namedDonors = new Set(filtered.filter((d) => d.donorName).map((d) => d.donorName)).size;
-    const avgDonation = filtered.length ? totalRecorded / filtered.length : 0;
+    const totalRecorded = counted.reduce((sum, d) => sum + d.amount, 0);
+    const namedDonors = new Set(counted.filter((d) => d.donorName).map((d) => d.donorName)).size;
+    const avgDonation = counted.length ? totalRecorded / counted.length : 0;
 
-    return { totalRecorded, namedDonors, avgDonation, entryCount: filtered.length };
-  }, [filtered]);
+    return { totalRecorded, namedDonors, avgDonation, entryCount: counted.length };
+  }, [counted]);
 
   const donorFirstSeen = useMemo(() => {
     const map: Record<string, string> = {};
-    filtered.forEach((d) => {
+    counted.forEach((d) => {
       if (!d.donorName) return;
       if (!map[d.donorName] || d.donationDate < map[d.donorName]) map[d.donorName] = d.donationDate;
     });
     return map;
-  }, [filtered]);
+  }, [counted]);
 
   const rows = filtered;
 
   const columns: AdminTableColumn<Donation>[] = [
     { key: "date", header: "Date", sortValue: (d) => d.donationDate, render: (d) => formatDonationDate(d.donationDate) },
+    {
+      key: "receiptNo",
+      header: "Receipt no.",
+      sortValue: (d) => donationReceiptNumber(d),
+      render: (d) => (
+        <>
+          <span className={`whitespace-nowrap tabular-nums ${d.voided ? "text-admin-ink-faint line-through" : "text-admin-ink"}`}>
+            {donationReceiptNumber(d)}
+          </span>
+          {d.voided && (
+            <span className="ml-1.5" title={`Voided by ${d.voided.by}: ${d.voided.reason}`}>
+              <AdminBadge tone="red">Voided</AdminBadge>
+            </span>
+          )}
+          {d.replacesId && receiptById.get(d.replacesId) && (
+            <span className="block text-admin-label text-admin-ink-muted">
+              Corrects {receiptById.get(d.replacesId)}
+            </span>
+          )}
+          {d.voided && (
+            <span className="block max-w-[220px] truncate text-admin-label text-admin-ink-muted" title={d.voided.reason}>
+              {d.voided.reason}
+            </span>
+          )}
+        </>
+      ),
+    },
     {
       key: "donor",
       header: "Donor",
@@ -99,7 +144,7 @@ export function AdminDonationsPage() {
           ) : (
             <span className="italic text-admin-ink-faint">Anonymous</span>
           )}
-          {d.donorName && donorFirstSeen[d.donorName] === d.donationDate && (
+          {!d.voided && d.donorName && donorFirstSeen[d.donorName] === d.donationDate && (
             <span className="ml-1.5">
               <AdminBadge tone="gold">New donor</AdminBadge>
             </span>
@@ -135,17 +180,34 @@ export function AdminDonationsPage() {
       header: "Amount",
       sortValue: (d) => d.amount,
       className: "text-right",
-      render: (d) => <span className="font-semibold text-admin-ink">{formatAmount(d.amount)}</span>,
+      render: (d) => (
+        <span className={d.voided ? "text-admin-ink-faint line-through" : "font-semibold text-admin-ink"}>
+          {formatAmount(d.amount)}
+        </span>
+      ),
     },
     {
       key: "receipt",
       header: "",
       className: "text-right",
-      render: (d) => (
-        <button type="button" onClick={() => setReceiptFor(d)} className="admin-table__action">
-          Receipt
-        </button>
-      ),
+      render: (d) =>
+        d.voided ? null : (
+          <span className="inline-flex items-center gap-3 whitespace-nowrap">
+            <button type="button" onClick={() => setReceiptFor(d)} className="admin-table__action">
+              Receipt
+            </button>
+            {canVoid && d.source === "office" && (
+              <button type="button" onClick={() => setCorrecting(d)} className="admin-table__action">
+                Correct
+              </button>
+            )}
+            {canVoid && d.source !== "mass_intention" && (
+              <button type="button" onClick={() => setVoiding(d)} className="admin-table__action text-admin-red-700">
+                Void
+              </button>
+            )}
+          </span>
+        ),
     },
   ];
 
@@ -247,7 +309,9 @@ export function AdminDonationsPage() {
 
           <AdminTable
             title={filterActive ? "Filtered donations" : "All donations"}
-            subtitle={`${rows.length} ${rows.length === 1 ? "entry" : "entries"}`}
+            subtitle={`${rows.length} ${rows.length === 1 ? "entry" : "entries"}${
+              voidedCount ? ` · ${voidedCount} voided, not counted in totals` : ""
+            }`}
             columns={columns}
             rows={rows}
             getRowKey={(d) => d.id}
@@ -277,6 +341,29 @@ export function AdminDonationsPage() {
           onClose={() => setModalOpen(false)}
           onRecorded={() => {
             setModalOpen(false);
+            reload();
+          }}
+        />
+      )}
+
+      {correcting && (
+        <RecordDonationModal
+          parishId={parish.id}
+          correcting={correcting}
+          onClose={() => setCorrecting(null)}
+          onRecorded={() => {
+            setCorrecting(null);
+            reload();
+          }}
+        />
+      )}
+
+      {voiding && (
+        <VoidDonationModal
+          donation={voiding}
+          onClose={() => setVoiding(null)}
+          onVoided={() => {
+            setVoiding(null);
             reload();
           }}
         />

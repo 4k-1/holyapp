@@ -52,9 +52,17 @@ export function donationDateFilterLabel(filter: DonationDateFilter) {
   return `Through ${formatDonationDate(filter.to)}`;
 }
 
-/** Receipt numbers come from the donation's id, so reprinting gives the same number. */
-export function donationReceiptNumber(id: string) {
-  return `DN-${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+/** Gifts that count toward totals: everything except voided gifts. */
+export function countedDonations(donations: Donation[]) {
+  return donations.filter((d) => !d.voided);
+}
+
+/**
+ * The gift's running receipt number (DON-2026-000231). Gifts saved before receipt numbers existed
+ * fall back to a code made from the id, so reprinting still gives the same number.
+ */
+export function donationReceiptNumber(d: Pick<Donation, "id" | "receiptNo">) {
+  return d.receiptNo ?? `DN-${d.id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
 }
 
 /** What goes on a donation's printed receipt; who handed it over is confirmed at print time. */
@@ -62,7 +70,7 @@ export function donationReceipt(d: Donation): Omit<ReceiptData, "receivedFrom"> 
   const forMass = d.source === "mass_intention";
   return {
     title: "Acknowledgment Receipt",
-    number: donationReceiptNumber(d.id),
+    number: donationReceiptNumber(d),
     date: d.donationDate,
     amount: d.amount,
     forText: forMass ? "Mass intention donation" : `Donation — ${d.purpose || "General fund"}`,

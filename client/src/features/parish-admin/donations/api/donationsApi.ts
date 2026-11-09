@@ -23,3 +23,21 @@ export async function recordDonation(_parishId: string, input: NewDonationInput)
     fail(err);
   }
 }
+
+/** Admins only. The gift stays on record, marked voided, and leaves the totals. */
+export async function voidDonation(id: string, reason: string): Promise<void> {
+  try {
+    await apiFetch(`/donations/${encodeURIComponent(id)}/void`, { method: "POST", body: { reason } });
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Admins only. Voids an office gift and saves the corrected one with a new receipt number. */
+export async function correctDonation(id: string, input: NewDonationInput & { reason: string }): Promise<void> {
+  try {
+    await apiFetch(`/donations/${encodeURIComponent(id)}/correct`, { method: "POST", body: input });
+  } catch (err) {
+    fail(err);
+  }
+}

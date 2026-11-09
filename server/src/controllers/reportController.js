@@ -122,7 +122,7 @@ async function getDonationReport(req, res) {
               SUM(d.amount)::float AS amount
        FROM donation d
        LEFT JOIN payment p ON p.donation_id = d.id
-       WHERE d.parish_id = $1 AND (p.id IS NULL OR p.status = 'paid')
+       WHERE d.parish_id = $1 AND (p.id IS NULL OR p.status = 'paid') AND d.voided_at IS NULL
          AND ($2::date IS NULL OR d.donation_date >= $2::date)
          AND ($3::date IS NULL OR d.donation_date <= $3::date)
        GROUP BY 1, 2, 3`,
