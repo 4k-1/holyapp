@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useOutletContext } from "react-router-dom";
 import { PrintSheet } from "@/components/print/PrintSheet";
@@ -23,6 +23,7 @@ import {
   type ReportKind,
 } from "@/features/parish-admin/reports/reportsHelpers";
 import "./reportPrint.css";
+import { emptyCopyFilter, withCopyFilter, type CopyFilter } from "@/features/parish-admin/reports/issuedCopies";
 import {
   AdminPage,
   AdminPageHeader,
@@ -139,8 +140,12 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
     };
   }, [kind, parish, range, period]);
 
+  // Certificates: search and filters over the copy list, also applied to the CSV, PDF and print (A7).
+  const [copyFilter, setCopyFilter] = useState<CopyFilter>(emptyCopyFilter);
+
   // The last report stays on screen while the next one loads, but never one of a different kind.
-  const shown = doc?.kind === kind ? doc : null;
+  const loaded = doc?.kind === kind ? doc : null;
+  const shown = useMemo(() => (loaded ? withCopyFilter(loaded, copyFilter) : null), [loaded, copyFilter]);
 
   async function handleDownload() {
     if (!shown || !captureRef.current) return;
@@ -196,7 +201,7 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
       )}
 
       {shown ? (
-        <ReportSheet doc={shown} bare interactive />
+        <ReportSheet doc={shown} bare interactive copyFilter={copyFilter} onCopyFilterChange={setCopyFilter} />
       ) : (
         <p className="text-admin-body text-admin-ink-muted">
           Loading this report…

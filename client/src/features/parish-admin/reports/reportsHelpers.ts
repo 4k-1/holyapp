@@ -13,7 +13,7 @@ export const REPORT_SECTIONS: { id: ReportKind; path: string; label: string; blu
     id: "certificates",
     path: "certificates",
     label: "Certificates",
-    blurb: "Certificate requests the office took in, month by month.",
+    blurb: "Every certificate copy issued, with its number, receipt and status, and the totals by month.",
   },
   {
     id: "donations",

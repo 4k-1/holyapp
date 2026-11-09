@@ -1,6 +1,7 @@
 import { formatAmount } from "@/features/parish-admin/donations/donationsHelpers";
 import {
   getCertificateMonthly,
+  getIssuedCopies,
   getDonationMonthly,
   getIntentionMonthly,
   getSacramentYearly,
@@ -14,6 +15,8 @@ import {
   type ReportDateRange,
   type ReportKind,
 } from "@/features/parish-admin/reports/reportsHelpers";
+import type { IssuedCopy } from "@/features/parish-admin/reports/api/reportsApi";
+import { copiesCsv, SACRAMENT_LABELS } from "@/features/parish-admin/reports/issuedCopies";
 
 /**
  * Literal colours for the report sheet. Its charts are captured into a PDF and printed outside the admin
@@ -80,6 +83,11 @@ export interface ReportDocument {
   breakdown: { title: string; slices: ReportSlice[]; money: boolean };
   table: { title: string; headers: string[]; rows: string[][]; totals: string[]; levels: ReportLevel[] };
   csv: { headers: string[]; rows: CsvCell[][] };
+  /**
+   * Certificates only (A7): every copy issued in the period, shown instead of the month table.
+   * `filtered` when the page's search or filters narrowed it.
+   */
+  copies?: { rows: IssuedCopy[]; truncated: boolean; limit: number; filtered?: boolean };
   /** Donations only: totals by fund, with the money the parish passes on in full kept apart (D3). */
   funds?: { parish: { label: string; amount: number }[]; remit: { label: string; amount: number }[] };
   /** Without an extension; PDF and CSV add their own. */
@@ -212,90 +220,69 @@ export async function buildReportDocument(
   }
 
   if (kind === "certificates") {
-    const rows = await getCertificateMonthly(range);
+    const [rows, register] = await Promise.all([getCertificateMonthly(range), getIssuedCopies(range)]);
+    const copies = register.copies;
     const labels = rows.map((row) => monthLabel(row.month));
     const open = rows.length > 0 && rows[rows.length - 1].month === currentMonth();
-    const monthTotal = (row: (typeof rows)[number]) => row.pending + row.processing + row.released + row.rejected;
-    const total = sum(rows.map(monthTotal));
+    const requestTotal = (row: (typeof rows)[number]) => row.pending + row.processing + row.released + row.rejected;
+    const requests = sum(rows.map(requestTotal));
     const released = sum(rows.map((row) => row.released));
-    const processing = sum(rows.map((row) => row.processing));
-    const pending = sum(rows.map((row) => row.pending));
-    const rejected = sum(rows.map((row) => row.rejected));
-    const online = sum(rows.map((row) => row.online));
+    const inOffice = sum(rows.map((row) => row.processing + row.pending));
     const issued = sum(rows.map((row) => row.issued));
     const reprinted = sum(rows.map((row) => row.reprinted));
     const spoiled = sum(rows.map((row) => row.spoiled ?? 0));
-    const bySacrament = [
-      { label: "Baptism", value: sum(rows.map((row) => row.baptism)) },
-      { label: "Confirmation", value: sum(rows.map((row) => row.confirmation)) },
-      { label: "Marriage", value: sum(rows.map((row) => row.marriage)) },
-      { label: "Death", value: sum(rows.map((row) => row.death)) },
-    ].sort((a, b) => b.value - a.value);
-    const busiest = peak(rows, monthTotal);
+    const revoked = copies.filter((copy) => copy.status === "revoked").length;
+    const waiting = copies.filter((copy) => copy.status === "waiting").length;
+    const sacraments = ["baptism", "confirmation", "marriage", "death"];
+    const sacramentColors = [SHEET_COLORS.teal, SHEET_COLORS.tealLight, SHEET_COLORS.gold, SHEET_COLORS.slate];
+    const slices: ReportSlice[] = sacraments.map((type, index) => ({
+      id: type,
+      label: SACRAMENT_LABELS[type],
+      value: copies.filter((copy) => copy.sacramentType === type).length,
+      color: sacramentColors[index],
+    }));
+    const most = largest(slices);
+    const busiest = peak(rows, (row) => row.issued);
     return {
       ...base,
-      empty: total === 0 && issued === 0,
+      empty: issued === 0 && requests === 0,
       summary:
-        (total === 0
-          ? `No certificate requests came in for ${period}.`
-          : `The office took in ${countPhrase(total, "certificate request")} for ${period} and released ${share(released, total)}% of them.`) +
-        ` ${countPhrase(issued, "copy", "copies")} issued, ${reprinted} reprinted, ${spoiled} spoiled.`,
+        (issued === 0
+          ? `No certificate copies were issued for ${period}.`
+          : `${countPhrase(issued, "copy", "copies")} issued for ${period}, ${reprinted} reprinted, ${spoiled} spoiled and ${revoked} revoked.`) +
+        (requests === 0 ? "" : ` The office took in ${countPhrase(requests, "request")} and released ${share(released, requests)}% of them.`),
       tiles: [
-        { label: "Requests", value: total.toLocaleString(), change: change(rows.map(monthTotal), labels, open) },
-        { label: "Released", value: released.toLocaleString(), change: change(rows.map((row) => row.released), labels, open) },
-        { label: "In the office", value: (processing + pending).toLocaleString(), change: change(rows.map((row) => row.processing + row.pending), labels, open) },
         { label: "Copies issued", value: issued.toLocaleString(), change: change(rows.map((row) => row.issued), labels, open) },
+        { label: "Reprints", value: reprinted.toLocaleString(), change: change(rows.map((row) => row.reprinted), labels, open) },
+        { label: "Spoiled", value: spoiled.toLocaleString(), change: change(rows.map((row) => row.spoiled ?? 0), labels, open) },
+        { label: "Revoked", value: revoked.toLocaleString(), change: null },
       ],
-      highlights: total === 0 ? [] : [
-        { label: "Still in the office", value: String(processing + pending), note: `${pending} pending, ${processing} processing` },
-        { label: "Most requested", value: bySacrament[0].label, note: `${share(bySacrament[0].value, total)}% of requests` },
-        { label: "Came in online", value: `${share(online, total)}%`, note: `${total - online} at the window` },
-        { label: "Busiest month", value: busiest ? longMonth(busiest.month) : "—", note: `${busiest ? monthTotal(busiest) : 0} requests` },
+      highlights: issued === 0 && requests === 0 ? [] : [
+        { label: "Requests", value: requests.toLocaleString(), note: `${share(released, requests)}% released` },
+        { label: "Still in the office", value: String(inOffice), note: waiting ? `${waiting} copies waiting for pickup` : "requests not yet released" },
+        { label: "Most issued", value: most?.value ? most.label : "—", note: `${share(most?.value ?? 0, copies.length)}% of copies` },
+        { label: "Busiest month", value: busiest && busiest.issued ? longMonth(busiest.month) : "—", note: `${busiest?.issued ?? 0} copies` },
       ],
       trend: {
-        title: "Requests by month",
+        title: "Copies by month",
         labels,
         money: false,
         series: [
-          { id: "total", label: "All requests", color: SHEET_COLORS.teal, values: rows.map(monthTotal) },
-          { id: "released", label: "Released", color: SHEET_COLORS.gold, values: rows.map((row) => row.released) },
+          { id: "issued", label: "Issued", color: SHEET_COLORS.teal, values: rows.map((row) => row.issued) },
+          { id: "reprinted", label: "Reprinted", color: SHEET_COLORS.gold, values: rows.map((row) => row.reprinted) },
         ],
       },
-      breakdown: {
-        title: "By status",
-        money: false,
-        slices: [
-          { id: "released", label: "Released", value: released, color: SHEET_COLORS.teal },
-          { id: "processing", label: "Processing", value: processing, color: SHEET_COLORS.tealLight },
-          { id: "pending", label: "Pending", value: pending, color: SHEET_COLORS.gold },
-          { id: "rejected", label: "Rejected", value: rejected, color: SHEET_COLORS.rose },
-        ],
-      },
+      breakdown: { title: "By sacrament", money: false, slices },
+      // The month table isn't shown for certificates: the copy list takes its place.
       table: {
-        title: "Requests by month",
-        headers: ["Month", "Pending", "Processing", "Released", "Rejected", "Total", "Copies issued", "Reprinted", "Spoiled"],
-        rows: rows.map((row, index) =>
-          [
-            labels[index], row.pending, row.processing, row.released, row.rejected, monthTotal(row),
-            row.issued, row.reprinted, row.spoiled ?? 0,
-          ].map(String)
-        ),
-        totals: [
-          "Total", String(pending), String(processing), String(released), String(rejected), String(total),
-          String(issued), String(reprinted), String(spoiled),
-        ],
-        levels: levels(rows.map(monthTotal)),
+        title: "Copies by month",
+        headers: ["Month", "Issued", "Reprinted", "Spoiled"],
+        rows: rows.map((row, index) => [labels[index], row.issued, row.reprinted, row.spoiled ?? 0].map(String)),
+        totals: ["Total", String(issued), String(reprinted), String(spoiled)],
+        levels: levels(rows.map((row) => row.issued)),
       },
-      csv: {
-        headers: [
-          "Month", "Pending", "Processing", "Released", "Rejected", "Total",
-          "Baptism", "Confirmation", "Marriage", "Death", "Online", "Walk-in", "Copies issued", "Reprinted", "Spoiled",
-        ],
-        rows: rows.map((row) => [
-          row.month, row.pending, row.processing, row.released, row.rejected, monthTotal(row),
-          row.baptism, row.confirmation, row.marriage, row.death, row.online, row.walkin, row.issued, row.reprinted, row.spoiled ?? 0,
-        ]),
-      },
+      copies: { rows: copies, truncated: register.truncated, limit: register.limit },
+      csv: copiesCsv(copies),
     };
   }
 

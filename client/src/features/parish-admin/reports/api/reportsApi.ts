@@ -79,6 +79,34 @@ export async function getDonationMonthly(
   return getReport("donations", range);
 }
 
+export type IssuedCopyStatus = "valid" | "waiting" | "replaced" | "revoked" | "spoiled";
+
+/** One issued certificate copy, for the register in the Certificates report (A7). */
+export interface IssuedCopy {
+  id: string;
+  code: string;
+  sacramentType: string;
+  holderName: string | null;
+  /** Relative to the admin root, e.g. "records/baptismal/<id>". */
+  recordPath: string;
+  issuedAt: string;
+  issuedBy: string;
+  channel: "walkin" | "pickup" | "digital" | null;
+  purpose: string | null;
+  receiptNumber: string | null;
+  status: IssuedCopyStatus;
+  voidReason: string | null;
+  /** First print plus reprints; null for a digital copy, which the office never prints. */
+  timesPrinted: number | null;
+}
+
+/** Every copy issued in the range, newest first. A very long range stops at `limit` rows. */
+export async function getIssuedCopies(
+  range: ReportDateRange
+): Promise<{ copies: IssuedCopy[]; truncated: boolean; limit: number }> {
+  return getReport("certificates/copies", range);
+}
+
 export async function getIntentionMonthly(range: ReportDateRange): Promise<IntentionMonthRow[]> {
   return (await getReport<{ rows: IntentionMonthRow[] }>("intentions", range)).rows;
 }

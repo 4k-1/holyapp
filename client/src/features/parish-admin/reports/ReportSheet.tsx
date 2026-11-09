@@ -2,6 +2,8 @@ import { useCallback, useState, type ReactNode } from "react";
 import type { ReportDocument, ReportLevel, ReportTile } from "@/features/parish-admin/reports/reportDocument";
 import { SheetDonutChart, SheetLineChart } from "@/features/parish-admin/reports/ReportSheetCharts";
 import { formatPeso } from "@/features/parish-admin/reports/reportsHelpers";
+import { CopiesTable } from "@/features/parish-admin/reports/CopiesTable";
+import type { CopyFilter } from "@/features/parish-admin/reports/issuedCopies";
 
 /*
  * The report as a dashboard: key numbers, a main chart beside a donut, and the table, with highlights in a
@@ -263,8 +265,13 @@ export function ReportSheet({
   flat = false,
   bare = false,
   interactive = false,
+  copyFilter,
+  onCopyFilterChange,
 }: {
   doc: ReportDocument;
+  /** Certificates: the search and filters over the copy list, kept by the page. */
+  copyFilter?: CopyFilter;
+  onCopyFilterChange?: (filter: CopyFilter) => void;
   /** Square edges and fixed padding, for the PDF and the printout. */
   flat?: boolean;
   /** Just the cards, for the Reports page, which has its own heading. */
@@ -396,7 +403,9 @@ export function ReportSheet({
               <dl className="grid gap-1.5 text-admin-support">
                 {[
                   ["Period", doc.period],
-                  [doc.kind === "sacraments" ? "Years" : "Months", String(doc.table.rows.length)],
+                  doc.copies
+                    ? ["Copies listed", String(doc.copies.rows.length)]
+                    : [doc.kind === "sacraments" ? "Years" : "Months", String(doc.table.rows.length)],
                   ["Generated", doc.generatedOn],
                 ].map(([term, value]) => (
                   <div key={term} className="flex items-baseline justify-between gap-3">
@@ -414,7 +423,17 @@ export function ReportSheet({
       </div>
 
       <div className="mt-3.5">
-        <ReportTable doc={doc} interactive={interactive} />
+        {doc.copies ? (
+          <CopiesTable
+            copies={doc.copies}
+            period={doc.period}
+            interactive={interactive}
+            filter={copyFilter}
+            onFilterChange={onCopyFilterChange}
+          />
+        ) : (
+          <ReportTable doc={doc} interactive={interactive} />
+        )}
       </div>
 
       {doc.funds && !doc.empty && (
