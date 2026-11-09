@@ -109,6 +109,20 @@ describe('Spoiled copies', () => {
     assert.equal(Number(next.code.slice(-6)), Number(copy.code.slice(-6)) + 1);
   });
 
+  it("refuses to spoil a digital copy, which is never printed", async () => {
+    const digital = await issue(parish.staff, await createBaptism(parish.staff, { firstName: 'Wallet' }));
+    // Made as a walk-in, then turned into an online request delivered to the wallet.
+    await pool.query(
+      "UPDATE certificate_request SET request_type = 'online', delivery_method = 'digital' WHERE certificate_id = $1",
+      [digital.id]
+    );
+    const res = await api(parish.staff).post(`/certificates/${digital.id}/spoil`).send({ reason: 'Ink smeared' });
+    assert.equal(res.status, 400);
+    assert.match(res.body.error, /digital certificate/);
+    const row = await pool.query('SELECT status FROM certificate WHERE id = $1', [digital.id]);
+    assert.equal(row.rows[0].status, 'valid');
+  });
+
   it('counts spoiled copies in the report', async () => {
     const res = await api(parish.admin).get('/reports/certificates');
     assert.equal(res.body.rows.reduce((n, r) => n + r.spoiled, 0), 1);

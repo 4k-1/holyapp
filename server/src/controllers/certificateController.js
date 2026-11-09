@@ -780,7 +780,9 @@ const REPRINT_REASONS = new Set(['paper_jam', 'printer_error', 'print_quality', 
 async function loadOfficeCertificate(client, id, parishId, lock = false) {
   if (!/^[0-9a-f-]{36}$/i.test(String(id))) return null;
   const result = await client.query(
-    `SELECT c.*, r.id AS request_id, r.requested_by
+    `SELECT c.*, r.id AS request_id, r.requested_by,
+            -- Walk-ins are stored with delivery 'digital' too, so only online wallet copies count.
+            (r.request_type = 'online' AND r.delivery_method = 'digital') AS digital_copy
      FROM certificate c
      LEFT JOIN certificate_request r ON r.certificate_id = c.id
      WHERE c.id = $1 AND c.parish_id = $2
@@ -906,6 +908,9 @@ async function spoilCertificate(req, res) {
     const row = await loadOfficeCertificate(client, req.params.id, req.parishId, true);
     if (!row) throw httpError(404, 'Certificate not found.');
     if (row.status !== 'valid') throw httpError(400, 'Only a valid copy can be marked spoiled.');
+    if (row.digital_copy) {
+      throw httpError(400, "A digital certificate is never printed, so it can't be spoiled. Use Revoke to withdraw it.");
+    }
     await client.query(
       `UPDATE certificate
        SET status = 'invalid', void_kind = 'spoiled',
