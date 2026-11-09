@@ -12,7 +12,13 @@ import {
   type AffectedMassTime,
   type IntentionMoves,
 } from "@/features/parish-admin/schedule/api/scheduleApi";
-import { convert24to12, parseTimeToMinutes, to24Hour } from "@/features/parish-admin/schedule/scheduleHelpers";
+import {
+  convert24to12,
+  dayAbbrev,
+  parseTimeToMinutes,
+  to24Hour,
+  toISO,
+} from "@/features/parish-admin/schedule/scheduleHelpers";
 import { AssigneeName, StaffSelect } from "@/features/parish-admin/schedule/components/StaffSelect";
 import {
   assigneeValueOf,
@@ -76,19 +82,94 @@ function datesText(dates: string[]) {
   return dates.length > 4 ? `${shown} and ${dates.length - 4} more` : shown;
 }
 
-const allChosen = (affected: AffectedMassTime[], moves: IntentionMoves) =>
-  affected.every((a) => a.options.length > 0 && Boolean(moves[a.time]));
+type MassPattern = Pick<RecurringCommitment, "type" | "days" | "slots">;
 
-/** For each removed time with intentions on it, choose another Mass time on the same dates. */
+/** Mass times on a date in a schedule. */
+function massTimesOn(schedule: MassPattern[], date: string) {
+  const day = dayAbbrev(date);
+  const times = new Set<string>();
+  for (const c of schedule) {
+    if (c.type !== "mass" || !c.days.includes(day)) continue;
+    for (const s of c.slots) times.add(s.start);
+  }
+  return [...times].sort((a, b) => parseTimeToMinutes(a) - parseTimeToMinutes(b));
+}
+
+const dayKey = (date: string, time: string) => `${date}|${time}`;
+
+/** Every intention has a place: one choice for the whole time, or one for each day. */
+const allChosen = (affected: AffectedMassTime[], moves: IntentionMoves) =>
+  affected.every(
+    (a) =>
+      (a.options.length > 0 && Boolean(moves[a.time])) ||
+      a.days.every((d) => {
+        const to = moves[dayKey(d.date, a.time)] ?? "";
+        return to !== "" && (!to.includes("|") || !to.endsWith("|"));
+      })
+  );
+
+/** Another date and a Mass on it, for intentions on a day with no Mass left. */
+function OtherDatePicker({
+  value,
+  schedule,
+  label,
+  onChange,
+}: {
+  value: string;
+  schedule: MassPattern[];
+  label: string;
+  onChange: (next: string) => void;
+}) {
+  const [date, time] = value.includes("|") ? value.split("|") : ["", ""];
+  const times = date ? massTimesOn(schedule, date) : [];
+  return (
+    <div className="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <AdminInput
+        type="date"
+        min={toISO(new Date())}
+        value={date}
+        onChange={(e) => onChange(`${e.target.value}|`)}
+        aria-label={`Date to move the ${label} intentions to`}
+      />
+      <AdminSelect
+        value={time}
+        disabled={!date || times.length === 0}
+        onChange={(e) => onChange(`${date}|${e.target.value}`)}
+        aria-label={`Mass to move the ${label} intentions to`}
+      >
+        <option value="">{date && times.length === 0 ? "No Mass that day" : "Choose a Mass…"}</option>
+        {times.map((t) => (
+          <option key={t} value={t}>
+            {t} Mass
+          </option>
+        ))}
+      </AdminSelect>
+    </div>
+  );
+}
+
+const OTHER_DATE = "__other";
+
+/**
+ * For each removed time with intentions on it, choose another Mass that day. A day with no Mass left (or
+ * when the office prefers) takes another date; the people who booked are told either way.
+ */
 function IntentionMovesFields({
   affected,
   moves,
+  schedule,
   onChange,
 }: {
   affected: AffectedMassTime[];
   moves: IntentionMoves;
+  /** The Mass schedule once the change is saved. */
+  schedule: MassPattern[];
   onChange: (next: IntentionMoves) => void;
 }) {
+  function setDay(time: string, date: string, to: string) {
+    onChange({ ...moves, [dayKey(date, time)]: to });
+  }
+
   return (
     <div className="space-y-3 rounded-lg border border-admin-border bg-admin-amber-100 px-4 py-3">
       <p className="text-admin-body font-semibold text-admin-ink">
@@ -115,10 +196,46 @@ function IntentionMovesFields({
               ))}
             </AdminSelect>
           ) : (
-            <p className="mt-1 text-admin-support font-semibold text-admin-red-700">
-              No other Mass is left on {a.dates.length === 1 ? "that date" : "those dates"}. Keep this time until they
-              are said, or add another Mass on that day first.
-            </p>
+            <ul className="mt-1.5 space-y-2.5">
+              {a.days.map((d) => {
+                const value = moves[dayKey(d.date, a.time)] ?? "";
+                const otherDate = value.includes("|") || d.options.length === 0;
+                return (
+                  <li key={d.date} className="rounded-md bg-admin-surface px-3 py-2">
+                    <p className="text-admin-support text-admin-ink">
+                      {shortDate(d.date)} · {d.count} {d.count === 1 ? "intention" : "intentions"}
+                      {d.options.length === 0 && (
+                        <span className="text-admin-ink-muted"> · no other Mass that day, choose another date</span>
+                      )}
+                    </p>
+                    {d.options.length > 0 && (
+                      <AdminSelect
+                        value={otherDate ? OTHER_DATE : value}
+                        onChange={(e) => setDay(a.time, d.date, e.target.value === OTHER_DATE ? "|" : e.target.value)}
+                        aria-label={`Move the ${shortDate(d.date)} ${a.time} intentions to`}
+                        className="mt-1.5"
+                      >
+                        <option value="">Move them to…</option>
+                        {d.options.map((t) => (
+                          <option key={t} value={t}>
+                            The {t} Mass that day
+                          </option>
+                        ))}
+                        <option value={OTHER_DATE}>Another date…</option>
+                      </AdminSelect>
+                    )}
+                    {otherDate && (
+                      <OtherDatePicker
+                        value={value === "|" ? "" : value}
+                        schedule={schedule}
+                        label={`${shortDate(d.date)} ${a.time}`}
+                        onChange={(to) => setDay(a.time, d.date, to)}
+                      />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
       ))}
@@ -131,11 +248,14 @@ function IntentionMovesFields({
 function RemoveMassModal({
   rc,
   affected,
+  schedule,
   onClose,
   onRemoved,
 }: {
   rc: RecurringCommitment;
   affected: AffectedMassTime[];
+  /** The Mass schedule without this Mass. */
+  schedule: MassPattern[];
   onClose: () => void;
   onRemoved: (moved: number) => void;
 }) {
@@ -169,7 +289,7 @@ function RemoveMassModal({
         </p>
       </div>
       <div className="space-y-3 px-6 py-5">
-        <IntentionMovesFields affected={current} moves={moves} onChange={setMoves} />
+        <IntentionMovesFields affected={current} moves={moves} schedule={schedule} onChange={setMoves} />
         {error && <p className="text-admin-support font-semibold text-red-700">{error}</p>}
       </div>
       <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">
@@ -247,7 +367,13 @@ export function MassScheduleSection() {
         <div className="space-y-3">
           {masses.map((rc) =>
             editingId === rc.id ? (
-              <MassScheduleForm key={rc.id} initial={rc} onCancel={() => setEditingId(null)} onSaved={handleSaved} />
+              <MassScheduleForm
+                key={rc.id}
+                initial={rc}
+                others={commitments.filter((c) => c.id !== rc.id)}
+                onCancel={() => setEditingId(null)}
+                onSaved={handleSaved}
+              />
             ) : (
               <div
                 key={rc.id}
@@ -292,13 +418,16 @@ export function MassScheduleSection() {
             </p>
           )}
 
-          {editingId === "new" && <MassScheduleForm onCancel={() => setEditingId(null)} onSaved={handleSaved} />}
+          {editingId === "new" && (
+            <MassScheduleForm others={commitments} onCancel={() => setEditingId(null)} onSaved={handleSaved} />
+          )}
         </div>
       )}
       {removing && (
         <RemoveMassModal
           rc={removing.rc}
           affected={removing.affected}
+          schedule={commitments.filter((c) => c.id !== removing.rc.id)}
           onClose={() => setRemoving(null)}
           onRemoved={(moved) => {
             setNotice(`${removing.rc.label} removed.${moved ? ` ${moved} booked intentions moved.` : ""}`);
@@ -322,10 +451,13 @@ function ClockIcon() {
 
 function MassScheduleForm({
   initial,
+  others,
   onCancel,
   onSaved,
 }: {
   initial?: RecurringCommitment;
+  /** The rest of the parish's regular schedule, for moving intentions to another date. */
+  others: RecurringCommitment[];
   onCancel: () => void;
   onSaved: (label: string, moved?: number) => void;
 }) {
@@ -463,7 +595,21 @@ function MassScheduleForm({
           </p>
         </AdminField>
 
-        {affected.length > 0 && <IntentionMovesFields affected={affected} moves={chosenMoves} onChange={setChosenMoves} />}
+        {affected.length > 0 && (
+          <IntentionMovesFields
+            affected={affected}
+            moves={chosenMoves}
+            schedule={[
+              ...others,
+              {
+                type: "mass",
+                days,
+                slots: times.filter((t) => t.start).map((t) => ({ start: convert24to12(t.start), end: "" })),
+              },
+            ]}
+            onChange={setChosenMoves}
+          />
+        )}
 
         {error && (
           <p className="text-admin-body font-semibold text-admin-red-700" role="alert">

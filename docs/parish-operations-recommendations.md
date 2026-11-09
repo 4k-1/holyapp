@@ -239,8 +239,9 @@ Most Philippine parishes have a main church plus several chapels (*kapilya*) and
   or adding a single Mass is not needed. Start and end dates for patterns are parked.
 - **Done instead:** changing or removing a regular Mass time in Settings no longer strands the
   intentions booked on it. A changed time moves its future intentions to the new time; a removed
-  time asks staff to pick another Mass that day first (or keeps the time if none is left). Intentions
-  already said and past dates are not touched; the people who booked are told in the app.
+  time asks staff to pick another Mass that day first, or another date and Mass when none is left
+  that day. Intentions already said and past dates are not touched; the people who booked are told
+  in the app.
 
 #### C2. Assign staff by record, not by typed name (priority: high)
 

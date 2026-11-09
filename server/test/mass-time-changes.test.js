@@ -7,6 +7,7 @@ const { pool, api, createParish } = require('./helpers');
 after(() => pool.end());
 
 const SAT = '2030-03-02'; // a Saturday, still to come
+const SUN = '2030-03-03';
 const PAST_SAT = '2020-01-04';
 
 describe('Mass time changes and booked intentions', () => {
@@ -78,7 +79,9 @@ describe('Mass time changes and booked intentions', () => {
     const refused = await saveSaturday([['6:00 AM', '7:00 AM']]);
     assert.equal(refused.status, 409);
     assert.equal(refused.body.code, 'intentions_affected');
-    assert.deepEqual(refused.body.affected, [{ time: '7:00 PM', count: 2, dates: [SAT], options: ['6:00 AM'] }]);
+    assert.deepEqual(refused.body.affected, [
+      { time: '7:00 PM', count: 2, dates: [SAT], options: ['6:00 AM'], days: [{ date: SAT, count: 2, options: ['6:00 AM'] }] },
+    ]);
     assert.equal(await timeOf(ids.evening), '7:00 PM', 'nothing changed');
     const unchanged = (await api(parish.admin).get('/schedule/recurring')).body.commitments.find(
       (c) => c.id === saturday.id
@@ -93,27 +96,70 @@ describe('Mass time changes and booked intentions', () => {
     assert.equal(await timeOf(ids.evening), '6:00 AM');
   });
 
-  it('asks the same when a whole Mass is removed, and offers only Masses left that day', async () => {
+  it('moves a day with no Mass left to another date the office chooses', async () => {
     const refused = await api(parish.admin).delete(`/schedule/recurring/${saturday.id}`).send({});
     assert.equal(refused.status, 409);
-    assert.deepEqual(refused.body.affected, [{ time: '6:00 AM', count: 3, dates: [SAT], options: [] }]);
+    assert.deepEqual(refused.body.affected, [
+      { time: '6:00 AM', count: 3, dates: [SAT], options: [], days: [{ date: SAT, count: 3, options: [] }] },
+    ]);
 
-    const added = await api(parish.admin)
+    // Another date must have that Mass, and must not be in the past.
+    const noMass = await api(parish.admin)
+      .delete(`/schedule/recurring/${saturday.id}`)
+      .send({ moves: { [`${SAT}|6:00 AM`]: `${SUN}|7:00 AM` } });
+    assert.equal(noMass.status, 409);
+    const past = await api(parish.admin)
+      .delete(`/schedule/recurring/${saturday.id}`)
+      .send({ moves: { [`${SAT}|6:00 AM`]: '2020-01-05|8:00 AM' } });
+    assert.equal(past.status, 409);
+
+    const moved = await api(parish.admin)
+      .delete(`/schedule/recurring/${saturday.id}`)
+      .send({ moves: { [`${SAT}|6:00 AM`]: `${SUN}|8:00 AM` } });
+    assert.equal(moved.status, 200, JSON.stringify(moved.body));
+    assert.equal(moved.body.movedIntentions, 3);
+    const row = (
+      await pool.query(
+        `SELECT to_char(schedule_date, 'YYYY-MM-DD') AS date, schedule_time, schedule_label FROM mass_intention WHERE id = $1`,
+        [ids.evening]
+      )
+    ).rows[0];
+    assert.deepEqual(row, { date: SUN, schedule_time: '8:00 AM', schedule_label: 'Sunday' });
+
+    const note = await pool.query(
+      `SELECT body FROM app_notification WHERE recipient_id = $1 AND title = 'Mass time changed' ORDER BY created_at DESC LIMIT 1`,
+      [parish.parishioner.id]
+    );
+    assert.match(note.rows[0].body, new RegExp(`moved to the 8:00 AM Mass on ${SUN}`));
+  });
+
+  it('keeps same-day choices to Masses still there that day', async () => {
+    const list = await api(parish.admin).get('/schedule/recurring');
+    const sunday = list.body.commitments.find((c) => c.label === 'Sunday Mass');
+    const noneLeft = await api(parish.admin).delete(`/schedule/recurring/${sunday.id}`).send({});
+    assert.equal(noneLeft.status, 409);
+    assert.deepEqual(noneLeft.body.affected[0].days, [{ date: SUN, count: 3, options: [] }]);
+
+    const sat = await api(parish.admin)
+      .post('/schedule/recurring')
+      .send({ label: 'Saturday Mass', type: 'mass', days: ['Sat'], slots: [{ start: '6:00 AM', end: '7:00 AM' }] });
+    await api(parish.admin)
       .post('/schedule/recurring')
       .send({ label: 'Anticipated Mass', type: 'mass', days: ['Sat'], slots: [{ start: '5:00 PM', end: '6:00 PM' }] });
-    assert.equal(added.status, 201);
+    const id = await addIntention(SAT, '6:00 AM');
 
+    const refused = await api(parish.admin).delete(`/schedule/recurring/${sat.body.commitment.id}`).send({});
+    assert.deepEqual(refused.body.affected[0].options, ['5:00 PM']);
     const removed = await api(parish.admin)
-      .delete(`/schedule/recurring/${saturday.id}`)
+      .delete(`/schedule/recurring/${sat.body.commitment.id}`)
       .send({ moves: { '6:00 AM': '5:00 PM' } });
     assert.equal(removed.status, 200, JSON.stringify(removed.body));
-    assert.equal(removed.body.movedIntentions, 3);
-    assert.equal(await timeOf(ids.morning), '5:00 PM');
+    assert.equal(await timeOf(id), '5:00 PM');
 
     const audit = await pool.query(
-      `SELECT metadata FROM audit_log WHERE action = 'mass_intention.moved' AND entity_id = $1 ORDER BY created_at`,
-      [saturday.id]
+      `SELECT metadata FROM audit_log WHERE action = 'mass_intention.moved' AND entity_id = $1`,
+      [sat.body.commitment.id]
     );
-    assert.equal(audit.rowCount, 3);
+    assert.equal(audit.rowCount, 1);
   });
 });

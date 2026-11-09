@@ -1,12 +1,16 @@
 import { apiFetch, ApiError } from "@/lib/api";
 import type { AssignableStaff, AssigneeValue, RecurringCommitment, ScheduleBlock, ScheduleConflict, ScheduleOccurrence } from "../types";
 
-/** A removed Mass time with intentions still booked on it. `options`: Mass times left on all those dates. */
+/**
+ * A removed Mass time with intentions still booked on it. `options`: Mass times left on all those dates;
+ * `days`: each date, with the Mass times left that day (none means another date is needed).
+ */
 export interface AffectedMassTime {
   time: string;
   count: number;
   dates: string[];
   options: string[];
+  days: { date: string; count: number; options: string[] }[];
 }
 
 /** Saving would leave intentions on a Mass time that no longer exists; staff choose where they go. */
@@ -19,7 +23,10 @@ export class IntentionsAffectedError extends Error {
   }
 }
 
-/** Old time → new time, e.g. { "6:00 PM": "7:00 PM" }. */
+/**
+ * Where intentions go. Keys: "6:00 PM" (every date) or "2026-11-14|6:00 PM" (one date).
+ * Values: "7:00 PM" (same date) or "2026-11-15|8:00 AM" (another date).
+ */
 export type IntentionMoves = Record<string, string>;
 
 function fail(err: unknown): never {
