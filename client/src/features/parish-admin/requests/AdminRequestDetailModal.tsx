@@ -230,6 +230,7 @@ export function AdminRequestDetailModal({
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-admin-support text-admin-green-700">
                     Receipt {request.payment.receiptNumber || "issued"}
+                    {request.issuedCertificate?.code ? ` · for certificate ${request.issuedCertificate.code}` : ""}
                     {request.payment.paidAt
                       ? ` · ${new Date(request.payment.paidAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`
                       : ""}
@@ -366,7 +367,13 @@ export function AdminRequestDetailModal({
             date: request.payment.paidAt ?? request.createdAt,
             amount: fee,
             forText: `${sacramentLabels[request.sacramentType]} certificate${copies > 1 ? ` × ${copies}` : ""}`,
-            note: request.details?.subjectName ? `Certificate of ${request.details.subjectName}` : undefined,
+            note:
+              [
+                request.details?.subjectName ? `Certificate of ${request.details.subjectName}` : "",
+                request.issuedCertificate?.code ? `No. ${request.issuedCertificate.code}` : "",
+              ]
+                .filter(Boolean)
+                .join(" · ") || undefined,
             method,
             receivedBy: request.payment.collectedBy,
           }}

@@ -35,6 +35,7 @@ const requestLinks = [
 ];
 
 const reportLinks = [
+  { to: "reports/day", label: "Day Summary" },
   { to: "reports/sacraments", label: "Sacraments" },
   { to: "reports/certificates", label: "Certificates" },
   { to: "reports/donations", label: "Donations" },

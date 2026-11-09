@@ -25,7 +25,7 @@ Two things in the codebase decide where to start:
 
 | Merged | Built as |
 | --- | --- |
-| A4 + D5 | One daily close screen: certificates, receipts, cash and Sunday collections |
+| A4 + D5 | One day summary: certificates, receipts and cash; counted Sunday collections join it once D5 is built |
 | B5 + C5 | One liturgical calendar dataset |
 | B6 + C10 | One `place` table for the church and chapels |
 | B7 + C7 | Funeral fast booking and emergency sick calls together |
@@ -63,7 +63,7 @@ What the parish is struggling with now.
 | D2 | Receipt numbers for office gifts | Running numbers |
 | D3 | Fixed list of funds; "must remit" funds tracked | — |
 | D4 | Cheque / transfer reference and Pending / Cleared / Bounced | — |
-| A4 + D5 | Daily close: copies, receipts, cash, counted collections; two sign-offs | A2, D2 |
+| A4 | Day summary: copies, receipts, cash and GCash, read-only and printable. A saved close with two sign-offs is parked (see A4) | A2, D2 |
 | A7 | List of all issued certificates, with export | A2 |
 
 ## Phase 2 — Who can do what
@@ -138,7 +138,7 @@ and gets more expensive the longer it waits.
 | Phase | Status |
 | --- | --- |
 | 0 — Foundations | In progress: work committed to `feature/ocr`; migration runner done ([migrations.md](migrations.md)); server tests started ([testing.md](testing.md)); running numbers and void/correct blocks done, first used by donations (D1, D2); E7 done; file storage postponed until hosting is decided |
-| 1 — Certificates and money | In progress: A1, A2, A3, D1, D2 done |
+| 1 — Certificates and money | In progress: A1, A2, A3, A4 (day summary), D1, D2 done; saved daily close parked |
 | 2 — Who can do what | Not started |
 | 3 — Registers and validity | Not started |
 | 4 — Schedule | Not started |

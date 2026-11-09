@@ -40,6 +40,8 @@ export interface IssuedRecordCertificate {
   reprints?: number;
   /** Someone checked the printout and said it printed correctly (digital copies: always). */
   printConfirmed?: boolean;
+  /** The paid receipt this copy was issued against, if any. */
+  receiptNumber?: string;
 }
 
 export type LegitimacyStatus = "Legitimate" | "Illegitimate";

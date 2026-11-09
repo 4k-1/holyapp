@@ -38,6 +38,7 @@ export function IssuedCertificatesSection({
                 </div>
                 <p className="mt-0.5 text-xs text-admin-ink-muted">
                   Issued {c.date} by {c.by} · {c.code}
+                  {c.receiptNumber ? ` · Receipt ${c.receiptNumber}` : ""}
                   {c.reprints ? ` · Reprinted ${c.reprints}×` : ""}
                 </p>
               </div>

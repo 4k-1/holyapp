@@ -28,6 +28,7 @@ import { AdminMarriageApplicationDetailPage } from "@/features/parish-admin/marr
 import { AdminNotificationsPage } from "@/features/parish-admin/notifications/AdminNotificationsPage";
 import { AdminReportsLayout } from "@/features/parish-admin/reports/AdminReportsLayout";
 import { AdminReportPage } from "@/features/parish-admin/reports/AdminReportPage";
+import { AdminDaySummaryPage } from "@/features/parish-admin/reports/AdminDaySummaryPage";
 import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSettingsLayout";
 import { SettingsHomeRedirect } from "@/features/parish-admin/settings/SettingsHomeRedirect";
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
@@ -110,6 +111,7 @@ export const parishAdminRoutes: RouteObject[] = [
         element: <AdminReportsLayout />,
         children: [
           { index: true, element: <Navigate to="sacraments" replace /> },
+          { path: "day", element: <AdminDaySummaryPage /> },
           { path: "sacraments", element: <AdminReportPage key="sacraments" kind="sacraments" /> },
           { path: "certificates", element: <AdminReportPage key="certificates" kind="certificates" /> },
           { path: "donations", element: <AdminReportPage key="donations" kind="donations" /> },

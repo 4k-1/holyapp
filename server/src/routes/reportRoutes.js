@@ -8,6 +8,7 @@ const {
   getDonationReport,
   getIntentionReport,
 } = require('../controllers/reportController');
+const { getDaySummary } = require('../controllers/daySummaryController');
 
 const router = express.Router();
 const office = [
@@ -22,5 +23,7 @@ router.get('/sacraments', ...office, getSacramentReport);
 router.get('/certificates', ...office, getCertificateReport);
 router.get('/donations', ...office, getDonationReport);
 router.get('/intentions', ...office, getIntentionReport);
+// One day's copies, receipts and money: ?date=YYYY-MM-DD (default today, Philippine time)&staffId=…
+router.get('/day', ...office, getDaySummary);
 
 module.exports = router;

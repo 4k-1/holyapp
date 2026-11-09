@@ -699,7 +699,14 @@ async function listRecordCertificates(parishId, recordType, recordId) {
       `SELECT c.id, c.certificate_code, c.status, c.issued_at, c.record_type, c.qr_code,
               NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS issued_by_name,
               (SELECT COUNT(*)::int FROM certificate_reprint rp WHERE rp.certificate_id = c.id) AS reprints,
-              c.print_confirmed_at, c.void_kind
+              c.print_confirmed_at, c.void_kind,
+              -- The paid receipt for this copy (A4), so the record and the receipt name each other.
+              (SELECT p.receipt_number
+               FROM certificate_request r
+               JOIN payment p ON p.certificate_request_id = r.id AND p.status = 'paid'
+               WHERE r.certificate_id = c.id
+               ORDER BY p.paid_at DESC NULLS LAST
+               LIMIT 1) AS receipt_number
        FROM certificate c
        LEFT JOIN app_user u ON u.id = c.issued_by
        WHERE c.parish_id = $1 AND c.record_type = $2 AND c.record_id = $3
@@ -717,6 +724,7 @@ async function listRecordCertificates(parishId, recordType, recordId) {
       verifyUrl: row.qr_code || undefined,
       reprints: row.reprints || 0,
       printConfirmed: Boolean(row.print_confirmed_at),
+      receiptNumber: row.receipt_number || undefined,
     }));
   } catch (err) {
     if (err.code === '42703') return [];

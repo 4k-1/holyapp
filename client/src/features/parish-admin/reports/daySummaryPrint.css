@@ -1,0 +1,27 @@
+@media print {
+  /* Portrait, plain: a sheet to count against and sign. A named page, so the reports keep landscape. */
+  @page day-sheet {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  .day-print-sheet {
+    page: day-sheet;
+  }
+
+  .day-print-sheet .day-sheet__section,
+  .day-print-sheet .day-sheet__tile,
+  .day-print-sheet .day-sheet__warnings {
+    box-shadow: none;
+    background: transparent;
+    break-inside: avoid;
+  }
+
+  .day-print-sheet .day-sheet__tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .day-print-sheet table {
+    min-width: 0;
+  }
+}

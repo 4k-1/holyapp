@@ -69,10 +69,22 @@ answers.
 
 - Walk-in issuance already records a cash payment. Have the certificate show its receipt number,
   and the receipt show its certificate number.
-- **Daily closing sheet** for each staff member: copies issued, reprints, voids, receipts, cash
-  collected. The staff member and the parish priest both sign off.
-- At the end of the day, copies issued should equal paid receipts, and those should equal cash
-  collected.
+- **Day summary**: one read-only screen for any day, for the whole office or one staff member:
+  copies issued, reprints, spoiled copies, receipts, and cash and GCash collected. Copies issued
+  should match paid receipts, and receipts should add up to the cash in the drawer. Nothing is
+  saved: the figures are worked out from the records each time, and the audit log keeps who did
+  what. Staff can print it, count the drawer against it and sign the paper if the parish wants.
+
+#### Parked for later: a saved daily close
+
+Build this only if a parish needs a formal close. It needs its own table.
+
+- Staff type in the cash actually counted; the shortage or overage and its reason are saved.
+- Two sign-offs: the staff member submits the close, the parish priest or admin countersigns.
+  (The priest can only sign on his own once E6 is built.)
+- A closed day is locked: later voids and corrections go on the next day instead of changing it.
+- A "days waiting for sign-off" card on the priest's or admin's dashboard.
+- Counted Sunday collections (D5) join the same close once D5 exists.
 
 ### A5. Count security paper (priority: optional)
 
@@ -473,7 +485,8 @@ change other accounts. So the last admin can't be removed. No work needed.
 | A1 | Done: one Issue & print button; previews print "SPECIMEN – NOT VALID" with no QR; Reprint keeps the code |
 | A2 | Done: BAP-2026-000143 numbers (migration 030), reprints logged with a reason and printed as issued, issued and reprinted counted apart in the report |
 | A3 | Done: "Did it print correctly?" after each print (Yes / No, reprint / Spoiled); unanswered copies on the dashboard; spoiled copies void with a reason, keep their number and scan as void (migration 031) |
-| A4–A7 | Proposed |
+| A4 | Done: day summary (read-only, printable) and receipt numbers shown with each copy. The saved close with sign-offs is parked |
+| A5–A7 | Proposed |
 | B1–B9 | Proposed |
 | C1–C12 | Proposed |
 | D1, D2 | Done: void or correct (admins only, with a reason) and DON- receipt numbers (migration 029) |
