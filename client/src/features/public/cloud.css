@@ -1,0 +1,33 @@
+/* Drawn clouds: overlapping soft puffs, with a faint teal shade underneath for depth. */
+.landing-cloud {
+  animation: landing-drift 60s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.landing-cloud::before {
+  content: "";
+  position: absolute;
+  inset: auto 10% -6% 10%;
+  height: 42%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(96, 160, 168, 0.3), rgba(96, 160, 168, 0));
+}
+
+.landing-puff {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(255, 255, 255, 0.9) 45%,
+    rgba(255, 255, 255, 0.45) 75%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+@keyframes landing-drift {
+  from { transform: translateX(-36px); }
+  to { transform: translateX(36px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-cloud { animation: none; }
+}

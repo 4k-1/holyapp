@@ -1,7 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap");
-
-/* Public giving pages: one white card on logo teal. A warm serif for the title, the app's Inter for everything
-   else, and pill-shaped choices, fields and buttons. */
+/* Public giving pages: one white card on a deep teal sky with drawn clouds, like the sign-in pages. Plus Jakarta Sans
+   throughout (loaded in app/index.css), and pill-shaped choices, fields and buttons. */
 .give {
   --l-ink: #13262b;
   --l-muted: #5b7079;
@@ -16,19 +14,15 @@
     radial-gradient(ellipse 45% 50% at 95% 8%, rgba(238, 181, 49, 0.14), transparent 70%),
     linear-gradient(160deg, #16798c 0%, #0f5262 50%, #0a3a46 100%);
   color: #ffffff;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 450;
 }
 
-.give .give-title {
-  font-family: "DM Serif Display", ui-serif, Georgia, serif;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-}
-
-/* A faint field of small crosses behind the card. */
-.give-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M28 22v12M22 28h12' stroke='white' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
-  opacity: 0.06;
-  mask-image: linear-gradient(180deg, #000 0%, transparent 80%);
+/* Doubled class so it outranks the app's base h1 font rule. */
+.give .give-title.give-title {
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.035em;
 }
 
 /* The shared portal form pieces (marked with data-pf) take the card's look here; the portal keeps its own. */

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listParishes } from "@/features/parish/parishApi";
 import type { Parish } from "@/types";
+import { Cloud } from "./Cloud";
 import "./give.css";
 
 export type GiveMode = "donate" | "intention";
@@ -12,7 +13,14 @@ const MODE_LABEL: Record<GiveMode, string> = { donate: "Give a donation", intent
 export function GiveSite({ parish, children }: { parish?: Parish | null; children: ReactNode }) {
   return (
     <div className="give relative min-h-screen overflow-hidden">
-      <div className="give-pattern pointer-events-none absolute inset-0" aria-hidden="true" />
+      {/* The sign-in pages' sky: faint drawn clouds high up and a soft bank along the bottom. */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <Cloud className="left-[-12%] top-[6%] w-[46vw] max-w-[620px] opacity-[0.14]" drift={80} />
+        <Cloud className="right-[-14%] top-[2%] w-[40vw] max-w-[540px] opacity-[0.1]" drift={95} delay={-30} flip />
+        <Cloud className="bottom-[-9vw] left-[-14%] w-[56vw] opacity-[0.3]" drift={60} delay={-10} />
+        <Cloud className="bottom-[-12vw] left-[26%] w-[58vw] opacity-[0.24]" drift={75} delay={-35} flip />
+        <Cloud className="bottom-[-8vw] right-[-16%] w-[52vw] opacity-[0.3]" drift={65} delay={-25} />
+      </div>
       <header className="relative">
         <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <Link to="/" className="inline-flex items-center gap-2 no-underline">
@@ -30,7 +38,7 @@ export function GiveSite({ parish, children }: { parish?: Parish | null; childre
         </div>
       </header>
       <main className="relative mx-auto w-full max-w-[600px] px-4 pb-10 pt-4 sm:px-6 sm:pt-8">{children}</main>
-      <p className="relative pb-8 text-center text-[0.8125rem] text-white/55">Secure giving for parishes, by HolyApp</p>
+      <p className="relative pb-8 text-center text-[0.8125rem] text-white/55">Secure giving for Catholic parishes in the Philippines, by HolyApp</p>
     </div>
   );
 }
