@@ -27,6 +27,7 @@ import {
   isLedgerHandoff,
   type GodparentRole,
 } from "@/features/parish-admin/ledgers/ledgerToRecord";
+import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
 
 interface FormState {
   firstName: string;
@@ -188,7 +189,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   if (mode === "edit" && existingLoading) {
     return (
       <AdminFormPage>
-        <BackLink />
+        <AdminBackLink />
         <p className="text-admin-body text-admin-ink-muted">Loading record…</p>
       </AdminFormPage>
     );
@@ -197,7 +198,7 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   if (mode === "edit" && !existing) {
     return (
       <AdminFormPage>
-        <BackLink />
+        <AdminBackLink />
         <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Record not found</h1>
       </AdminFormPage>
     );
@@ -508,19 +509,4 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
   );
 }
 
-function BackLink() {
-  const navigate = useNavigate();
-  return (
-    <button
-      type="button"
-      onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-admin-body text-admin-ink-muted hover:text-admin-green-700"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-        <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      Back
-    </button>
-  );
-}
 

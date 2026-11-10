@@ -5,11 +5,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import {
-  ArrowLeftIcon,
   CalendarIcon,
   HeartIcon,
 } from "@/components/ui/icons/AdminIcons";
@@ -68,6 +67,7 @@ import {
 import { askConfirm } from "@/lib/notify";
 import { BannsPanel } from "./BannsPanel";
 import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
+import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
 
 const GROUPS: RequirementGroup[] = ["Bride", "Groom", "Couple", "Preparation"];
 
@@ -150,7 +150,6 @@ function byUrgency(a: MarriageRequirement, b: MarriageRequirement) {
 
 export function AdminMarriageApplicationDetailPage() {
   const { applicationId = "" } = useParams();
-  const navigate = useNavigate();
   const [application, setApplication] = useState<MarriageApplication | null>(
     null,
   );
@@ -393,18 +392,7 @@ export function AdminMarriageApplicationDetailPage() {
 
   return (
     <div className={PAGE_WIDTH_CLASS}>
-      <button
-        type="button"
-        onClick={() => {
-          // React Router numbers history entries; idx 0 means this page was opened directly, so fall back to the list.
-          if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
-          else navigate("..", { relative: "path" });
-        }}
-        className="mb-3 inline-flex min-h-[44px] items-center gap-1.5 rounded-md text-admin-body text-admin-ink-muted hover:text-admin-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/40"
-      >
-        <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
-        Back
-      </button>
+      <AdminBackLink />
 
       <AdminCard className="mb-4 p-5 sm:px-7 sm:py-6">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">

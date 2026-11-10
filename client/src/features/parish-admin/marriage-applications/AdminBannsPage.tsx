@@ -46,6 +46,7 @@ import type {
   BannsPlan,
   MarriageApplication,
 } from "./types";
+import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
 
 const TONE_CLASS: Record<BannsTone, string> = {
   done: "bg-admin-green-100 text-admin-green-700",
@@ -148,14 +149,10 @@ export function AdminBannsPage() {
 
   return (
     <AdminPage>
+      <AdminBackLink />
       <AdminPageHeader
         title="Banns"
         description="Couples announced at Sunday Mass before their wedding: those marrying here, and those marrying in another parish who live here."
-        actions={
-          <Link to=".." relative="path" className="admin-table__action">
-            ← Marriage Applications
-          </Link>
-        }
       />
 
       {unplanned.length > 0 && (

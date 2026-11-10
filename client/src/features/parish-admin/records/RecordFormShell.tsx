@@ -2,6 +2,7 @@ import { useId, type FormEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminButton, AdminNotchedLabels } from "@/features/parish-admin/components/AdminForm";
 import { PAGE_TITLE_CLASS } from "@/features/parish-admin/components/adminPageStyles";
+import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
 
 /**
  * Page frame for adding or editing a register entry: one white sheet read top to bottom, made of
@@ -35,17 +36,8 @@ export function RecordFormShell({
   return (
     <div className="@container mx-auto w-full max-w-[960px]">
       <div className="sticky -top-4 z-10 -mt-4 mb-3 flex flex-wrap items-center gap-x-4 gap-y-2.5 border-b border-admin-border bg-admin-bg/95 pb-2.5 pt-4 backdrop-blur sm:-top-6 sm:-mt-6 sm:pt-6">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          aria-label="Back"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-admin-border bg-admin-surface text-admin-ink-muted hover:text-admin-green-700"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-            <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
         <div className="min-w-0 flex-1 basis-[15rem]">
+          <AdminBackLink className="mb-1" />
           <h1 className={PAGE_TITLE_CLASS}>{title}</h1>
           <p className="text-admin-support text-admin-ink-muted max-sm:hidden">{subtitle}</p>
         </div>

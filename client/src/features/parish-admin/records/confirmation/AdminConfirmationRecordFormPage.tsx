@@ -21,6 +21,7 @@ import { useAsync } from "@/hooks/useAsync";
 import type { BaptismalRecord } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 import { PAGE_TITLE_CLASS } from "@/features/parish-admin/components/adminPageStyles";
+import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
 
 interface FormState {
   firstName: string;
@@ -127,7 +128,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
   if (mode === "edit" && existingLoading) {
     return (
       <AdminFormPage>
-        <BackLink />
+        <AdminBackLink />
         <p className="text-admin-body text-admin-ink-muted">Loading record…</p>
       </AdminFormPage>
     );
@@ -136,7 +137,7 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
   if (mode === "edit" && !existing) {
     return (
       <AdminFormPage>
-        <BackLink />
+        <AdminBackLink />
         <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Record not found</h1>
       </AdminFormPage>
     );
@@ -368,19 +369,4 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
   );
 }
 
-function BackLink() {
-  const navigate = useNavigate();
-  return (
-    <button
-      type="button"
-      onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-admin-body text-admin-ink-muted hover:text-admin-green-700"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-        <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      Back
-    </button>
-  );
-}
 

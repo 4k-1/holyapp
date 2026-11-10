@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Link,
-  useNavigate,
   useOutletContext,
   useParams,
 } from "react-router-dom";
@@ -28,6 +27,7 @@ import {
   sharePoster,
 } from "./bannsPoster";
 import type { BannsParishHeading, MarriageApplication } from "./types";
+import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
 
 // Fixed colours, not theme tokens: the image must look the same whoever makes it.
 const DEEP = "#0E3B46";
@@ -46,7 +46,6 @@ function weekdayDate(iso: string) {
 
 export function AdminBannsPosterPage() {
   const { applicationId = "" } = useParams();
-  const navigate = useNavigate();
   const { parish: currentParish } = useOutletContext<{ parish: Parish }>();
   const [data, setData] = useState<{
     application: MarriageApplication;
@@ -145,18 +144,10 @@ export function AdminBannsPosterPage() {
 
   return (
     <AdminPage>
+      <AdminBackLink />
       <AdminPageHeader
         title="Banns poster"
         description={`${application.groomName} and ${application.brideName} · ${application.referenceNo}`}
-        actions={
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="admin-table__action"
-          >
-            ← Back
-          </button>
-        }
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
