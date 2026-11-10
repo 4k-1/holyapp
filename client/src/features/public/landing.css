@@ -1,7 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap");
-
-/* HolyApp landing page: logo teal with candle gold. Libre Franklin for headlines, steady and institutional;
-   Atkinson Hyperlegible for text, drawn for readers with low vision, which suits older parishioners. */
+/* HolyApp landing page: logo teal with candle gold, in Plus Jakarta Sans like the parish portal (loaded in
+   app/index.css). Text sits a little heavier than Jakarta's 400 so it stays easy to read for older parishioners. */
 .landing {
   --l-ink: #13262b;
   --l-muted: #55707a;
@@ -13,37 +11,70 @@
   --l-cream: #fbf8f1;
   --l-gold: #eeb531;
   --l-gold-soft: #fbefcf;
-  --l-display: "Libre Franklin", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+  /* The second tone of a two-tone heading; 3.4:1 on white, for large text only. */
+  --l-soft: #6b8d95;
+  --l-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-sans);
   background: #ffffff;
   color: var(--l-ink);
   font-family: var(--font-sans);
+  font-weight: 450;
   overflow-x: hidden;
 }
 
 /* Scoped under .landing so it outranks the app's base h1–h4 font rule. */
 .landing .landing-display {
   font-family: var(--l-display);
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  font-weight: 700;
+  letter-spacing: -0.035em;
   font-optical-sizing: auto;
 }
 
-/* A soft wash of logo teal and candle gold behind the hero, fading to white. */
+/* An early-morning sky in logo teal, with candle-gold light on one side, fading to the white page. */
 .landing-hero {
   background:
-    radial-gradient(ellipse 60% 45% at 30% 0%, rgba(142, 216, 210, 0.45), transparent 70%),
-    radial-gradient(ellipse 50% 40% at 75% 5%, rgba(238, 181, 49, 0.18), transparent 70%),
-    #ffffff;
+    radial-gradient(ellipse 45% 35% at 82% 8%, rgba(238, 181, 49, 0.16), transparent 70%),
+    linear-gradient(180deg, #c2e8e5 0%, #d2eeeb 35%, #dcf2f0 70%, #e8f6f5 92%, #ffffff 100%);
 }
 
-/* The arch behind the laptop, ringed like a chapel window. */
-.landing-arch {
-  background: linear-gradient(180deg, #e8f5f5 0%, #f4fafa 45%, #fdf6e3 100%);
-  box-shadow:
-    0 0 0 18px rgba(232, 245, 245, 0.55),
-    0 0 0 36px rgba(232, 245, 245, 0.3);
+/* Drawn clouds: overlapping soft puffs, with a faint teal shade underneath for depth. */
+.landing-cloud {
+  animation: landing-drift 60s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.landing-cloud::before {
+  content: "";
+  position: absolute;
+  inset: auto 10% -6% 10%;
+  height: 42%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(96, 160, 168, 0.3), rgba(96, 160, 168, 0));
+}
+
+.landing-puff {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(255, 255, 255, 0.9) 45%,
+    rgba(255, 255, 255, 0.45) 75%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+/* A dash travels along each line of the "How HolyApp works" drawing, from the faithful to the office. */
+.landing-flow {
+  stroke-dasharray: 10 190;
+  animation: landing-flow 3.2s linear infinite;
+}
+@keyframes landing-flow {
+  from { stroke-dashoffset: 200; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes landing-drift {
+  from { transform: translateX(-36px); }
+  to { transform: translateX(36px); }
 }
 
 /* "cloud." sits on a teal block, set slightly off square like a hand-placed label. */
@@ -122,7 +153,6 @@
   transform: translateY(-6px) rotate(0deg) !important;
 }
 
-
 /* Hero: the headline, text, buttons and laptop rise in one after another when the page opens. */
 .landing-in {
   animation: landing-in 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
@@ -179,14 +209,16 @@
   50% { transform: translateY(-8px); }
 }
 
-
 @media (prefers-reduced-motion: reduce) {
   .landing-deco,
+  .landing-cloud,
+  .landing-flow,
   .landing-in,
   .landing-in-stage,
   .landing-mark--in { animation: none; }
   .landing--reveal [data-reveal] { opacity: 1; transform: none; transition: none; }
   .landing-card { transition: none; }
+  .landing-flow { display: none; }
   .landing-art,
   .landing-art-body,
   .landing-art [class*="landing-art-"] { animation: none; }
