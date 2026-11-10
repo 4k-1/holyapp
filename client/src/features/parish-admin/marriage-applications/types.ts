@@ -61,12 +61,20 @@ export interface MarriageWeddingEvent {
   guest?: boolean;
 }
 
+export interface LinkedAccount {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface MarriageApplication {
   id: string;
   /** Short reference people read and search for, e.g. MA-2026-00003. */
   referenceNo: string;
   parishId: string;
   parishionerId: string | null;
+  /** The parishioner account that follows this application in the portal, if any. */
+  linkedAccount: LinkedAccount | null;
   groomFirstName: string;
   groomMiddleName: string;
   groomLastName: string;

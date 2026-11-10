@@ -193,8 +193,37 @@ async function loadApplication(parishId, id) {
 async function hydrate(row) {
   const event = await loadWeddingEvent(row.wedding_event_id);
   const requirements = await loadRequirements(row, weddingDateOf(row, event));
-  return toApplication(row, requirements, event);
+  const app = toApplication(row, requirements, event);
+  app.linkedAccount = await loadLinkedAccount(row.parishioner_id);
+  return app;
 }
+
+/** The parishioner account that follows this application online: name and email, or null. */
+async function loadLinkedAccount(userId) {
+  if (!userId) return null;
+  const result = await pool.query('SELECT id, email, first_name, last_name FROM app_user WHERE id = $1', [userId]);
+  const user = result.rows[0];
+  if (!user) return null;
+  return {
+    id: user.id,
+    email: user.email,
+    name: [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email,
+  };
+}
+
+/** What a parishioner sees of their own application: the office's own notes and staff names stay out. */
+function forParishioner(app) {
+  return {
+    ...app,
+    remarks: '',
+    dispensationNotes: '',
+    requirements: app.requirements.map((item) => ({ ...item, verifiedBy: null, verifiedByName: null })),
+  };
+}
+
+const NO_ACCOUNT =
+  "No parishioner account in this parish uses this email. They can't track the application online until they " +
+  'sign up; you can link it later.';
 
 function requiredComplete(requirements) {
   return requirements.filter((item) => item.required).every((item) => item.submitted);
@@ -251,8 +280,9 @@ async function getApplication(req, res) {
     if (req.user.role !== 'parishioner') await ensureRequirementTypes(req.parishId, req.user.id);
     const row = await loadApplication(req.parishId, req.params.id);
     if (!row) return res.status(404).json({ error: 'Application not found.' });
-    if (req.user.role === 'parishioner' && row.parishioner_id !== req.user.id) {
-      return res.status(404).json({ error: 'Application not found.' });
+    if (req.user.role === 'parishioner') {
+      if (row.parishioner_id !== req.user.id) return res.status(404).json({ error: 'Application not found.' });
+      return res.json({ application: forParishioner(await hydrate(row)) });
     }
     res.json({ application: await hydrate(row) });
   } catch (err) {
@@ -270,7 +300,7 @@ async function listMine(req, res) {
     );
     const applications = [];
     for (const row of result.rows) {
-      applications.push(await hydrate(row));
+      applications.push(forParishioner(await hydrate(row)));
     }
     res.json({ applications });
   } catch (err) {
@@ -289,6 +319,9 @@ async function createApplication(req, res) {
     await ensureRequirementTypes(req.parishId, req.user.id);
     const parishionerId =
       optionalUuid(body.parishionerId) || (await findParishionerByEmail(req.parishId, body.parishionerEmail));
+    if (!parishionerId && String(body.parishionerEmail || '').trim()) {
+      throw httpError(400, `${NO_ACCOUNT} Leave the email blank to file it as a walk-in.`);
+    }
 
     await client.query('BEGIN');
     const inserted = await client.query(
@@ -871,7 +904,72 @@ async function rejectApplication(req, res) {
   }
 }
 
+/** Links a parishioner account by its email, so they can follow the application in the portal. */
+async function linkParishioner(req, res) {
+  try {
+    const email = String(req.body?.email || '').trim();
+    if (!email) throw httpError(400, 'Enter the email of their parishioner account.');
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row) return res.status(404).json({ error: 'Application not found.' });
+    const parishionerId = await findParishionerByEmail(req.parishId, email);
+    if (!parishionerId) throw httpError(400, NO_ACCOUNT);
+
+    const updated = await pool.query(
+      `UPDATE marriage_application SET parishioner_id = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+      [parishionerId, row.id]
+    );
+    if (row.parishioner_id !== parishionerId) {
+      await createNotification({
+        parishId: req.parishId,
+        recipientId: parishionerId,
+        kind: 'parishioner',
+        title: 'Marriage application linked',
+        body: `The parish office linked marriage application ${row.reference_no} to your account. You can follow its status in the portal.`,
+        href: 'marriage',
+      });
+    }
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'marriage_application.account_linked',
+      entityType: 'marriage_application',
+      entityId: row.id,
+      metadata: { parishionerId, previous: row.parishioner_id || null },
+    });
+    res.json({ application: await hydrate(updated.rows[0]) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** Takes the application off the parishioner's account; the office keeps it as before. */
+async function unlinkParishioner(req, res) {
+  try {
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row) return res.status(404).json({ error: 'Application not found.' });
+    const updated = await pool.query(
+      `UPDATE marriage_application SET parishioner_id = NULL, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [row.id]
+    );
+    if (row.parishioner_id) {
+      await writeAudit({
+        parishId: req.parishId,
+        actorId: req.user.id,
+        action: 'marriage_application.account_unlinked',
+        entityType: 'marriage_application',
+        entityId: row.id,
+        metadata: { parishionerId: row.parishioner_id },
+      });
+    }
+    res.json({ application: await hydrate(updated.rows[0]) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
 module.exports = {
+  linkParishioner,
+  unlinkParishioner,
   updateCircumstances,
   ensureRequirementTypes,
   addMissingRows,

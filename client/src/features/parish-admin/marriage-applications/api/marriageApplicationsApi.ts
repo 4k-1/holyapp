@@ -237,3 +237,28 @@ export async function listMyMarriageApplications(): Promise<MarriageApplication[
     fail(err);
   }
 }
+
+/** Links the couple's parishioner account by its email, so they can follow the application online. */
+export async function linkParishionerAccount(applicationId: string, email: string): Promise<MarriageApplication> {
+  try {
+    const data = await apiFetch<{ application: MarriageApplication }>(
+      `/marriage-applications/${encodeURIComponent(applicationId)}/parishioner`,
+      { method: "PUT", body: { email } }
+    );
+    return data.application;
+  } catch (err) {
+    fail(err);
+  }
+}
+
+export async function unlinkParishionerAccount(applicationId: string): Promise<MarriageApplication> {
+  try {
+    const data = await apiFetch<{ application: MarriageApplication }>(
+      `/marriage-applications/${encodeURIComponent(applicationId)}/parishioner`,
+      { method: "DELETE" }
+    );
+    return data.application;
+  } catch (err) {
+    fail(err);
+  }
+}

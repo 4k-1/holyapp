@@ -66,6 +66,7 @@ import {
 } from "@/features/parish-admin/schedule/scheduleHelpers";
 import { askConfirm } from "@/lib/notify";
 import { BannsPanel } from "./BannsPanel";
+import { OnlineTracking } from "./OnlineTracking";
 import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
 
@@ -861,14 +862,6 @@ export function AdminMarriageApplicationDetailPage() {
                 label="Submitted"
                 value={formatDay(application.createdAt) || "—"}
               />
-              <DetailRow
-                label="Came in"
-                value={
-                  application.parishionerId
-                    ? "Online, from a parishioner account"
-                    : "Walk-in at the office"
-                }
-              />
               {application.updatedAt && (
                 <DetailRow
                   label="Last updated"
@@ -879,6 +872,8 @@ export function AdminMarriageApplicationDetailPage() {
                 <DetailRow label="Remarks" value={application.remarks} />
               )}
             </dl>
+
+            <OnlineTracking application={application} disabled={saving} onChange={fillFrom} />
 
             {!closed && stage !== "cleared" && (
               <div className="mt-4 border-t border-admin-border pt-3">

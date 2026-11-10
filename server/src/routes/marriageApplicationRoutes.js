@@ -20,6 +20,8 @@ const {
   bannsList,
   bannsCertificate,
   bannsPoster,
+  linkParishioner,
+  unlinkParishioner,
 } = require('../controllers/marriageApplicationController');
 
 const router = express.Router();
@@ -49,5 +51,7 @@ router.post('/:id/reject', ...office, rejectApplication);
 router.patch('/:id/banns', ...office, updateBanns);
 router.get('/:id/banns-certificate', ...office, bannsCertificate);
 router.get('/:id/banns-poster', ...office, bannsPoster);
+router.put('/:id/parishioner', ...office, linkParishioner);
+router.delete('/:id/parishioner', ...office, unlinkParishioner);
 
 module.exports = router;

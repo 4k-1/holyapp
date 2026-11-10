@@ -86,12 +86,12 @@ export function CreateWalkInApplicationModal({ onClose, onCreated }: CreateWalkI
               <AdminInput value={brideLastName} onChange={(e) => setBrideLastName(e.target.value)} />
             </AdminField>
           </div>
-          <AdminField label="Parishioner email (optional)" className="mb-0">
+          <AdminField label="Their parishioner account email (optional)" className="mb-0">
             <AdminInput
               type="email"
               value={parishionerEmail}
               onChange={(e) => setParishionerEmail(e.target.value)}
-              placeholder="Links this file to a portal account"
+              placeholder="So they can track it online. Blank if they have no account."
             />
           </AdminField>
           <label className="flex items-center gap-2 text-admin-body text-admin-ink">
