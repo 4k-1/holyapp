@@ -46,7 +46,7 @@ export function ServiceFeesSection() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left text-admin-body">
             <thead>
-              <tr className="border-b border-admin-border text-[0.75rem] font-medium text-admin-ink-faint">
+              <tr className="border-b border-admin-border bg-admin-surface-alt text-[0.75rem] font-medium text-admin-ink-muted">
                 <th className="px-5 py-3">Service</th>
                 <th className="px-5 py-3">Default fee</th>
                 <th className="px-5 py-3">Last updated</th>

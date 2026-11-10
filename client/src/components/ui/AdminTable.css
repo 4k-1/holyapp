@@ -6,7 +6,7 @@
   --at-faint: #8ba1a7;
   --at-border: #e0e9eb;
   --at-surface: #ffffff;
-  --at-head: #ffffff;
+  --at-head: #edf4f5;
   --at-hover: #f3f8f9;
   --at-green: #16798c;
   --at-green-deep: #0e3b46;
@@ -87,7 +87,7 @@
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.01em;
-  color: var(--at-faint);
+  color: var(--at-muted);
   background: var(--at-head);
   border-bottom: 1px solid var(--at-border);
   white-space: nowrap;

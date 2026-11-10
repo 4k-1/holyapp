@@ -183,7 +183,7 @@ export function EventsListView({
       <div className="overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface">
         <table className="w-full text-left text-admin-support">
           <thead>
-            <tr className="border-b border-admin-border text-[0.75rem] font-medium text-admin-ink-faint">
+            <tr className="border-b border-admin-border bg-admin-surface-alt text-[0.75rem] font-medium text-admin-ink-muted">
               <th className="px-5 py-3">Date</th>
               <th className="px-5 py-3">Time</th>
               <th className="px-5 py-3">Type</th>
