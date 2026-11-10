@@ -76,7 +76,8 @@ export interface LedgerPageReading {
   book: LedgerBook;
   page: LedgerPage;
   reading: LedgerScanResult | null;
-  records: { row: number; recordId: string }[];
+  /** Rows already saved as records, with the person's name and baptism date for listing them. */
+  records: { row: number; recordId: string; name: string; date: string }[];
   /** False when reading isn't set up on the server. */
   readerAvailable: boolean;
 }

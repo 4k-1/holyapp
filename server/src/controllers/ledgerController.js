@@ -328,13 +328,19 @@ function tooManyReads(userId) {
   return null;
 }
 
-// The rows of this page already saved as records: { row, recordId }.
+// The rows of this page already saved as records: { row, recordId, name, date }.
 async function recordsFromPage(pageId) {
   const { rows } = await pool.query(
-    `SELECT id, ledger_row FROM baptism WHERE ledger_page_id = $1 AND archived_at IS NULL ORDER BY ledger_row`,
+    `SELECT id, ledger_row, first_name, middle_name, last_name, to_char(date_of_baptism, 'YYYY-MM-DD') AS date
+       FROM baptism WHERE ledger_page_id = $1 AND archived_at IS NULL ORDER BY ledger_row`,
     [pageId],
   );
-  return rows.map((r) => ({ row: r.ledger_row, recordId: r.id }));
+  return rows.map((r) => ({
+    row: r.ledger_row,
+    recordId: r.id,
+    name: [r.first_name, r.middle_name, r.last_name].filter(Boolean).join(' '),
+    date: r.date,
+  }));
 }
 
 async function pageContext(row) {
