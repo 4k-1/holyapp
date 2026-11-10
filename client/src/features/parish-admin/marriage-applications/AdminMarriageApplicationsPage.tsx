@@ -174,9 +174,17 @@ export function AdminMarriageApplicationsPage() {
         title="Marriage Applications"
         description="Couples in marriage preparation. Documents are checked in person; this only tracks status."
         actions={
-          <AdminButton type="button" onClick={() => setCreateOpen(true)}>
-            + New application
-          </AdminButton>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="banns"
+              className="inline-flex items-center rounded-lg border border-admin-border px-4 py-2.5 text-admin-body font-semibold text-admin-ink hover:bg-admin-surface-alt"
+            >
+              Banns
+            </Link>
+            <AdminButton type="button" onClick={() => setCreateOpen(true)}>
+              + New application
+            </AdminButton>
+          </div>
         }
       />
 

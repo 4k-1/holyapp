@@ -27,6 +27,7 @@ import {
   getMarriageApplication,
   rejectMarriageApplication,
   reserveWeddingDate,
+  updateBanns,
   updateMarriageCircumstances,
   updateMarriageDispensation,
   verifyMarriageRequirement,
@@ -65,6 +66,7 @@ import {
   to24Hour,
 } from "@/features/parish-admin/schedule/scheduleHelpers";
 import { askConfirm } from "@/lib/notify";
+import { BannsPanel } from "./BannsPanel";
 import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 const GROUPS: RequirementGroup[] = ["Bride", "Groom", "Couple", "Preparation"];
@@ -727,6 +729,18 @@ export function AdminMarriageApplicationDetailPage() {
                 </li>
               ))}
             </ul>
+          </RailCard>
+
+          <RailCard
+            title="Banns"
+            icon={<CalendarIcon className="h-4 w-4" />}
+            description="Announced at Mass on three Sundays where each of them lives."
+          >
+            <BannsPanel
+              application={application}
+              disabled={saving || closed}
+              onSave={(banns) => run(() => updateBanns(application.id, banns))}
+            />
           </RailCard>
 
           <RailCard

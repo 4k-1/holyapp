@@ -12,6 +12,7 @@ const {
 const schedule = require('../services/scheduleService');
 const { TEMPLATES, normalizeCircumstances, applies } = require('../constants/marriageRequirements');
 const { manilaToday } = require('../constants/purposes');
+const banns = require('../services/banns');
 
 /** "2026-11-09" + 180 → "2027-05-08". */
 function addDays(isoDate, days) {
@@ -60,6 +61,8 @@ function toRequirement(row, weddingDate) {
 }
 
 function toApplication(row, requirements = [], event = null) {
+  const bannsPlan = banns.normalizeBanns(row.banns);
+  const weddingDate = (event && event.date) || dateOnly(row.preferred_wedding_date) || null;
   return {
     id: row.id,
     referenceNo: row.reference_no,
@@ -86,6 +89,13 @@ function toApplication(row, requirements = [], event = null) {
     weddingEvent: event,
     circumstances: normalizeCircumstances(row.circumstances),
     requirements,
+    // 5b: banns, and couples marrying in another parish who have their banns announced here.
+    weddingElsewhere: row.wedding_elsewhere === true,
+    weddingParish: row.wedding_parish || '',
+    banns: bannsPlan,
+    bannsAnnouncedHere: banns.announcedHere(bannsPlan),
+    bannsComplete: banns.bannsComplete(bannsPlan, { elsewhere: row.wedding_elsewhere }),
+    bannsSuggestedSundays: banns.suggestSundays(weddingDate),
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
     updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
   };
@@ -125,6 +135,7 @@ async function addMissingRows(db, parishId) {
      FROM marriage_application a
      JOIN marriage_requirement_type t ON t.parish_id = a.parish_id AND t.active
      WHERE a.parish_id = $1
+       AND NOT a.wedding_elsewhere
        AND a.status NOT IN ('approved', 'rejected', 'completed')
        AND NOT EXISTS (
          SELECT 1 FROM marriage_application_requirement r
@@ -221,7 +232,7 @@ async function listApplications(req, res) {
     await ensureRequirementTypes(req.parishId, req.user.id);
     const result = await pool.query(
       `SELECT * FROM marriage_application
-       WHERE parish_id = $1
+       WHERE parish_id = $1 AND NOT wedding_elsewhere
        ORDER BY created_at DESC`,
       [req.parishId]
     );
@@ -424,6 +435,216 @@ async function updateCircumstances(req, res) {
       metadata: { circumstances },
     });
     res.json({ application: await hydrate(updated.rows[0]) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** Saves the banns (5b) and ticks the "Banns published" requirement once they are complete. */
+async function updateBanns(req, res) {
+  try {
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row) return res.status(404).json({ error: 'Application not found.' });
+    if (['rejected', 'completed'].includes(row.status)) {
+      throw httpError(400, 'This application can no longer be updated.');
+    }
+    const plan = banns.normalizeBanns(req.body?.banns);
+    const event = await loadWeddingEvent(row.wedding_event_id);
+    banns.checkBanns(plan, { weddingDate: weddingDateOf(row, event), elsewhere: row.wedding_elsewhere });
+    const updated = await pool.query(
+      `UPDATE marriage_application SET banns = $1::jsonb, updated_at = NOW()
+       WHERE id = $2 AND parish_id = $3 RETURNING *`,
+      [JSON.stringify(plan), row.id, req.parishId]
+    );
+    const complete = banns.bannsComplete(plan, { elsewhere: row.wedding_elsewhere });
+    await pool.query(
+      `UPDATE marriage_application_requirement r
+       SET submitted = $1,
+           verified_by = CASE WHEN $1 THEN $2::uuid ELSE NULL END,
+           verified_at = CASE WHEN $1 THEN NOW() ELSE NULL END
+       FROM marriage_requirement_type t
+       WHERE r.requirement_type_id = t.id AND t.template_key = 'banns'
+         AND r.marriage_application_id = $3 AND r.submitted <> $1`,
+      [complete, req.user.id, row.id]
+    );
+    const next = await maybeAdvanceRequirements(updated.rows[0]);
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'marriage_application.banns_updated',
+      entityType: 'marriage_application',
+      entityId: row.id,
+      metadata: { sundays: plan.sundays, announced: plan.announced, dispensed: plan.dispensed, complete },
+    });
+    res.json({ application: await hydrate(next) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** Couples marrying in another parish who have their banns announced here (5b). */
+async function listBannsElsewhere(req, res) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM marriage_application
+       WHERE parish_id = $1 AND wedding_elsewhere AND status <> 'rejected'
+       ORDER BY created_at DESC`,
+      [req.parishId]
+    );
+    res.json({ applications: result.rows.map((row) => toApplication(row)) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+async function createBannsElsewhere(req, res) {
+  try {
+    const body = req.body || {};
+    const weddingParish = requiredText(body.weddingParish, 'Parish of the wedding');
+    const weddingDate = dateValue(body.weddingDate, 'Wedding date', { required: false }) || null;
+    const plan = banns.normalizeBanns({
+      groomParish: body.groomParish,
+      brideParish: body.brideParish,
+      sundays: banns.suggestSundays(weddingDate),
+    });
+    banns.checkBanns(plan, { weddingDate, elsewhere: true });
+    const inserted = await pool.query(
+      `INSERT INTO marriage_application (
+         parish_id, groom_first_name, groom_middle_name, groom_last_name,
+         bride_first_name, bride_middle_name, bride_last_name,
+         status, created_by, wedding_elsewhere, wedding_parish, preferred_wedding_date, banns
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, true, $9, $10, $11::jsonb)
+       RETURNING *`,
+      [
+        req.parishId,
+        requiredText(body.groomFirstName, "Groom's first name"),
+        optionalText(body.groomMiddleName),
+        requiredText(body.groomLastName, "Groom's last name"),
+        requiredText(body.brideFirstName, "Bride's first name"),
+        optionalText(body.brideMiddleName),
+        requiredText(body.brideLastName, "Bride's last name"),
+        req.user.id,
+        weddingParish,
+        weddingDate,
+        JSON.stringify(plan),
+      ]
+    );
+    const row = inserted.rows[0];
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'marriage_application.banns_elsewhere_created',
+      entityType: 'marriage_application',
+      entityId: row.id,
+      metadata: { groom: partyName(row, 'groom'), bride: partyName(row, 'bride'), weddingParish },
+    });
+    res.status(201).json({ application: toApplication(row) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** Removes a banns-only entry made by mistake. Applications for weddings here are rejected instead. */
+async function removeBannsElsewhere(req, res) {
+  try {
+    const removed = await pool.query(
+      `DELETE FROM marriage_application WHERE id = $1 AND parish_id = $2 AND wedding_elsewhere RETURNING *`,
+      [req.params.id, req.parishId]
+    );
+    if (!removed.rowCount) return res.status(404).json({ error: 'Banns entry not found.' });
+    const row = removed.rows[0];
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'marriage_application.banns_elsewhere_removed',
+      entityType: 'marriage_application',
+      entityId: row.id,
+      metadata: { groom: partyName(row, 'groom'), bride: partyName(row, 'bride') },
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** The couples to announce on one Sunday, with the time of asking, for the priest or lector to read. */
+async function bannsList(req, res) {
+  try {
+    const date = dateValue(req.query.date, 'Sunday');
+    if (!banns.isSunday(date)) throw httpError(400, 'Banns are announced on Sundays.');
+    const [result, parish, open] = await Promise.all([
+      pool.query(
+        `SELECT * FROM marriage_application
+         WHERE parish_id = $1 AND status <> 'rejected' AND banns->'sundays' ? $2
+         ORDER BY groom_last_name, bride_last_name`,
+        [req.parishId, date]
+      ),
+      loadParishHeading(req.parishId),
+      // Weddings here still waiting for their Sundays to be planned.
+      pool.query(
+        `SELECT * FROM marriage_application
+         WHERE parish_id = $1 AND NOT wedding_elsewhere AND status NOT IN ('rejected', 'completed')
+           AND jsonb_array_length(COALESCE(banns->'sundays', '[]'::jsonb)) = 0
+         ORDER BY preferred_wedding_date NULLS LAST, created_at`,
+        [req.parishId]
+      ),
+    ]);
+    const unplanned = open.rows
+      .filter((row) => {
+        const plan = banns.normalizeBanns(row.banns);
+        return !plan.dispensed && banns.announcedHere(plan);
+      })
+      .map((row) => toApplication(row));
+    const couples = [];
+    for (const row of result.rows) {
+      const plan = banns.normalizeBanns(row.banns);
+      const asking = banns.askingOn(plan, date);
+      if (!asking) continue;
+      couples.push({
+        ...toApplication(row),
+        asking,
+        announced: plan.announced.includes(date),
+      });
+    }
+    res.json({ date, parish, couples, unplanned });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** The parish name, address, diocese and patron, and who signs, for printed banns papers. */
+async function loadParishHeading(parishId) {
+  const result = await pool.query(
+    `SELECT p.name, p.address, s.patron, s.diocese, c.signatory_name, c.signatory_title
+     FROM parish p
+     LEFT JOIN parish_settings s ON s.parish_id = p.id
+     LEFT JOIN certificate_configuration c ON c.parish_id = p.id AND c.certificate_type = 'marriage'
+     WHERE p.id = $1`,
+    [parishId]
+  );
+  const row = result.rows[0] || {};
+  return {
+    name: row.name || '',
+    address: row.address || '',
+    patron: row.patron || '',
+    diocese: row.diocese || '',
+    signatoryName: row.signatory_name || '',
+    signatoryTitle: row.signatory_title || 'Parish Priest',
+  };
+}
+
+/** What the Certificate of Banns prints, once all three Sundays are announced (wedding elsewhere). */
+async function bannsCertificate(req, res) {
+  try {
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row || !row.wedding_elsewhere) return res.status(404).json({ error: 'Banns entry not found.' });
+    const plan = banns.normalizeBanns(row.banns);
+    if (plan.dispensed) throw httpError(400, 'The banns were waived, so there is no Certificate of Banns.');
+    if (!banns.bannsComplete(plan, { elsewhere: true })) {
+      throw httpError(400, 'All three Sundays must be announced first.');
+    }
+    res.json({ application: toApplication(row), parish: await loadParishHeading(req.parishId) });
   } catch (err) {
     return sendRecordError(res, err);
   }
@@ -641,4 +862,10 @@ module.exports = {
   reserveWeddingDate,
   confirmWeddingDate,
   rejectApplication,
+  updateBanns,
+  listBannsElsewhere,
+  createBannsElsewhere,
+  removeBannsElsewhere,
+  bannsList,
+  bannsCertificate,
 };

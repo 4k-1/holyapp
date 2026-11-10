@@ -10,10 +10,9 @@ The full ideas behind each item are in [recommendations.md](recommendations.md) 
 
 | # | Item | Work | Status |
 | --- | --- | --- | --- |
-| 1 | 5b | Banns: three Sundays, banns returned from other parishes, waivers, the Sunday list, couples marrying elsewhere and their Certificate of Banns | Built; browser check and commit left |
-| 2 | D5 | Counted Sunday collections, added to the day summary | To do |
-| 3 | B2b | Certificate of No Record (for late PSA registration) | To do |
-| 4 | 8.7 | Two-step sign-in for staff | To do, last |
+| 1 | D5 | Counted Sunday collections, added to the day summary | To do |
+| 2 | B2b | Certificate of No Record (for late PSA registration) | To do |
+| 3 | 8.7 | Two-step sign-in for staff | To do, last |
 
 ## Done
 
@@ -25,7 +24,8 @@ The full ideas behind each item are in [recommendations.md](recommendations.md) 
   transfer status (D1–D4); day summary (A4).
 - **Staff:** several titles per person and one Parish Priest (4); handover when someone leaves (E2).
 - **Marriage:** parish-editable requirements, special cases, document dates checked against the
-  wedding (5a).
+  wedding (5a); banns on three Sundays, banns returned from other parishes, waivers, the Sunday
+  list, and couples marrying elsewhere with their Certificate of Banns (5b).
 - **Schedule:** staff assigned by record (C2); Mass time changes carry booked intentions; Church
   calendar with booking warnings, parish fiesta and local feasts (B5 + C5); recording reminders
   (C11); fast funeral booking with follow-up Masses (C7).

@@ -90,6 +90,69 @@ export interface MarriageApplication {
   requirements: MarriageRequirement[];
   createdAt: string | null;
   updatedAt: string | null;
+  /** A couple marrying in another parish who have their banns announced here (5b). */
+  weddingElsewhere: boolean;
+  /** Where they marry, for a wedding elsewhere. */
+  weddingParish: string;
+  banns: BannsPlan;
+  /** At least one of them lives here, so the banns are read here. */
+  bannsAnnouncedHere: boolean;
+  bannsComplete: boolean;
+  /** The next three Sundays before the wedding. */
+  bannsSuggestedSundays: string[];
+}
+
+/** 5b: the banns. An empty parish means that person lives in this parish. */
+export interface BannsPlan {
+  groomParish: string;
+  brideParish: string;
+  /** The three Sundays they are announced here (ISO dates). */
+  sundays: string[];
+  /** Sundays already announced. */
+  announced: string[];
+  /** Certificate of Banns back from the other parish. */
+  received: { groom: boolean; bride: boolean };
+  /** The bishop waived the banns. */
+  dispensed: boolean;
+}
+
+/** A couple on one Sunday's banns list, with the time of asking. */
+export interface BannsListCouple extends MarriageApplication {
+  asking: number;
+  announced: boolean;
+}
+
+export interface BannsListResponse {
+  date: string;
+  parish: BannsParishHeading;
+  couples: BannsListCouple[];
+  /** Weddings here with no Sundays planned yet. */
+  unplanned: MarriageApplication[];
+}
+
+/** The parish heading and signatory for printed banns papers. */
+export interface BannsParishHeading {
+  name: string;
+  address: string;
+  patron: string;
+  diocese: string;
+  signatoryName: string;
+  signatoryTitle: string;
+}
+
+export interface CreateBannsElsewhereInput {
+  groomFirstName: string;
+  groomMiddleName?: string;
+  groomLastName: string;
+  brideFirstName: string;
+  brideMiddleName?: string;
+  brideLastName: string;
+  weddingParish: string;
+  weddingDate?: string;
+  /** Empty when the groom lives here. */
+  groomParish: string;
+  /** Empty when the bride lives here. */
+  brideParish: string;
 }
 
 export interface CreateMarriageApplicationInput {

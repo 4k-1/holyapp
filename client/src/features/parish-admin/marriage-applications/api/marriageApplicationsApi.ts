@@ -1,5 +1,9 @@
 import { apiFetch, ApiError } from "@/lib/api";
 import type {
+  BannsListResponse,
+  BannsParishHeading,
+  BannsPlan,
+  CreateBannsElsewhereInput,
   Circumstances,
   CreateMarriageApplicationInput,
   DispensationStatus,
@@ -112,6 +116,75 @@ export async function reserveWeddingDate(
       { method: "POST", body: input }
     );
     return data.application;
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Saves the banns; "Banns published" ticks itself once they are complete. */
+export async function updateBanns(applicationId: string, banns: BannsPlan): Promise<MarriageApplication> {
+  try {
+    const data = await apiFetch<{ application: MarriageApplication }>(
+      `/marriage-applications/${encodeURIComponent(applicationId)}/banns`,
+      { method: "PATCH", body: { banns } }
+    );
+    return data.application;
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** The couples to announce on a Sunday, with the parish heading for printing. */
+export async function getBannsList(
+  date: string
+): Promise<BannsListResponse> {
+  try {
+    return await apiFetch<BannsListResponse>(
+      `/marriage-applications/banns-list?date=${encodeURIComponent(date)}`
+    );
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Couples marrying in another parish who have their banns announced here. */
+export async function listBannsElsewhere(): Promise<MarriageApplication[]> {
+  try {
+    const data = await apiFetch<{ applications: MarriageApplication[] }>("/marriage-applications/banns-elsewhere");
+    return data.applications ?? [];
+  } catch (err) {
+    fail(err);
+  }
+}
+
+export async function createBannsElsewhere(input: CreateBannsElsewhereInput): Promise<MarriageApplication> {
+  try {
+    const data = await apiFetch<{ application: MarriageApplication }>("/marriage-applications/banns-elsewhere", {
+      method: "POST",
+      body: input,
+    });
+    return data.application;
+  } catch (err) {
+    fail(err);
+  }
+}
+
+export async function removeBannsElsewhere(id: string): Promise<void> {
+  try {
+    await apiFetch(`/marriage-applications/banns-elsewhere/${encodeURIComponent(id)}`, { method: "DELETE" });
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** What the Certificate of Banns prints; refused until all three Sundays are announced. */
+export async function getBannsCertificate(
+  id: string
+): Promise<{ application: MarriageApplication; parish: BannsParishHeading }> {
+  try {
+    return await apiFetch<{ application: MarriageApplication; parish: BannsParishHeading }>(
+      `/marriage-applications/${encodeURIComponent(id)}/banns-certificate`
+    );
   } catch (err) {
     fail(err);
   }
