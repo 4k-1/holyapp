@@ -2,6 +2,8 @@
 import { daysInMonth, toISO } from "../scheduleHelpers";
 import { EVENT_TYPE_STYLES } from "@/features/parish-admin/schedule/eventTypeStyles";
 import type { LiturgicalDay, ScheduleOccurrence } from "../types";
+import { EventTypeKey } from "./EventTypeKey";
+
 
 /**
  * The month's season, said once beside the month name: "Ordinary Time", or
@@ -47,6 +49,8 @@ interface MonthCalendarGridProps {
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
+  /** The + on a day: adds an event on that date. */
+  onAddOnDate?: (dateStr: string) => void;
 }
 
 /** Events shown as tags inside a day; the rest are summed up as "+N more". */
@@ -63,6 +67,7 @@ export function MonthCalendarGrid({
   onPrevMonth,
   onNextMonth,
   onToday,
+  onAddOnDate,
 }: MonthCalendarGridProps) {
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
@@ -140,13 +145,35 @@ export function MonthCalendarGrid({
                     onSelectDate(c.dateStr!);
                   }
                 }}
-                className={`flex min-h-[104px] min-w-0 cursor-pointer flex-col gap-1 rounded-lg border p-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/40 ${
+                className={`group flex min-h-[104px] min-w-0 cursor-pointer flex-col gap-1 rounded-lg border p-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/40 ${
                   isSelected
                     ? "border-admin-green-700 bg-admin-green-050 shadow-[inset_0_0_0_1px_var(--color-admin-green-700)]"
                     : "border-admin-border hover:border-admin-border-strong hover:bg-admin-surface-alt/60"
                 }`}
               >
                 <div className="flex items-center gap-1.5 px-0.5">
+                  {onAddOnDate && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddOnDate(c.dateStr!);
+                      }}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      aria-label={`Add an event on ${new Date(`${c.dateStr}T00:00:00`).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                      })}`}
+                      title="Add an event on this day"
+                      className={`order-last ml-auto flex h-6 w-6 items-center justify-center rounded-md text-admin-green-700 hover:bg-admin-green-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/40 group-hover:opacity-100 ${
+                        isSelected ? "opacity-100" : "opacity-0"
+                      }`}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="h-3.5 w-3.5" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </button>
+                  )}
                   <span
                     className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-admin-support font-semibold tabular-nums ${
                       isToday ? "bg-admin-green-700 text-white" : liturgical?.obligation ? "text-red-700" : "text-admin-ink"
@@ -183,6 +210,7 @@ export function MonthCalendarGrid({
           })}
         </div>
         {loading && <p className="mt-3 text-center text-admin-label text-admin-ink-faint">Loading schedule…</p>}
+        <EventTypeKey className="mt-3 border-t border-admin-border pt-3" />
       </div>
     </div>
   );

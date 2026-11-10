@@ -138,6 +138,7 @@ export function AdminSchedulePage() {
           searchQuery={listSearch}
           onSearchQueryChange={setListSearch}
           onEdit={setEditTarget}
+          onAssign={setAssignTarget}
           reloadKey={listVersion}
           initialNeedsRecording={needsRecording}
         />
@@ -154,6 +155,10 @@ export function AdminSchedulePage() {
             onPrevMonth={() => shiftMonth(-1)}
             onNextMonth={() => shiftMonth(1)}
             onToday={goToday}
+            onAddOnDate={(date) => {
+              setSelectedDate(date);
+              setAddModalDate(date);
+            }}
           />
           {!sidebarCollapsed && (
             <DayAgendaSidebar
@@ -215,6 +220,7 @@ export function AdminSchedulePage() {
           onAssigned={() => {
             setAssignTarget(null);
             reload();
+            setListVersion((v) => v + 1);
           }}
         />
       )}
