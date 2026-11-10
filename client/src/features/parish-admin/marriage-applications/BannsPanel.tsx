@@ -1,8 +1,10 @@
 // 5b: the banns for one couple — where each lives, the three Sundays, certificates from other parishes.
 import { useState } from "react";
+import { Link, useOutletContext } from "react-router-dom";
+import type { Parish } from "@/types";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
-import { longDate, shortDate, todayISO } from "./bannsPapers";
-import type { BannsPlan, MarriageApplication } from "./types";
+import { EMPTY_PARENTS, longDate, parentsPhrase, partiesHere, shortDate, todayISO, type BannsParty } from "./bannsPapers";
+import type { BannsParents, BannsPlan, MarriageApplication } from "./types";
 
 interface BannsPanelProps {
   application: MarriageApplication;
@@ -20,6 +22,10 @@ export function BannsPanel({ application, disabled = false, sundayTicks = true, 
   const today = todayISO();
   const suggested = application.bannsSuggestedSundays;
   const readHere = application.bannsAnnouncedHere && !banns.dispensed;
+  const parents = banns.parents ?? EMPTY_PARENTS;
+  const hasDetails =
+    Object.values(parents).some((v) => v.trim()) || Boolean(banns.groomAddress) || Boolean(banns.brideAddress);
+  const { parish } = useOutletContext<{ parish: Parish }>();
 
   function startEditing() {
     setDraft({ ...banns, sundays: banns.sundays.length > 0 ? banns.sundays : suggested });
@@ -77,6 +83,31 @@ export function BannsPanel({ application, disabled = false, sundayTicks = true, 
             </div>
           </AdminField>
         )}
+        {partiesHere(draft).length > 0 && (
+          <fieldset className="space-y-2 border-t border-admin-border pt-3">
+            <legend className="text-admin-support font-semibold text-admin-ink">
+              For the poster and certificate <span className="font-normal text-admin-ink-muted">(optional)</span>
+            </legend>
+            <BannsDetailsFields
+              people={partiesHere(draft)}
+              value={{
+                groomAddress: draft.groomAddress ?? "",
+                brideAddress: draft.brideAddress ?? "",
+                parents: draft.parents ?? EMPTY_PARENTS,
+              }}
+              onChange={(details) => setDraft({ ...draft, ...details })}
+            />
+          </fieldset>
+        )}
+        <label className="flex items-start gap-2 text-admin-body text-admin-ink">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={draft.onlineConsent ?? false}
+            onChange={(e) => setDraft({ ...draft, onlineConsent: e.target.checked })}
+          />
+          The couple agreed to have their banns posted online (e.g. the parish Facebook page)
+        </label>
         <div className="flex justify-end gap-2">
           <AdminButton type="button" variant="secondary" onClick={() => setEditing(false)} disabled={disabled}>
             Cancel
@@ -101,12 +132,14 @@ export function BannsPanel({ application, disabled = false, sundayTicks = true, 
 
   return (
     <div className="space-y-3">
-      {!banns.groomParish && !banns.brideParish ? (
+      {!banns.groomParish && !banns.brideParish && !hasDetails ? (
         <p className="text-admin-body text-admin-ink">Both live in this parish.</p>
       ) : (
         <ul className="space-y-1.5 text-admin-body text-admin-ink">
           <PartyLine
             name={application.groomName}
+            address={banns.groomAddress ?? ""}
+            parents={parentsPhrase("son", parents.groomFather, parents.groomMother)}
             parish={banns.groomParish}
             received={banns.received.groom}
             // For a wedding elsewhere, the other parish's certificate goes to the wedding parish, not here.
@@ -116,6 +149,8 @@ export function BannsPanel({ application, disabled = false, sundayTicks = true, 
           />
           <PartyLine
             name={application.brideName}
+            address={banns.brideAddress ?? ""}
+            parents={parentsPhrase("daughter", parents.brideFather, parents.brideMother)}
             parish={banns.brideParish}
             received={banns.received.bride}
             showReceived={!application.weddingElsewhere}
@@ -174,7 +209,7 @@ export function BannsPanel({ application, disabled = false, sundayTicks = true, 
                 <SundayLine key={date} date={date} index={i} announced={banns.announced.includes(date)} today={today} />
               )
             )}
-            {!sundayTicks && (
+            {!sundayTicks && banns.sundays.some((d) => !banns.announced.includes(d)) && (
               <li className="text-admin-support text-admin-ink-faint">Tick each Sunday on the Sunday banns list.</li>
             )}
           </ul>
@@ -186,9 +221,19 @@ export function BannsPanel({ application, disabled = false, sundayTicks = true, 
         </p>
       )}
 
-      <AdminButton type="button" variant="secondary" size="sm" onClick={startEditing} disabled={disabled}>
-        Edit banns
-      </AdminButton>
+      <div className="flex flex-wrap items-center gap-2">
+        <AdminButton type="button" variant="secondary" size="sm" onClick={startEditing} disabled={disabled}>
+          Edit banns
+        </AdminButton>
+        {readHere && banns.sundays.length > 0 && (
+          <Link
+            to={`/${parish.slug}/admin/marriage-applications/${encodeURIComponent(application.id)}/banns-poster`}
+            className="inline-flex items-center rounded-[10px] border border-admin-border bg-admin-surface px-3 py-1.5 text-admin-support font-medium text-admin-ink hover:bg-admin-surface-alt"
+          >
+            Banns poster
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
@@ -240,6 +285,8 @@ function PartyPlace({ label, value, onChange }: { label: string; value: string; 
 
 function PartyLine({
   name,
+  address,
+  parents,
   parish,
   received,
   showReceived,
@@ -247,6 +294,8 @@ function PartyLine({
   onReceived,
 }: {
   name: string;
+  address: string;
+  parents: string;
   parish: string;
   received: boolean;
   showReceived: boolean;
@@ -257,6 +306,8 @@ function PartyLine({
     <li>
       <span className="font-semibold">{name}</span>
       <span className="text-admin-ink-muted"> · {parish || "this parish"}</span>
+      {address && <span className="block text-admin-support text-admin-ink-muted">{address}</span>}
+      {parents && <span className="block text-admin-support text-admin-ink-muted">{parents}</span>}
       {parish && showReceived && (
         <label className="mt-1 flex items-center gap-2 text-admin-support text-admin-ink">
           <input type="checkbox" checked={received} disabled={disabled} onChange={(e) => onReceived(e.target.checked)} />
@@ -264,5 +315,61 @@ function PartyLine({
         </label>
       )}
     </li>
+  );
+}
+
+export interface BannsDetails {
+  groomAddress: string;
+  brideAddress: string;
+  parents: BannsParents;
+}
+
+/** Address (barangay and city) and parents, only for the people who live here. */
+export function BannsDetailsFields({
+  people,
+  value,
+  onChange,
+}: {
+  people: BannsParty[];
+  value: BannsDetails;
+  onChange: (value: BannsDetails) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      {people.map((who) => {
+        const label = who === "groom" ? "Groom" : "Bride";
+        const addressKey = who === "groom" ? "groomAddress" : "brideAddress";
+        const fatherKey = who === "groom" ? "groomFather" : "brideFather";
+        const motherKey = who === "groom" ? "groomMother" : "brideMother";
+        const setParent = (key: keyof BannsParents, name: string) =>
+          onChange({ ...value, parents: { ...value.parents, [key]: name } });
+        return (
+          <fieldset key={who} className="space-y-2">
+            {people.length > 1 && <legend className="text-admin-support font-semibold text-admin-ink">{label}</legend>}
+            <AdminInput
+              value={value[addressKey]}
+              onChange={(e) => onChange({ ...value, [addressKey]: e.target.value })}
+              placeholder="Barangay and city, e.g. Brgy. Mabolo, Cebu City"
+              aria-label={`${label}'s barangay and city`}
+            />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <AdminInput
+                value={value.parents[fatherKey]}
+                onChange={(e) => setParent(fatherKey, e.target.value)}
+                placeholder="Father's full name"
+                aria-label={`${label}'s father`}
+              />
+              <AdminInput
+                value={value.parents[motherKey]}
+                onChange={(e) => setParent(motherKey, e.target.value)}
+                placeholder="Mother's full name"
+                aria-label={`${label}'s mother`}
+              />
+            </div>
+          </fieldset>
+        );
+      })}
+      <p className="text-admin-support text-admin-ink-faint">No house number or street: the poster may be posted publicly.</p>
+    </div>
   );
 }

@@ -1,9 +1,11 @@
 # Database migrations
 
 Changes to the database structure live in `server/migrations/` as numbered SQL files
-(`001_create_core_identity.sql` … `028_ledger_books_pages.sql`). The runner in
+(`001_create_core_identity.sql` … `038_marriage_banns.sql`). The runner in
 `server/scripts/migrate.js` applies them in number order and records each one in the
 `schema_migrations` table, so every database can be brought up to date with one command.
+
+What migrations 029–038 changed is listed in [database-changes.md](database-changes.md).
 
 ## Commands
 

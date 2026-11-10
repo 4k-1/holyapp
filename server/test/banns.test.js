@@ -97,12 +97,20 @@ describe('Banns', () => {
       brideLastName: 'Tan',
       weddingParish: 'Sto. Niño, Cebu',
       brideParish: 'Sto. Niño, Cebu',
+      parents: { groomFather: 'Ramon Lim', brideMother: ' Elena Tan ' },
     });
     assert.equal(created.status, 201, JSON.stringify(created.body));
     const entry = created.body.application;
     assert.equal(entry.weddingElsewhere, true);
     assert.equal(entry.banns.sundays.length, 3);
     assert.equal(entry.requirements.length, 0);
+    // Parents are optional and kept for the Certificate of Banns.
+    assert.deepEqual(entry.banns.parents, {
+      groomFather: 'Ramon Lim',
+      groomMother: '',
+      brideFather: '',
+      brideMother: 'Elena Tan',
+    });
 
     const list = await api(parish.staff).get('/marriage-applications');
     assert.ok(!list.body.applications.some((a) => a.id === entry.id));
@@ -150,7 +158,29 @@ describe('Banns', () => {
     // Waived banns need no Sundays.
     assert.ok(!before.some((a) => a.id === application.id));
 
-    assert.equal((await save(fresh.id, { sundays: fresh.bannsSuggestedSundays })).status, 200);
+    const poster = (id) => api(parish.staff).get(`/marriage-applications/${id}/banns-poster`);
+    assert.equal((await poster(fresh.id)).status, 400); // no Sundays yet
+
+    assert.equal(
+      (
+        await save(fresh.id, {
+          sundays: fresh.bannsSuggestedSundays,
+          groomAddress: 'Brgy. Mabolo, Cebu City',
+          onlineConsent: true,
+        })
+      ).status,
+      200
+    );
     assert.ok(!(await unplanned()).some((a) => a.id === fresh.id));
+
+    // The poster: the couple and the parish's contact details for anyone who knows of an impediment.
+    const shown = await poster(fresh.id);
+    assert.equal(shown.status, 200, JSON.stringify(shown.body));
+    assert.equal(shown.body.application.banns.groomAddress, 'Brgy. Mabolo, Cebu City');
+    assert.equal(shown.body.application.banns.brideAddress, '');
+    assert.equal(shown.body.application.banns.onlineConsent, true);
+    assert.ok('contact' in shown.body.parish && 'email' in shown.body.parish);
+    // Waived banns have no poster.
+    assert.equal((await poster(application.id)).status, 400);
   });
 });

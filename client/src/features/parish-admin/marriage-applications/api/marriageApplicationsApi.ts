@@ -190,6 +190,18 @@ export async function getBannsCertificate(
   }
 }
 
+export async function getBannsPoster(
+  id: string
+): Promise<{ application: MarriageApplication; parish: BannsParishHeading }> {
+  try {
+    return await apiFetch<{ application: MarriageApplication; parish: BannsParishHeading }>(
+      `/marriage-applications/${encodeURIComponent(id)}/banns-poster`
+    );
+  } catch (err) {
+    fail(err);
+  }
+}
+
 export async function confirmWeddingDate(applicationId: string): Promise<MarriageApplication> {
   try {
     const data = await apiFetch<{ application: MarriageApplication }>(

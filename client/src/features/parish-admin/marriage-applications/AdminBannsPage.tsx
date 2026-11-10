@@ -3,9 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
-import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import {
+  AdminButton,
+  AdminField,
+  AdminInput,
+} from "@/features/parish-admin/components/AdminForm";
 import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
-import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
+import {
+  AdminPage,
+  AdminPageHeader,
+} from "@/features/parish-admin/components/AdminPageHeader";
 import { askConfirm, notifyError } from "@/lib/notify";
 import {
   createBannsElsewhere,
@@ -15,10 +22,15 @@ import {
   removeBannsElsewhere,
   updateBanns,
 } from "./api/marriageApplicationsApi";
-import { BannsPanel } from "./BannsPanel";
+import {
+  BannsDetailsFields,
+  BannsPanel,
+  type BannsDetails,
+} from "./BannsPanel";
 import {
   addWeeks,
   askingLabel,
+  EMPTY_PARENTS,
   bannsProgress,
   comingSunday,
   longDate,
@@ -26,9 +38,14 @@ import {
   printBannsList,
   shortDate,
   todayISO,
+  type BannsParty,
   type BannsTone,
 } from "./bannsPapers";
-import type { BannsListResponse, BannsPlan, MarriageApplication } from "./types";
+import type {
+  BannsListResponse,
+  BannsPlan,
+  MarriageApplication,
+} from "./types";
 
 const TONE_CLASS: Record<BannsTone, string> = {
   done: "bg-admin-green-100 text-admin-green-700",
@@ -41,7 +58,9 @@ export function AdminBannsPage() {
   const [sunday, setSunday] = useState(thisSunday);
   const [list, setList] = useState<BannsListResponse | null>(null);
   const [listError, setListError] = useState("");
-  const [elsewhere, setElsewhere] = useState<MarriageApplication[] | null>(null);
+  const [elsewhere, setElsewhere] = useState<MarriageApplication[] | null>(
+    null,
+  );
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -54,16 +73,22 @@ export function AdminBannsPage() {
           setList(data);
           setListError("");
         })
-        .catch((err: unknown) => setListError(err instanceof Error ? err.message : "Couldn't load the banns.")),
-    [sunday]
+        .catch((err: unknown) =>
+          setListError(
+            err instanceof Error ? err.message : "Couldn't load the banns.",
+          ),
+        ),
+    [sunday],
   );
 
   const loadElsewhere = useCallback(
     () =>
       listBannsElsewhere()
         .then(setElsewhere)
-        .catch((err: unknown) => notifyError(err, "Couldn't load couples marrying elsewhere.")),
-    []
+        .catch((err: unknown) =>
+          notifyError(err, "Couldn't load couples marrying elsewhere."),
+        ),
+    [],
   );
 
   useEffect(() => {
@@ -87,7 +112,9 @@ export function AdminBannsPage() {
   }
 
   function toggleAnnounced(id: string, banns: BannsPlan, on: boolean) {
-    const announced = on ? [...banns.announced, sunday] : banns.announced.filter((d) => d !== sunday);
+    const announced = on
+      ? [...banns.announced, sunday]
+      : banns.announced.filter((d) => d !== sunday);
     return saveBanns(id, { ...banns, announced });
   }
 
@@ -134,20 +161,27 @@ export function AdminBannsPage() {
       {unplanned.length > 0 && (
         <div className="mb-4 rounded-[var(--radius)] border border-admin-amber-700/25 bg-admin-amber-100 p-5 shadow-[var(--shadow-card)]">
           <h2 className="font-serif text-admin-section font-semibold text-admin-ink">
-            {unplanned.length === 1 ? "1 wedding here has" : `${unplanned.length} weddings here have`} no Sundays
-            planned
+            {unplanned.length === 1
+              ? "1 wedding here has"
+              : `${unplanned.length} weddings here have`}{" "}
+            no Sundays planned
           </h2>
           <ul className="mt-2 divide-y divide-admin-amber-700/15">
             {unplanned.map((a) => {
               const suggested = a.bannsSuggestedSundays;
               return (
-                <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                <li
+                  key={a.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-2.5"
+                >
                   <div className="min-w-0">
                     <p className="text-admin-body font-semibold text-admin-ink">
                       {a.groomName} and {a.brideName}
                     </p>
                     <p className="text-admin-support text-admin-ink-muted">
-                      {a.preferredWeddingDate ? `Wedding ${longDate(a.preferredWeddingDate)} · ` : "No wedding date yet · "}
+                      {a.preferredWeddingDate
+                        ? `Wedding ${longDate(a.preferredWeddingDate)} · `
+                        : "No wedding date yet · "}
                       <Link
                         to={`../${encodeURIComponent(a.id)}`}
                         relative="path"
@@ -162,13 +196,16 @@ export function AdminBannsPage() {
                       type="button"
                       size="sm"
                       disabled={savingId === a.id}
-                      onClick={() => saveBanns(a.id, { ...a.banns, sundays: suggested })}
+                      onClick={() =>
+                        saveBanns(a.id, { ...a.banns, sundays: suggested })
+                      }
                     >
                       Plan {suggested.map(shortDate).join(", ")}
                     </AdminButton>
                   ) : (
                     <p className="max-w-xs text-admin-support text-admin-amber-700">
-                      Fewer than three Sundays left before the wedding. Ask the parish priest about a waiver.
+                      Fewer than three Sundays left before the wedding. Ask the
+                      parish priest about a waiver.
                     </p>
                   )}
                 </li>
@@ -181,8 +218,12 @@ export function AdminBannsPage() {
       <AdminCard className="mb-4 p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Sunday banns list</h2>
-            <p className="text-admin-support text-admin-ink-muted">Read at Mass. Tick each couple once announced.</p>
+            <h2 className="font-serif text-admin-section font-semibold text-admin-ink">
+              Sunday banns list
+            </h2>
+            <p className="text-admin-support text-admin-ink-muted">
+              Read at Mass. Tick each couple once announced.
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center rounded-[10px] border border-admin-border bg-admin-surface">
@@ -207,7 +248,12 @@ export function AdminBannsPage() {
               </button>
             </div>
             {sunday !== thisSunday && (
-              <AdminButton type="button" variant="ghost" size="sm" onClick={() => setSunday(thisSunday)}>
+              <AdminButton
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setSunday(thisSunday)}
+              >
                 This Sunday
               </AdminButton>
             )}
@@ -215,7 +261,9 @@ export function AdminBannsPage() {
               type="button"
               variant="secondary"
               disabled={!list || list.date !== sunday}
-              onClick={() => list && printBannsList(sunday, list.parish, list.couples)}
+              onClick={() =>
+                list && printBannsList(sunday, list.parish, list.couples)
+              }
             >
               Print list
             </AdminButton>
@@ -226,18 +274,25 @@ export function AdminBannsPage() {
         ) : !list ? (
           <p className="text-admin-support text-admin-ink-faint">Loading…</p>
         ) : list.couples.length === 0 ? (
-          <p className="text-admin-body text-admin-ink-muted">No banns on {longDate(sunday)}.</p>
+          <p className="text-admin-body text-admin-ink-muted">
+            No banns on {longDate(sunday)}.
+          </p>
         ) : (
           <ul className="divide-y divide-admin-border">
             {list.couples.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+              <li
+                key={c.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-2.5"
+              >
                 <div className="min-w-0">
                   <p className="text-admin-body font-semibold text-admin-ink">
                     {c.groomName} and {c.brideName}
                   </p>
                   <p className="text-admin-support text-admin-ink-muted">
                     {askingLabel(c.asking)}
-                    {c.weddingElsewhere ? ` · marrying at ${c.weddingParish}` : ""}
+                    {c.weddingElsewhere
+                      ? ` · marrying at ${c.weddingParish}`
+                      : ""}
                     {!c.weddingElsewhere && (
                       <>
                         {" · "}
@@ -252,19 +307,26 @@ export function AdminBannsPage() {
                     )}
                   </p>
                 </div>
-                {sunday > today ? (
-                  <span className="text-admin-support text-admin-ink-faint">Tick after Mass that day</span>
-                ) : (
-                  <label className="flex items-center gap-2 text-admin-body text-admin-ink">
-                    <input
-                      type="checkbox"
-                      checked={c.announced}
-                      disabled={savingId === c.id}
-                      onChange={(e) => toggleAnnounced(c.id, c.banns, e.target.checked)}
-                    />
-                    Announced
-                  </label>
-                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  <PosterLink id={c.id} />
+                  {sunday > today ? (
+                    <span className="text-admin-support text-admin-ink-faint">
+                      Tick after Mass that day
+                    </span>
+                  ) : (
+                    <label className="flex items-center gap-2 text-admin-body text-admin-ink">
+                      <input
+                        type="checkbox"
+                        checked={c.announced}
+                        disabled={savingId === c.id}
+                        onChange={(e) =>
+                          toggleAnnounced(c.id, c.banns, e.target.checked)
+                        }
+                      />
+                      Announced
+                    </label>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -274,10 +336,13 @@ export function AdminBannsPage() {
       <AdminCard className="p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Weddings in other parishes</h2>
+            <h2 className="font-serif text-admin-section font-semibold text-admin-ink">
+              Weddings in other parishes
+            </h2>
             <p className="text-admin-support text-admin-ink-muted">
-              Couples who live here but marry elsewhere. After the third Sunday, sign and stamp the banns form they
-              brought, or print a Certificate of Banns, and give it to the couple.
+              Couples who live here but marry elsewhere. After the third Sunday,
+              sign and stamp the banns form they brought, or print a Certificate
+              of Banns, and give it to the couple.
             </p>
           </div>
           <AdminButton type="button" onClick={() => setAdding(true)}>
@@ -288,15 +353,17 @@ export function AdminBannsPage() {
           <p className="text-admin-support text-admin-ink-faint">Loading…</p>
         ) : elsewhere.length === 0 ? (
           <p className="text-admin-body text-admin-ink-muted">
-            When a couple who live here bring a banns form from the parish where they will marry, add them here. Their
-            names then go on the Sunday list.
+            When a couple who live here bring a banns form from the parish where
+            they will marry, add them here. Their names then go on the Sunday
+            list.
           </p>
         ) : (
           <ul className="divide-y divide-admin-border">
             {elsewhere.map((entry) => {
               const progress = bannsProgress(entry, today);
               const expanded = open === entry.id;
-              const lastSunday = entry.banns.sundays[entry.banns.sundays.length - 1];
+              const lastSunday =
+                entry.banns.sundays[entry.banns.sundays.length - 1];
               return (
                 <li key={entry.id} className="py-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -307,13 +374,17 @@ export function AdminBannsPage() {
                       className="min-w-0 text-left"
                     >
                       <p className="text-admin-body font-semibold text-admin-ink">
-                        <span className="mr-1.5 inline-block w-3 text-admin-ink-faint">{expanded ? "▾" : "▸"}</span>
+                        <span className="mr-1.5 inline-block w-3 text-admin-ink-faint">
+                          {expanded ? "▾" : "▸"}
+                        </span>
                         {entry.groomName} and {entry.brideName}
                       </p>
                       <p className="pl-[18px] text-admin-support text-admin-ink-muted">
                         Marrying at {entry.weddingParish}
-                        {entry.preferredWeddingDate ? ` on ${longDate(entry.preferredWeddingDate)}` : ""} ·{" "}
-                        {entry.referenceNo}
+                        {entry.preferredWeddingDate
+                          ? ` on ${longDate(entry.preferredWeddingDate)}`
+                          : ""}{" "}
+                        · {entry.referenceNo}
                       </p>
                     </button>
                     <div className="flex flex-wrap items-center gap-2">
@@ -322,8 +393,16 @@ export function AdminBannsPage() {
                       >
                         {progress.label}
                       </span>
+                      {!entry.banns.dispensed &&
+                        entry.banns.sundays.length > 0 && (
+                          <PosterLink id={entry.id} />
+                        )}
                       {entry.bannsComplete && !entry.banns.dispensed && (
-                        <AdminButton type="button" size="sm" onClick={() => printCertificate(entry.id)}>
+                        <AdminButton
+                          type="button"
+                          size="sm"
+                          onClick={() => printCertificate(entry.id)}
+                        >
                           Print Certificate of Banns
                         </AdminButton>
                       )}
@@ -386,7 +465,13 @@ const LIVES_HERE: { value: LivesHere; label: string }[] = [
   { value: "bride", label: "Only the bride" },
 ];
 
-function AddCoupleModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
+function AddCoupleModal({
+  onClose,
+  onAdded,
+}: {
+  onClose: () => void;
+  onAdded: () => void;
+}) {
   const [form, setForm] = useState({
     groomFirstName: "",
     groomLastName: "",
@@ -397,18 +482,31 @@ function AddCoupleModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
     otherParish: "",
   });
   const [livesHere, setLivesHere] = useState<LivesHere>("both");
+  const [details, setDetails] = useState<BannsDetails>({
+    groomAddress: "",
+    brideAddress: "",
+    parents: EMPTY_PARENTS,
+  });
+  const [showDetails, setShowDetails] = useState(false);
+  const people: BannsParty[] =
+    livesHere === "both" ? ["groom", "bride"] : [livesHere];
+  const detailsLabel =
+    livesHere === "both"
+      ? "Addresses and parents"
+      : `The ${livesHere}'s address and parents`;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  const set =
+    (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((prev) => ({ ...prev, [key]: e.target.value }));
   const otherParish = form.otherParish.trim();
   const canSave = Boolean(
     form.groomFirstName.trim() &&
-      form.groomLastName.trim() &&
-      form.brideFirstName.trim() &&
-      form.brideLastName.trim() &&
-      form.weddingParish.trim() &&
-      (livesHere === "both" || otherParish)
+    form.groomLastName.trim() &&
+    form.brideFirstName.trim() &&
+    form.brideLastName.trim() &&
+    form.weddingParish.trim() &&
+    (livesHere === "both" || otherParish),
   );
 
   function chooseLivesHere(value: LivesHere) {
@@ -433,10 +531,14 @@ function AddCoupleModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
         weddingDate: form.weddingDate || undefined,
         groomParish: livesHere === "bride" ? otherParish : "",
         brideParish: livesHere === "groom" ? otherParish : "",
+        // Only the people who live here keep an address and parents.
+        ...onlyFor(people, details),
       });
       onAdded();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't add this couple.");
+      setError(
+        err instanceof Error ? err.message : "Couldn't add this couple.",
+      );
     } finally {
       setSaving(false);
     }
@@ -449,7 +551,9 @@ function AddCoupleModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
       panelClassName="max-w-[560px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
     >
       <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
-        <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Banns for a wedding elsewhere</h3>
+        <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
+          Banns for a wedding elsewhere
+        </h3>
         <button
           onClick={onClose}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
@@ -461,26 +565,50 @@ function AddCoupleModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
       <div className="space-y-3 px-6 py-5">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <AdminField label="Groom's first name" className="mb-0">
-            <AdminInput value={form.groomFirstName} onChange={set("groomFirstName")} />
+            <AdminInput
+              value={form.groomFirstName}
+              onChange={set("groomFirstName")}
+            />
           </AdminField>
           <AdminField label="Groom's last name" className="mb-0">
-            <AdminInput value={form.groomLastName} onChange={set("groomLastName")} />
+            <AdminInput
+              value={form.groomLastName}
+              onChange={set("groomLastName")}
+            />
           </AdminField>
           <AdminField label="Bride's first name" className="mb-0">
-            <AdminInput value={form.brideFirstName} onChange={set("brideFirstName")} />
+            <AdminInput
+              value={form.brideFirstName}
+              onChange={set("brideFirstName")}
+            />
           </AdminField>
           <AdminField label="Bride's last name" className="mb-0">
-            <AdminInput value={form.brideLastName} onChange={set("brideLastName")} />
+            <AdminInput
+              value={form.brideLastName}
+              onChange={set("brideLastName")}
+            />
           </AdminField>
           <AdminField label="Parish of the wedding" className="mb-0">
-            <AdminInput value={form.weddingParish} onChange={set("weddingParish")} placeholder="e.g. San Roque Parish, Mandaue" />
+            <AdminInput
+              value={form.weddingParish}
+              onChange={set("weddingParish")}
+              placeholder="e.g. San Roque Parish, Mandaue"
+            />
           </AdminField>
           <AdminField label="Wedding date (if known)" className="mb-0">
-            <AdminInput type="date" value={form.weddingDate} onChange={set("weddingDate")} />
+            <AdminInput
+              type="date"
+              value={form.weddingDate}
+              onChange={set("weddingDate")}
+            />
           </AdminField>
         </div>
         <AdminField label="Who lives in this parish?" className="mb-0">
-          <div role="radiogroup" aria-label="Who lives in this parish?" className="grid grid-cols-3 gap-1.5">
+          <div
+            role="radiogroup"
+            aria-label="Who lives in this parish?"
+            className="grid grid-cols-3 gap-1.5"
+          >
             {LIVES_HERE.map((option) => {
               const selected = livesHere === option.value;
               return (
@@ -503,14 +631,50 @@ function AddCoupleModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
           </div>
         </AdminField>
         {livesHere !== "both" && (
-          <AdminField label={`The ${livesHere === "groom" ? "bride" : "groom"}'s parish`} className="mb-0">
-            <AdminInput value={form.otherParish} onChange={set("otherParish")} placeholder="Name of that parish" />
+          <AdminField
+            label={`The ${livesHere === "groom" ? "bride" : "groom"}'s parish`}
+            className="mb-0"
+          >
+            <AdminInput
+              value={form.otherParish}
+              onChange={set("otherParish")}
+              placeholder="Name of that parish"
+            />
           </AdminField>
         )}
+        {showDetails ? (
+          <div className="space-y-2 border-t border-admin-border pt-3">
+            <p className="text-admin-support font-semibold text-admin-ink">
+              {detailsLabel}{" "}
+              <span className="font-normal text-admin-ink-muted">
+                (optional, for the poster and certificate)
+              </span>
+            </p>
+            <BannsDetailsFields
+              people={people}
+              value={details}
+              onChange={setDetails}
+            />
+          </div>
+        ) : (
+          <AdminButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowDetails(true)}
+          >
+            + {detailsLabel} (optional)
+          </AdminButton>
+        )}
         <p className="text-admin-support text-admin-ink-muted">
-          The next three Sundays{form.weddingDate ? " before the wedding" : ""} are planned; you can change them after.
+          The next three Sundays{form.weddingDate ? " before the wedding" : ""}{" "}
+          are planned; you can change them after.
         </p>
-        {error && <p className="text-admin-support font-semibold text-red-700">{error}</p>}
+        {error && (
+          <p className="text-admin-support font-semibold text-red-700">
+            {error}
+          </p>
+        )}
       </div>
       <div className="flex justify-end gap-2.5 border-t border-admin-border px-6 py-4">
         <AdminButton variant="secondary" onClick={onClose} disabled={saving}>
@@ -521,5 +685,35 @@ function AddCoupleModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
         </AdminButton>
       </div>
     </AdminModalFrame>
+  );
+}
+
+/** Drops the address and parents of anyone who lives in another parish. */
+function onlyFor(people: BannsParty[], details: BannsDetails) {
+  const keep = (who: BannsParty, v: string) =>
+    people.includes(who) ? v.trim() : "";
+  const p = details.parents;
+  return {
+    groomAddress: keep("groom", details.groomAddress),
+    brideAddress: keep("bride", details.brideAddress),
+    parents: {
+      groomFather: keep("groom", p.groomFather),
+      groomMother: keep("groom", p.groomMother),
+      brideFather: keep("bride", p.brideFather),
+      brideMother: keep("bride", p.brideMother),
+    },
+  };
+}
+
+/** Opens the couple's banns poster, to print or post. */
+function PosterLink({ id }: { id: string }) {
+  return (
+    <Link
+      to={`../${encodeURIComponent(id)}/banns-poster`}
+      relative="path"
+      className="inline-flex items-center rounded-[10px] border border-admin-border bg-admin-surface px-3 py-1.5 text-admin-support font-medium text-admin-ink hover:bg-admin-surface-alt"
+    >
+      Poster
+    </Link>
   );
 }

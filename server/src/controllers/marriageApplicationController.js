@@ -505,6 +505,10 @@ async function createBannsElsewhere(req, res) {
     const plan = banns.normalizeBanns({
       groomParish: body.groomParish,
       brideParish: body.brideParish,
+      parents: body.parents,
+      groomAddress: body.groomAddress,
+      brideAddress: body.brideAddress,
+      onlineConsent: body.onlineConsent,
       sundays: banns.suggestSundays(weddingDate),
     });
     banns.checkBanns(plan, { weddingDate, elsewhere: true });
@@ -616,7 +620,7 @@ async function bannsList(req, res) {
 /** The parish name, address, diocese and patron, and who signs, for printed banns papers. */
 async function loadParishHeading(parishId) {
   const result = await pool.query(
-    `SELECT p.name, p.address, s.patron, s.diocese, c.signatory_name, c.signatory_title
+    `SELECT p.name, p.address, p.contact, p.email, s.patron, s.diocese, c.signatory_name, c.signatory_title
      FROM parish p
      LEFT JOIN parish_settings s ON s.parish_id = p.id
      LEFT JOIN certificate_configuration c ON c.parish_id = p.id AND c.certificate_type = 'marriage'
@@ -629,9 +633,27 @@ async function loadParishHeading(parishId) {
     address: row.address || '',
     patron: row.patron || '',
     diocese: row.diocese || '',
+    contact: row.contact || '',
+    email: row.email || '',
     signatoryName: row.signatory_name || '',
     signatoryTitle: row.signatory_title || 'Parish Priest',
   };
+}
+
+/** What the banns poster shows: one couple, for the bulletin board or the parish's Facebook page. */
+async function bannsPoster(req, res) {
+  try {
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row || row.status === 'rejected') return res.status(404).json({ error: 'Application not found.' });
+    const plan = banns.normalizeBanns(row.banns);
+    if (plan.dispensed) throw httpError(400, 'The banns were waived, so there is nothing to announce.');
+    if (!banns.announcedHere(plan)) throw httpError(400, 'These banns are announced in other parishes, not here.');
+    if (plan.sundays.length === 0) throw httpError(400, 'Plan the Sundays first.');
+    const [application, parish] = await Promise.all([hydrate(row), loadParishHeading(req.parishId)]);
+    res.json({ application, parish });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
 }
 
 /** What the Certificate of Banns prints, once all three Sundays are announced (wedding elsewhere). */
@@ -868,4 +890,5 @@ module.exports = {
   removeBannsElsewhere,
   bannsList,
   bannsCertificate,
+  bannsPoster,
 };

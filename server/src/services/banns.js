@@ -3,8 +3,11 @@
 // form is signed and stamped there and the couple brings it back. The bishop may waive the banns.
 //
 // Kept on the marriage application as one JSON value:
-// { groomParish, brideParish, sundays, announced, received: { groom, bride }, dispensed }
+// { groomParish, brideParish, sundays, announced, received: { groom, bride }, dispensed, parents }
 // `received`: that person's banns form came back signed and stamped from their parish.
+// `parents`: { groomFather, groomMother, brideFather, brideMother }, optional, for the Certificate of Banns.
+// `groomAddress`, `brideAddress`: barangay and city only, optional, for the banns poster.
+// `onlineConsent`: the couple agreed to have their banns poster shared online.
 // An empty parish means that person lives here. A couple marrying in another parish who need the banns
 // announced here is a marriage application with wedding_elsewhere set.
 
@@ -42,6 +45,15 @@ function normalizeBanns(raw) {
     announced: dateList(b.announced),
     received: { groom: b.received?.groom === true, bride: b.received?.bride === true },
     dispensed: b.dispensed === true,
+    groomAddress: text(b.groomAddress),
+    brideAddress: text(b.brideAddress),
+    onlineConsent: b.onlineConsent === true,
+    parents: {
+      groomFather: text(b.parents?.groomFather),
+      groomMother: text(b.parents?.groomMother),
+      brideFather: text(b.parents?.brideFather),
+      brideMother: text(b.parents?.brideMother),
+    },
   };
 }
 

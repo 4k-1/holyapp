@@ -26,6 +26,7 @@ import { AdminMassIntentionsPage } from "@/features/parish-admin/intentions/Admi
 import { AdminMarriageApplicationsPage } from "@/features/parish-admin/marriage-applications/AdminMarriageApplicationsPage";
 import { AdminMarriageApplicationDetailPage } from "@/features/parish-admin/marriage-applications/AdminMarriageApplicationDetailPage";
 import { AdminBannsPage } from "@/features/parish-admin/marriage-applications/AdminBannsPage";
+import { AdminBannsPosterPage } from "@/features/parish-admin/marriage-applications/AdminBannsPosterPage";
 import { AdminNotificationsPage } from "@/features/parish-admin/notifications/AdminNotificationsPage";
 import { AdminReportsLayout } from "@/features/parish-admin/reports/AdminReportsLayout";
 import { AdminReportPage } from "@/features/parish-admin/reports/AdminReportPage";
@@ -103,6 +104,7 @@ export const parishAdminRoutes: RouteObject[] = [
       { path: "marriage-applications", element: <AdminMarriageApplicationsPage /> },
       { path: "marriage-applications/banns", element: <AdminBannsPage /> },
       { path: "marriage-applications/:applicationId", element: <AdminMarriageApplicationDetailPage /> },
+      { path: "marriage-applications/:applicationId/banns-poster", element: <AdminBannsPosterPage /> },
       {
         path: "schedule",
         element: <AdminSchedulePage />,

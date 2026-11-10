@@ -114,6 +114,20 @@ export interface BannsPlan {
   received: { groom: boolean; bride: boolean };
   /** The bishop waived the banns. */
   dispensed: boolean;
+  /** Optional, printed on the Certificate of Banns and the banns poster. */
+  parents: BannsParents;
+  /** Barangay and city only, for the banns poster. */
+  groomAddress: string;
+  brideAddress: string;
+  /** The couple agreed to have their banns poster shared online. */
+  onlineConsent: boolean;
+}
+
+export interface BannsParents {
+  groomFather: string;
+  groomMother: string;
+  brideFather: string;
+  brideMother: string;
 }
 
 /** A couple on one Sunday's banns list, with the time of asking. */
@@ -136,6 +150,9 @@ export interface BannsParishHeading {
   address: string;
   patron: string;
   diocese: string;
+  /** The parish office phone and email, for anyone who knows of an impediment. */
+  contact: string;
+  email: string;
   signatoryName: string;
   signatoryTitle: string;
 }
@@ -153,6 +170,9 @@ export interface CreateBannsElsewhereInput {
   groomParish: string;
   /** Empty when the bride lives here. */
   brideParish: string;
+  parents?: BannsParents;
+  groomAddress?: string;
+  brideAddress?: string;
 }
 
 export interface CreateMarriageApplicationInput {
