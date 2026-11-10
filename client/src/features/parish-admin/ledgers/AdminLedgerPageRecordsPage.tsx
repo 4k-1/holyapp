@@ -138,7 +138,7 @@ export function AdminLedgerPageRecordsPage() {
       </header>
 
       {error && (
-        <p className="mb-4 rounded-[12px] border border-[#E3C3BC] bg-admin-red-100 px-4 py-2.5 text-admin-support text-admin-red-700" role="alert">
+        <p className="mb-4 rounded-lg border border-[#E3C3BC] bg-admin-red-100 px-4 py-2.5 text-admin-support text-admin-red-700" role="alert">
           {error}
         </p>
       )}
@@ -149,7 +149,7 @@ export function AdminLedgerPageRecordsPage() {
             parishId={parish.id}
             pageId={page.id}
             alt={ledgerPageAlt(book, page)}
-            className="max-h-[26rem] min-h-[12rem] w-full rounded-[10px] bg-[#f4efe6] object-contain"
+            className="max-h-[26rem] min-h-[12rem] w-full rounded-md bg-[#f4efe6] object-contain"
           />
           <div className="flex flex-col justify-center gap-3">
             {notBaptism ? (
@@ -177,7 +177,7 @@ export function AdminLedgerPageRecordsPage() {
       ) : (
         <>
           {layoutWarning && (
-            <p className="mb-4 rounded-[12px] border border-[#e8b45a] bg-[var(--dash-amber-soft)] px-4 py-2.5 text-admin-support text-[var(--dash-amber)]">
+            <p className="mb-4 rounded-lg border border-[#e8b45a] bg-[var(--dash-amber-soft)] px-4 py-2.5 text-admin-support text-[var(--dash-amber)]">
               {layoutWarning}
             </p>
           )}

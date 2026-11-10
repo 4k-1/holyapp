@@ -65,7 +65,7 @@ export function RecordFormShell({
         <form
           id={formId}
           onSubmit={onSubmit}
-          className="rounded-2xl border border-admin-border bg-admin-surface px-5 shadow-[0_1px_2px_rgb(14_59_70/0.04)] sm:px-8"
+          className="rounded-lg border border-admin-border bg-admin-surface px-5 shadow-[0_1px_2px_rgb(14_59_70/0.04)] sm:px-8"
         >
           {children}
         </form>

@@ -3,15 +3,22 @@ import { daysInMonth, toISO } from "../scheduleHelpers";
 import { EVENT_TYPE_STYLES } from "@/features/parish-admin/schedule/eventTypeStyles";
 import type { LiturgicalDay, ScheduleOccurrence } from "../types";
 
-/** Liturgical colour of each season, as a thin bar under the day number. */
-const SEASON_BAR: Record<LiturgicalDay["season"], string> = {
-  advent: "bg-violet-400",
-  christmas: "bg-admin-gold-600",
-  lent: "bg-violet-400",
-  triduum: "bg-red-400",
-  easter: "bg-admin-gold-600",
-  ordinary: "bg-admin-green-600/40",
-};
+/**
+ * The month's season, said once beside the month name: "Ordinary Time", or
+ * "Ordinary Time → Advent from Nov 29" when it changes during the month.
+ */
+function monthSeasons(year: number, month: number, days: number, calendar: Record<string, LiturgicalDay>) {
+  const parts: string[] = [];
+  let current = "";
+  for (let d = 1; d <= days; d++) {
+    const label = calendar[toISO(new Date(year, month, d))]?.seasonLabel;
+    if (!label || label === current) continue;
+    const from = new Date(year, month, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    parts.push(current ? `${label} from ${from}` : label);
+    current = label;
+  }
+  return parts.join(" → ");
+}
 
 /** Holy Week and Lent days worth naming in a day cell, by how their full title starts. */
 const SHORT_TITLES = ["Ash Wednesday", "Palm Sunday", "Holy Thursday", "Good Friday", "Holy Saturday"];
@@ -63,6 +70,7 @@ export function MonthCalendarGrid({
   const firstDow = new Date(year, month, 1).getDay();
   const prevDays = daysInMonth(year, month - 1);
   const monthName = cursor.toLocaleDateString("en-US", { month: "long" });
+  const seasons = monthSeasons(year, month, days, calendar);
 
   type Cell = { num: number; dateStr?: string; muted?: boolean };
   const cells: Cell[] = [];
@@ -74,9 +82,12 @@ export function MonthCalendarGrid({
   return (
     <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-md">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-admin-border px-5 py-4">
-        <h2 className="text-[1.5rem] font-semibold leading-none tracking-[-0.01em] text-admin-ink" aria-live="polite">
-          {monthName} <span className="font-normal text-admin-ink-muted">{year}</span>
-        </h2>
+        <div aria-live="polite">
+          <h2 className="text-[1.5rem] font-semibold leading-none tracking-[-0.01em] text-admin-ink">
+            {monthName} <span className="font-normal text-admin-ink-muted">{year}</span>
+          </h2>
+          {seasons && <p className="mt-1.5 text-admin-support text-admin-ink-muted">{seasons}</p>}
+        </div>
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -143,13 +154,6 @@ export function MonthCalendarGrid({
                   >
                     {c.num}
                   </span>
-                  {liturgical && (
-                    <span
-                      className={`h-1 w-3 shrink-0 rounded-full ${SEASON_BAR[liturgical.season]}`}
-                      title={liturgical.seasonLabel}
-                      aria-hidden="true"
-                    />
-                  )}
                 </div>
                 {label && (
                   <span

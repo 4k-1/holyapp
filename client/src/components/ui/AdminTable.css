@@ -1,6 +1,6 @@
 /* Admin data table in the Healix style: white header, roomy rows, soft hover. */
 .admin-table {
-  --at-radius: 16px;
+  --at-radius: 8px;
   --at-ink: #15323a;
   --at-muted: #55707a;
   --at-faint: #8ba1a7;
@@ -138,7 +138,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  border-radius: 10px;
+  border-radius: 6px;
   border: 1px solid var(--at-border);
   background: #ffffff;
   padding: 0.35rem 0.8rem;

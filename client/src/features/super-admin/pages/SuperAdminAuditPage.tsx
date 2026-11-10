@@ -35,7 +35,7 @@ export function SuperAdminAuditPage() {
   const activityLabel = ACTIVITY.find((a) => a.id === activity)?.label ?? "All Activity";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface">
+    <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-admin-border px-[18px] py-4">
         <div>
           <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">System Audit Log</h2>

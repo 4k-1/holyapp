@@ -82,7 +82,7 @@ export function AdminLedgerBookPage() {
           </p>
         </div>
         {canUpload && (
-          <AdminButton onClick={() => setUploadOpen(true)} className="!rounded-[10px]">
+          <AdminButton onClick={() => setUploadOpen(true)} className="!rounded-md">
             Upload pages
           </AdminButton>
         )}

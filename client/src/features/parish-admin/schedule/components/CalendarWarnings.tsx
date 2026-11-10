@@ -15,7 +15,7 @@ export function CalendarWarningNotice({
   return (
     <div
       role="status"
-      className="rounded-[10px] border border-admin-gold-600/30 bg-admin-gold-100 px-3.5 py-3 text-admin-support text-admin-gold-700"
+      className="rounded-md border border-admin-gold-600/30 bg-admin-gold-100 px-3.5 py-3 text-admin-support text-admin-gold-700"
     >
       <ul className="space-y-1">
         {warnings.map((w) => (

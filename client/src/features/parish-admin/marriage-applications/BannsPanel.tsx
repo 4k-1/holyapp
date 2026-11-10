@@ -228,7 +228,7 @@ export function BannsPanel({ application, disabled = false, sundayTicks = true, 
         {readHere && banns.sundays.length > 0 && (
           <Link
             to={`/${parish.slug}/admin/marriage-applications/${encodeURIComponent(application.id)}/banns-poster`}
-            className="inline-flex items-center rounded-[10px] border border-admin-border bg-admin-surface px-3 py-1.5 text-admin-support font-medium text-admin-ink hover:bg-admin-surface-alt"
+            className="inline-flex items-center rounded-md border border-admin-border bg-admin-surface px-3 py-1.5 text-admin-support font-medium text-admin-ink hover:bg-admin-surface-alt"
           >
             Banns poster
           </Link>

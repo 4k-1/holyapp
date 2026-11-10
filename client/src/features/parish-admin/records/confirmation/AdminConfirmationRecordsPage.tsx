@@ -1,3 +1,4 @@
+import { formatTableDate } from "@/lib/dates";
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
@@ -10,7 +11,6 @@ import {
   confirmationRecordRef,
   emptyConfirmationSearchCriteria,
   filterConfirmationRecords,
-  formatRecordDate,
   recordFatherName,
   recordFullName,
   recordMotherName,
@@ -44,19 +44,19 @@ export function AdminConfirmationRecordsPage() {
       key: "dateOfConfirmation",
       header: "Conf. date",
       sortValue: (r) => r.dateOfConfirmation,
-      render: (r) => formatRecordDate(r.dateOfConfirmation),
+      render: (r) => formatTableDate(r.dateOfConfirmation),
     },
     {
       key: "dateOfBirth",
       header: "Birthdate",
       sortValue: (r) => r.dateOfBirth,
-      render: (r) => (r.dateOfBirth ? formatRecordDate(r.dateOfBirth) : "—"),
+      render: (r) => formatTableDate(r.dateOfBirth),
     },
     { key: "mother", header: "Mother", sortValue: (r) => recordMotherName(r), render: (r) => recordMotherName(r) || "—" },
     { key: "father", header: "Father", sortValue: (r) => recordFatherName(r), render: (r) => recordFatherName(r) || "—" },
     {
       key: "actions",
-      header: "",
+      header: "Actions",
       render: (r) => (
         <Link to={encodeURIComponent(r.id)} className="admin-table__action">
           View
@@ -142,6 +142,7 @@ export function AdminConfirmationRecordsPage() {
       <AdminTable
         loading={loading}
         pageKey="records"
+        defaultSort={{ key: "dateOfConfirmation", dir: "desc" }}
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}

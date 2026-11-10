@@ -147,7 +147,7 @@ function SidebarLink({
       end={end}
       data-label={label}
       className={({ isActive }) =>
-        `group relative mb-1 flex h-11 items-center gap-3 whitespace-nowrap rounded-[10px] text-[0.9375rem] font-medium transition-colors duration-100 ${
+        `group relative mb-1 flex h-11 items-center gap-3 whitespace-nowrap rounded-md text-[0.9375rem] font-medium transition-colors duration-100 ${
           collapsed ? "justify-center px-0" : "px-3"
         } ${
           isActive
@@ -173,7 +173,7 @@ function SidebarLink({
           )}
 
           {collapsed && (
-            <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[100] -translate-y-1/2 whitespace-nowrap rounded-[7px] bg-admin-ink px-2.5 py-[5px] text-xs font-semibold text-white opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-opacity duration-100 group-hover:opacity-100">
+            <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[100] -translate-y-1/2 whitespace-nowrap rounded-md bg-admin-ink px-2.5 py-[5px] text-xs font-semibold text-white opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-opacity duration-100 group-hover:opacity-100">
               {label}
             </span>
           )}
@@ -211,7 +211,7 @@ function SidebarGroup({
 
   const activeClass = collapsed ? "bg-admin-green-050 text-admin-green-900" : "text-admin-green-900";
   const idleClass = "text-admin-ink-muted hover:bg-admin-surface-alt hover:text-admin-green-900";
-  const baseClass = `group relative mb-1 flex h-11 w-full items-center gap-3 whitespace-nowrap rounded-[10px] text-[0.9375rem] font-medium transition-colors duration-100 ${
+  const baseClass = `group relative mb-1 flex h-11 w-full items-center gap-3 whitespace-nowrap rounded-md text-[0.9375rem] font-medium transition-colors duration-100 ${
     collapsed ? "justify-center px-0" : "px-3"
   }`;
 
@@ -227,7 +227,7 @@ function SidebarGroup({
           <span className={`flex h-5 w-5 shrink-0 [&>svg]:h-full [&>svg]:w-full ${active ? "text-admin-green-700" : "opacity-80"}`}>
             {icon}
           </span>
-          <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[100] -translate-y-1/2 whitespace-nowrap rounded-[7px] bg-admin-ink px-2.5 py-[5px] text-xs font-semibold text-white opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-opacity duration-100 group-hover:opacity-100">
+          <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[100] -translate-y-1/2 whitespace-nowrap rounded-md bg-admin-ink px-2.5 py-[5px] text-xs font-semibold text-white opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-opacity duration-100 group-hover:opacity-100">
             {label}
           </span>
         </NavLink>
@@ -263,7 +263,7 @@ function SidebarSubLink({ to, label }: { to: string; label: string }) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `mb-0.5 block rounded-[10px] px-3 py-2 text-[0.875rem] transition-colors duration-100 ${
+        `mb-0.5 block rounded-md px-3 py-2 text-[0.875rem] transition-colors duration-100 ${
           isActive
             ? "bg-admin-green-050 font-semibold text-admin-green-900"
             : "text-admin-ink-muted hover:bg-admin-surface-alt hover:text-admin-green-900"

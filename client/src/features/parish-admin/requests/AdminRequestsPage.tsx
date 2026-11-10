@@ -1,3 +1,4 @@
+import { formatTableDate } from "@/lib/dates";
 import { useMemo, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
@@ -121,21 +122,21 @@ export function AdminRequestsPage() {
       <button
         type="button"
         onClick={() => setDetailRequestId(r.id)}
-        className="whitespace-nowrap text-left font-mono text-[0.8125rem] font-medium text-admin-ink hover:text-admin-green-700 hover:underline"
+        className="whitespace-nowrap text-left font-semibold text-admin-ink hover:text-admin-green-700 hover:underline"
       >
         {r.referenceNo}
       </button>
     ) },
     {
       key: "requestedBy",
-      header: "Request by",
+      header: "Requested by",
       sortValue: (r) => r.details?.subjectName ?? r.requesterId,
       render: (r) => (
         <span>
           {r.details?.subjectName ?? r.requesterId}
           {r.origin === "walkin" && (
-            <span className="ml-2 inline-flex items-center rounded-full bg-admin-surface-alt px-2 py-0.5 text-admin-label font-semibold text-admin-ink-muted">
-              Walk-in
+            <span className="ml-2">
+              <AdminBadge tone="muted">Walk-in</AdminBadge>
             </span>
           )}
         </span>
@@ -145,20 +146,17 @@ export function AdminRequestsPage() {
       key: "requestDate",
       header: "Request date",
       sortValue: (r) => r.createdAt,
-      render: (r) =>
-        new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      render: (r) => formatTableDate(r.createdAt),
     },
     {
       key: "type",
       header: "Type",
       sortValue: (r) => sacramentLabels[r.sacramentType],
       render: (r) => (
-        <span className="inline-flex items-center rounded-full bg-admin-surface-alt px-2.5 py-1 text-admin-label font-semibold text-admin-ink-muted">
-          {sacramentLabels[r.sacramentType]}
-        </span>
+<AdminBadge tone="muted">{sacramentLabels[r.sacramentType]}</AdminBadge>
       ),
     },
-    { key: "delivery", header: "Delivery", render: (r) => <AdminDeliveryTag method={r.deliveryMethod} /> },
+    { key: "delivery", header: "Delivery", sortValue: (r) => r.deliveryMethod, render: (r) => <AdminDeliveryTag method={r.deliveryMethod} /> },
     {
       key: "status",
       header: "Status",

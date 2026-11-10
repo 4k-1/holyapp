@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
+import { useOpenFromLink } from "@/features/parish-admin/components/useOpenFromLink";
 import { AdminFilterBar, QuickSelect } from "@/components/ui/AdminFilterBar";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
@@ -88,7 +89,8 @@ function WarningIcon() {
 export function AdminMarriageApplicationsPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
+  // The dashboard's "New marriage application" opens the walk-in form straight away.
+  const [createOpen, setCreateOpen] = useState(useOpenFromLink("application"));
   const { data: applications = [], loading, refetch } = useAsync(() => listMarriageApplications(), []);
 
   const counts = useMemo(() => {
@@ -109,13 +111,13 @@ export function AdminMarriageApplicationsPage() {
     {
       key: "couple",
       header: "Couple",
-      sortValue: (row) => `${row.brideName} ${row.groomName}`,
+      sortValue: (row) => `${row.groomName} ${row.brideName}`,
       render: (row) => (
         <Link
           to={encodeURIComponent(row.id)}
           className="font-medium text-admin-ink hover:text-admin-green-700 hover:underline"
         >
-          {row.brideName} & {row.groomName}
+          {row.groomName} & {row.brideName}
         </Link>
       ),
     },
@@ -128,7 +130,7 @@ export function AdminMarriageApplicationsPage() {
         return date ? (
           <span className="whitespace-nowrap">{formatWeddingDate(date, "short")}</span>
         ) : (
-          <span className="text-admin-ink-muted">Not set</span>
+          <span className="text-admin-ink-muted">—</span>
         );
       },
     },
@@ -145,6 +147,7 @@ export function AdminMarriageApplicationsPage() {
     {
       key: "flag",
       header: "Flag",
+      sortValue: (row) => flagFor(row)?.text ?? null,
       render: (row) => {
         const flag = flagFor(row);
         return flag ? (

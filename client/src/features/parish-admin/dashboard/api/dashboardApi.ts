@@ -5,7 +5,6 @@ import type {
   AttentionItem,
   DashboardStat,
   DotTone,
-  QuickAction,
   TodayMass,
   UpcomingEvent,
 } from "../types";
@@ -39,20 +38,12 @@ interface DashboardResponse {
 export interface DashboardView {
   attention: AttentionItem[];
   stats: DashboardStat[];
-  quickActions: QuickAction[];
   todayMasses: TodayMass[];
   activity: ActivityItem[];
   upcoming: UpcomingEvent[];
 }
 
 /** Links, not data: where the header and shortcut buttons go. */
-const QUICK_ACTIONS: QuickAction[] = [
-  { id: "qa1", icon: "plus", label: "Add a record", href: "records/baptismal" },
-  { id: "qa2", icon: "file", label: "Generate a certificate", href: "records/baptismal" },
-  { id: "qa3", icon: "chart", label: "View reports", href: "reports/sacraments" },
-  { id: "qa4", icon: "scan", label: "Browse digitized ledgers", href: "records/ledgers" },
-];
-
 function timeAgo(iso: string) {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
   if (minutes < 1) return "just now";
@@ -142,7 +133,6 @@ export async function getDashboardView(): Promise<DashboardView> {
           : "All recorded",
       },
     ],
-    quickActions: QUICK_ACTIONS,
     todayMasses: (today?.items ?? [])
       .filter((item) => item.type === "mass")
       .map((item) => ({ id: item.id, time: item.start, priest: item.assignee })),

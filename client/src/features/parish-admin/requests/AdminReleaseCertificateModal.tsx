@@ -144,7 +144,7 @@ export function AdminReleaseCertificateModal({
               </span>
             </div>
 
-            <div className="mb-4 rounded-[10px] border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
+            <div className="mb-4 rounded-md border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
               <p className="text-admin-body font-semibold text-admin-green-900">{registerName}</p>
               <p className="mt-0.5 text-admin-support text-admin-ink-muted">
                 {sacramentCertTitles[request.sacramentType]} · {registerRef}
@@ -196,7 +196,7 @@ export function AdminReleaseCertificateModal({
             )}
 
             {ENABLE_PRINT_RECEIPT && (
-              <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-admin-border bg-admin-surface-alt px-3.5 py-3">
+              <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-3">
                 <input
                   type="checkbox"
                   checked={printOnRelease}
@@ -209,7 +209,7 @@ export function AdminReleaseCertificateModal({
               </label>
             )}
 
-            <label className="flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-admin-border bg-admin-surface-alt px-3.5 py-3">
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-3">
               <input
                 type="checkbox"
                 checked={confirmed}

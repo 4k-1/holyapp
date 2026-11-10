@@ -142,7 +142,7 @@ export function AdminStaffPage() {
   if (canManage) {
     columns.push({
       key: "actions",
-      header: "",
+      header: "Actions",
       className: "w-12 text-right",
       render: (p) => (
         <AdminRowActions

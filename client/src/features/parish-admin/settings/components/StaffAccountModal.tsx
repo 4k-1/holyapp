@@ -8,7 +8,7 @@ import type { NewStaffInput, StaffAccessRole, StaffAccount, StaffRole } from "..
 import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
 const selectClass =
-  "w-full rounded-[7px] border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
+  "w-full rounded-md border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -210,7 +210,7 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
         </AdminField>
 
         {accessChanged && (
-          <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">
+          <div className="rounded-md border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">
             <p className="font-semibold">
               {account!.accessRole === "admin" ? "Admin" : "Staff"} access{" "}
               <span className="opacity-70">→</span> {accessRole === "admin" ? "Admin" : "Staff"} access

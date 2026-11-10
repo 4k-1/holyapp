@@ -102,14 +102,14 @@ export function DayAgendaSidebar({
           </div>
         )}
         {massTimes.length > 0 && (
-          <div className="mb-4 rounded-[10px] bg-admin-green-050 px-3.5 py-2.5">
+          <div className="mb-4 rounded-md bg-admin-green-050 px-3.5 py-2.5">
             <p className="text-admin-label font-semibold text-admin-green-900">Regular Masses</p>
             <p className="mt-0.5 text-admin-body tabular-nums text-admin-ink">{massTimes.join(" · ")}</p>
           </div>
         )}
 
         {occurrences.length === 0 ? (
-          <div className="rounded-[10px] border border-dashed border-admin-border-strong px-4 py-8 text-center">
+          <div className="rounded-md border border-dashed border-admin-border-strong px-4 py-8 text-center">
             <p className="text-admin-body font-semibold text-admin-ink">
               {massTimes.length > 0 ? "Nothing else scheduled" : "Nothing scheduled"}
             </p>
@@ -122,7 +122,7 @@ export function DayAgendaSidebar({
               const sourceLabel =
                 o.source === "recurring" ? "Recurring" : o.source === "manual" ? "Added by hand" : `From ${o.source}`;
               return (
-                <li key={o.id} className={`rounded-[10px] px-3 py-2.5 ${style.card}`}>
+                <li key={o.id} className={`rounded-md px-3 py-2.5 ${style.card}`}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="inline-flex items-center gap-1.5 text-admin-label font-semibold tabular-nums text-admin-ink-muted">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5" aria-hidden="true">

@@ -11,7 +11,7 @@ import {
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 
 const fieldInputClass =
-  "w-full rounded-xl border border-admin-border-strong bg-white px-3.5 py-[10px] text-[0.875rem] leading-normal text-admin-ink placeholder:text-admin-ink-faint transition-[border-color,box-shadow] focus:border-admin-green-700 focus:outline-none focus:ring-[3px] focus:ring-admin-green-100";
+  "w-full rounded-lg border border-admin-border-strong bg-white px-3.5 py-[10px] text-[0.875rem] leading-normal text-admin-ink placeholder:text-admin-ink-faint transition-[border-color,box-shadow] focus:border-admin-green-700 focus:outline-none focus:ring-[3px] focus:ring-admin-green-100";
 
 const fieldSelectClass = `${fieldInputClass} appearance-none bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-9`;
 
@@ -353,7 +353,7 @@ export function AdminButton({
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-[10px] border font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-admin-green-100 disabled:cursor-not-allowed disabled:opacity-45 ${btnVariants[variant]} ${sizeClass} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-md border font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-admin-green-100 disabled:cursor-not-allowed disabled:opacity-45 ${btnVariants[variant]} ${sizeClass} ${className}`}
       {...props}
     >
       {children}

@@ -28,7 +28,7 @@ export function Disable2FAModal({ saving, onClose, onConfirm }: Disable2FAModalP
       </div>
 
       <div className="px-6 py-5">
-        <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">
+        <div className="rounded-md border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">
           <p className="font-semibold">This makes your account easier to break into.</p>
           <p className="mt-0.5 leading-relaxed opacity-90">
             Anyone who gets hold of your password will be able to sign in immediately — no email code

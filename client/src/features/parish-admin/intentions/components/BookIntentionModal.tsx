@@ -65,7 +65,7 @@ export function BookIntentionModal({ parishId, slot, onClose, onBooked }: BookIn
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {full ? (
-            <p className="mb-4 rounded-[9px] border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
+            <p className="mb-4 rounded-md border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
               This Mass is at full capacity. Choose another slot.
             </p>
           ) : (
@@ -126,7 +126,7 @@ export function BookIntentionModal({ parishId, slot, onClose, onBooked }: BookIn
           </AdminField>
 
           {error && (
-            <p className="mt-3 rounded-[9px] border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
+            <p className="mt-3 rounded-md border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
               {error}
             </p>
           )}

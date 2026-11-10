@@ -77,7 +77,7 @@ export function EditServiceFeeModal({ fee, onClose, onSave }: EditServiceFeeModa
           {error && <p className="mt-1.5 text-admin-label font-semibold text-red-700">{error}</p>}
         </AdminField>
 
-        <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">
+        <div className="rounded-md border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">
           <p className="font-semibold">
             {hasChanged ? (
               <>

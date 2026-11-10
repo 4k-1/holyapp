@@ -157,7 +157,7 @@ export function AdminIssueCertificateModal({
         {loading ? (
           <p className="text-admin-body text-admin-ink-muted">Loading record data…</p>
         ) : !linked ? (
-          <div className="rounded-[10px] border border-admin-gold-700/30 bg-admin-gold-700/10 px-4 py-3.5 text-admin-body text-admin-gold-700">
+          <div className="rounded-md border border-admin-gold-700/30 bg-admin-gold-700/10 px-4 py-3.5 text-admin-body text-admin-gold-700">
             This request has no linked sacramental record. Link a record before issuing a certificate.
           </div>
         ) : (
@@ -185,7 +185,7 @@ export function AdminIssueCertificateModal({
                   )}
                 </div>
                 <div
-                  className="relative h-[min(70vh,560px)] overflow-hidden rounded-[10px]"
+                  className="relative h-[min(70vh,560px)] overflow-hidden rounded-md"
                   style={{ background: CERT_PREVIEW_STAGE_BG }}
                 >
                   <CertificatePreviewStage>
@@ -212,7 +212,7 @@ export function AdminIssueCertificateModal({
                     onPrint={canPrintIssued ? handlePrintCertificate : undefined}
                   />
                 ) : (
-                  <div className="rounded-[10px] border border-admin-border bg-admin-surface-alt p-4">
+                  <div className="rounded-md border border-admin-border bg-admin-surface-alt p-4">
                     <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                       Register data
                     </h4>
@@ -232,7 +232,7 @@ export function AdminIssueCertificateModal({
 
             {!done && (
               <>
-                <label className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-admin-border bg-admin-surface-alt px-3.5 py-3">
+                <label className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-3">
                   <input
                     type="checkbox"
                     checked={verified}
@@ -341,7 +341,7 @@ function SuccessPanel({
   onPrint?: () => void;
 }) {
   return (
-    <div className="rounded-[10px] border border-admin-border bg-admin-surface-alt p-4 text-center">
+    <div className="rounded-md border border-admin-border bg-admin-surface-alt p-4 text-center">
       <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-admin-green-100 text-admin-green-700">
         <CheckIcon className="h-5 w-5" />
       </div>

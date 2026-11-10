@@ -1,6 +1,8 @@
+import { AdminRowActions } from "@/components/ui/AdminRowActions";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
+import { useOpenFromLink } from "@/features/parish-admin/components/useOpenFromLink";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
@@ -40,7 +42,8 @@ export function AdminDonationsPage() {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
+  // The dashboard's "Record a donation" opens the form straight away.
+  const [modalOpen, setModalOpen] = useState(useOpenFromLink("donation"));
   const [receiptFor, setReceiptFor] = useState<Donation | null>(null);
   const [voiding, setVoiding] = useState<Donation | null>(null);
   const [correcting, setCorrecting] = useState<Donation | null>(null);
@@ -212,42 +215,37 @@ export function AdminDonationsPage() {
     },
     {
       key: "receipt",
-      header: "",
+      header: "Actions",
       className: "text-right",
       render: (d) =>
         d.voided ? null : (
-          <span className="inline-flex items-center gap-3 whitespace-nowrap">
-            {canVoid && d.clearing?.status === "pending" && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setSettling({ donation: d, outcome: "cleared" })}
-                  className="admin-table__action"
-                >
-                  Mark cleared
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSettling({ donation: d, outcome: "bounced" })}
-                  className="admin-table__action text-admin-red-700"
-                >
-                  Bounced
-                </button>
-              </>
-            )}
+          <span className="inline-flex items-center gap-2 whitespace-nowrap">
             <button type="button" onClick={() => setReceiptFor(d)} className="admin-table__action">
               Receipt
             </button>
-            {canVoid && d.source === "office" && (
-              <button type="button" onClick={() => setCorrecting(d)} className="admin-table__action">
-                Correct
-              </button>
-            )}
-            {canVoid && d.source !== "mass_intention" && (
-              <button type="button" onClick={() => setVoiding(d)} className="admin-table__action text-admin-red-700">
-                Void
-              </button>
-            )}
+            <AdminRowActions
+              label={`More for receipt ${donationReceiptNumber(d)}`}
+              actions={[
+                {
+                  label: "Mark cleared",
+                  onSelect: () => setSettling({ donation: d, outcome: "cleared" }),
+                  hidden: !(canVoid && d.clearing?.status === "pending"),
+                },
+                { label: "Correct", onSelect: () => setCorrecting(d), hidden: !(canVoid && d.source === "office") },
+                {
+                  label: "Mark bounced",
+                  onSelect: () => setSettling({ donation: d, outcome: "bounced" }),
+                  danger: true,
+                  hidden: !(canVoid && d.clearing?.status === "pending"),
+                },
+                {
+                  label: "Void",
+                  onSelect: () => setVoiding(d),
+                  danger: true,
+                  hidden: !(canVoid && d.source !== "mass_intention"),
+                },
+              ]}
+            />
           </span>
         ),
     },

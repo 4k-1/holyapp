@@ -35,7 +35,7 @@ function SheetCard({ title, aside, className = "", children }: { title?: string;
   return (
     <section
       data-pdf-break
-      className={`flex flex-col rounded-[14px] border border-admin-border bg-admin-surface p-4 [break-inside:avoid] @2xl:p-5 ${className}`}
+      className={`flex flex-col rounded-lg border border-admin-border bg-admin-surface p-4 [break-inside:avoid] @2xl:p-5 ${className}`}
     >
       {title && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -65,7 +65,7 @@ function ChangeChip({ change }: { change: NonNullable<ReportTile["change"]> }) {
 
 function StatTile({ tile }: { tile: ReportTile }) {
   return (
-    <div className="rounded-[12px] border border-admin-border px-3.5 py-3">
+    <div className="rounded-lg border border-admin-border px-3.5 py-3">
       <p className="text-admin-support text-admin-ink-muted">{tile.label}</p>
       <p className="mt-1 text-[1.5rem] font-bold leading-tight tracking-[-0.02em] text-admin-ink tabular-nums">{tile.value}</p>
       <div className="mt-1.5 flex min-h-5 flex-wrap items-center gap-x-1.5 gap-y-1">
@@ -133,7 +133,7 @@ function ReportTable({ doc, interactive }: { doc: ReportDocument; interactive: b
   }
 
   return (
-    <section data-pdf-break className="rounded-[14px] border border-admin-border bg-admin-surface p-4 @2xl:p-5">
+    <section data-pdf-break className="rounded-lg border border-admin-border bg-admin-surface p-4 @2xl:p-5">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-sans text-admin-group font-semibold text-admin-ink">{table.title}</h3>
         <p className="text-[11px] text-admin-ink-faint">
@@ -250,7 +250,7 @@ function FundsTable({ funds }: { funds: NonNullable<ReportDocument["funds"]> }) 
     );
 
   return (
-    <section data-pdf-break className="rounded-[14px] border border-admin-border bg-admin-surface p-4 @2xl:p-5">
+    <section data-pdf-break className="rounded-lg border border-admin-border bg-admin-surface p-4 @2xl:p-5">
       <h3 className="mb-1 font-sans text-admin-group font-semibold text-admin-ink">By fund</h3>
       <table className="w-full border-collapse text-admin-support">
         {group("Parish funds", funds.parish)}
@@ -290,7 +290,7 @@ export function ReportSheet({
   return (
     <div
       className={`@container bg-admin-bg font-sans text-admin-ink [print-color-adjust:exact] [-webkit-print-color-adjust:exact] ${
-        flat ? "p-7" : bare ? "" : "rounded-[18px] p-3.5 sm:p-5"
+        flat ? "p-7" : bare ? "" : "rounded-lg p-3.5 sm:p-5"
       }`}
     >
       {!bare && (
@@ -388,7 +388,7 @@ export function ReportSheet({
               ) : (
                 <ul className="grid gap-2">
                   {doc.highlights.map((item) => (
-                    <li key={item.label} className="rounded-[10px] bg-admin-surface-alt px-3 py-2.5">
+                    <li key={item.label} className="rounded-md bg-admin-surface-alt px-3 py-2.5">
                       <p className="text-[11px] font-semibold uppercase leading-4 tracking-admin-label text-admin-ink-muted">
                         {item.label}
                       </p>

@@ -377,10 +377,10 @@ export function MassScheduleSection() {
             ) : (
               <div
                 key={rc.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-admin-border px-4 py-3.5"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-admin-border px-4 py-3.5"
               >
                 <div className="flex min-w-0 items-center gap-3.5">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-admin-green-100 text-admin-green-700">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-admin-green-100 text-admin-green-700">
                     <ClockIcon />
                   </span>
                   <div className="min-w-0">
@@ -413,7 +413,7 @@ export function MassScheduleSection() {
           )}
 
           {masses.length === 0 && editingId !== "new" && (
-            <p className="rounded-xl border border-dashed border-admin-border-strong px-4 py-6 text-center text-admin-body text-admin-ink-muted">
+            <p className="rounded-lg border border-dashed border-admin-border-strong px-4 py-6 text-center text-admin-body text-admin-ink-muted">
               No regular Masses yet. Use Add Mass times to set the first one.
             </p>
           )}
@@ -525,7 +525,7 @@ function MassScheduleForm({
   }
 
   return (
-    <div className="rounded-xl border border-admin-green-600 bg-admin-green-050 px-4 py-4">
+    <div className="rounded-lg border border-admin-green-600 bg-admin-green-050 px-4 py-4">
       <div className="space-y-4">
         <AdminField label="Name">
           <AdminInput value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Sunday Mass" />

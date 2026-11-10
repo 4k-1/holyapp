@@ -144,7 +144,7 @@ export function AdminRequestDetailModal({
 
         {/* Body */}
         <div className="overflow-y-auto px-6 py-[18px]">
-          <div className="mb-[18px] flex items-center gap-3.5 rounded-[10px] border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
+          <div className="mb-[18px] flex items-center gap-3.5 rounded-md border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
             <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-admin-green-700 font-serif text-admin-group font-semibold text-white">
               {initials(subjectName)}
             </div>
@@ -157,7 +157,7 @@ export function AdminRequestDetailModal({
             <AdminDeliveryTag method={request.deliveryMethod} />
           </div>
 
-          <div className="mb-3.5 rounded-[10px] border border-admin-border px-4 py-1">
+          <div className="mb-3.5 rounded-md border border-admin-border px-4 py-1">
             <h4 className="mb-1 mt-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
               Request details
             </h4>
@@ -171,7 +171,7 @@ export function AdminRequestDetailModal({
           </div>
 
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <div className="rounded-[10px] border border-admin-border p-4 px-[18px]">
+            <div className="rounded-md border border-admin-border p-4 px-[18px]">
               <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                 Sacramental record
               </h4>
@@ -179,7 +179,7 @@ export function AdminRequestDetailModal({
                 <Link
                   to={recordDetailPath(parish.slug, "baptismal", linked.id)}
                   onClick={onClose}
-                  className="flex items-start gap-2.5 rounded-[8px] outline-none hover:bg-admin-green-050 focus-visible:ring-2 focus-visible:ring-admin-green-600/30"
+                  className="flex items-start gap-2.5 rounded-md outline-none hover:bg-admin-green-050 focus-visible:ring-2 focus-visible:ring-admin-green-600/30"
                 >
                   <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-admin-green-100 text-admin-green-700">
                     <CheckIcon />
@@ -208,7 +208,7 @@ export function AdminRequestDetailModal({
               )}
             </div>
 
-            <div className="rounded-[10px] border border-admin-border p-4 px-[18px]">
+            <div className="rounded-md border border-admin-border p-4 px-[18px]">
               <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                 Payment
               </h4>
@@ -244,14 +244,14 @@ export function AdminRequestDetailModal({
           </div>
 
           {statusKey === "ready" && (
-            <div className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-green-100 bg-admin-green-050 px-2.5 py-1 text-xs font-semibold text-admin-green-700">
+            <div className="inline-flex items-center gap-1.5 rounded-md border border-admin-green-100 bg-admin-green-050 px-2.5 py-1 text-xs font-semibold text-admin-green-700">
               <CheckIcon />
               Certificate printed and sealed — ready for parishioner pickup at the office.
             </div>
           )}
 
           {statusKey === "rejected" && (
-            <div className="flex items-start gap-2.5 rounded-[9px] border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-3">
+            <div className="flex items-start gap-2.5 rounded-md border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-3">
               <span className="mt-0.5 text-admin-red-700">
                 <AlertIcon />
               </span>

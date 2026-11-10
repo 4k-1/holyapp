@@ -166,7 +166,7 @@ export function AdminLedgerPageViewer() {
           {book.sacramentType === "baptism" && (
             <Link
               to="records"
-              className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-transparent bg-admin-green-700 px-4 py-2.5 text-admin-body font-medium text-white shadow-[var(--shadow-button)] hover:bg-admin-green-600"
+              className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-md border border-transparent bg-admin-green-700 px-4 py-2.5 text-admin-body font-medium text-white shadow-[var(--shadow-button)] hover:bg-admin-green-600"
             >
               {page.recordCount > 0 || page.readAt ? "Make records from this page" : "Read page and make records"}
             </Link>
@@ -179,7 +179,7 @@ export function AdminLedgerPageViewer() {
             onClick={() => prevPage && goToPageNumber(prevPage.pageNumber)}
             disabled={!prevPage}
             aria-label="Previous page"
-            className="!rounded-[10px]"
+            className="!rounded-md"
           >
             ← Previous
           </AdminButton>
@@ -194,7 +194,7 @@ export function AdminLedgerPageViewer() {
                 aria-label="Page number"
               />
             </AdminField>
-            <AdminButton type="submit" variant="secondary" className="!rounded-[10px]">
+            <AdminButton type="submit" variant="secondary" className="!rounded-md">
               Go
             </AdminButton>
           </form>
@@ -203,7 +203,7 @@ export function AdminLedgerPageViewer() {
             onClick={() => nextPage && goToPageNumber(nextPage.pageNumber)}
             disabled={!nextPage}
             aria-label="Next page"
-            className="!rounded-[10px]"
+            className="!rounded-md"
           >
             Next →
           </AdminButton>

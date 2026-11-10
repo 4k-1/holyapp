@@ -349,7 +349,7 @@ export function AdminDaySummaryPage() {
       </div>
 
       {error && (
-        <p className="mb-4 rounded-[10px] border border-admin-red-100 bg-admin-red-100 px-4 py-3 text-admin-body text-admin-red-700">
+        <p className="mb-4 rounded-md border border-admin-red-100 bg-admin-red-100 px-4 py-3 text-admin-body text-admin-red-700">
           {error}
         </p>
       )}

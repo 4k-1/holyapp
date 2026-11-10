@@ -141,7 +141,7 @@ export function StaffAccountsSection() {
     },
     {
       key: "actions",
-      header: "",
+      header: "Actions",
       className: "w-12 text-right",
       render: (s) => {
         const isSelf = s.email === currentUser?.email;

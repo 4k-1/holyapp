@@ -156,7 +156,7 @@ export function SuperAdminSettingsPage() {
 
   if (loadError || !user) {
     return (
-      <div className="max-w-[560px] rounded-xl border border-admin-border bg-admin-surface px-6 py-8">
+      <div className="max-w-[560px] rounded-lg border border-admin-border bg-admin-surface px-6 py-8">
         <p className="text-[13px] text-admin-ink">{loadError || "Not signed in."}</p>
       </div>
     );
@@ -164,7 +164,7 @@ export function SuperAdminSettingsPage() {
 
   return (
     <div className="max-w-[640px]">
-      <section className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface">
+      <section className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-5 py-4">
           <div>
             <h2 className="font-sans text-[15px] font-bold text-admin-ink">Account details</h2>
@@ -268,7 +268,7 @@ export function SuperAdminSettingsPage() {
         )}
       </section>
 
-      <section className="mt-4 overflow-hidden rounded-xl border border-admin-border bg-admin-surface px-5 py-4">
+      <section className="mt-4 overflow-hidden rounded-lg border border-admin-border bg-admin-surface px-5 py-4">
         <h2 className="font-sans text-[15px] font-bold text-admin-ink">Password</h2>
         <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">
           Passwords are changed by email, so a stolen session cannot change your credentials by itself.

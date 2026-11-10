@@ -223,7 +223,7 @@ export function AdminBannsPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-[10px] border border-admin-border bg-admin-surface">
+            <div className="flex items-center rounded-md border border-admin-border bg-admin-surface">
               <button
                 type="button"
                 onClick={() => setSunday(addWeeks(sunday, -1))}
@@ -615,7 +615,7 @@ function AddCoupleModal({
                   role="radio"
                   aria-checked={selected}
                   onClick={() => chooseLivesHere(option.value)}
-                  className={`rounded-[10px] border px-2 py-2 text-admin-body font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
+                  className={`rounded-md border px-2 py-2 text-admin-body font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
                     selected
                       ? "border-admin-green-700 bg-admin-green-050 text-admin-green-800"
                       : "border-admin-border bg-admin-surface text-admin-ink-muted hover:bg-admin-surface-alt"
@@ -708,7 +708,7 @@ function PosterLink({ id }: { id: string }) {
     <Link
       to={`../${encodeURIComponent(id)}/banns-poster`}
       relative="path"
-      className="inline-flex items-center rounded-[10px] border border-admin-border bg-admin-surface px-3 py-1.5 text-admin-support font-medium text-admin-ink hover:bg-admin-surface-alt"
+      className="inline-flex items-center rounded-md border border-admin-border bg-admin-surface px-3 py-1.5 text-admin-support font-medium text-admin-ink hover:bg-admin-surface-alt"
     >
       Poster
     </Link>

@@ -85,7 +85,7 @@ export function AdminDeathRecordDetailPage() {
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-surface-alt font-serif text-admin-group font-bold text-admin-ink-muted ring-1 ring-inset ring-admin-border-strong">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-admin-surface-alt font-serif text-admin-group font-bold text-admin-ink-muted ring-1 ring-inset ring-admin-border-strong">
             {initials(name)}
           </div>
           <div>
@@ -97,7 +97,7 @@ export function AdminDeathRecordDetailPage() {
               Died {formatRecordDate(record.dateOfDeath)} · Buried {formatRecordDate(record.dateOfBurial)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
                 Book {record.bookNumber}
                 <span className="text-admin-border-strong">/</span>
                 Page {record.pageNumber}
@@ -198,7 +198,7 @@ export function AdminDeathRecordDetailPage() {
               {record.kin.map((k) => (
                 <div
                   key={k.id}
-                  className="flex items-center justify-between gap-2.5 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5"
+                  className="flex items-center justify-between gap-2.5 rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-2.5"
                 >
                   <span className="text-admin-body font-semibold text-admin-ink">{kinFullName(k)}</span>
                   <span className="inline-flex items-center rounded-full bg-[#F8D6E0] px-2.5 py-1 text-admin-label font-semibold text-[#B85A75]">

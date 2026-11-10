@@ -142,7 +142,7 @@ export function AdminTopbar({
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[180px] overflow-hidden rounded-[10px] border border-admin-border bg-admin-surface py-1 shadow-[0_8px_24px_rgba(10,40,30,0.12)]"
+                className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[180px] overflow-hidden rounded-md border border-admin-border bg-admin-surface py-1 shadow-[0_8px_24px_rgba(10,40,30,0.12)]"
               >
                 <button
                   type="button"

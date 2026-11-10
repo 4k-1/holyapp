@@ -108,7 +108,7 @@ export function BaptismalRecordLinkField({
     <div className={className}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-[0.8125rem] font-semibold text-admin-ink">{label}</p>
-        <div className="inline-flex rounded-[10px] border border-admin-border bg-admin-surface-alt p-1">
+        <div className="inline-flex rounded-md border border-admin-border bg-admin-surface-alt p-1">
           {(
             [
               ["search", "Search"],
@@ -119,7 +119,7 @@ export function BaptismalRecordLinkField({
               key={next}
               type="button"
               onClick={() => setMode(next)}
-              className={`rounded-[7px] px-2.5 py-1 text-admin-label font-semibold transition ${
+              className={`rounded-md px-2.5 py-1 text-admin-label font-semibold transition ${
                 mode === next ? "bg-admin-surface text-admin-ink shadow-sm" : "text-admin-ink-muted"
               }`}
             >
@@ -163,7 +163,7 @@ export function BaptismalRecordLinkField({
           )}
 
           {hits.length > 0 && (
-            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-[9px] border border-admin-border bg-admin-surface p-1.5">
+            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-admin-border bg-admin-surface p-1.5">
               {hits.map((rec) => {
                 const selected = value === rec.id;
                 return (
@@ -171,7 +171,7 @@ export function BaptismalRecordLinkField({
                     <button
                       type="button"
                       onClick={() => selectRecord(rec)}
-                      className={`w-full rounded-[7px] px-3 py-2 text-left transition ${
+                      className={`w-full rounded-md px-3 py-2 text-left transition ${
                         selected
                           ? "bg-admin-green-050 ring-1 ring-admin-green-700/40"
                           : "hover:bg-admin-surface-alt"
@@ -204,7 +204,7 @@ export function BaptismalRecordLinkField({
       )}
 
       {(value || linked) && (
-        <div className="mt-2.5 rounded-[9px] border border-admin-green-700/25 bg-admin-green-050 px-3 py-2.5">
+        <div className="mt-2.5 rounded-md border border-admin-green-700/25 bg-admin-green-050 px-3 py-2.5">
           <p className="text-admin-support font-semibold text-admin-green-800">
             {linked
               ? `Linked: ${recordFullName(linked)} · ${baptismRecordRef(linked)}`

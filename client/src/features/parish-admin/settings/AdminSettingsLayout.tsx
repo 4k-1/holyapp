@@ -16,7 +16,7 @@ const GROUP_LABELS: Record<SettingsSectionMeta["group"] | "soon", string> = {
 };
 
 function navItemClass(isActive: boolean) {
-  return `flex shrink-0 items-center justify-between gap-2 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-admin-body transition md:whitespace-normal ${
+  return `flex shrink-0 items-center justify-between gap-2 whitespace-nowrap rounded-lg px-3.5 py-2.5 text-admin-body transition md:whitespace-normal ${
     isActive
       ? "bg-admin-green-100 font-semibold text-admin-green-800"
       : "font-medium text-admin-ink-muted hover:bg-admin-surface-alt hover:text-admin-ink"
@@ -59,7 +59,7 @@ export function AdminSettingsLayout() {
         }
       />
 
-      <div className="grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-[20px] border border-admin-border bg-admin-surface shadow-[var(--shadow-card)] md:grid-cols-[232px_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-lg border border-admin-border bg-admin-surface shadow-[var(--shadow-card)] md:grid-cols-[232px_minmax(0,1fr)]">
         <nav
           ref={navRef}
           aria-label="Settings sections"
@@ -81,7 +81,7 @@ export function AdminSettingsLayout() {
                   <span
                     key={s.id}
                     aria-disabled="true"
-                    className="cursor-not-allowed rounded-xl px-3.5 py-2 text-admin-support font-medium text-admin-ink-faint"
+                    className="cursor-not-allowed rounded-lg px-3.5 py-2 text-admin-support font-medium text-admin-ink-faint"
                   >
                     {s.label}
                   </span>

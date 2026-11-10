@@ -44,7 +44,7 @@ export function MassCapacitySetting({ capacity, onSave }: MassCapacitySettingPro
 
   if (!editing) {
     return (
-      <div className="flex items-center gap-2 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2">
+      <div className="flex items-center gap-2 rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-2">
         <span className="text-admin-support text-admin-ink-muted">
           Intention slots per Mass{" "}
           <span className="font-semibold tabular-nums text-admin-ink">{capacity === null ? "No limit" : capacity}</span>
@@ -63,7 +63,7 @@ export function MassCapacitySetting({ capacity, onSave }: MassCapacitySettingPro
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[9px] border border-admin-green-600/40 bg-admin-surface-alt px-3.5 py-2"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-admin-green-600/40 bg-admin-surface-alt px-3.5 py-2"
     >
       <label className="flex items-center gap-2">
         <span className="whitespace-nowrap text-admin-support text-admin-ink-muted">Intention slots per Mass</span>

@@ -33,7 +33,7 @@ import {
 const PDF_WIDTH = 1280;
 
 const dateInputClass =
-  "h-9 w-[150px] rounded-[10px] border border-admin-border bg-admin-surface px-2.5 text-admin-support text-admin-ink outline-none focus-visible:border-admin-green-700 focus-visible:ring-[3px] focus-visible:ring-admin-green-100";
+  "h-9 w-[150px] rounded-md border border-admin-border bg-admin-surface px-2.5 text-admin-support text-admin-ink outline-none focus-visible:border-admin-green-700 focus-visible:ring-[3px] focus-visible:ring-admin-green-100";
 
 function DateFilter({
   range,
@@ -195,7 +195,7 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
       <DateFilter range={range} onApply={setRange} />
 
       {error && (
-        <p className="mb-4 rounded-[10px] border border-admin-red-100 bg-admin-red-100 px-4 py-3 text-admin-body text-admin-red-700">
+        <p className="mb-4 rounded-md border border-admin-red-100 bg-admin-red-100 px-4 py-3 text-admin-body text-admin-red-700">
           {error}
         </p>
       )}

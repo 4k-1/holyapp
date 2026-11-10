@@ -149,7 +149,7 @@ export function SuperAdminParishAccountsPage() {
 
   if (!loading && !row) {
     return (
-      <div className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface px-[18px] py-10 text-center">
+      <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface px-[18px] py-10 text-center">
         <p className="text-[12.5px] text-admin-ink-muted">That parish was not found.</p>
         <Link to="/super-admin/parishes" className={`${saBtnLink} mt-3 inline-block`}>
           Back to Parishes
@@ -185,7 +185,7 @@ export function SuperAdminParishAccountsPage() {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface">
+      <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-admin-border px-[18px] py-4">
           <div className="min-w-0">
             <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">{row?.parish.name ?? "Parish"}</h2>
@@ -524,7 +524,7 @@ function CertificateStylePanel({
               key={theme.id}
               type="button"
               onClick={() => onPick(theme.id)}
-              className={`rounded-[10px] border p-3 text-left ${
+              className={`rounded-md border p-3 text-left ${
                 active
                   ? "border-admin-green-700 bg-admin-green-100 shadow-[inset_0_0_0_1px_var(--color-admin-green-700)]"
                   : "border-admin-border bg-white hover:border-admin-green-600"
@@ -586,7 +586,7 @@ function CertificatePreviewModal({
         parish's name, crest, or verification message from that Parish Admin's own Settings.
       </p>
       <div
-        className="rounded-[10px] px-[22px] py-[26px] text-center"
+        className="rounded-md px-[22px] py-[26px] text-center"
         style={{
           background: "#FDFCF8",
           borderColor: theme.accent,

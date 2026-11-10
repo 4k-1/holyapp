@@ -1,5 +1,5 @@
 [data-portal="admin"] {
-  /* Type roles, all in Inter: page / section / group / metric + body / support / label. */
+  /* Type roles, all in Plus Jakarta Sans: page / section / group / metric + body / support / label. */
   --text-admin-page: 1.875rem;
   --text-admin-section: 1.125rem;
   --text-admin-group: 0.9375rem;
@@ -34,8 +34,8 @@
   --color-admin-red-100: #fceaea;
   --color-admin-amber-700: #8a6418;
   --color-admin-amber-100: #fef6e4;
-  --radius: 16px;
-  --radius-sm: 10px;
+  --radius: 8px;
+  --radius-sm: 6px;
   /* One soft shadow for every card, tinted with the deep teal so white cards lift off the page. */
   --shadow-card: 0 1px 2px 0 rgb(14 59 70 / 0.06), 0 4px 14px -2px rgb(14 59 70 / 0.1);
   --shadow-button: 0 4px 10px -3px rgb(14 59 70 / 0.35);

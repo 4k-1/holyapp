@@ -42,7 +42,7 @@ export function SuperAdminParishesPage() {
         />
       </label>
 
-      <div className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface">
+      <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
         {loading ? (
           <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-ink-faint">Loading parishes…</p>
         ) : parishes.length === 0 ? (

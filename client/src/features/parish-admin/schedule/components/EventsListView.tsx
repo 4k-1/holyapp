@@ -183,14 +183,14 @@ export function EventsListView({
       <div className="overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface">
         <table className="w-full text-left text-admin-support">
           <thead>
-            <tr className="border-b border-admin-border bg-admin-surface-alt text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">
-              <th className="px-4 py-2.5">Date</th>
-              <th className="px-4 py-2.5">Time</th>
-              <th className="px-4 py-2.5">Type</th>
-              <th className="px-4 py-2.5">Title</th>
-              <th className="px-4 py-2.5">Assigned to</th>
-              <th className="px-4 py-2.5">Status</th>
-              <th className="px-4 py-2.5" />
+            <tr className="border-b border-admin-border text-[0.75rem] font-medium text-admin-ink-faint">
+              <th className="px-5 py-3">Date</th>
+              <th className="px-5 py-3">Time</th>
+              <th className="px-5 py-3">Type</th>
+              <th className="px-5 py-3">Title</th>
+              <th className="px-5 py-3">Assigned to</th>
+              <th className="px-5 py-3">Status</th>
+              <th className="px-5 py-3">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -213,7 +213,7 @@ export function EventsListView({
                 const isPast = b.date < TODAY_ISO;
                 return (
                   <tr key={b.id} className="border-b border-admin-border last:border-b-0">
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3">
                       {new Date(b.date + "T00:00:00").toLocaleDateString("en-US", {
                         weekday: "short",
                         month: "short",
@@ -221,16 +221,16 @@ export function EventsListView({
                         year: "numeric",
                       })}
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">
+                    <td className="px-5 py-3 whitespace-nowrap">
                       {b.start} – {b.end}
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-admin-label font-semibold ${EVENT_TYPE_STYLES[b.type].tag}`}>
                         {EVENT_TYPE_LABELS[b.type]}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 font-medium text-admin-ink">{b.title}</td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3 font-medium text-admin-ink">{b.title}</td>
+                    <td className="px-5 py-3">
                       {b.assignee ? (
                         <button
                           type="button"
@@ -243,7 +243,7 @@ export function EventsListView({
                         "—"
                       )}
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3">
                       {b.recordStatus ? (
                         <>
                           <AdminBadge tone={b.recordStatus === "Pending" ? "gold" : "green"}>
@@ -255,7 +255,7 @@ export function EventsListView({
                         <AdminBadge tone={isPast ? "muted" : "green"}>{isPast ? "Past" : "Upcoming"}</AdminBadge>
                       )}
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => onViewDay(b.date)}

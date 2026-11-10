@@ -1,3 +1,4 @@
+import { formatTableDate } from "@/lib/dates";
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
@@ -11,7 +12,6 @@ import {
   emptyDeathSearchCriteria,
   filterDeathRecords,
   formatAge,
-  formatRecordDate,
   recordFullName,
 } from "@/features/parish-admin/records/deathHelpers";
 import type { DeathRecord, DeathSearchCriteria } from "@/features/parish-admin/records/types";
@@ -43,18 +43,18 @@ export function AdminDeathRecordsPage() {
       key: "dateOfDeath",
       header: "Date of death",
       sortValue: (r) => r.dateOfDeath,
-      render: (r) => formatRecordDate(r.dateOfDeath),
+      render: (r) => formatTableDate(r.dateOfDeath),
     },
     {
       key: "dateOfBurial",
       header: "Date of burial",
       sortValue: (r) => r.dateOfBurial,
-      render: (r) => formatRecordDate(r.dateOfBurial),
+      render: (r) => formatTableDate(r.dateOfBurial),
     },
     { key: "age", header: "Age", sortValue: (r) => formatAge(r), render: (r) => formatAge(r) },
     {
       key: "actions",
-      header: "",
+      header: "Actions",
       render: (r) => (
         <Link to={encodeURIComponent(r.id)} className="admin-table__action">
           View
@@ -133,6 +133,7 @@ export function AdminDeathRecordsPage() {
       <AdminTable
         loading={loading}
         pageKey="records"
+        defaultSort={{ key: "dateOfDeath", dir: "desc" }}
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}

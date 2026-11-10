@@ -35,7 +35,7 @@ function doughnutStyle(shares: DashboardSnapshot["requestsBySacrament"]) {
 
 function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`overflow-hidden rounded-xl border border-admin-border bg-admin-surface ${className}`}>
+    <div className={`overflow-hidden rounded-lg border border-admin-border bg-admin-surface ${className}`}>
       {children}
     </div>
   );

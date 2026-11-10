@@ -85,7 +85,7 @@ export function CreateLedgerBookModal({ sacramentType, onClose, onSubmit }: Crea
             </AdminField>
           </div>
           {error && (
-            <p className="mt-2 rounded-[9px] border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
+            <p className="mt-2 rounded-md border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
               {error}
             </p>
           )}

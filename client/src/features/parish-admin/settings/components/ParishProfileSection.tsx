@@ -103,7 +103,7 @@ export function ParishProfileSection() {
   return (
     <div className="space-y-4">
       {justSaved && (
-        <p className="rounded-xl bg-admin-green-100 px-4 py-2.5 text-admin-support font-semibold text-admin-green-800" role="status">
+        <p className="rounded-lg bg-admin-green-100 px-4 py-2.5 text-admin-support font-semibold text-admin-green-800" role="status">
           Parish profile saved.
         </p>
       )}
@@ -248,7 +248,7 @@ export function ParishProfileSection() {
         title="Parish logo / seal"
         description="Printed on certificate templates and shown on the public verification page."
       >
-        <div className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-admin-border-strong p-4">
+        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-dashed border-admin-border-strong p-4">
           {saved.sealUrl ? (
             <img src={saved.sealUrl} alt="" className="h-12 w-12 rounded-full object-contain" />
           ) : (

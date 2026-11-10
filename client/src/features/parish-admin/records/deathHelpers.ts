@@ -45,12 +45,7 @@ export function formatAge(record: Pick<DeathRecord, "age" | "ageMonths" | "ageDa
   return parts.join(", ");
 }
 
-export function formatRecordDate(iso: string) {
-  if (!iso) return "—";
-  const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-}
+export { formatRecordDate } from "@/features/parish-admin/records/baptismalHelpers";
 
 export function formatDateTime(iso: string) {
   if (!iso) return "—";

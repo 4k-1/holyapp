@@ -155,7 +155,7 @@ export function AccountSecuritySection() {
         title="Sign-in & password"
         description="Passwords are changed through a link sent to your email, so a stolen session alone can't change them."
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-admin-surface-alt px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-admin-surface-alt px-4 py-3">
           <div className="min-w-0">
             <p className="text-admin-support text-admin-ink-muted">Account email</p>
             <p className="mt-0.5 break-all text-admin-body font-medium text-admin-ink">{user.email}</p>
@@ -247,7 +247,7 @@ export function AccountSecuritySection() {
             sessions.map((s) => (
               <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-admin-green-100 text-admin-green-700">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-admin-green-100 text-admin-green-700">
                     {isMobileDevice(s.device) ? <PhoneIcon /> : <MonitorIcon />}
                   </span>
                   <div>
@@ -288,11 +288,11 @@ export function AccountSecuritySection() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] text-left text-admin-body">
             <thead>
-              <tr className="border-b border-admin-border bg-admin-surface-alt text-admin-support text-admin-ink-muted">
-                <th className="px-5 py-2.5 font-medium">When</th>
-                <th className="px-3 py-2.5 font-medium">Device</th>
-                <th className="px-3 py-2.5 font-medium">Location</th>
-                <th className="py-2.5 pr-5 text-right font-medium">Result</th>
+              <tr className="border-b border-admin-border text-[0.75rem] font-medium text-admin-ink-faint">
+                <th className="px-5 py-3">When</th>
+                <th className="px-5 py-3">Device</th>
+                <th className="px-5 py-3">Location</th>
+                <th className="px-5 py-3 text-right">Result</th>
               </tr>
             </thead>
             <tbody>
@@ -306,9 +306,9 @@ export function AccountSecuritySection() {
                 activity.map((a) => (
                   <tr key={a.id} className="border-b border-admin-border last:border-b-0">
                     <td className="px-5 py-3 tabular-nums text-admin-ink">{a.timestamp}</td>
-                    <td className="px-3 py-3 text-admin-ink">{a.device}</td>
-                    <td className="px-3 py-3 text-admin-ink-muted">{a.location}</td>
-                    <td className="py-3 pr-5 text-right">
+                    <td className="px-5 py-3 text-admin-ink">{a.device}</td>
+                    <td className="px-5 py-3 text-admin-ink-muted">{a.location}</td>
+                    <td className="px-5 py-3 text-right">
                       <AdminBadge tone={a.status === "success" ? "green" : "red"}>
                         {a.status === "success" ? "Success" : "Failed"}
                       </AdminBadge>

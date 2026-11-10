@@ -20,7 +20,7 @@ export function SettingsPanel({
 }) {
   const hasHeader = Boolean(title || action);
   return (
-    <section className={`overflow-hidden rounded-2xl border border-admin-border bg-admin-surface ${className}`}>
+    <section className={`overflow-hidden rounded-lg border border-admin-border bg-admin-surface ${className}`}>
       {hasHeader && (
         <div className={`flex flex-wrap items-center justify-between gap-3 px-5 pt-[18px] ${flush ? "pb-4" : "pb-0"}`}>
           <div className="min-w-0">

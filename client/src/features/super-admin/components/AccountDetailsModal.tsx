@@ -47,7 +47,7 @@ export function AccountDetailsModal({
         </button>
       }
     >
-      <div className="rounded-[10px] border border-admin-border bg-admin-surface-alt px-3.5 py-3">
+      <div className="rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-3">
         <p className="text-[15px] font-bold text-admin-ink">{user.fullName}</p>
         <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">{user.email}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">

@@ -384,7 +384,7 @@ export function AdminMarriageApplicationDetailPage() {
       <Link
         to="../../records/marriage/new"
         relative="path"
-        className="inline-flex min-h-[40px] items-center rounded-xl bg-admin-green-700 px-4 text-admin-body font-semibold text-white hover:bg-admin-green-600"
+        className="inline-flex min-h-[40px] items-center rounded-lg bg-admin-green-700 px-4 text-admin-body font-semibold text-white hover:bg-admin-green-600"
       >
         Open marriage register
       </Link>

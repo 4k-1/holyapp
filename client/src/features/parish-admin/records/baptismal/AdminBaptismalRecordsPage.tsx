@@ -1,3 +1,4 @@
+import { formatTableDate } from "@/lib/dates";
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
@@ -10,7 +11,6 @@ import {
   baptismRecordRef,
   emptySearchCriteria,
   filterBaptismalRecords,
-  formatRecordDate,
   recordFatherName,
   recordFullName,
   recordMotherName,
@@ -26,7 +26,7 @@ export function AdminBaptismalRecordsPage() {
 
   const [showArchived, setShowArchived] = useState(false);
 
-  const { data: parishRecords = [], loading } = useAsync(
+  const { data: parishRecords = [], error, loading } = useAsync(
     () => listBaptismalRecords(parish.id, { archived: showArchived }),
     [parish.id, showArchived]
   );
@@ -44,19 +44,19 @@ export function AdminBaptismalRecordsPage() {
       key: "dateOfBaptism",
       header: "Bapt. date",
       sortValue: (r) => r.dateOfBaptism,
-      render: (r) => formatRecordDate(r.dateOfBaptism),
+      render: (r) => formatTableDate(r.dateOfBaptism),
     },
     {
       key: "dateOfBirth",
       header: "Birthdate",
       sortValue: (r) => r.dateOfBirth,
-      render: (r) => formatRecordDate(r.dateOfBirth),
+      render: (r) => formatTableDate(r.dateOfBirth),
     },
     { key: "mother", header: "Mother", sortValue: (r) => recordMotherName(r), render: (r) => recordMotherName(r) },
     { key: "father", header: "Father", sortValue: (r) => recordFatherName(r), render: (r) => recordFatherName(r) },
     {
       key: "actions",
-      header: "",
+      header: "Actions",
       render: (r) => (
         <Link to={encodeURIComponent(r.id)} className="admin-table__action">
           View
@@ -142,13 +142,16 @@ export function AdminBaptismalRecordsPage() {
       <AdminTable
         loading={loading}
         pageKey="records"
+        defaultSort={{ key: "dateOfBaptism", dir: "desc" }}
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}
-        rows={filtered}
+        rows={error ? [] : filtered}
         getRowKey={(r) => r.id}
         emptyMessage={
-          showArchived
+          error
+            ? `Could not load baptismal records: ${error.message}`
+            : showArchived
             ? "No archived baptismal records."
             : "No matching baptismal records. Try different search criteria."
         }

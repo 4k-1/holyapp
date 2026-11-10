@@ -104,7 +104,7 @@ export function SuperAdminKebabMenu({
               data-portal="admin"
               data-surface="platform"
               style={{ top: coords.top, left: coords.left }}
-              className={`fixed z-[80] min-w-[168px] overflow-hidden rounded-[10px] border border-admin-border bg-admin-surface py-1 font-sans shadow-[0_8px_24px_-4px_rgba(20,30,25,0.18)] ${
+              className={`fixed z-[80] min-w-[168px] overflow-hidden rounded-md border border-admin-border bg-admin-surface py-1 font-sans shadow-[0_8px_24px_-4px_rgba(20,30,25,0.18)] ${
                 placed ? "opacity-100" : "opacity-0"
               }`}
             >

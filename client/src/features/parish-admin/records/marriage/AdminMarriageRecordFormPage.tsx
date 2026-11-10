@@ -645,7 +645,7 @@ function PartyBanner({ role }: { role: "Groom" | "Bride" }) {
   const tone = PARTY_BANNER[role];
   return (
     <div
-      className={`relative mb-1 mt-6 flex items-center gap-3 overflow-hidden rounded-xl border py-3 pl-5 pr-4 ${tone.band}`}
+      className={`relative mb-1 mt-6 flex items-center gap-3 overflow-hidden rounded-lg border py-3 pl-5 pr-4 ${tone.band}`}
       role="presentation"
     >
       <span className={`absolute inset-y-0 left-0 w-1 ${tone.rule}`} aria-hidden="true" />

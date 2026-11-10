@@ -23,7 +23,7 @@ export function SuperAdminModal({
       align="center"
       layer="z-[100]"
       backdropClassName="bg-[rgba(20,30,25,0.35)]"
-      panelClassName={`overflow-hidden rounded-xl bg-admin-surface shadow-[0_20px_50px_rgba(0,0,0,0.2)] ${widthClass}`}
+      panelClassName={`overflow-hidden rounded-lg bg-admin-surface shadow-[0_20px_50px_rgba(0,0,0,0.2)] ${widthClass}`}
     >
         <div className="flex items-center justify-between border-b border-admin-border px-5 py-4">
           <h3 className="font-sans text-[15px] font-bold text-admin-ink">
@@ -80,7 +80,7 @@ export function SuperAdminToast({ message }: { message: string }) {
   return (
     <div
       role="status"
-      className="fixed bottom-6 left-1/2 z-[200] flex -translate-x-1/2 items-center gap-2 rounded-[9px] bg-admin-ink px-[18px] py-[11px] text-[12.8px] font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
+      className="fixed bottom-6 left-1/2 z-[200] flex -translate-x-1/2 items-center gap-2 rounded-md bg-admin-ink px-[18px] py-[11px] text-[12.8px] font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)]"
     >
       <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-admin-gold-600" />
       {message}

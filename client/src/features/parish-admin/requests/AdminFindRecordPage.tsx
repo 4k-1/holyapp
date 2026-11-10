@@ -1,3 +1,4 @@
+import { formatTableDate } from "@/lib/dates";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useOutletContext, useParams } from "react-router-dom";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
@@ -300,24 +301,27 @@ export function AdminFindRecordPage() {
     {
       key: "ref",
       header: "Bk:Page:Entry",
-      render: (r) => <span className="font-medium text-admin-ink">{baptismRecordRef(r)}</span>,
+      sortValue: (r) => baptismRecordRef(r),
+      render: (r) => <span className="admin-table__primary">{baptismRecordRef(r)}</span>,
     },
-    { key: "name", header: "Name", render: (r) => recordFullName(r) },
+    { key: "name", header: "Name", sortValue: (r) => recordFullName(r), render: (r) => recordFullName(r) },
     {
       key: "dateOfBaptism",
-      header: "Bapt Date",
-      render: (r) => formatRecordDate(r.dateOfBaptism),
+      header: "Bapt. date",
+      sortValue: (r) => r.dateOfBaptism,
+      render: (r) => formatTableDate(r.dateOfBaptism),
     },
     {
       key: "dateOfBirth",
       header: "Birthdate",
-      render: (r) => formatRecordDate(r.dateOfBirth),
+      sortValue: (r) => r.dateOfBirth,
+      render: (r) => formatTableDate(r.dateOfBirth),
     },
-    { key: "mother", header: "Mother", render: (r) => recordMotherName(r) },
-    { key: "father", header: "Father", render: (r) => recordFatherName(r) },
+    { key: "mother", header: "Mother", sortValue: (r) => recordMotherName(r), render: (r) => recordMotherName(r) },
+    { key: "father", header: "Father", sortValue: (r) => recordFatherName(r), render: (r) => recordFatherName(r) },
     {
       key: "sponsors",
-      header: "Sponsors",
+      header: "Godparents",
       render: (r) => (sponsorsByRecordId[r.id] ?? []).map(sponsorFullName).join(", ") || "—",
     },
     {
@@ -328,7 +332,7 @@ export function AdminFindRecordPage() {
           type="button"
           onClick={() => setReviewRecord(r)}
           disabled={closed}
-          className="font-semibold text-admin-green-700 hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline"
+          className="admin-table__action disabled:cursor-not-allowed disabled:opacity-40"
         >
           Review match
         </button>

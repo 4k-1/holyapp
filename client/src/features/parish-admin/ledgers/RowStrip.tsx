@@ -39,7 +39,7 @@ export function RowStrip({
 
   if (!imageUrl || !box) {
     return (
-      <p className="admin-dash__muted rounded-[10px] border border-dashed border-[var(--dash-border-strong)] px-4 py-3 text-admin-support">
+      <p className="admin-dash__muted rounded-md border border-dashed border-[var(--dash-border-strong)] px-4 py-3 text-admin-support">
         {!imageUrl
           ? "No row picture when the pages are uploaded as two files. Use one photo, or one page at a time."
           : (note ?? "The row couldn't be found on the photo.")}
@@ -50,7 +50,7 @@ export function RowStrip({
   // The border sits on an outer box: the picture's % offsets are measured inside the border,
   // so a border on the sized box would shift the picture by a few pixels per row.
   return (
-    <div className="overflow-hidden rounded-[10px] border border-[var(--dash-border)] bg-white">
+    <div className="overflow-hidden rounded-md border border-[var(--dash-border)] bg-white">
       <div
         className="relative w-full overflow-hidden"
         style={{ aspectRatio: `${box.w} / ${box.h}` }}

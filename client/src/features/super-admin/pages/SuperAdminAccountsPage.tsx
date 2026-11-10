@@ -32,7 +32,7 @@ export function SuperAdminAccountsPage() {
 
   return (
     <div>
-      <div className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface">
+      <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-admin-border px-[18px] py-4">
           <div>
             <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">Parish Admin Accounts</h2>

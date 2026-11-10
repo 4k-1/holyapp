@@ -124,7 +124,7 @@ export function AdminRowActions({ label, actions }: { label: string; actions: Ro
               style={place}
               onKeyDown={onMenuKey}
               onClick={(e) => e.stopPropagation()}
-              className="z-[65] overflow-hidden rounded-xl border border-admin-border bg-white py-1 text-left shadow-[0_12px_32px_-8px_rgb(14_59_70/0.3)]"
+              className="z-[65] overflow-hidden rounded-lg border border-admin-border bg-white py-1 text-left shadow-[0_12px_32px_-8px_rgb(14_59_70/0.3)]"
             >
               {ordered.map((action, i) => (
                 <Fragment key={action.label}>

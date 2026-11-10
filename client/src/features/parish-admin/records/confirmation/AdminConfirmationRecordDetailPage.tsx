@@ -89,7 +89,7 @@ export function AdminConfirmationRecordDetailPage() {
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-[#E3E8F5] font-serif text-admin-group font-bold text-[#3B4E8A] ring-1 ring-inset ring-[#3B4E8A]/20">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#E3E8F5] font-serif text-admin-group font-bold text-[#3B4E8A] ring-1 ring-inset ring-[#3B4E8A]/20">
             {initials(name)}
           </div>
           <div>
@@ -101,7 +101,7 @@ export function AdminConfirmationRecordDetailPage() {
               Confirmed {formatRecordDate(record.dateOfConfirmation)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
                 Book {record.bookNumber}
                 <span className="text-admin-border-strong">/</span>
                 Page {record.pageNumber}

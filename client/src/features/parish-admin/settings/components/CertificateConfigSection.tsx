@@ -186,7 +186,7 @@ export function CertificateConfigSection() {
       <div
         role="tablist"
         aria-label="Sacrament"
-        className="mb-5 flex flex-wrap gap-1 rounded-2xl bg-admin-surface-alt p-1"
+        className="mb-5 flex flex-wrap gap-1 rounded-lg bg-admin-surface-alt p-1"
       >
         {SACRAMENTS.map(({ type, label, Icon }) => {
           const selected = activeType === type;
@@ -204,7 +204,7 @@ export function CertificateConfigSection() {
                 setErrors({});
                 setSaveError("");
               }}
-              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-admin-body font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
+              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-admin-body font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
                 selected
                   ? "bg-admin-surface text-admin-green-800 shadow-sm"
                   : "text-admin-ink-muted hover:text-admin-ink"
@@ -221,7 +221,7 @@ export function CertificateConfigSection() {
       </div>
 
       {saveError && (
-        <p className="mb-4 rounded-[9px] border border-admin-red-700/20 bg-admin-red-100 px-3.5 py-2.5 text-admin-body text-admin-red-700">
+        <p className="mb-4 rounded-md border border-admin-red-700/20 bg-admin-red-100 px-3.5 py-2.5 text-admin-body text-admin-red-700">
           {saveError}
         </p>
       )}
@@ -297,7 +297,7 @@ export function CertificateConfigSection() {
 
         <SettingsPanel title="Preview" description="Sample names only — not an issued certificate.">
           <div
-            className="relative h-[min(78vh,720px)] overflow-hidden rounded-[10px] p-3"
+            className="relative h-[min(78vh,720px)] overflow-hidden rounded-md p-3"
             style={{ background: CERT_PREVIEW_STAGE_BG }}
           >
             <CertificatePreviewStage>

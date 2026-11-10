@@ -65,13 +65,13 @@ export function SuperAdminReportsPage() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-1.5 rounded-[9px] border border-admin-border bg-white p-[3px]">
+        <div className="flex gap-1.5 rounded-md border border-admin-border bg-white p-[3px]">
           {RANGES.map((r) => (
             <button
               key={r.id}
               type="button"
               onClick={() => setRangeId(r.id)}
-              className={`rounded-[7px] px-3 py-1.5 text-[12px] font-bold ${
+              className={`rounded-md px-3 py-1.5 text-[12px] font-bold ${
                 rangeId === r.id ? "bg-admin-green-700 text-white" : "text-admin-ink-muted hover:bg-admin-green-100"
               }`}
             >
@@ -96,7 +96,7 @@ export function SuperAdminReportsPage() {
       </div>
 
       <div className="mb-[18px] grid grid-cols-1 gap-[18px] xl:grid-cols-2">
-        <div className="rounded-xl border border-admin-border bg-admin-surface p-[18px]">
+        <div className="rounded-lg border border-admin-border bg-admin-surface p-[18px]">
           <h3 className="m-0 text-[13.5px] font-bold text-admin-ink">Requests by Sacrament Type</h3>
           <p className="mt-0.5 text-[11.5px] text-admin-ink-faint">Share of all certificate requests this period</p>
           <div
@@ -112,7 +112,7 @@ export function SuperAdminReportsPage() {
             ))}
           </div>
         </div>
-        <div className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface">
+        <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
           <div className="border-b border-admin-border px-[18px] py-4">
             <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">Parish Performance</h2>
             <p className="mt-0.5 text-[11.5px] text-admin-ink-faint">Records, certificates, and turnaround by parish</p>
@@ -151,7 +151,7 @@ export function SuperAdminReportsPage() {
         </div>
       </div>
 
-      <div className="mb-4 overflow-hidden rounded-xl border border-admin-border bg-admin-surface">
+      <div className="mb-4 overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
         <div className="border-b border-admin-border px-[18px] py-4">
           <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">Generate a Report</h2>
           <p className="mt-0.5 text-[11.5px] text-admin-ink-faint">
@@ -162,7 +162,7 @@ export function SuperAdminReportsPage() {
           {REPORT_TYPES.map((rt) => {
             const Icon = rt.icon;
             return (
-              <div key={rt.id} className="rounded-[10px] border border-admin-border p-3.5">
+              <div key={rt.id} className="rounded-md border border-admin-border p-3.5">
                 <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-admin-green-100 text-admin-green-900">
                   <Icon className="h-4 w-4" />
                 </div>
@@ -185,7 +185,7 @@ export function SuperAdminReportsPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface">
+      <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
         <div className="border-b border-admin-border px-[18px] py-4">
           <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">Recently Generated</h2>
           <p className="mt-0.5 text-[11.5px] text-admin-ink-faint">
@@ -220,7 +220,7 @@ export function SuperAdminReportsPage() {
 
 function Stat({ label, value, sub, warn }: { label: string; value: string; sub: string; warn?: boolean }) {
   return (
-    <div className="rounded-xl border border-admin-border bg-admin-surface px-4 pb-3.5 pt-4">
+    <div className="rounded-lg border border-admin-border bg-admin-surface px-4 pb-3.5 pt-4">
       <p className="text-[11.5px] font-semibold text-admin-ink-muted">{label}</p>
       <p className="mt-2 text-2xl font-extrabold leading-none text-admin-ink">{value}</p>
       <p className={`mt-1.5 text-[10.8px] font-semibold ${warn ? "text-[#8a5f00]" : "text-admin-ink-faint"}`}>{sub}</p>

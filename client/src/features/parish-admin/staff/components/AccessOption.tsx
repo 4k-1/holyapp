@@ -17,7 +17,7 @@ export function AccessOption({
       type="button"
       onClick={onSelect}
       disabled={disabled}
-      className={`rounded-[10px] border px-3.5 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+      className={`rounded-md border px-3.5 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
         selected
           ? "border-admin-green-600 bg-admin-green-050 ring-1 ring-inset ring-admin-green-600/30"
           : "border-admin-border-strong bg-white hover:bg-admin-surface-alt"

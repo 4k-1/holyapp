@@ -35,7 +35,7 @@ export function LedgerSourcePanel({
   return (
     <>
       {notes.length > 0 && (
-        <ul className="mb-3 grid gap-1 rounded-2xl border border-admin-border bg-admin-surface px-4 py-3 text-admin-support">
+        <ul className="mb-3 grid gap-1 rounded-lg border border-admin-border bg-admin-surface px-4 py-3 text-admin-support">
           {notes.map((n) => (
             <li key={n.label + n.message} className={TONE[n.tone]}>
               <span className="font-semibold">{n.label}:</span> {n.message}
@@ -43,7 +43,7 @@ export function LedgerSourcePanel({
           ))}
         </ul>
       )}
-      <div className="sticky top-[4.75rem] z-[9] mb-4 rounded-2xl border border-admin-gold-600/30 bg-admin-surface shadow-[0_6px_20px_rgb(14_59_70/0.08)] sm:top-[5.25rem]">
+      <div className="sticky top-[4.75rem] z-[9] mb-4 rounded-lg border border-admin-gold-600/30 bg-admin-surface shadow-[0_6px_20px_rgb(14_59_70/0.08)] sm:top-[5.25rem]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
           <p className="text-admin-support text-admin-ink">
             <span className="font-semibold">

@@ -355,7 +355,7 @@ export function UploadLedgerPageModal({
                         <button
                           type="button"
                           onClick={() => goToScan(i)}
-                          className={`block overflow-hidden rounded-[7px] border ${
+                          className={`block overflow-hidden rounded-md border ${
                             draft.id === active?.id
                               ? "border-admin-green-700 ring-2 ring-admin-green-600/30"
                               : "border-admin-border hover:border-admin-green-600"
@@ -480,7 +480,7 @@ function DropZone({
 
 function ErrorNote({ children }: { children: string }) {
   return (
-    <p className="mt-4 rounded-[9px] border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
+    <p className="mt-4 rounded-md border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
       {children}
     </p>
   );

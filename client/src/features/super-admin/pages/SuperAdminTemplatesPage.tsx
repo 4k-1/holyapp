@@ -110,7 +110,7 @@ export function SuperAdminTemplatesPage() {
 
   return (
     <div>
-      <div className="overflow-hidden rounded-xl border border-admin-border bg-admin-surface">
+      <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
         <div className="border-b border-admin-border px-[18px] py-4">
           <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">Master Templates</h2>
           <p className="mt-0.5 text-[11.5px] text-admin-ink-faint">
@@ -135,7 +135,7 @@ export function SuperAdminTemplatesPage() {
         </div>
         <div className="grid grid-cols-1 gap-3.5 p-4 sm:grid-cols-2 xl:grid-cols-4">
           {templates.map((tpl, idx) => (
-            <div key={tpl.id} className="overflow-hidden rounded-[10px] border border-admin-border bg-white">
+            <div key={tpl.id} className="overflow-hidden rounded-md border border-admin-border bg-white">
               <div className="flex h-[86px] items-center justify-center" style={{ background: COVER[idx] }}>
                 <svg
                   className="h-[26px] w-[26px] stroke-white"
@@ -199,9 +199,9 @@ export function SuperAdminTemplatesPage() {
               stable — only labels can be adjusted here.
             </p>
           </div>
-          <div className="flex flex-col gap-1.5 rounded-[10px] border border-dashed border-admin-border p-2.5">
+          <div className="flex flex-col gap-1.5 rounded-md border border-dashed border-admin-border p-2.5">
             {editing.zones.map((zone) => (
-              <div key={zone.z} className="rounded-[7px] border border-admin-border bg-[#FAFAF7] px-3 py-2">
+              <div key={zone.z} className="rounded-md border border-admin-border bg-[#FAFAF7] px-3 py-2">
                 <p className="text-[10.5px] font-bold uppercase tracking-[0.05em] text-admin-ink-faint">{zone.z}</p>
                 <p className="mt-0.5 text-[12.5px] text-admin-ink">{zone.f}</p>
               </div>

@@ -95,7 +95,7 @@ export function AdminBaptismalRecordDetailPage() {
 
       <AdminCard className="mb-4 flex flex-wrap items-start justify-between gap-4 p-5 px-6">
         <div className="flex items-start gap-3.5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-admin-green-100 font-serif text-admin-group font-bold text-admin-green-700 ring-1 ring-inset ring-admin-green-600/20">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-admin-green-100 font-serif text-admin-group font-bold text-admin-green-700 ring-1 ring-inset ring-admin-green-600/20">
             {initials(name)}
           </div>
           <div>
@@ -104,7 +104,7 @@ export function AdminBaptismalRecordDetailPage() {
               Baptized {formatRecordDate(record.dateOfBaptism)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
                 Book {record.bookNumber}
                 <span className="text-admin-border-strong">/</span>
                 Page {record.pageNumber}

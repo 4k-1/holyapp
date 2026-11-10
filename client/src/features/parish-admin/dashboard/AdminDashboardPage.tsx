@@ -4,8 +4,9 @@ import { Link } from "react-router-dom";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { getDashboardView } from "./api/dashboardApi";
+import { QuickActionsCard } from "./QuickActionsCard";
 import { UnconfirmedPrintsCard } from "./UnconfirmedPrintsCard";
-import type { ActivityItem, AttentionItem, DashboardStat, DotTone, QuickAction, TodayMass, UpcomingEvent } from "./types";
+import type { ActivityItem, AttentionItem, DashboardStat, DotTone, TodayMass, UpcomingEvent } from "./types";
 import "./AdminDashboardPage.css";
 
 const PILL_TONE: Record<DotTone, string> = {
@@ -25,7 +26,6 @@ export function AdminDashboardPage() {
   const user = useCurrentUser();
   const [attention, setAttention] = useState<AttentionItem[]>([]);
   const [stats, setStats] = useState<DashboardStat[]>([]);
-  const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
   const [todayMasses, setTodayMasses] = useState<TodayMass[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [upcoming, setUpcoming] = useState<UpcomingEvent[]>([]);
@@ -37,7 +37,6 @@ export function AdminDashboardPage() {
       .then((view) => {
         setAttention(view.attention);
         setStats(view.stats);
-        setQuickActions(view.quickActions);
         setTodayMasses(view.todayMasses);
         setActivity(view.activity);
         setUpcoming(view.upcoming);
@@ -54,8 +53,6 @@ export function AdminDashboardPage() {
   });
 
   const firstName = user?.firstName?.trim() || "there";
-  const primaryAction = quickActions[0];
-  const secondaryActions = quickActions.slice(1);
 
   if (loading) {
     return <p className="admin-dash__muted text-admin-body">Loading dashboard…</p>;
@@ -70,7 +67,7 @@ export function AdminDashboardPage() {
 
   return (
     <div className="admin-dash mx-auto w-full max-w-[1920px]">
-      <header className="mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
+      <header className="mb-6 sm:mb-7">
         <div>
           <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)] sm:text-[1.5rem]">
             {greeting()}, {firstName}
@@ -79,20 +76,9 @@ export function AdminDashboardPage() {
             {todayLabel} · parish desk overview
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {primaryAction && (
-            <Link to={primaryAction.href} className="admin-dash__cta-primary">
-              <PlusIcon className="h-3.5 w-3.5" />
-              {primaryAction.label}
-            </Link>
-          )}
-          {secondaryActions[0] && (
-            <Link to={secondaryActions[0].href} className="admin-dash__cta-ghost">
-              {secondaryActions[0].label}
-            </Link>
-          )}
-        </div>
       </header>
+
+      <QuickActionsCard />
 
       <section className="mb-5 grid grid-cols-2 gap-3 lg:mb-6 lg:grid-cols-4 lg:gap-4" aria-label="Overview counts">
         {stats.map((s) => (
@@ -140,17 +126,6 @@ export function AdminDashboardPage() {
       )}
 
       <UnconfirmedPrintsCard />
-
-      {secondaryActions.length > 1 && (
-        <nav className="mb-5 flex flex-wrap gap-2 sm:mb-6" aria-label="More quick actions">
-          {secondaryActions.slice(1).map((qa) => (
-            <Link key={qa.id} to={qa.href} className="admin-dash__soft-btn">
-              <QuickActionIconGlyph icon={qa.icon} className="admin-dash__soft-btn-icon h-3.5 w-3.5" />
-              {qa.label}
-            </Link>
-          ))}
-        </nav>
-      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-5">
         <section className="admin-dash__card p-4 sm:p-5">
@@ -240,19 +215,6 @@ function StatIconGlyph({ icon, className }: { icon: DashboardStat["icon"]; class
   }
 }
 
-function QuickActionIconGlyph({ icon, className }: { icon: QuickAction["icon"]; className?: string }) {
-  switch (icon) {
-    case "plus":
-      return <PlusIcon className={className} />;
-    case "file":
-      return <FileIcon className={className} />;
-    case "chart":
-      return <ChartIcon className={className} />;
-    case "scan":
-      return <ScanIcon className={className} />;
-  }
-}
-
 function AlertIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
@@ -309,46 +271,6 @@ function CalendarIcon({ className }: { className?: string }) {
       <line x1="16" y1="2" x2="16" y2="6" strokeLinecap="round" />
       <line x1="8" y1="2" x2="8" y2="6" strokeLinecap="round" />
       <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-
-function PlusIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={className} aria-hidden>
-      <line x1="12" y1="5" x2="12" y2="19" strokeLinecap="round" />
-      <line x1="5" y1="12" x2="19" y2="12" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function FileIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
-      <polyline points="14 2 14 8 20 8" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ChartIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-      <line x1="18" y1="20" x2="18" y2="10" strokeLinecap="round" />
-      <line x1="12" y1="20" x2="12" y2="4" strokeLinecap="round" />
-      <line x1="6" y1="20" x2="6" y2="14" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ScanIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-      <path
-        d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"
-        strokeLinecap="round"
-      />
-      <line x1="7" y1="12" x2="17" y2="12" strokeLinecap="round" />
     </svg>
   );
 }

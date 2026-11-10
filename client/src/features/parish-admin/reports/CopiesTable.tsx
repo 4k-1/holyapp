@@ -19,7 +19,7 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 const controlClass =
-  "h-9 rounded-[10px] border border-admin-border bg-admin-surface px-2.5 text-admin-support text-admin-ink outline-none focus-visible:border-admin-green-700";
+  "h-9 rounded-md border border-admin-border bg-admin-surface px-2.5 text-admin-support text-admin-ink outline-none focus-visible:border-admin-green-700";
 
 const th = "border-b border-admin-border py-2 pr-3 text-left font-medium text-admin-ink-faint";
 const td = "border-b border-admin-border py-2 pr-3 align-top text-admin-ink";
@@ -45,7 +45,7 @@ export function CopiesTable({
   const set = (patch: Partial<CopyFilter>) => filter && onFilterChange?.({ ...filter, ...patch });
 
   return (
-    <section data-pdf-break className="rounded-[14px] border border-admin-border bg-admin-surface p-4 @2xl:p-5">
+    <section data-pdf-break className="rounded-lg border border-admin-border bg-admin-surface p-4 @2xl:p-5">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-sans text-admin-group font-semibold text-admin-ink">Certificates issued</h3>
         <p className="text-[11px] text-admin-ink-faint">

@@ -1,3 +1,4 @@
+import { formatTableDate } from "@/lib/dates";
 import { useMemo } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
@@ -6,7 +7,6 @@ import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { CapacityBadge } from "@/features/parish-admin/intentions/components/CapacityBadge";
 import {
   formatPeso,
-  formatRequestedOn,
   intentionLabel,
   donationTotal,
 } from "@/features/parish-admin/intentions/intentionsHelpers";
@@ -51,11 +51,12 @@ export function MassSlotTable({
     {
       key: "intention",
       header: "Intention",
+      sortValue: (row) => intentionLabel(row),
       render: (row) => (
         <span>
           <span className="block text-admin-ink">{intentionLabel(row)}</span>
           <span className="block text-admin-support text-admin-ink-muted">
-            {row.requestedBy} · {formatRequestedOn(row.createdAt)}
+            {row.requestedBy} · {formatTableDate(row.createdAt)}
           </span>
         </span>
       ),
@@ -63,9 +64,10 @@ export function MassSlotTable({
     {
       key: "donation",
       header: "Donation",
+      sortValue: (row) => (row.payment === "none" ? null : row.offering),
       render: (row) =>
         row.payment === "none" ? (
-          <span className="text-admin-ink-muted">None</span>
+          <span className="text-admin-ink-muted">—</span>
         ) : (
           <span className="inline-flex flex-wrap items-center gap-1.5 whitespace-nowrap">
             <span className="tabular-nums">{formatPeso(row.offering)}</span>
@@ -76,6 +78,7 @@ export function MassSlotTable({
     {
       key: "status",
       header: "Status",
+      sortValue: (row) => STATUS_LABEL[row.status],
       render: (row) => <AdminBadge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</AdminBadge>,
     },
     {
@@ -87,7 +90,7 @@ export function MassSlotTable({
             type="button"
             onClick={() => onConfirm(row)}
             disabled={markingId === row.id}
-            className="font-semibold text-admin-green-700 hover:underline disabled:opacity-45"
+            className="admin-table__action disabled:opacity-45"
           >
             {markingId === row.id ? "Saving…" : "Confirm"}
           </button>
@@ -96,7 +99,7 @@ export function MassSlotTable({
             type="button"
             onClick={() => onMarkSaid(row)}
             disabled={markingId === row.id}
-            className="font-semibold text-admin-green-700 hover:underline disabled:opacity-45"
+            className="admin-table__action disabled:opacity-45"
           >
             {markingId === row.id ? "Saving…" : "Mark Said"}
           </button>

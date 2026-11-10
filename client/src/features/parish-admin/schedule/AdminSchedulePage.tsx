@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
+import { useOpenFromLink } from "@/features/parish-admin/components/useOpenFromLink";
 import { getOccurrencesForMonth } from "./api/scheduleApi";
 import { splitRegularMasses, toISO } from "./scheduleHelpers";
 import { MonthCalendarGrid } from "./components/MonthCalendarGrid";
@@ -31,7 +32,8 @@ export function AdminSchedulePage() {
   const [addModalDate, setAddModalDate] = useState<string | null>(null);
   const [assignTarget, setAssignTarget] = useState<ScheduleOccurrence | null>(null);
   const [editTarget, setEditTarget] = useState<ScheduleBlock | null>(null);
-  const [bookingFuneral, setBookingFuneral] = useState(false);
+  // The dashboard's "Book a funeral" opens the booking form straight away.
+  const [bookingFuneral, setBookingFuneral] = useState(useOpenFromLink("funeral"));
   /** Bumped after an edit so the list view fetches again. */
   const [listVersion, setListVersion] = useState(0);
 
@@ -102,10 +104,10 @@ export function AdminSchedulePage() {
       />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-[10px] border border-admin-border bg-admin-surface-alt p-1">
+        <div className="inline-flex rounded-md border border-admin-border bg-admin-surface-alt p-1">
           <button
             onClick={() => setView("calendar")}
-            className={`rounded-[7px] px-3.5 py-1.5 text-admin-support font-semibold transition ${
+            className={`rounded-md px-3.5 py-1.5 text-admin-support font-semibold transition ${
               view === "calendar" ? "bg-admin-surface text-admin-ink shadow-sm" : "text-admin-ink-muted"
             }`}
           >
@@ -113,7 +115,7 @@ export function AdminSchedulePage() {
           </button>
           <button
             onClick={() => setView("list")}
-            className={`rounded-[7px] px-3.5 py-1.5 text-admin-support font-semibold transition ${
+            className={`rounded-md px-3.5 py-1.5 text-admin-support font-semibold transition ${
               view === "list" ? "bg-admin-surface text-admin-ink shadow-sm" : "text-admin-ink-muted"
             }`}
           >
