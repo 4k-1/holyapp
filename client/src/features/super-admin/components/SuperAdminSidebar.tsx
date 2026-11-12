@@ -5,7 +5,6 @@ import {
   ClipboardIcon,
   GearIcon,
   GridIcon,
-  LogoutIcon,
   ReportIcon,
   SealIcon,
 } from "@/components/ui/icons/AdminIcons";
@@ -14,13 +13,7 @@ function isParishNavActive(pathname: string) {
   return pathname.startsWith("/super-admin/parishes") || /^\/super-admin\/accounts\/[^/]+/.test(pathname);
 }
 
-export function SuperAdminSidebar({
-  collapsed,
-  onSignOut,
-}: {
-  collapsed: boolean;
-  onSignOut: () => void;
-}) {
+export function SuperAdminSidebar({ collapsed }: { collapsed: boolean }) {
   const location = useLocation();
 
   return (
@@ -61,19 +54,6 @@ export function SuperAdminSidebar({
 
       <div className={`shrink-0 border-t border-admin-border ${collapsed ? "px-0 py-2.5" : "px-2 py-2.5"}`}>
         <SidebarLink to="/super-admin/settings" icon={<GearIcon />} label="Settings" collapsed={collapsed} />
-        <button
-          type="button"
-          onClick={onSignOut}
-          className={`group relative mb-0.5 flex w-full items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-[14px] font-medium text-admin-ink-muted hover:bg-admin-green-100 ${
-            collapsed ? "justify-center px-0 py-2.5" : "px-2.5 py-[9px]"
-          }`}
-        >
-          <span className="flex h-[17px] w-[17px] shrink-0 opacity-75 [&>svg]:h-full [&>svg]:w-full">
-            <LogoutIcon />
-          </span>
-          {!collapsed && <span>Sign out</span>}
-          {collapsed ? <CollapsedTip label="Sign out" /> : null}
-        </button>
       </div>
     </aside>
   );

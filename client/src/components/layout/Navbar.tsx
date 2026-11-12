@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { GearIcon, LogoutIcon, UserIcon } from "@/components/ui/icons/AdminIcons";
+import { GearIcon, UserIcon } from "@/components/ui/icons/AdminIcons";
+import { ProfileMenu } from "@/components/layout/ProfileMenu";
 import { logout } from "@/features/auth/api/authApi";
 import { askConfirm } from "@/lib/notify";
 import type { Parish } from "@/types";
@@ -21,7 +22,19 @@ const navItems = [
 ];
 
 export function Navbar({ parish, userInitials, userName, userEmail }: NavbarProps) {
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  async function handleLogout() {
+    const ok = await askConfirm({
+      title: "Log out?",
+      message: "You'll need to log in again to use the parishioner portal.",
+      confirmLabel: "Log out",
+    });
+    if (!ok) return;
+    await logout();
+    navigate(`/${parish.slug}/login`, { replace: true });
+  }
 
   return (
     <nav className="sticky top-0 z-50 bg-primary text-white shadow-md">
@@ -93,7 +106,17 @@ export function Navbar({ parish, userInitials, userName, userEmail }: NavbarProp
           >
             Verify
           </NavLink>
-          <ProfileMenu parish={parish} userInitials={userInitials} userName={userName} userEmail={userEmail} />
+          <ProfileMenu
+            tone="portal"
+            initials={userInitials}
+            name={userName}
+            email={userEmail}
+            items={[
+              { to: "account", label: "Account", icon: <UserIcon /> },
+              { to: "settings", label: "Settings", icon: <GearIcon /> },
+            ]}
+            onLogout={handleLogout}
+          />
 
           {/* Hamburger — mobile only */}
           <button
@@ -129,87 +152,5 @@ export function Navbar({ parish, userInitials, userName, userEmail }: NavbarProp
         </div>
       )}
     </nav>
-  );
-}
-
-/** The initials button: a small menu with Account, Settings and Log out. */
-function ProfileMenu({ parish, userInitials, userName, userEmail }: NavbarProps) {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handlePointerDown(e: PointerEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open]);
-
-  async function handleLogout() {
-    setOpen(false);
-    const ok = await askConfirm({
-      title: "Log out?",
-      message: "You'll need to log in again to use the parishioner portal.",
-      confirmLabel: "Log out",
-    });
-    if (!ok) return;
-    await logout();
-    navigate(`/${parish.slug}/login`, { replace: true });
-  }
-
-  const itemClass =
-    "flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-surface-alt focus-visible:bg-surface-alt focus-visible:outline-none";
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`${userName}, account menu`}
-        title={userName}
-        onClick={() => setOpen((o) => !o)}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/70 text-xs font-bold text-primary shadow-sm transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-9 sm:w-9"
-      >
-        {userInitials}
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[240px] overflow-hidden rounded-xl border border-border bg-surface py-1 text-ink shadow-[0_8px_24px_rgba(10,40,45,0.16)]"
-        >
-          <div className="border-b border-border px-4 py-3">
-            <p className="truncate text-sm font-semibold text-ink">{userName}</p>
-            {userEmail && <p className="mt-0.5 truncate text-[0.8125rem] text-ink-muted">{userEmail}</p>}
-          </div>
-          <div className="py-1">
-            <Link to="account" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
-              <UserIcon className="h-4 w-4 shrink-0 text-ink-muted" />
-              Account
-            </Link>
-            <Link to="settings" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
-              <GearIcon className="h-4 w-4 shrink-0 text-ink-muted" />
-              Settings
-            </Link>
-          </div>
-          <div className="border-t border-border py-1">
-            <button type="button" role="menuitem" onClick={handleLogout} className={itemClass}>
-              <LogoutIcon className="h-4 w-4 shrink-0" />
-              Log out
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
   );
 }

@@ -62,11 +62,11 @@ function SuperAdminShell() {
 
   if (!user) return null;
 
-  async function handleSignOut() {
+  async function handleLogout() {
     const ok = await askConfirm({
-      title: "Sign out?",
-      message: "You'll need to sign in again to use the platform console.",
-      confirmLabel: "Sign out",
+      title: "Log out?",
+      message: "You'll need to log in again to use the platform console.",
+      confirmLabel: "Log out",
     });
     if (!ok) return;
     await logout();
@@ -75,9 +75,14 @@ function SuperAdminShell() {
 
   return (
     <div data-portal="admin" data-surface="platform" className="flex h-dvh flex-col bg-admin-bg font-sans text-admin-ink">
-      <SuperAdminTopbar user={user} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
+      <SuperAdminTopbar
+        user={user}
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((v) => !v)}
+        onLogout={handleLogout}
+      />
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <SuperAdminSidebar collapsed={collapsed} onSignOut={handleSignOut} />
+        <SuperAdminSidebar collapsed={collapsed} />
         {!collapsed && (
           <div
             className="fixed inset-x-0 bottom-0 top-16 z-30 bg-black/30 sm:hidden"

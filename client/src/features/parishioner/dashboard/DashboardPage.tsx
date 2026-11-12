@@ -10,6 +10,7 @@ import { dateStamp, nextMass } from "@/features/parishioner/dashboard/massTimes"
 import { feeOf, peso, requestGroup, SACRAMENT_TITLES } from "@/features/parishioner/requests/requestDisplay";
 import { GiveIcon, IntentionIcon } from "@/components/ui/icons/SacramentIcons";
 import type { CertificateRequest, Parish } from "@/types";
+import { Cloud } from "@/features/public/Cloud";
 
 const colorDots: Record<LiturgicalColor, string> = {
   green: "bg-[#3f8f5a]",
@@ -59,12 +60,26 @@ export function DashboardPage({ parish, userName }: DashboardPageProps) {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-      <section className="relative overflow-hidden rounded-[22px] bg-[#dcf1ef] shadow-[0_1px_2px_rgb(14_59_70/0.06),0_12px_30px_-14px_rgb(14_59_70/0.35)]">
+      {/* HolyApp's logo teal, a shade deeper towards the bottom so white text stays at 5:1 or better; a soft glow,
+          faint drawn clouds and white Plus Jakarta Sans, as on the sign-in pages. */}
+      <section className="relative isolate overflow-hidden rounded-[22px] bg-[linear-gradient(135deg,#16798c_0%,#13697a_60%,#12606f_100%)] text-white shadow-[0_1px_2px_rgb(14_59_70/0.1),0_14px_32px_-14px_rgb(14_59_70/0.45)]">
+        <div
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(ellipse 55% 60% at 90% 0%, rgba(142, 216, 210, 0.22), transparent 70%), radial-gradient(ellipse 45% 50% at 10% 0%, rgba(238, 181, 49, 0.1), transparent 70%)",
+          }}
+          aria-hidden="true"
+        />
+        <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
+          <Cloud className="bottom-[-38%] left-[-10%] w-[52%] opacity-[0.2]" drift={70} />
+          <Cloud className="bottom-[-46%] right-[-12%] w-[48%] opacity-[0.16]" drift={85} delay={-30} flip />
+        </div>
         {parish.photoUrl && (
           <img
             src={parish.photoUrl}
             alt=""
-            className="absolute inset-y-0 right-0 h-full w-[48%] object-cover object-[46%_40%] opacity-25 sm:w-[50%] sm:object-[40%_42%] lg:opacity-50"
+            className="absolute inset-y-0 right-0 -z-10 h-full w-[48%] object-cover object-[46%_40%] opacity-30 sm:w-[50%] sm:object-[40%_42%] lg:opacity-45"
             style={photoFade}
             aria-hidden="true"
           />
@@ -75,24 +90,22 @@ export function DashboardPage({ parish, userName }: DashboardPageProps) {
           }`}
         >
           <div className="min-w-0">
-            <h1 className="font-serif text-[1.875rem] leading-tight text-[#0e3b46] [text-shadow:0_0_14px_#dcf1ef,0_0_4px_#dcf1ef] sm:text-[2.375rem]">
+            <h1 className="font-[Plus_Jakarta_Sans,ui-sans-serif,system-ui,sans-serif] text-[1.75rem] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[2.25rem]">
               {greeting(now)}, {userName}
             </h1>
-            <p className="mt-1.5 text-[0.9375rem] text-[#2b5560] [text-shadow:0_0_10px_#dcf1ef,0_0_3px_#dcf1ef] sm:text-base">
-              What would you like to do today?
-            </p>
+            <p className="mt-1.5 text-[0.9375rem] text-white/90 sm:text-base">What would you like to do today?</p>
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.875rem]">
-              <span className="font-semibold text-[#0e3b46] [text-shadow:0_0_10px_#dcf1ef,0_0_3px_#dcf1ef]">
+              <span className="font-semibold text-white">
                 {now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
               </span>
-              <span className="inline-flex max-w-full items-start gap-2 rounded-full bg-white/70 px-3 py-1.5 leading-snug text-[#0e3b46] ring-1 ring-[#0e3b46]/10">
+              <span className="inline-flex max-w-full items-start gap-2 rounded-full bg-white/10 px-3 py-1.5 leading-snug text-white ring-1 ring-white/20">
                 <span
-                  className={`mt-[0.3rem] h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-[#0e3b46]/25 ${colorDots[today.color]}`}
+                  className={`mt-[0.3rem] h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/50 ${colorDots[today.color]}`}
                   aria-hidden="true"
                 />
                 <span>
                   <span className="font-semibold">{today.name}</span>
-                  {!today.name.includes(today.season) && <span className="text-[#2b5560]"> · {today.season}</span>}
+                  {!today.name.includes(today.season) && <span className="text-white/85"> · {today.season}</span>}
                   <span className="sr-only">, liturgical colour {today.color}</span>
                 </span>
               </span>
@@ -390,7 +403,7 @@ function ChurchIllustration({ className }: { className: string }) {
         <ellipse cx="80" cy="28" rx="14" ry="8" />
         <ellipse cx="226" cy="74" rx="16" ry="6" />
       </g>
-      <ellipse cx="130" cy="160" rx="122" ry="10" fill="#bfe3df" />
+      <ellipse cx="130" cy="160" rx="122" ry="10" fill="#16798c" opacity="0.55" />
       <circle cx="40" cy="128" r="22" fill="#2a9d9c" />
       <circle cx="58" cy="138" r="16" fill="#1d7480" />
       <rect x="38" y="138" width="4" height="20" rx="2" fill="#0e3b46" />

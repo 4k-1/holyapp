@@ -4,27 +4,18 @@ import { Navbar } from "@/components/layout/Navbar";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import type { Parish } from "@/types";
 import "./portal.css";
-
-function getInitials(fullName: string): string {
-  return fullName
-    .split(" ")
-    .filter(Boolean)
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
+import { userInitials } from "@/lib/userInitials";
 
 export function PortalLayout() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const user = useCurrentUser();
 
   const userName = user?.fullName ?? "Parishioner";
-  const userInitials = user ? getInitials(user.fullName) : "P";
+  const initials = user ? userInitials(user) : "P";
 
   return (
     <div className="parishioner-portal min-h-screen bg-surface-alt">
-      <Navbar parish={parish} userInitials={userInitials} userName={userName} userEmail={user?.email ?? ""} />
+      <Navbar parish={parish} userInitials={initials} userName={userName} userEmail={user?.email ?? ""} />
       <main>
         <PageEnter>
           <Outlet context={{ parish }} />

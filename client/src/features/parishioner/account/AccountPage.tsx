@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "@/features/auth/api/authApi";
 import { PersonalInfoPanel } from "@/features/parishioner/account/components/PersonalInfoPanel";
 import type { CurrentUser } from "@/types";
+import { userInitials } from "@/lib/userInitials";
 
 /** Your personal details. Password and closing the account are on the Settings page. */
 export function AccountPage() {
@@ -11,12 +12,7 @@ export function AccountPage() {
 
   if (!user) return null;
 
-  const initials = user.fullName
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initials = userInitials(user);
 
   /** Back to the previous page, or the dashboard when this page was opened directly. */
   function handleBack() {
