@@ -116,6 +116,11 @@ export function StaffAccountsSection() {
               {s.email === currentUser?.email && (
                 <span className="ml-1.5 text-admin-label font-normal text-admin-ink-faint">(You)</span>
               )}
+              {s.status !== "Active" && (
+                <span className="ml-2 align-middle">
+                  <AdminBadge tone="muted">Deactivated</AdminBadge>
+                </span>
+              )}
             </p>
             <p className="truncate text-admin-support text-admin-ink-faint">{s.email}</p>
           </div>
@@ -132,12 +137,6 @@ export function StaffAccountsSection() {
           {s.accessRole === "admin" ? "Admin access" : "Staff access"}
         </AdminBadge>
       ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      sortValue: (s) => s.status,
-      render: (s) => <AdminBadge tone={s.status === "Active" ? "green" : "muted"}>{s.status}</AdminBadge>,
     },
     {
       key: "actions",

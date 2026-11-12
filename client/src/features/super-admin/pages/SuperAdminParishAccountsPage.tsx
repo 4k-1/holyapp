@@ -390,7 +390,7 @@ function AdminTable({
       <table className="w-full min-w-[560px] border-collapse">
         <thead>
           <tr className="bg-admin-surface-alt">
-            {["Name", "Email", "Role", "Status"].map((h) => (
+            {["Name", "Email", "Role"].map((h) => (
               <th
                 key={h}
                 className="border-b border-admin-border px-[18px] py-2.5 text-left text-[12.5px] font-semibold text-admin-ink-muted"
@@ -405,11 +405,11 @@ function AdminTable({
         </thead>
         <tbody>
           {loading ? (
-            <EmptyRow cols={5} text="Loading accounts…" />
+            <EmptyRow cols={4} text="Loading accounts…" />
           ) : empty ? (
-            <EmptyRow cols={5} text="No admin accounts yet." />
+            <EmptyRow cols={4} text="No admin accounts yet." />
           ) : noMatch ? (
-            <EmptyRow cols={5} text="No accounts match your search." />
+            <EmptyRow cols={4} text="No accounts match your search." />
           ) : (
             rows.map((user) => (
               <tr
@@ -418,15 +418,13 @@ function AdminTable({
               >
                 <td className="border-b border-admin-border px-[18px] py-3 text-[14px] font-bold text-admin-ink">
                   {user.fullName}
+                  {user.status !== "active" && <SuspendedPill />}
                 </td>
                 <td className="border-b border-admin-border px-[18px] py-3 text-[14px] text-admin-ink">
                   {user.email}
                 </td>
                 <td className="border-b border-admin-border px-[18px] py-3 text-[14px] text-admin-ink">
                   {roleLabel(user.role)}
-                </td>
-                <td className="border-b border-admin-border px-[18px] py-3">
-                  <StatusPill status={user.status} />
                 </td>
                 <td className="border-b border-admin-border px-[18px] py-3">
                   <SuperAdminKebabMenu
@@ -457,16 +455,11 @@ function AdminTable({
   );
 }
 
-function StatusPill({ status }: { status: CurrentUser["status"] }) {
+/** Only suspended accounts get a label; an active one is the normal case. */
+function SuspendedPill() {
   return (
-    <span
-      className={`inline-block rounded-full px-2.5 py-[3px] text-[12.5px] font-bold ${
-        status === "active"
-          ? "bg-admin-green-100 text-admin-green-900"
-          : "bg-admin-red-100 text-admin-red-700"
-      }`}
-    >
-      {status === "active" ? "Active" : "Suspended"}
+    <span className="ml-2 inline-block rounded-full bg-admin-red-100 px-2.5 py-[3px] align-middle text-[12.5px] font-bold text-admin-red-700">
+      Suspended
     </span>
   );
 }
@@ -497,7 +490,7 @@ function ParishionerTable({
       <table className="w-full min-w-[560px] border-collapse">
         <thead>
           <tr className="bg-admin-surface-alt">
-            {["Name", "Email", "Joined", "Status"].map((h) => (
+            {["Name", "Email", "Joined"].map((h) => (
               <th
                 key={h}
                 className="border-b border-admin-border px-[18px] py-2.5 text-left text-[12.5px] font-semibold text-admin-ink-muted"
@@ -512,11 +505,11 @@ function ParishionerTable({
         </thead>
         <tbody>
           {loading ? (
-            <EmptyRow cols={5} text="Loading accounts…" />
+            <EmptyRow cols={4} text="Loading accounts…" />
           ) : empty ? (
-            <EmptyRow cols={5} text="No parishioner accounts yet." />
+            <EmptyRow cols={4} text="No parishioner accounts yet." />
           ) : noMatch ? (
-            <EmptyRow cols={5} text="No accounts match your search." />
+            <EmptyRow cols={4} text="No accounts match your search." />
           ) : (
             rows.map((user) => (
               <tr
@@ -525,15 +518,13 @@ function ParishionerTable({
               >
                 <td className="border-b border-admin-border px-[18px] py-3 text-[14px] font-bold text-admin-ink">
                   {user.fullName}
+                  {user.status !== "active" && <SuspendedPill />}
                 </td>
                 <td className="border-b border-admin-border px-[18px] py-3 text-[14px] text-admin-ink">
                   {user.email}
                 </td>
                 <td className="border-b border-admin-border px-[18px] py-3 text-[14px] text-admin-ink">
                   {formatJoined(user.createdAt)}
-                </td>
-                <td className="border-b border-admin-border px-[18px] py-3">
-                  <StatusPill status={user.status} />
                 </td>
                 <td className="border-b border-admin-border px-[18px] py-3">
                   <SuperAdminKebabMenu

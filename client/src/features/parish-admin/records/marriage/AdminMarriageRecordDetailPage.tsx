@@ -122,9 +122,7 @@ export function AdminMarriageRecordDetailPage() {
                 <span className="text-admin-border-strong">/</span>
                 Entry {record.entryNumber}
               </span>
-              <AdminBadge tone={record.status === "Archived" ? "muted" : "green"}>
-                {record.status}
-              </AdminBadge>
+              {record.status === "Archived" && <AdminBadge tone="muted">Archived</AdminBadge>}
             </div>
           </div>
         </div>

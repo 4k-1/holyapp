@@ -88,13 +88,11 @@ export function SuperAdminParishesPage() {
                     <p className="mt-1 text-[14.5px] text-admin-ink-faint">{parishMeta(row)}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-4">
-                    <span
-                      className={`whitespace-nowrap rounded-full px-2.5 py-[3px] text-[13px] font-bold ${
-                        active ? "bg-admin-green-100 text-admin-green-900" : "bg-admin-gold-100 text-admin-gold-700"
-                      }`}
-                    >
-                      {active ? "Active" : "Pending setup"}
-                    </span>
+                    {!active && (
+                      <span className="whitespace-nowrap rounded-full bg-admin-gold-100 px-2.5 py-[3px] text-[13px] font-bold text-admin-gold-700">
+                        Pending setup
+                      </span>
+                    )}
                     <Link
                       to={`/super-admin/accounts/${row.parish.id}`}
                       className="text-[14.5px] font-semibold text-admin-green-700 hover:text-admin-green-900"

@@ -104,7 +104,7 @@ export function AdminDeathRecordDetailPage() {
                 <span className="text-admin-border-strong">/</span>
                 Entry {record.entryNumber}
               </span>
-              <AdminBadge tone={record.status === "Archived" ? "muted" : "green"}>{record.status}</AdminBadge>
+              {record.status === "Archived" && <AdminBadge tone="muted">Archived</AdminBadge>}
               {record.deceasedStatus && <AdminBadge tone="muted">{record.deceasedStatus}</AdminBadge>}
             </div>
           </div>

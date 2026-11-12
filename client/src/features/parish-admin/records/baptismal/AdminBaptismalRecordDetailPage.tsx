@@ -119,7 +119,7 @@ export function AdminBaptismalRecordDetailPage() {
                 <span className="text-admin-border-strong">/</span>
                 Entry {record.entryNumber}
               </span>
-              <AdminBadge tone={record.status === "Archived" ? "muted" : "green"}>{record.status}</AdminBadge>
+              {record.status === "Archived" && <AdminBadge tone="muted">Archived</AdminBadge>}
               {record.legitimacyStatus && <AdminBadge tone="muted">{record.legitimacyStatus}</AdminBadge>}
             </div>
             {record.ledgerSource && (

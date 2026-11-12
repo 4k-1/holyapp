@@ -108,7 +108,7 @@ export function AdminConfirmationRecordDetailPage() {
                 <span className="text-admin-border-strong">/</span>
                 Entry {record.entryNumber}
               </span>
-              <AdminBadge tone={record.status === "Archived" ? "muted" : "green"}>{record.status}</AdminBadge>
+              {record.status === "Archived" && <AdminBadge tone="muted">Archived</AdminBadge>}
               {record.isAdult && <AdminBadge tone="amber">Adult confirmation</AdminBadge>}
               {record.isPriorMarriage && <AdminBadge tone="muted">Prior marriage</AdminBadge>}
             </div>

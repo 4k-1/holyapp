@@ -101,7 +101,10 @@ export function AdminStaffPage() {
       sortValue: (p) => p.name,
       render: (p) => (
         <div className="max-w-[260px] min-w-0">
-          <p className={`truncate font-medium ${p.status === "active" ? "text-admin-ink" : "text-admin-ink-faint"}`}>{p.name}</p>
+          <p className="flex min-w-0 items-center gap-2">
+            <span className={`truncate font-medium ${p.status === "active" ? "text-admin-ink" : "text-admin-ink-faint"}`}>{p.name}</span>
+            {p.status !== "active" && <AdminBadge tone="muted">Inactive</AdminBadge>}
+          </p>
           <p className="truncate text-admin-support text-admin-ink-faint">
             {[p.contact, p.hasAccount ? "Has staff account" : null].filter(Boolean).join(" · ") || "No sign-in"}
           </p>
@@ -128,14 +131,6 @@ export function AdminStaffPage() {
           </span>
         );
       },
-    },
-    {
-      key: "status",
-      header: "Status",
-      sortValue: (p) => p.status,
-      render: (p) => (
-        <AdminBadge tone={p.status === "active" ? "green" : "muted"}>{p.status === "active" ? "Active" : "Inactive"}</AdminBadge>
-      ),
     },
   ];
 
