@@ -1,8 +1,10 @@
 // src/features/parish-admin/settings/components/ParishProfileSection.tsx
 import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { getParishProfile, updateParishProfile } from "../api/settingsApi";
 import type { LocalFeast, ParishProfile } from "../types";
+import type { Parish } from "@/types";
 import { formatMonthDay } from "../monthDay";
 import { MonthDayInput } from "./MonthDayInput";
 import { notifyError } from "@/lib/notify";
@@ -30,6 +32,7 @@ const emptyProfile = (): ParishProfile => ({
 type Panel = "identity" | "contact" | "dates";
 
 export function ParishProfileSection() {
+  const { parish } = useOutletContext<{ parish: Parish }>();
   const [saved, setSaved] = useState<ParishProfile>(emptyProfile);
   const [draft, setDraft] = useState<ParishProfile>(emptyProfile);
   const [loading, setLoading] = useState(true);
@@ -100,6 +103,9 @@ export function ParishProfileSection() {
       </SettingsPillButton>
     );
 
+  // The saved logo, or the one the rest of the portal already shows for this parish.
+  const logoUrl = saved.sealUrl || parish.sealUrl;
+
   return (
     <div className="space-y-4">
       {justSaved && (
@@ -126,7 +132,7 @@ export function ParishProfileSection() {
           </>
         ) : (
           <div className="flex flex-wrap items-center gap-4">
-            <SettingsAvatar text={saved.name.charAt(0) || "?"} imageUrl={saved.sealUrl} />
+            <SettingsAvatar text={saved.name.charAt(0) || "?"} imageUrl={logoUrl} />
             <div className="min-w-0 flex-1">
               <p className="text-[1.0625rem] font-semibold text-admin-ink">{saved.name || "Unnamed parish"}</p>
               <p className="mt-0.5 text-admin-body text-admin-green-700">
@@ -249,8 +255,8 @@ export function ParishProfileSection() {
         description="Printed on certificate templates and shown on the public verification page."
       >
         <div className="flex flex-wrap items-center gap-4 rounded-lg border border-dashed border-admin-border-strong p-4">
-          {saved.sealUrl ? (
-            <img src={saved.sealUrl} alt="" className="h-12 w-12 rounded-full object-contain" />
+          {logoUrl ? (
+            <img src={logoUrl} alt={`${saved.name || parish.name} logo`} className="h-16 w-16 rounded-full bg-white object-contain" />
           ) : (
             <span className="flex h-12 w-12 items-center justify-center rounded-full border border-admin-border bg-admin-surface-alt font-serif text-lg font-bold text-admin-green-800">
               {saved.name.charAt(0) || "?"}
@@ -258,9 +264,13 @@ export function ParishProfileSection() {
           )}
           <div className="min-w-0 flex-1">
             <p className="text-admin-body font-medium text-admin-ink">
-              {saved.sealUrl ? "Seal uploaded" : "No seal uploaded yet"}
+              {logoUrl ? "Current logo" : "No logo yet"}
             </p>
-            <p className="text-admin-support text-admin-ink-faint">Uploading a seal is coming soon.</p>
+            <p className="text-admin-support text-admin-ink-faint">
+              {logoUrl
+                ? "Shown in the portal and printed on certificates. Changing it is coming soon."
+                : "Uploading a logo is coming soon."}
+            </p>
           </div>
           {/* TODO: wire to real upload once file storage is in place */}
           <AdminButton variant="secondary" size="sm" type="button" disabled>
