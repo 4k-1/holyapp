@@ -9,7 +9,7 @@ import {
   type ConfirmationCertificateData,
   type DeathCertificateData,
 } from "./certificateData";
-import { ageText, dateParts, fullDate, present } from "./certificateFormat";
+import { ageText, dateParts, fullDate, present, townFromAddress } from "./certificateFormat";
 import { VerificationArea } from "./CertificateVerification";
 import { MarriageCertificate } from "./MarriageCertificate";
 import { SpecimenMark } from "./SpecimenMark";
@@ -252,7 +252,7 @@ function LetterBody({
   data: ConfirmationCertificateData | DeathCertificateData;
 }) {
   const issued = dateParts(data.issuedOn);
-  const city = present(data.parish.city);
+  const city = present(data.parish.city) ?? townFromAddress(data.parish.address);
 
   return (
     <div className="pcert__body">
@@ -267,7 +267,8 @@ function LetterBody({
       </div>
       <p className="pcert__closing">
         Issued this <Fill value={issued?.day} size="xs" /> day of <Fill value={issued?.month} size="md" />{" "}
-        <Fill value={issued?.year} size="sm" /> at {data.parish.name}, {city ?? <Fill size="md" />} upon request of
+        <Fill value={issued?.year} size="sm" /> at {data.parish.name}
+        {city ? `, ${city}` : ""} upon request of
         interested parties.
       </p>
     </div>

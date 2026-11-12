@@ -22,7 +22,7 @@ function headingFromPath(pathname: string) {
     return { title: "Audit Logs", sub: "System-wide activity across all parishes" };
   }
   if (pathname.startsWith("/super-admin/reports")) {
-    return { title: "System Reports", sub: "Aggregated statistics for oversight" };
+    return { title: "Reports", sub: "How parishes are using HolyApp over time" };
   }
   if (pathname.startsWith("/super-admin/settings")) {
     return { title: "Settings", sub: "Your name, contact details, sign-in email and password." };

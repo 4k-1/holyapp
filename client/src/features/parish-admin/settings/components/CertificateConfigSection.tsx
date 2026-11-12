@@ -290,7 +290,8 @@ export function CertificateConfigSection() {
               rows={4}
             />
             <p className="mt-1.5 text-admin-label text-admin-ink-faint">
-              Shown above the register reference. Leave blank to hide it.
+              Printed at the bottom of the PDF copy parishioners download. Not printed on the paper
+              certificate. Leave blank to hide it.
             </p>
           </AdminField>
         </SettingsPanel>

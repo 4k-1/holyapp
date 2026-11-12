@@ -55,6 +55,15 @@ export function fullDate(iso: string | undefined) {
 const EMPTY_MARKS = new Set(["null", "undefined", "—", "-", "–", "N/A", "n/a"]);
 
 /** Trimmed text, or undefined when there is nothing to print. */
+/**
+ * The town in a parish address: the part before the province, so "Cebu City, Cebu" gives "Cebu City".
+ * An address with no commas can't be split safely, so it gives nothing.
+ */
+export function townFromAddress(address: string | null | undefined) {
+  const parts = (address ?? "").split(",").map((part) => part.trim()).filter(Boolean);
+  return parts.length >= 2 ? parts[parts.length - 2] : undefined;
+}
+
 export function present(value: string | number | null | undefined) {
   if (value === null || value === undefined) return undefined;
   const text = String(value).trim();

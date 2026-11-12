@@ -55,7 +55,7 @@ export function SuperAdminSidebar({
 
         <NavSection label="Oversight" collapsed={collapsed}>
           <SidebarLink to="/super-admin/audit" icon={<ClipboardIcon />} label="Audit Logs" collapsed={collapsed} />
-          <SidebarLink to="/super-admin/reports" icon={<ReportIcon />} label="System Reports" collapsed={collapsed} />
+          <SidebarLink to="/super-admin/reports" icon={<ReportIcon />} label="Reports" collapsed={collapsed} />
         </NavSection>
       </nav>
 

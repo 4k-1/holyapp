@@ -13,11 +13,13 @@ const {
   resetPassword,
   removeAccount,
 } = require('../controllers/platformController');
+const { reports } = require('../controllers/platformReportsController');
 
 const router = express.Router();
 const superAdmin = [authenticate, requireRole(ROLES.SUPER_ADMIN)];
 
 router.get('/dashboard', ...superAdmin, dashboard);
+router.get('/reports', ...superAdmin, reports);
 router.get('/parishes', ...superAdmin, listParishes);
 router.post('/parishes', ...superAdmin, createParish);
 router.get('/parishes/:parishId', ...superAdmin, getParish);

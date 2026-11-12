@@ -26,11 +26,22 @@ const PAGE_BG = "#f2f7f8";
 /** Space above the content on every page after the first, in points. */
 const CONTINUED_TOP = 28;
 
+/** A PDF drawn but not yet saved: each page as an image, for a preview, and a way to save it. */
+export interface BuiltReportPdf {
+  pages: string[];
+  save: (filename: string) => void;
+}
+
+/** Save the report sheet as a landscape A4 PDF; see buildReportPdf. */
+export async function saveReportPdf(element: HTMLElement, filename: string): Promise<void> {
+  (await buildReportPdf(element)).save(filename);
+}
+
 /**
- * Save the report sheet as a landscape A4 PDF, the shape of the on-screen dashboard. Pages break at the bottom of a card or table row
+ * Draw the report sheet as a landscape A4 PDF, the shape of the on-screen dashboard. Pages break at the bottom of a card or table row
  * (anything marked `data-pdf-break`) so nothing is cut through the middle of a line.
  */
-export async function saveReportPdf(element: HTMLElement, filename: string): Promise<void> {
+export async function buildReportPdf(element: HTMLElement): Promise<BuiltReportPdf> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
   const scale = 2;
   const canvas = await html2canvas(element, {
@@ -57,12 +68,14 @@ export async function saveReportPdf(element: HTMLElement, filename: string): Pro
   if (totalPx * ptPerPx <= pageHeight * 1.15) {
     const fit = Math.min(1, pageHeight / (totalPx * ptPerPx));
     const width = pageWidth * fit;
+    const image = canvas.toDataURL("image/jpeg", 0.92);
     pdf.setFillColor(PAGE_BG);
     pdf.rect(0, 0, pageWidth, pageHeight, "F");
-    pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", (pageWidth - width) / 2, 0, width, totalPx * ptPerPx * fit);
-    pdf.save(`${filename}.pdf`);
-    return;
+    pdf.addImage(image, "JPEG", (pageWidth - width) / 2, 0, width, totalPx * ptPerPx * fit);
+    return { pages: [image], save: (filename) => pdf.save(`${filename}.pdf`) };
   }
+
+  const pages: string[] = [];
 
   const top = element.getBoundingClientRect().top;
   const breaks = Array.from(element.querySelectorAll<HTMLElement>("[data-pdf-break]"))
@@ -95,11 +108,26 @@ export async function saveReportPdf(element: HTMLElement, filename: string): Pro
     pdf.setFillColor(PAGE_BG);
     pdf.rect(0, 0, pageWidth, pageHeight, "F");
     // JPEG keeps a page to a few hundred KB; PNG at this scale runs to megabytes.
-    pdf.addImage(slice.toDataURL("image/jpeg", 0.92), "JPEG", 0, offsetPt, pageWidth, (end - start) * ptPerPx);
+    const image = slice.toDataURL("image/jpeg", 0.92);
+    pdf.addImage(image, "JPEG", 0, offsetPt, pageWidth, (end - start) * ptPerPx);
+    // The preview shows the whole page, so the image is padded the same way the PDF page is.
+    pages.push(page === 0 ? image : padTop(slice, CONTINUED_TOP / ptPerPx, scale));
 
     start = end;
     page += 1;
   }
 
-  pdf.save(`${filename}.pdf`);
+  return { pages, save: (filename) => pdf.save(`${filename}.pdf`) };
+}
+
+function padTop(slice: HTMLCanvasElement, padPx: number, scale: number) {
+  const padded = document.createElement("canvas");
+  padded.width = slice.width;
+  padded.height = slice.height + Math.round(padPx * scale);
+  const ctx = padded.getContext("2d");
+  if (!ctx) return slice.toDataURL("image/jpeg", 0.92);
+  ctx.fillStyle = PAGE_BG;
+  ctx.fillRect(0, 0, padded.width, padded.height);
+  ctx.drawImage(slice, 0, Math.round(padPx * scale));
+  return padded.toDataURL("image/jpeg", 0.92);
 }

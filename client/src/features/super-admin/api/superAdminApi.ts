@@ -34,6 +34,64 @@ export async function getPlatformDashboard(): Promise<DashboardSnapshot> {
   }
 }
 
+/** Both ends included, YYYY-MM-DD; an empty end is open. */
+export interface ReportRange {
+  from: string;
+  to: string;
+}
+
+export interface ReportFigures {
+  records: number;
+  certificates: number;
+  requests: number;
+  parishesInUse: number;
+}
+
+export interface PlatformReport {
+  /** The range actually used, or null for an open end. */
+  from: string | null;
+  to: string | null;
+  parishCount: number;
+  figures: ReportFigures;
+  /** The same number of days just before, for comparison; null when either end is open. */
+  previous: ReportFigures | null;
+  previousRange: { from: string; to: string; days: number } | null;
+  unit: "week" | "month" | "year";
+  /** Each bar's first and last day, cut to the range. */
+  buckets: { start: string; end: string; records: number; certificates: number }[];
+  outcomes: {
+    released: number;
+    rejected: number;
+    open: number;
+    onlineReleased: number;
+    /** Middle wait in days for online requests; null when there are too few to say. */
+    typicalDays: number | null;
+  };
+  parishes: {
+    id: string;
+    name: string;
+    address: string;
+    records: number;
+    certificates: number;
+    openRequests: number;
+    lastActivity: string | null;
+    activeInPeriod: boolean;
+    hasAdmin: boolean;
+  }[];
+}
+
+export async function getPlatformReport(range: ReportRange): Promise<PlatformReport> {
+  const params = new URLSearchParams();
+  if (range.from) params.set("from", range.from);
+  if (range.to) params.set("to", range.to);
+  try {
+    const data = await apiFetch<{ report: PlatformReport }>(`/platform/reports?${params}`);
+    return data.report;
+  } catch (err) {
+    fail(err);
+  }
+}
+
 export async function listPlatformParishes(): Promise<SuperAdminParishOverview[]> {
   try {
     const data = await apiFetch<{ parishes: SuperAdminParishOverview[] }>("/platform/parishes");
