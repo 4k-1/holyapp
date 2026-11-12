@@ -734,10 +734,10 @@ function ParishionerPart() {
 
 /* ---------- For parish offices ---------- */
 
-/** Everything for parish offices and dioceses in one place: what the office gets, how records stay safe, and how to start. */
+/** Everything for parish offices in one place: what the office gets, how records stay safe, and how to start. */
 function ParishPart() {
   return (
-    <section id="parishes" aria-label="For parish offices and dioceses" className="scroll-mt-16 bg-[#f6fafa] px-4 py-20 sm:px-6 sm:py-24">
+    <section id="parishes" aria-label="For parish offices" className="scroll-mt-16 bg-[#f6fafa] px-4 py-20 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-[1120px]">
         <SectionIntro
           title={["Run the parish office ", "in one place."]}
@@ -935,7 +935,7 @@ function TrustBlock() {
   );
 }
 
-/* ---------- For parishes and dioceses ---------- */
+/* ---------- Bringing HolyApp to a parish ---------- */
 
 function ForParishes() {
   const mailto = `mailto:${HOLYAPP_CONTACT_EMAIL}?subject=${encodeURIComponent("Bringing HolyApp to our parish")}`;
@@ -951,7 +951,7 @@ function ForParishes() {
           </h3>
           <p className="mt-4 max-w-[440px] text-[1.0625rem] leading-relaxed text-[var(--l-muted)]">
             Tell us about your parish and we'll help you get started: your registers, your staff, your certificate
-            design and your fees. A diocese can see all its parishes in one place.
+            design and your fees.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a
@@ -961,12 +961,6 @@ function ForParishes() {
               Email us
               <ArrowIcon />
             </a>
-            <Link
-              to="/super-admin/login"
-              className="landing-btn inline-flex min-h-[52px] items-center justify-center rounded-full bg-white px-6 text-[1rem] font-medium text-[var(--l-teal-deep)] ring-1 ring-[#c6d5d8] hover:bg-[var(--l-mist)]"
-            >
-              Diocese sign-in
-            </Link>
           </div>
         </div>
 
@@ -1004,7 +998,6 @@ function SiteFooter() {
           <a href="#verify" className="hover:text-[var(--l-teal-deep)]">Verify a certificate</a>
           <Link to="/privacy" className="hover:text-[var(--l-teal-deep)]">Privacy notice</Link>
           <a href={`mailto:${HOLYAPP_CONTACT_EMAIL}`} className="hover:text-[var(--l-teal-deep)]">Contact</a>
-          <Link to="/super-admin/login" className="hover:text-[var(--l-teal-deep)]">Diocese sign-in</Link>
         </nav>
       </div>
     </footer>
