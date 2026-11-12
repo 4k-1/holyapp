@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { verificationCode } from "@/features/verification/verificationCode";
 import { HOLYAPP_CONTACT_EMAIL } from "./contact";
+import { BookDemoDialog } from "./BookDemoDialog";
 import { Cloud } from "./Cloud";
 import { ParishIcon, type ParishIconName } from "./ParishIcons";
 import "./landing.css";
@@ -939,6 +940,21 @@ function TrustBlock() {
 
 function ForParishes() {
   const mailto = `mailto:${HOLYAPP_CONTACT_EMAIL}?subject=${encodeURIComponent("Bringing HolyApp to our parish")}`;
+  const [showEmail, setShowEmail] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
+  const closeDemo = useCallback(() => setShowDemo(false), []);
+
+  async function copyEmail() {
+    try {
+      await navigator.clipboard.writeText(HOLYAPP_CONTACT_EMAIL);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // No clipboard access: the address is on screen to select by hand.
+    }
+  }
+
   return (
     <div id="for-parishes" className="mt-16 scroll-mt-24">
       <div
@@ -953,15 +969,56 @@ function ForParishes() {
             Tell us about your parish and we'll help you get started: your registers, your staff, your certificate
             design and your fees.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <a
-              href={mailto}
-              className="landing-btn inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[var(--l-teal-deep)] px-7 text-[1rem] font-semibold text-white shadow-[0_10px_24px_-10px_rgb(14_59_70/0.7)] hover:bg-[var(--l-teal)]"
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={() => setShowDemo(true)}
+              aria-haspopup="dialog"
+              className="landing-btn inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[var(--l-teal-deep)] px-7 text-[1rem] font-semibold text-white shadow-[0_10px_24px_-10px_rgb(14_59_70/0.7)] hover:bg-[var(--l-teal)] sm:w-auto"
             >
-              Email us
+              Book a demo
               <ArrowIcon />
-            </a>
+            </button>
+            <p className="mt-3 text-[0.9375rem] text-[var(--l-muted)]">
+              Free, about 30 minutes, online or at your parish office.{" "}
+              <button
+                type="button"
+                onClick={() => setShowEmail((v) => !v)}
+                aria-expanded={showEmail}
+                aria-controls="landing-email"
+                className="font-semibold text-[var(--l-teal)] underline underline-offset-2 hover:text-[var(--l-teal-deep)]"
+              >
+                Or email us
+              </button>
+            </p>
           </div>
+          {showDemo && <BookDemoDialog onClose={closeDemo} />}
+          {/* A mail link alone does nothing on a computer with no email app, so the address is always shown too. */}
+          {showEmail && (
+            <div
+              id="landing-email"
+              className="mt-4 max-w-[440px] rounded-2xl bg-[#f1f9f8] p-4 ring-1 ring-[#d9ecec]"
+            >
+              <p className="text-[0.9375rem] text-[var(--l-muted)]">Write to us at</p>
+              <p className="mt-0.5 break-all text-[1.0625rem] font-semibold text-[var(--l-ink)]">{HOLYAPP_CONTACT_EMAIL}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={copyEmail}
+                  className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[0.9375rem] font-semibold text-[var(--l-teal-deep)] ring-1 ring-[#cfe6e6] hover:bg-[#e6f4f3]"
+                >
+                  {copied ? "Copied" : "Copy address"}
+                </button>
+                <a
+                  href={mailto}
+                  className="inline-flex min-h-[44px] items-center rounded-full bg-white px-5 text-[0.9375rem] font-semibold text-[var(--l-teal-deep)] ring-1 ring-[#cfe6e6] hover:bg-[#e6f4f3]"
+                >
+                  Open email app
+                </a>
+              </div>
+              <p role="status" className="sr-only">{copied ? "Email address copied" : ""}</p>
+            </div>
+          )}
         </div>
 
         <ol data-stagger className="space-y-5 self-center">

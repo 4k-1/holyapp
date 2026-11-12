@@ -32,7 +32,7 @@ function fromAddress() {
   return process.env.SMTP_FROM || `HolyApp <${process.env.SMTP_USER}>`;
 }
 
-async function sendMail({ to, subject, text, html }) {
+async function sendMail({ to, subject, text, html, replyTo }) {
   if (!smtpConfigured()) {
     if (debugEnabled()) {
       console.log(`[mail:debug] to=${to} subject="${subject}"\n${text}`);
@@ -52,6 +52,7 @@ async function sendMail({ to, subject, text, html }) {
       subject,
       text,
       html: html || text.replace(/\n/g, '<br>'),
+      ...(replyTo ? { replyTo } : {}),
     });
     console.log(`[mail] sent to ${to} subject="${subject}" id=${info.messageId}`);
     return info;

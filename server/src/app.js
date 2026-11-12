@@ -52,6 +52,7 @@ const publicGivingRoutes = require('./routes/publicGivingRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const ledgerRoutes = require('./routes/ledgerRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 app.use('/auth', authRoutes);
 app.use('/rbac', rbacRoutes);
 app.use('/parish', parishRoutes);
@@ -73,6 +74,7 @@ app.use('/public/:slug', publicGivingRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/reports', reportRoutes);
 app.use('/ledgers', ledgerRoutes);
+app.use('/contact', contactRoutes);
 
 // Start listening only when run directly (npm run dev / npm start). Tests load the app without a port.
 if (require.main === module) {
