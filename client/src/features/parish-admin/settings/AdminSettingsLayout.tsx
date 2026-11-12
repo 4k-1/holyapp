@@ -9,10 +9,9 @@ import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/A
 
 const STAFF_SETTINGS_IDS = new Set(["personal", "security"]);
 
-const GROUP_LABELS: Record<SettingsSectionMeta["group"] | "soon", string> = {
+const GROUP_LABELS: Record<SettingsSectionMeta["group"], string> = {
   parish: "Parish",
   account: "Your account",
-  soon: "Coming soon",
 };
 
 function navItemClass(isActive: boolean) {
@@ -30,12 +29,8 @@ export function AdminSettingsLayout() {
   const { pathname } = useLocation();
   const canManage = canManageParishSettings(user?.role);
   const sections = SETTINGS_SECTIONS.filter((s) => canManage || STAFF_SETTINGS_IDS.has(s.id));
-  // Sections without a page yet sit together at the bottom, and only on wider screens.
-  const groups = (["parish", "account", "soon"] as const)
-    .map((group) => ({
-      group,
-      items: sections.filter((s) => (group === "soon" ? !s.enabled : s.enabled && s.group === group)),
-    }))
+  const groups = (["parish", "account"] as const)
+    .map((group) => ({ group, items: sections.filter((s) => s.group === group) }))
     .filter((g) => g.items.length > 0);
   const active = sections.find((s) => pathname.split("/").includes(s.path));
   const navRef = useRef<HTMLElement>(null);
@@ -66,27 +61,17 @@ export function AdminSettingsLayout() {
           className="relative flex gap-1 overflow-x-auto border-b border-admin-border p-3 md:flex-col md:gap-5 md:overflow-visible md:border-r md:border-b-0 md:p-4"
         >
           {groups.map(({ group, items }) => (
-            <div key={group} className={group === "soon" ? "hidden md:flex md:flex-col md:gap-1" : "contents md:flex md:flex-col md:gap-1"}>
+            <div key={group} className="contents md:flex md:flex-col md:gap-1">
               {groups.length > 1 && (
                 <p className="hidden px-3.5 pb-1 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-faint md:block">
                   {GROUP_LABELS[group]}
                 </p>
               )}
-              {items.map((s) =>
-                s.enabled ? (
-                  <NavLink key={s.id} to={s.path} className={({ isActive }) => navItemClass(isActive)}>
-                    {s.label}
-                  </NavLink>
-                ) : (
-                  <span
-                    key={s.id}
-                    aria-disabled="true"
-                    className="cursor-not-allowed rounded-lg px-3.5 py-2 text-admin-support font-medium text-admin-ink-faint"
-                  >
-                    {s.label}
-                  </span>
-                )
-              )}
+              {items.map((s) => (
+                <NavLink key={s.id} to={s.path} className={({ isActive }) => navItemClass(isActive)}>
+                  {s.label}
+                </NavLink>
+              ))}
             </div>
           ))}
         </nav>
