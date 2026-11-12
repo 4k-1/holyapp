@@ -5,20 +5,11 @@ import { listMyMarriageApplications } from "@/features/parish-admin/marriage-app
 import { listMassSchedule, listMassTimesForDate } from "@/features/parishioner/intentions/api/massScheduleApi";
 import { useAsync } from "@/hooks/useAsync";
 import { deriveStatusKey } from "@/features/parishioner/dashboard/deriveStatusLabel";
-import { liturgicalDay, type LiturgicalColor } from "@/features/parishioner/dashboard/liturgicalDay";
 import { dateStamp, nextMass } from "@/features/parishioner/dashboard/massTimes";
 import { feeOf, peso, requestGroup, SACRAMENT_TITLES } from "@/features/parishioner/requests/requestDisplay";
 import { GiveIcon, IntentionIcon } from "@/components/ui/icons/SacramentIcons";
 import type { CertificateRequest, Parish } from "@/types";
 import { Cloud } from "@/features/public/Cloud";
-
-const colorDots: Record<LiturgicalColor, string> = {
-  green: "bg-[#3f8f5a]",
-  violet: "bg-[#7a4fa3]",
-  rose: "bg-[#e59ab4]",
-  white: "bg-white",
-  red: "bg-[#c8372d]",
-};
 
 /** Fades the banner photo out on its left, top and bottom edges, so it melts into the panel with no visible border. */
 const photoFade: CSSProperties = {
@@ -42,11 +33,10 @@ interface DashboardPageProps {
   userName: string;
 }
 
-/** The parishioner's home: their parish and the Church's day first, then Mass times, the office, and their own requests. */
+/** The parishioner's home: their parish and today's date first, then Mass times, the office, and their own requests. */
 export function DashboardPage({ parish, userName }: DashboardPageProps) {
   const now = new Date();
   const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const today = liturgicalDay(now);
   const base = `/${parish.slug}/portal`;
 
   const { data: requests = [] } = useAsync(() => listRequests(parish.id), [parish.id]);
@@ -94,22 +84,9 @@ export function DashboardPage({ parish, userName }: DashboardPageProps) {
               {greeting(now)}, {userName}
             </h1>
             <p className="mt-1.5 text-[0.9375rem] text-white/90 sm:text-base">What would you like to do today?</p>
-            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.875rem]">
-              <span className="font-semibold text-white">
-                {now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-              </span>
-              <span className="inline-flex max-w-full items-start gap-2 rounded-full bg-white/10 px-3 py-1.5 leading-snug text-white ring-1 ring-white/20">
-                <span
-                  className={`mt-[0.3rem] h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white/50 ${colorDots[today.color]}`}
-                  aria-hidden="true"
-                />
-                <span>
-                  <span className="font-semibold">{today.name}</span>
-                  {!today.name.includes(today.season) && <span className="text-white/85"> · {today.season}</span>}
-                  <span className="sr-only">, liturgical colour {today.color}</span>
-                </span>
-              </span>
-            </div>
+            <p className="mt-4 text-[0.875rem] font-semibold text-white">
+              {now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            </p>
           </div>
           {!parish.photoUrl && <ChurchIllustration className="hidden h-[150px] w-auto sm:block lg:h-[170px]" />}
         </div>
