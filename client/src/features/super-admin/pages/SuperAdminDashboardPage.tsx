@@ -57,7 +57,7 @@ export function SuperAdminDashboardPage() {
         <StatCard
           label="Registered Parishes"
           value={data.parishCount}
-          sub="Archdiocese of Cebu"
+          sub="on HolyApp"
           tone="flat"
           icon={<ChurchIcon className="h-5 w-5" />}
         />
@@ -269,7 +269,7 @@ export function SuperAdminDashboardPage() {
       </div>
 
       <p className="mt-2.5 text-center text-[11px] text-admin-ink-faint">
-        Super Admin actions are logged for RA 10173 compliance and diocesan review.
+        Every super admin action is recorded in the audit log.
       </p>
     </div>
   );

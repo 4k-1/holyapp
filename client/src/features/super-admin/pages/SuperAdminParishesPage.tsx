@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAsync } from "@/hooks/useAsync";
 import { listPlatformParishes, type SuperAdminParishOverview } from "@/features/super-admin/api/superAdminApi";
-import { SearchIcon } from "@/components/ui/icons/AdminIcons";
+import { PlusIcon, SearchIcon } from "@/components/ui/icons/AdminIcons";
+import { CredentialsModal, OnboardParishModal } from "@/features/super-admin/components/OnboardParishModal";
+import { SuperAdminToast } from "@/features/super-admin/components/SuperAdminModal";
 
 function countLabel(n: number, one: string, many: string) {
   return `${n} ${n === 1 ? one : many}`;
@@ -18,8 +20,16 @@ function parishMeta(row: SuperAdminParishOverview) {
 }
 
 export function SuperAdminParishesPage() {
-  const { data: parishes = [], loading } = useAsync(() => listPlatformParishes(), []);
+  const { data: parishes = [], loading, error, refetch } = useAsync(() => listPlatformParishes(), []);
   const [query, setQuery] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [toast, setToast] = useState("");
+
+  function flash(message: string) {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 2600);
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -31,19 +41,33 @@ export function SuperAdminParishesPage() {
 
   return (
     <div>
-      <label className="mb-3 flex items-center gap-2 rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-ink-faint">
-        <SearchIcon className="h-3.5 w-3.5 shrink-0" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search parish name or location"
-          aria-label="Search parishes"
-          className="w-full bg-transparent font-sans text-[12.5px] text-admin-ink outline-none placeholder:text-admin-ink-faint"
-        />
-      </label>
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <label className="flex min-w-[240px] flex-1 items-center gap-2 rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-ink-faint">
+          <SearchIcon className="h-3.5 w-3.5 shrink-0" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search parish name or location"
+            aria-label="Search parishes"
+            className="w-full bg-transparent font-sans text-[12.5px] text-admin-ink outline-none placeholder:text-admin-ink-faint"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-admin-green-700 px-3.5 py-2 text-[12.5px] font-bold text-white hover:bg-admin-green-900"
+        >
+          <PlusIcon className="h-[13px] w-[13px] stroke-white" />
+          Add parish
+        </button>
+      </div>
 
       <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
-        {loading ? (
+        {error ? (
+          <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-red-700">
+            Couldn't load the parishes. Refresh the page to try again.
+          </p>
+        ) : loading ? (
           <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-ink-faint">Loading parishes…</p>
         ) : parishes.length === 0 ? (
           <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-ink-faint">No parishes on HolyApp yet.</p>
@@ -72,6 +96,24 @@ export function SuperAdminParishesPage() {
           </ul>
         )}
       </div>
+
+      {adding ? (
+        <OnboardParishModal
+          onClose={() => setAdding(false)}
+          onCreated={({ parishName, credentials: creds }) => {
+            setAdding(false);
+            refetch();
+            flash(`${parishName} added`);
+            if (creds) setCredentials(creds);
+          }}
+        />
+      ) : null}
+
+      {credentials ? (
+        <CredentialsModal email={credentials.email} password={credentials.password} onClose={() => setCredentials(null)} />
+      ) : null}
+
+      <SuperAdminToast message={toast} />
     </div>
   );
 }

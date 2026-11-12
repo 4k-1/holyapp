@@ -61,6 +61,8 @@ export interface AuditLogEntry {
   entityId: string;
   metadata: Record<string, unknown>;
   createdAt: string;
+  /** Sent by the server with each entry; null for platform-wide actions. */
+  parishName?: string | null;
 }
 
 export interface Payment {

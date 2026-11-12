@@ -47,7 +47,7 @@ export function SuperAdminTopbar({
             </Link>
             <div className="min-w-0 overflow-hidden whitespace-nowrap leading-tight">
               <p className="truncate text-[13.5px] font-extrabold tracking-[0.2px] text-admin-ink">HolyApp</p>
-              <p className="mt-px truncate text-[10.5px] text-admin-ink-faint">Diocesan Control Center</p>
+              <p className="mt-px truncate text-[10.5px] text-admin-ink-faint">Platform console</p>
             </div>
             <span className="hidden shrink-0 rounded-full border border-admin-gold-600 bg-admin-gold-100 px-[7px] py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-admin-green-900 sm:inline-block">
               Super Admin

@@ -168,10 +168,22 @@ export async function listPlatformAccounts(): Promise<PlatformAccount[]> {
   return accounts;
 }
 
-export async function listPlatformAuditLog(): Promise<AuditLogEntry[]> {
+export type AuditKind = "green" | "yellow" | "red";
+
+/** 100 entries at a time, newest first. Pass the last entry shown as `beforeId` to get the ones older than it. */
+export async function listPlatformAuditLog(options: {
+  beforeId?: string;
+  parishId?: string;
+  kind?: AuditKind;
+} = {}): Promise<{ entries: AuditLogEntry[]; hasMore: boolean }> {
+  const params = new URLSearchParams();
+  if (options.beforeId) params.set("beforeId", options.beforeId);
+  if (options.parishId) params.set("parishId", options.parishId);
+  if (options.kind) params.set("kind", options.kind);
+  const query = params.toString();
   try {
-    const data = await apiFetch<{ entries: AuditLogEntry[] }>("/audit");
-    return data.entries ?? [];
+    const data = await apiFetch<{ entries: AuditLogEntry[]; hasMore?: boolean }>(`/audit${query ? `?${query}` : ""}`);
+    return { entries: data.entries ?? [], hasMore: Boolean(data.hasMore) };
   } catch (err) {
     fail(err);
   }

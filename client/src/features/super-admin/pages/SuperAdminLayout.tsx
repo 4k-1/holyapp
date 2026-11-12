@@ -14,7 +14,7 @@ function headingFromPath(pathname: string) {
     return { title: "Parishes", sub: "Every parish on HolyApp." };
   }
   if (pathname.startsWith("/super-admin/templates")) {
-    return { title: "Certificate Templates", sub: "Manage certificate layouts platform-wide, and check parish branding" };
+    return { title: "Certificate Templates", sub: "The certificate layouts every parish uses" };
   }
   if (pathname.startsWith("/super-admin/audit")) {
     return { title: "Audit Logs", sub: "System-wide activity across all parishes" };
@@ -23,7 +23,7 @@ function headingFromPath(pathname: string) {
     return { title: "System Reports", sub: "Aggregated statistics for oversight" };
   }
   if (pathname.startsWith("/super-admin/settings")) {
-    return { title: "Your profile", sub: "Name, contact details, and sign-in email for this platform account." };
+    return { title: "Settings", sub: "Your name, contact details, sign-in email and password." };
   }
   if (/^\/super-admin\/accounts\/[^/]+/.test(pathname)) {
     return { title: "", sub: "" };
@@ -31,7 +31,7 @@ function headingFromPath(pathname: string) {
   if (pathname.startsWith("/super-admin/accounts")) {
     return { title: "Parish Admins", sub: "Create and manage Parish Admin accounts" };
   }
-  return { title: "System Overview", sub: "Cross-parish oversight — Diocese of Cebu" };
+  return { title: "System Overview", sub: "Every parish on HolyApp at a glance" };
 }
 
 export function SuperAdminLayout() {

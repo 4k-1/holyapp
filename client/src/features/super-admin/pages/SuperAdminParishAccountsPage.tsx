@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useAsync } from "@/hooks/useAsync";
+import { askConfirm } from "@/lib/notify";
 import {
   CERT_THEMES,
   getCertTheme,
@@ -38,7 +39,7 @@ function roleLabel(role: CurrentUser["role"]) {
 }
 
 const TABS: [Tab, string][] = [
-  ["admins", "Admins"],
+  ["admins", "Office accounts"],
   ["parishioners", "Parishioners"],
   ["style", "Certificate Style"],
 ];
@@ -115,24 +116,57 @@ export function SuperAdminParishAccountsPage() {
 
   const activeThemeId = pickedTheme ?? row?.certTheme ?? "classic";
 
+  function failed(err: unknown, fallback: string) {
+    setToast(err instanceof Error && err.message ? err.message : fallback);
+  }
+
   async function handleReset() {
     if (!resetting) return;
-    const result = await resetPlatformAccountPassword(resetting.id);
-    setResetting(null);
-    setCredentials(result.credentials);
+    try {
+      const result = await resetPlatformAccountPassword(resetting.id);
+      setResetting(null);
+      setCredentials(result.credentials);
+    } catch (err) {
+      setResetting(null);
+      failed(err, "Couldn't reset the password. Try again.");
+    }
   }
 
   async function handleRemove(user: CurrentUser) {
-    await removePlatformAccount(user.id);
-    refetch();
-    setToast(`${user.fullName} removed`);
+    const ok = await askConfirm({
+      title: `Remove ${user.fullName}?`,
+      message: `Their account is deleted for good and they can no longer sign in to ${row?.parish.name ?? "the parish"}. This can't be undone. To stop them signing in for now, suspend them instead.`,
+      confirmLabel: "Remove account",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await removePlatformAccount(user.id);
+      refetch();
+      setToast(`${user.fullName} removed`);
+    } catch (err) {
+      failed(err, `Couldn't remove ${user.fullName}. Try again.`);
+    }
   }
 
   async function handleToggleStatus(user: CurrentUser) {
     const next = user.status === "active" ? "suspended" : "active";
-    await setPlatformAccountStatus(user.id, next);
-    refetch();
-    setToast(`${user.fullName} ${next === "active" ? "reactivated" : "suspended"}`);
+    if (next === "suspended") {
+      const ok = await askConfirm({
+        title: `Suspend ${user.fullName}?`,
+        message: "They won't be able to sign in until you reactivate them. Nothing in their account is deleted.",
+        confirmLabel: "Suspend",
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    try {
+      await setPlatformAccountStatus(user.id, next);
+      refetch();
+      setToast(`${user.fullName} ${next === "active" ? "reactivated" : "suspended"}`);
+    } catch (err) {
+      failed(err, `Couldn't update ${user.fullName}. Try again.`);
+    }
   }
 
   async function handleSaveTheme() {
@@ -142,6 +176,8 @@ export function SuperAdminParishAccountsPage() {
       const result = await setPlatformParishCertTheme(row.parish.id, activeThemeId);
       refetch();
       setToast(`${row.parish.name} now uses the ${result.theme.name} certificate style`);
+    } catch (err) {
+      failed(err, "Couldn't save the certificate style. Try again.");
     } finally {
       setSavingTheme(false);
     }
