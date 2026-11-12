@@ -103,7 +103,7 @@ export interface FieldGroup {
 /** The sacrament's own date is stored apart from the other fields; this key routes it there. */
 export const SACRAMENT_DATE_KEY = "sacramentDate";
 
-const DATE_HINT = "Your best guess is fine if you aren't sure of the day.";
+const DATE_HINT = "Leave it blank if you don't know it. A guess is fine too.";
 
 const nameRow = (who = ""): FieldConfig[] => [
   { key: "firstName", label: `${who}First name`, autoComplete: "given-name" },
@@ -121,7 +121,7 @@ export const RECORD_GROUPS: Record<SacramentType, FieldGroup[]> = {
     {
       title: "The baptism",
       rows: [
-        [{ key: SACRAMENT_DATE_KEY, label: "Date of baptism", type: "date", hint: DATE_HINT }],
+        [{ key: SACRAMENT_DATE_KEY, label: "Date of baptism", type: "date", hint: DATE_HINT, optional: true }],
         [
           { key: "parishOfBaptism", label: "Chapel, if not the parish church", optional: true },
           { key: "addressAtTime", label: "Family address at the time", optional: true },
@@ -148,7 +148,7 @@ export const RECORD_GROUPS: Record<SacramentType, FieldGroup[]> = {
       title: "The confirmation",
       rows: [
         [
-          { key: SACRAMENT_DATE_KEY, label: "Date of confirmation", type: "date", hint: DATE_HINT },
+          { key: SACRAMENT_DATE_KEY, label: "Date of confirmation", type: "date", hint: DATE_HINT, optional: true },
           { key: "parishOfConfirmation", label: "Chapel, if not the parish church", optional: true },
         ],
       ],
@@ -186,7 +186,7 @@ export const RECORD_GROUPS: Record<SacramentType, FieldGroup[]> = {
     {
       title: "The wedding",
       rows: [
-        [{ key: SACRAMENT_DATE_KEY, label: "Date of the wedding", type: "date", hint: DATE_HINT }],
+        [{ key: SACRAMENT_DATE_KEY, label: "Date of the wedding", type: "date", hint: DATE_HINT, optional: true }],
         [
           { key: "parishOfMarriage", label: "Chapel, if not the parish church", optional: true },
           { key: "placeOfMarriage", label: "Town or city", optional: true },
@@ -213,7 +213,7 @@ export const RECORD_GROUPS: Record<SacramentType, FieldGroup[]> = {
       title: "The death and funeral",
       rows: [
         [
-          { key: SACRAMENT_DATE_KEY, label: "Date of death", type: "date", hint: DATE_HINT },
+          { key: SACRAMENT_DATE_KEY, label: "Date of death", type: "date", hint: DATE_HINT, optional: true },
           { key: "parish", label: "Chapel of the funeral, if not the parish church", optional: true },
         ],
         [{ key: "nextOfKin", label: "Next of kin", optional: true }],

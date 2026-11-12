@@ -6,6 +6,8 @@ import { RequestsListPage } from "@/features/parishioner/requests/pages/Requests
 import { RequestReceiptPage } from "@/features/parishioner/requests/pages/RequestReceiptPage";
 import { CertificatesWalletPage } from "@/features/parishioner/certificates/CertificatesWalletPage";
 import { AccountPage } from "@/features/parishioner/account/AccountPage";
+import { SettingsPage } from "@/features/parishioner/account/SettingsPage";
+import { VerifyPage } from "@/features/parishioner/verify/VerifyPage";
 import { SacramentalTimelinePage } from "@/features/parishioner/timeline/SacramentalTimelinePage";
 import { DonationsPage } from "@/features/parishioner/donations/DonationsPage";
 import { MyIntentionsPage } from "./intentions/MyIntentionsPage";
@@ -21,6 +23,8 @@ export const parishionerRoutes: RouteObject[] = [
       { path: "requests/:requestId/receipt", element: <RequestReceiptPage /> },
       { path: "wallet", element: <CertificatesWalletPage /> },
       { path: "account", element: <AccountPage /> },
+      { path: "settings", element: <SettingsPage /> },
+      { path: "verify", element: <VerifyPage /> },
       { path: "timeline", element: <SacramentalTimelinePage /> },
       { path: "donate", element: <DonationsPage /> },
       { path: "intention", element: <MassIntentionPage /> },

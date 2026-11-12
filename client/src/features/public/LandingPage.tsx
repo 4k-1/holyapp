@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { verificationCode } from "@/features/verification/verificationCode";
 import { HOLYAPP_CONTACT_EMAIL } from "./contact";
 import { Cloud } from "./Cloud";
 import { ParishIcon, type ParishIconName } from "./ParishIcons";
@@ -723,11 +724,6 @@ function ParishPart() {
 }
 
 /* ---------- Verify a certificate ---------- */
-
-/** The 32-character code from a verification link, or from the code on its own. */
-function verificationCode(input: string) {
-  return /[a-f0-9]{32}/.exec(input.trim().toLowerCase())?.[0] ?? null;
-}
 
 function VerifySection() {
   const navigate = useNavigate();

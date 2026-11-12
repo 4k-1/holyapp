@@ -1,11 +1,15 @@
-import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { GearIcon, LogoutIcon, UserIcon } from "@/components/ui/icons/AdminIcons";
+import { logout } from "@/features/auth/api/authApi";
+import { askConfirm } from "@/lib/notify";
 import type { Parish } from "@/types";
 
 interface NavbarProps {
   parish: Parish;
   userInitials: string;
   userName: string;
+  userEmail: string;
 }
 
 const navItems = [
@@ -16,47 +20,49 @@ const navItems = [
   { to: "timeline", label: "Timeline", end: true },
 ];
 
-export function Navbar({ parish, userInitials, userName }: NavbarProps) {
+export function Navbar({ parish, userInitials, userName, userEmail }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <nav className="sticky top-0 z-50 bg-primary text-white shadow-md">
       <div className="mx-auto flex h-[64px] max-w-6xl items-center justify-between gap-3 px-4 sm:h-[68px] sm:px-6">
-        {/* ⬇️ THIS is the block that got replaced */}
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <Link
-            to="."
+          <span
             title="HolyApp"
-            aria-label="HolyApp, back to your dashboard"
             className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/35 bg-white shadow-sm sm:h-9 sm:w-9"
           >
-            <img src="/holyapp-logo.webp" alt="" className="h-6 w-6 object-contain sm:h-7 sm:w-7" />
-          </Link>
+            <img src="/holyapp-logo.webp" alt="HolyApp" className="h-6 w-6 object-contain sm:h-7 sm:w-7" />
+          </span>
           <span className="h-7 w-px shrink-0 bg-white/25" aria-hidden="true" />
-          {parish.sealUrl ? (
-            <img
-              src={parish.sealUrl}
-              alt={`${parish.name} seal`}
-              className="h-8 w-8 shrink-0 rounded-full border border-white/35 bg-white object-cover sm:h-9 sm:w-9"
-            />
-          ) : (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/35 bg-gradient-to-br from-white to-accent font-serif text-sm font-bold text-primary sm:h-9 sm:w-9">
-              ✝
+          <Link
+            to="."
+            aria-label={`${parish.name}, back to your dashboard`}
+            className="group flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          >
+            {parish.sealUrl ? (
+              <img
+                src={parish.sealUrl}
+                alt=""
+                className="h-8 w-8 shrink-0 rounded-full border border-white/35 bg-white object-cover transition-transform group-hover:scale-105 sm:h-9 sm:w-9"
+              />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/35 bg-gradient-to-br from-white to-accent font-serif text-sm font-bold text-primary transition-transform group-hover:scale-105 sm:h-9 sm:w-9">
+                ✝
+              </div>
+            )}
+            <div className="min-w-0 leading-tight">
+              <div
+                className="truncate font-serif text-[14px] font-semibold leading-tight sm:line-clamp-2 sm:max-w-[280px] sm:text-[13.5px] sm:whitespace-normal lg:max-w-[420px]"
+                title={parish.name}
+              >
+                {parish.name}
+              </div>
+              <div className="mt-0.5 truncate text-[11px] font-semibold uppercase tracking-wide text-white/75">
+                Parishioner Portal
+              </div>
             </div>
-          )}
-          <div className="min-w-0 leading-tight">
-            <div
-              className="truncate font-serif text-[14px] font-semibold leading-tight sm:line-clamp-2 sm:max-w-[280px] sm:text-[13.5px] sm:whitespace-normal lg:max-w-[420px]"
-              title={parish.name}
-            >
-              {parish.name}
-            </div>
-            <div className="mt-0.5 truncate text-[11px] font-semibold uppercase tracking-wide text-white/75">
-              Parishioner Portal
-            </div>
-          </div>
+          </Link>
         </div>
-        {/* ⬆️ end of replaced block */}
 
         {/* Desktop nav */}
         <div className="hidden shrink-0 items-center gap-1 lg:flex">
@@ -79,17 +85,15 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <NavLink
             to="verify"
-            className="hidden items-center gap-1.5 rounded-full border border-white/30 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-white/60 hover:bg-white/10 sm:flex"
+            className={({ isActive }) =>
+              `hidden items-center rounded-full border px-3 py-1.5 text-xs font-medium text-white transition-colors sm:flex ${
+                isActive ? "border-white/60 bg-white/15" : "border-white/30 hover:border-white/60 hover:bg-white/10"
+              }`
+            }
           >
-            🛡 Verify
+            Verify
           </NavLink>
-          <Link
-            to="account"
-            title={userName}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/70 text-xs font-bold text-primary shadow-sm transition-transform hover:scale-105 sm:h-9 sm:w-9"
-          >
-            {userInitials}
-          </Link>
+          <ProfileMenu parish={parish} userInitials={userInitials} userName={userName} userEmail={userEmail} />
 
           {/* Hamburger — mobile only */}
           <button
@@ -107,11 +111,11 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
       {/* Mobile menu panel */}
       {menuOpen && (
         <div className="absolute w-full flex flex-col gap-1 border-t border-white/10 bg-primary px-4 pb-4 pt-2 shadow-lg lg:hidden">
-          {navItems.map((item) => (
+          {[...navItems, { to: "verify", label: "Verify a Certificate", end: true }].map((item) => (
             <NavLink
               key={item.label}
               to={item.to || "."}
-              end={item.to === ""}
+              end={item.end}
               onClick={() => setMenuOpen(false)}
               className={({ isActive }) =>
                 `rounded-lg px-4 py-2.5 text-sm ${
@@ -122,15 +126,90 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
               {item.label}
             </NavLink>
           ))}
-          <NavLink
-            to="verify"
-            onClick={() => setMenuOpen(false)}
-            className="mt-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10"
-          >
-            🛡 Verify a Certificate
-          </NavLink>
         </div>
       )}
     </nav>
+  );
+}
+
+/** The initials button: a small menu with Account, Settings and Log out. */
+function ProfileMenu({ parish, userInitials, userName, userEmail }: NavbarProps) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(e: PointerEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
+
+  async function handleLogout() {
+    setOpen(false);
+    const ok = await askConfirm({
+      title: "Log out?",
+      message: "You'll need to log in again to use the parishioner portal.",
+      confirmLabel: "Log out",
+    });
+    if (!ok) return;
+    await logout();
+    navigate(`/${parish.slug}/login`, { replace: true });
+  }
+
+  const itemClass =
+    "flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-ink hover:bg-surface-alt focus-visible:bg-surface-alt focus-visible:outline-none";
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`${userName}, account menu`}
+        title={userName}
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/70 text-xs font-bold text-primary shadow-sm transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-9 sm:w-9"
+      >
+        {userInitials}
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[240px] overflow-hidden rounded-xl border border-border bg-surface py-1 text-ink shadow-[0_8px_24px_rgba(10,40,45,0.16)]"
+        >
+          <div className="border-b border-border px-4 py-3">
+            <p className="truncate text-sm font-semibold text-ink">{userName}</p>
+            {userEmail && <p className="mt-0.5 truncate text-[0.8125rem] text-ink-muted">{userEmail}</p>}
+          </div>
+          <div className="py-1">
+            <Link to="account" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
+              <UserIcon className="h-4 w-4 shrink-0 text-ink-muted" />
+              Account
+            </Link>
+            <Link to="settings" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
+              <GearIcon className="h-4 w-4 shrink-0 text-ink-muted" />
+              Settings
+            </Link>
+          </div>
+          <div className="border-t border-border py-1">
+            <button type="button" role="menuitem" onClick={handleLogout} className={itemClass}>
+              <LogoutIcon className="h-4 w-4 shrink-0" />
+              Log out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -24,7 +24,7 @@ export function PortalLayout() {
 
   return (
     <div className="parishioner-portal min-h-screen bg-surface-alt">
-      <Navbar parish={parish} userInitials={userInitials} userName={userName} />
+      <Navbar parish={parish} userInitials={userInitials} userName={userName} userEmail={user?.email ?? ""} />
       <main>
         <PageEnter>
           <Outlet context={{ parish }} />

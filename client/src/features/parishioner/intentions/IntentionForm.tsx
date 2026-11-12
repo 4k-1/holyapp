@@ -155,7 +155,7 @@ export function IntentionForm({
 
   return (
     <PortalFormCard>
-      <PortalFormSection step={1} title="Mass date" hint="Highlighted dates still have room for another intention.">
+      <PortalFormSection step={1} title="Mass date">
         <div className="rounded-xl border border-border p-3 sm:p-4">
           <div className="mb-3 flex items-center justify-between">
             <MonthButton
@@ -227,11 +227,11 @@ export function IntentionForm({
                 className="flex min-h-[52px] items-center justify-between px-4 py-2.5 text-left"
               >
                 <span className="text-[0.9375rem] font-semibold tabular-nums text-ink">{item.time}</span>
-                <span className="text-[0.8125rem] text-ink-muted">
-                  {item.remaining === null
-                    ? "Open"
-                    : `${item.remaining} ${item.remaining === 1 ? "place" : "places"} left`}
-                </span>
+                {item.remaining !== null ? (
+                  <span className="text-[0.8125rem] text-ink-muted">
+                    {`${item.remaining} ${item.remaining === 1 ? "place" : "places"} left`}
+                  </span>
+                ) : null}
               </ChoiceButton>
             ))}
           </div>

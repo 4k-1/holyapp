@@ -114,8 +114,10 @@ function validateIntake(body) {
   const relationship = text(body.relationship, 80);
   if (!relationship) return 'Relationship to the subject is required.';
 
-  const sacramentDate = dateValue(body.sacramentDate);
-  if (!sacramentDate) return 'Sacrament date is required.';
+  // The date is optional: many people don't know the day they were baptised or confirmed.
+  const hasDate = typeof body.sacramentDate === 'string' && body.sacramentDate.trim() !== '';
+  const sacramentDate = hasDate ? dateValue(body.sacramentDate.trim()) : null;
+  if (hasDate && !sacramentDate) return 'Enter a real date for the sacrament.';
 
   const fields = cleanFields(body.fields);
   if (sacrament === 'marriage') {
