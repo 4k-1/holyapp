@@ -11,9 +11,9 @@ function countLabel(n: number, one: string, many: string) {
 }
 
 function parishMeta(row: SuperAdminParishOverview) {
-  const office = row.admins.length + row.staff.length;
   return [
-    countLabel(office, "office account", "office accounts"),
+    countLabel(row.admins.length, "admin", "admins"),
+    countLabel(row.staff.length, "staff account", "staff accounts"),
     countLabel(row.parishioners.length, "parishioner", "parishioners"),
     countLabel(row.records.total, "record", "records"),
   ].join(" · ");
@@ -49,13 +49,13 @@ export function SuperAdminParishesPage() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search parish name or location"
             aria-label="Search parishes"
-            className="w-full bg-transparent font-sans text-[12.5px] text-admin-ink outline-none placeholder:text-admin-ink-faint"
+            className="w-full bg-transparent font-sans text-[14.5px] text-admin-ink outline-none placeholder:text-admin-ink-faint"
           />
         </label>
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-admin-green-700 px-3.5 py-2 text-[12.5px] font-bold text-white hover:bg-admin-green-900"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-admin-green-700 px-3.5 py-2 text-[14.5px] font-bold text-white hover:bg-admin-green-900"
         >
           <PlusIcon className="h-[13px] w-[13px] stroke-white" />
           Add parish
@@ -64,35 +64,47 @@ export function SuperAdminParishesPage() {
 
       <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
         {error ? (
-          <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-red-700">
+          <p className="px-[18px] py-8 text-center text-[14.5px] text-admin-red-700">
             Couldn't load the parishes. Refresh the page to try again.
           </p>
         ) : loading ? (
-          <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-ink-faint">Loading parishes…</p>
+          <p className="px-[18px] py-8 text-center text-[14.5px] text-admin-ink-faint">Loading parishes…</p>
         ) : parishes.length === 0 ? (
-          <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-ink-faint">No parishes on HolyApp yet.</p>
+          <p className="px-[18px] py-8 text-center text-[14.5px] text-admin-ink-faint">No parishes on HolyApp yet.</p>
         ) : filtered.length === 0 ? (
-          <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-ink-faint">No parishes match your search.</p>
+          <p className="px-[18px] py-8 text-center text-[14.5px] text-admin-ink-faint">No parishes match your search.</p>
         ) : (
           <ul>
-            {filtered.map((row) => (
-              <li
-                key={row.parish.id}
-                className="flex items-center justify-between gap-5 border-b border-admin-border px-[18px] py-3.5 last:border-b-0"
-              >
-                <div className="min-w-0">
-                  <p className="text-[13px] font-bold leading-snug text-admin-ink">{row.parish.name}</p>
-                  <p className="mt-px text-[12px] text-admin-ink-muted">{row.parish.address}</p>
-                  <p className="mt-0.5 text-[11.3px] text-admin-ink-faint">{parishMeta(row)}</p>
-                </div>
-                <Link
-                  to={`/super-admin/accounts/${row.parish.id}`}
-                  className="shrink-0 text-[12.5px] font-semibold text-admin-green-700 hover:text-admin-green-900"
+            {filtered.map((row) => {
+              const active = row.admins.length > 0;
+              return (
+                <li
+                  key={row.parish.id}
+                  className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-b border-admin-border px-[18px] py-4 last:border-b-0"
                 >
-                  Manage
-                </Link>
-              </li>
-            ))}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-bold leading-snug text-admin-ink">{row.parish.name}</p>
+                    <p className="mt-0.5 text-[14px] text-admin-ink-muted">{row.parish.address}</p>
+                    <p className="mt-1 text-[14.5px] text-admin-ink-faint">{parishMeta(row)}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-4">
+                    <span
+                      className={`whitespace-nowrap rounded-full px-2.5 py-[3px] text-[13px] font-bold ${
+                        active ? "bg-admin-green-100 text-admin-green-900" : "bg-admin-gold-100 text-admin-gold-700"
+                      }`}
+                    >
+                      {active ? "Active" : "Pending setup"}
+                    </span>
+                    <Link
+                      to={`/super-admin/accounts/${row.parish.id}`}
+                      className="text-[14.5px] font-semibold text-admin-green-700 hover:text-admin-green-900"
+                    >
+                      Manage
+                    </Link>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

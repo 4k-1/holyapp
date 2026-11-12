@@ -128,7 +128,7 @@ export function EditAccountModal({
           </SaField>
           {role === "parish_admin" ? (
             <div>
-              <label className="inline-flex cursor-pointer items-center gap-1.5 text-[13px] text-admin-ink">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 text-[14px] text-admin-ink">
                 <input
                   type="checkbox"
                   checked={canEditRecords}
@@ -137,7 +137,7 @@ export function EditAccountModal({
                 />
                 Can edit records
               </label>
-              <p className="mt-1 text-[11.5px] text-admin-ink-faint">
+              <p className="mt-1 text-[13px] text-admin-ink-faint">
                 If unchecked, this admin can view records but not create or edit them.
               </p>
             </div>
@@ -178,7 +178,7 @@ export function EditAccountModal({
           </SaField>
         </>
       )}
-      {error ? <p className="text-[12.5px] font-medium text-admin-red-700">{error}</p> : null}
+      {error ? <p className="text-[13.5px] font-medium text-admin-red-700">{error}</p> : null}
     </SuperAdminModal>
   );
 }

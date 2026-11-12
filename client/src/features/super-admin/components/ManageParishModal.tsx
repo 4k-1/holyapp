@@ -84,9 +84,9 @@ export function ManageParishModal({
       </SaField>
 
       <div>
-        <p className="mb-[5px] text-[11.5px] font-bold text-admin-ink-muted">Assigned Admins</p>
+        <p className="mb-[5px] text-[13px] font-bold text-admin-ink-muted">Assigned Admins</p>
         {row.admins.length === 0 ? (
-          <p className="text-[11.5px] text-admin-ink-faint">
+          <p className="text-[13px] text-admin-ink-faint">
             No parish admin yet — this parish is pending setup.
           </p>
         ) : (
@@ -94,7 +94,7 @@ export function ManageParishModal({
             {row.admins.map((admin) => (
               <span
                 key={admin.id}
-                className="rounded-full bg-admin-green-100 px-3 py-1 text-[12px] font-semibold text-admin-green-900"
+                className="rounded-full bg-admin-green-100 px-3 py-1 text-[13px] font-semibold text-admin-green-900"
               >
                 {admin.fullName}
               </span>
@@ -104,12 +104,12 @@ export function ManageParishModal({
         <Link
           to={`/super-admin/accounts/${row.parish.id}`}
           onClick={onClose}
-          className="mt-2 inline-block text-[12px] font-bold text-admin-green-700 hover:text-admin-green-900"
+          className="mt-2 inline-block text-[13px] font-bold text-admin-green-700 hover:text-admin-green-900"
         >
           View accounts
         </Link>
       </div>
-      {error ? <p className="text-[12.5px] font-medium text-admin-red-700">{error}</p> : null}
+      {error ? <p className="text-[13.5px] font-medium text-admin-red-700">{error}</p> : null}
     </SuperAdminModal>
   );
 }

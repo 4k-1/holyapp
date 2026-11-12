@@ -46,12 +46,9 @@ export function SuperAdminTopbar({
               <img src="/holyapp-logo.webp" alt="" className="h-[26px] w-[26px] object-contain" />
             </Link>
             <div className="min-w-0 overflow-hidden whitespace-nowrap leading-tight">
-              <p className="truncate text-[13.5px] font-extrabold tracking-[0.2px] text-admin-ink">HolyApp</p>
-              <p className="mt-px truncate text-[10.5px] text-admin-ink-faint">Platform console</p>
+              <p className="truncate text-[14.5px] font-extrabold tracking-[0.2px] text-admin-ink">HolyApp</p>
+              <p className="mt-px truncate text-[12px] text-admin-ink-faint">Platform console</p>
             </div>
-            <span className="hidden shrink-0 rounded-full border border-admin-gold-600 bg-admin-gold-100 px-[7px] py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-admin-green-900 sm:inline-block">
-              Super Admin
-            </span>
           </div>
         </div>
 
@@ -64,8 +61,8 @@ export function SuperAdminTopbar({
             {initials}
           </div>
           <div className="hidden leading-tight sm:block">
-            <p className="text-[12.5px] font-semibold text-admin-ink">{user.fullName}</p>
-            <p className="text-[10.5px] text-admin-ink-faint">Super Admin</p>
+            <p className="text-[13.5px] font-semibold text-admin-ink">{user.fullName}</p>
+            <p className="text-[12px] text-admin-ink-faint">Super Admin</p>
           </div>
         </Link>
       </div>

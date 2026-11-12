@@ -7,11 +7,7 @@ import {
   type PlatformAccount,
   type SuperAdminParishOverview,
   type PlatformAdmin,
-  CERT_THEMES,
-  getCertTheme,
-  setParishCertTheme,
 } from "@/services/mocks/superAdmin.mock";
-import { delay } from "@/services/delay";
 import type { AuditLogEntry, Parish, UserStatus } from "@/types";
 
 export type {
@@ -23,7 +19,6 @@ export type {
   SuperAdminParishOverview,
   UpdateParishAccountInput,
 };
-export { CERT_THEMES, getCertTheme };
 
 function fail(err: unknown): never {
   if (err instanceof ApiError) throw new Error(err.message);
@@ -146,11 +141,6 @@ export async function updatePlatformAccount(userId: string, patch: UpdateParishA
 
 export async function setPlatformAccountCanEdit(userId: string, canEditRecords: boolean) {
   return updatePlatformAccount(userId, { canEditRecords });
-}
-
-export async function setPlatformParishCertTheme(parishId: string, themeId: string) {
-  await delay(180);
-  return setParishCertTheme(parishId, themeId);
 }
 
 export async function listPlatformAccounts(): Promise<PlatformAccount[]> {

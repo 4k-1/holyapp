@@ -127,7 +127,7 @@ export function OnboardParishModal({
           </button>
         </div>
       </SaField>
-      {error ? <p className="text-[12.5px] font-medium text-admin-red-700">{error}</p> : null}
+      {error ? <p className="text-[13.5px] font-medium text-admin-red-700">{error}</p> : null}
     </SuperAdminModal>
   );
 }
@@ -169,7 +169,7 @@ export function CredentialsModal({
         </>
       }
     >
-      <p className="text-[12.5px] text-admin-ink-muted">
+      <p className="text-[13.5px] text-admin-ink-muted">
         Share these sign-in details with {audience}. They will use the parish portal, not this
         platform sign-in.
       </p>

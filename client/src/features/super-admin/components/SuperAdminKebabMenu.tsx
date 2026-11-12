@@ -117,7 +117,7 @@ export function SuperAdminKebabMenu({
                     setOpen(false);
                     item.onClick();
                   }}
-                  className={`block w-full px-3 py-2 text-left text-[12.5px] font-medium hover:bg-admin-green-100 ${
+                  className={`block w-full px-3 py-2 text-left text-[13.5px] font-medium hover:bg-admin-green-100 ${
                     item.danger
                       ? "text-admin-red-700 hover:bg-admin-red-100 hover:text-admin-red-700"
                       : "text-admin-ink hover:text-admin-green-900"

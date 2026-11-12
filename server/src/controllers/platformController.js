@@ -132,7 +132,6 @@ async function loadParish(parishId) {
     },
     certificateCount: certificates,
     requestCount: requests,
-    certTheme: 'classic',
   };
 }
 
@@ -159,9 +158,9 @@ async function uniqueSlug(name) {
 }
 
 const SACRAMENT_COLORS = {
-  baptism: '#2f6b45',
+  baptism: '#16798c',
   confirmation: '#f2b632',
-  marriage: '#5b6b63',
+  marriage: '#6b8d95',
   death: '#c0392f',
 };
 

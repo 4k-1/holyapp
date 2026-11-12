@@ -1,11 +1,11 @@
 import { forwardRef, type ReactNode } from "react";
 import {
+  CERTIFICATE_TITLES,
   CERTIFICATE_PAPER,
   type BaptismCertificateData,
   type CertificateData,
   type CertificateParish,
   type CertificateSignatory,
-  type CertificateType,
   type ConfirmationCertificateData,
   type DeathCertificateData,
 } from "./certificateData";
@@ -14,13 +14,6 @@ import { VerificationArea } from "./CertificateVerification";
 import { MarriageCertificate } from "./MarriageCertificate";
 import { SpecimenMark } from "./SpecimenMark";
 import "./parishCertificate.css";
-
-const TITLES: Record<CertificateType, string> = {
-  BAPTISM: "Certificate of Birth & Baptism",
-  CONFIRMATION: "Certificate of Confirmation",
-  DEATH: "Certificate of Death",
-  MARRIAGE: "Certificate of Marriage",
-};
 
 interface ParishCertificateProps {
   data: CertificateData;
@@ -55,7 +48,7 @@ export const ParishCertificate = forwardRef<HTMLDivElement, ParishCertificatePro
       <div className="pcert__frame">
         <ParishHeader parish={data.parish} />
         {/* Blackletter, in the style of the parish's printed forms. */}
-        <h1 className="pcert__title pcert__title--blackletter">{TITLES[data.type]}</h1>
+        <h1 className="pcert__title pcert__title--blackletter">{CERTIFICATE_TITLES[data.type]}</h1>
 
         {data.type === "BAPTISM" && <BaptismBody data={data} />}
         {data.type === "CONFIRMATION" && <ConfirmationBody data={data} />}

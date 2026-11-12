@@ -9,6 +9,8 @@ import { SuperAdminTopbar } from "@/features/super-admin/components/SuperAdminTo
 import { SuperAdminChromeProvider } from "@/features/super-admin/SuperAdminChrome";
 import { useSuperAdminChromeHeading } from "@/features/super-admin/superAdminChromeContext";
 
+const PHONE = "(max-width: 639px)";
+
 function headingFromPath(pathname: string) {
   if (pathname.startsWith("/super-admin/parishes")) {
     return { title: "Parishes", sub: "Every parish on HolyApp." };
@@ -29,7 +31,7 @@ function headingFromPath(pathname: string) {
     return { title: "", sub: "" };
   }
   if (pathname.startsWith("/super-admin/accounts")) {
-    return { title: "Parish Admins", sub: "Create and manage Parish Admin accounts" };
+    return { title: "Parishes", sub: "Every parish on HolyApp." };
   }
   return { title: "System Overview", sub: "Every parish on HolyApp at a glance" };
 }
@@ -48,7 +50,15 @@ function SuperAdminShell() {
   const location = useLocation();
   const override = useSuperAdminChromeHeading();
   const heading = override ?? headingFromPath(location.pathname);
-  const [collapsed, setCollapsed] = useState(false);
+  // Collapsed to start with on phones and small tablets, as on the parish admin side.
+  const [collapsed, setCollapsed] = useState(() => window.matchMedia("(max-width: 1023px)").matches);
+
+  // On phones the open sidebar covers the page, so close it once a link takes you somewhere.
+  const [lastPath, setLastPath] = useState(location.pathname);
+  if (location.pathname !== lastPath) {
+    setLastPath(location.pathname);
+    if (window.matchMedia(PHONE).matches) setCollapsed(true);
+  }
 
   if (!user) return null;
 
@@ -68,11 +78,18 @@ function SuperAdminShell() {
       <SuperAdminTopbar user={user} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <SuperAdminSidebar collapsed={collapsed} onSignOut={handleSignOut} />
-        <main className="min-w-0 flex-1 overflow-y-auto px-8 py-[26px]" data-enter-fields>
+        {!collapsed && (
+          <div
+            className="fixed inset-x-0 bottom-0 top-16 z-30 bg-black/30 sm:hidden"
+            onClick={() => setCollapsed(true)}
+            aria-hidden="true"
+          />
+        )}
+        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8 sm:py-[26px]" data-enter-fields>
           {heading.title ? (
             <header className="mb-[22px]">
               <h1 className="font-sans text-[21px] font-extrabold leading-tight text-admin-ink">{heading.title}</h1>
-              {heading.sub ? <p className="mt-[3px] text-[12.8px] text-admin-ink-muted">{heading.sub}</p> : null}
+              {heading.sub ? <p className="mt-[3px] text-[14px] text-admin-ink-muted">{heading.sub}</p> : null}
             </header>
           ) : null}
           <PageEnter>

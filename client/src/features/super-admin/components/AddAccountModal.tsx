@@ -114,7 +114,7 @@ export function AddAccountModal({
       </SaField>
       {isAdmin ? (
         <div>
-          <label className="inline-flex cursor-pointer items-center gap-1.5 text-[13px] text-admin-ink">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 text-[14px] text-admin-ink">
             <input
               type="checkbox"
               checked={canEditRecords}
@@ -123,7 +123,7 @@ export function AddAccountModal({
             />
             Can edit records
           </label>
-          <p className="mt-1 text-[11.5px] text-admin-ink-faint">
+          <p className="mt-1 text-[13px] text-admin-ink-faint">
             If unchecked, this admin can view records but not create or edit them.
           </p>
         </div>
@@ -145,7 +145,7 @@ export function AddAccountModal({
           </button>
         </div>
       </SaField>
-      {error ? <p className="text-[12.5px] font-medium text-admin-red-700">{error}</p> : null}
+      {error ? <p className="text-[13.5px] font-medium text-admin-red-700">{error}</p> : null}
     </SuperAdminModal>
   );
 }
@@ -189,10 +189,10 @@ export function ResetPasswordModal({
         </>
       }
     >
-      <p className="m-0 text-[13px] text-admin-ink-muted">
+      <p className="m-0 text-[14px] text-admin-ink-muted">
         Set a new temporary password for {name}? Share it with them so they can sign in.
       </p>
-      {error ? <p className="text-[12.5px] font-medium text-admin-red-700">{error}</p> : null}
+      {error ? <p className="text-[13.5px] font-medium text-admin-red-700">{error}</p> : null}
     </SuperAdminModal>
   );
 }

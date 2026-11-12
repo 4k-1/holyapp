@@ -76,8 +76,8 @@ export function SuperAdminAuditPage() {
     <div className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-admin-border px-[18px] py-4">
         <div>
-          <h2 className="font-sans text-[14.5px] font-bold text-admin-ink">System Audit Log</h2>
-          <p className="mt-0.5 text-[11.5px] text-admin-ink-faint">
+          <h2 className="font-sans text-[16px] font-bold text-admin-ink">System Audit Log</h2>
+          <p className="mt-0.5 text-[13px] text-admin-ink-faint">
             Activity across every parish. Every super admin action is recorded here.
           </p>
         </div>
@@ -127,13 +127,13 @@ export function SuperAdminAuditPage() {
       </div>
 
       {error ? (
-        <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-red-700">
+        <p className="px-[18px] py-8 text-center text-[13.5px] text-admin-red-700">
           Couldn't load the audit log. Refresh the page to try again.
         </p>
       ) : loading ? (
-        <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-ink-faint">Loading audit log…</p>
+        <p className="px-[18px] py-8 text-center text-[13.5px] text-admin-ink-faint">Loading audit log…</p>
       ) : entries.length === 0 ? (
-        <p className="px-[18px] py-8 text-center text-[12.5px] text-admin-ink-faint">No matching entries.</p>
+        <p className="px-[18px] py-8 text-center text-[13.5px] text-admin-ink-faint">No matching entries.</p>
       ) : (
         <>
           <ul>
@@ -145,8 +145,8 @@ export function SuperAdminAuditPage() {
                 <li key={entry.id} className="flex items-start gap-2.5 border-b border-admin-border px-[18px] py-3">
                   <span className={`mt-[5px] h-2 w-2 shrink-0 rounded-full ${dot}`} />
                   <div className="min-w-0">
-                    <p className="text-[12.3px] leading-snug text-admin-ink">{auditCopy(entry)}</p>
-                    <p className="mt-0.5 text-[10.8px] text-admin-ink-faint">
+                    <p className="text-[13.5px] leading-snug text-admin-ink">{auditCopy(entry)}</p>
+                    <p className="mt-0.5 text-[12px] text-admin-ink-faint">
                       {formatAuditWhen(entry.createdAt)}
                       {entry.parishName ? ` · ${entry.parishName}` : ""}
                     </p>
@@ -161,14 +161,14 @@ export function SuperAdminAuditPage() {
                 type="button"
                 onClick={showOlder}
                 disabled={loadingOlder}
-                className="rounded-lg border border-admin-border bg-white px-3.5 py-2 text-[12.5px] font-semibold text-admin-ink hover:bg-admin-surface-alt disabled:opacity-60"
+                className="rounded-lg border border-admin-border bg-white px-3.5 py-2 text-[13.5px] font-semibold text-admin-ink hover:bg-admin-surface-alt disabled:opacity-60"
               >
                 {loadingOlder ? "Loading…" : "Show older"}
               </button>
             ) : (
-              <p className="text-[11.5px] text-admin-ink-faint">That's the start of the log.</p>
+              <p className="text-[13px] text-admin-ink-faint">That's the start of the log.</p>
             )}
-            {olderError ? <p className="text-[11.5px] text-admin-red-700">{olderError}</p> : null}
+            {olderError ? <p className="text-[13px] text-admin-red-700">{olderError}</p> : null}
           </div>
         </>
       )}
@@ -177,7 +177,7 @@ export function SuperAdminAuditPage() {
 }
 
 const menuRow =
-  "block w-full px-3 py-2 text-left text-[12.3px] text-admin-ink-muted hover:bg-admin-green-100 hover:text-admin-green-900";
+  "block w-full px-3 py-2 text-left text-[13.5px] text-admin-ink-muted hover:bg-admin-green-100 hover:text-admin-green-900";
 
 function FilterChip({
   open,
@@ -195,7 +195,7 @@ function FilterChip({
       <button
         type="button"
         onClick={onToggle}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-admin-border bg-white px-3 py-[7px] text-[12.5px] text-admin-ink-muted"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-admin-border bg-white px-3 py-[7px] text-[13.5px] text-admin-ink-muted"
       >
         <ChevronDownIcon className="h-[11px] w-[11px]" />
         <span className="max-w-[180px] truncate">{label}</span>

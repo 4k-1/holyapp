@@ -73,7 +73,8 @@
   caret-color: var(--color-admin-green-700);
 }
 
-[data-portal="admin"][data-surface="platform"] :is(h1, h2, h3, h4) {
+/* Certificates keep their own printed fonts. */
+[data-portal="admin"][data-surface="platform"] :is(h1, h2, h3, h4):not(.pcert *, .mcert *) {
   font-family: var(--font-sans);
 }
 

@@ -151,13 +151,13 @@ export function SuperAdminSettingsPage() {
   }
 
   if (loading) {
-    return <p className="text-[12.5px] text-admin-ink-muted">Loading profile…</p>;
+    return <p className="text-[13.5px] text-admin-ink-muted">Loading profile…</p>;
   }
 
   if (loadError || !user) {
     return (
       <div className="max-w-[560px] rounded-lg border border-admin-border bg-admin-surface px-6 py-8">
-        <p className="text-[13px] text-admin-ink">{loadError || "Not signed in."}</p>
+        <p className="text-[14px] text-admin-ink">{loadError || "Not signed in."}</p>
       </div>
     );
   }
@@ -167,8 +167,8 @@ export function SuperAdminSettingsPage() {
       <section className="overflow-hidden rounded-lg border border-admin-border bg-admin-surface">
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-5 py-4">
           <div>
-            <h2 className="font-sans text-[15px] font-bold text-admin-ink">Account details</h2>
-            <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">
+            <h2 className="font-sans text-[16px] font-bold text-admin-ink">Account details</h2>
+            <p className="mt-0.5 text-[13.5px] text-admin-ink-muted">
               This is how your name appears in audit logs and parish management.
             </p>
           </div>
@@ -244,7 +244,7 @@ export function SuperAdminSettingsPage() {
               />
             </SaField>
             {formError ? (
-              <p className="text-[12.5px] font-semibold text-admin-red-700" role="alert">
+              <p className="text-[13.5px] font-semibold text-admin-red-700" role="alert">
                 {formError}
               </p>
             ) : null}
@@ -269,14 +269,14 @@ export function SuperAdminSettingsPage() {
       </section>
 
       <section className="mt-4 overflow-hidden rounded-lg border border-admin-border bg-admin-surface px-5 py-4">
-        <h2 className="font-sans text-[15px] font-bold text-admin-ink">Password</h2>
-        <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">
+        <h2 className="font-sans text-[16px] font-bold text-admin-ink">Password</h2>
+        <p className="mt-0.5 text-[13.5px] text-admin-ink-muted">
           Passwords are changed by email, so a stolen session cannot change your credentials by itself.
         </p>
         <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-admin-border bg-admin-surface-alt px-3.5 py-3">
           <div className="min-w-0">
-            <p className="text-[11px] font-bold text-admin-ink-muted">Account email</p>
-            <p className="break-all text-[13px] font-semibold text-admin-ink">{user.email}</p>
+            <p className="text-[12.5px] font-bold text-admin-ink-muted">Account email</p>
+            <p className="break-all text-[14px] font-semibold text-admin-ink">{user.email}</p>
           </div>
           <button
             type="button"
@@ -288,12 +288,12 @@ export function SuperAdminSettingsPage() {
           </button>
         </div>
         {resetSent ? (
-          <p className="mt-2.5 text-[12.5px] text-admin-green-700" role="status">
+          <p className="mt-2.5 text-[13.5px] text-admin-green-700" role="status">
             Reset link sent to {user.email}. It expires in 30 minutes.
           </p>
         ) : null}
         {resetError ? (
-          <p className="mt-2.5 text-[12.5px] font-semibold text-admin-red-700" role="alert">
+          <p className="mt-2.5 text-[13.5px] font-semibold text-admin-red-700" role="alert">
             {resetError}
           </p>
         ) : null}
@@ -307,8 +307,8 @@ export function SuperAdminSettingsPage() {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[11px] font-bold uppercase tracking-[0.04em] text-admin-ink-muted">{label}</dt>
-      <dd className="mt-0.5 text-[13px] text-admin-ink">{value}</dd>
+      <dt className="text-[12.5px] font-semibold text-admin-ink-muted">{label}</dt>
+      <dd className="mt-0.5 text-[14px] text-admin-ink">{value}</dd>
     </div>
   );
 }

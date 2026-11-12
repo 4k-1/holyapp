@@ -204,3 +204,11 @@ export type PrintedRecord =
   | RecordPart<ConfirmationCertificateData>
   | RecordPart<DeathCertificateData>
   | RecordPart<MarriageCertificateData>;
+
+/** Each certificate's own printed title; other screens use these so a certificate has one name. */
+export const CERTIFICATE_TITLES: Record<CertificateType, string> = {
+  BAPTISM: "Certificate of Birth & Baptism",
+  CONFIRMATION: "Certificate of Confirmation",
+  DEATH: "Certificate of Death",
+  MARRIAGE: "Certificate of Marriage",
+};

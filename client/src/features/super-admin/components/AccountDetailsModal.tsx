@@ -18,8 +18,8 @@ function formatDate(iso?: string) {
 function Detail({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
     <div className={wide ? "col-span-2" : undefined}>
-      <p className="mb-[3px] text-[11px] font-bold text-admin-ink-muted">{label}</p>
-      <p className="text-[13px] text-admin-ink">{value || "—"}</p>
+      <p className="mb-[3px] text-[12.5px] font-bold text-admin-ink-muted">{label}</p>
+      <p className="text-[14px] text-admin-ink">{value || "—"}</p>
     </div>
   );
 }
@@ -48,14 +48,14 @@ export function AccountDetailsModal({
       }
     >
       <div className="rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-3">
-        <p className="text-[15px] font-bold text-admin-ink">{user.fullName}</p>
-        <p className="mt-0.5 text-[12.5px] text-admin-ink-muted">{user.email}</p>
+        <p className="text-[16px] font-bold text-admin-ink">{user.fullName}</p>
+        <p className="mt-0.5 text-[13.5px] text-admin-ink-muted">{user.email}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          <span className="inline-block rounded-full bg-admin-green-100 px-2.5 py-[3px] text-[11px] font-bold text-admin-green-900">
+          <span className="inline-block rounded-full bg-admin-green-100 px-2.5 py-[3px] text-[12.5px] font-bold text-admin-green-900">
             {roleLabel(user.role)}
           </span>
           <span
-            className={`inline-block rounded-full px-2.5 py-[3px] text-[11px] font-bold ${
+            className={`inline-block rounded-full px-2.5 py-[3px] text-[12.5px] font-bold ${
               active ? "bg-admin-green-100 text-admin-green-900" : "bg-admin-red-100 text-admin-red-700"
             }`}
           >

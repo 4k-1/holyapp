@@ -21,47 +21,9 @@ export interface PlatformAdmin extends CurrentUser {
   canEditRecords: boolean;
 }
 
-export interface CertTheme {
-  id: string;
-  name: string;
-  desc: string;
-  accent: string;
-  borderWidth: string;
-  borderStyle: string;
-}
-
-export const CERT_THEMES: CertTheme[] = [
-  {
-    id: "classic",
-    name: "Classic Green Border",
-    desc: "Forest green double-rule border, serif heading — the platform default.",
-    accent: "#1B5940",
-    borderWidth: "3px",
-    borderStyle: "double",
-  },
-  {
-    id: "modern",
-    name: "Modern Minimal",
-    desc: "Thin single-rule border, understated and clean.",
-    accent: "#3B4E8A",
-    borderWidth: "1.5px",
-    borderStyle: "solid",
-  },
-  {
-    id: "ornate",
-    name: "Ornate Gold Seal",
-    desc: "Bold gold border for a more traditional, formal look.",
-    accent: "#AD8A2C",
-    borderWidth: "3px",
-    borderStyle: "double",
-  },
-];
-
 const canEditByUserId: Record<string, boolean> = {
   "u-admin-carla": false,
 };
-
-const certThemeByParishId: Record<string, string> = {};
 
 export interface SuperAdminParishOverview {
   parish: Parish;
@@ -71,7 +33,6 @@ export interface SuperAdminParishOverview {
   records: ParishRecordCounts;
   certificateCount: number;
   requestCount: number;
-  certTheme: string;
 }
 
 function usersOf(parishId: string, role: CurrentUser["role"]) {
@@ -82,10 +43,6 @@ function usersOf(parishId: string, role: CurrentUser["role"]) {
 
 function withCanEdit(user: CurrentUser): PlatformAdmin {
   return { ...user, canEditRecords: canEditByUserId[user.id] !== false };
-}
-
-export function getCertTheme(id?: string) {
-  return CERT_THEMES.find((theme) => theme.id === id) ?? CERT_THEMES[0];
 }
 
 function recordCounts(parishId: string): ParishRecordCounts {
@@ -105,7 +62,6 @@ export function getSuperAdminParishOverviews(): SuperAdminParishOverview[] {
     records: recordCounts(parish.id),
     certificateCount: MOCK_CERTIFICATES.filter((c) => c.parishId === parish.id).length,
     requestCount: MOCK_REQUESTS.filter((r) => r.parishId === parish.id).length,
-    certTheme: certThemeByParishId[parish.id] ?? "classic",
   }));
 }
 
@@ -565,25 +521,4 @@ export function setAccountCanEdit(userId: string, canEditRecords: boolean) {
     createdAt: new Date().toISOString(),
   });
   return { ...user, canEditRecords };
-}
-
-export function setParishCertTheme(parishId: string, themeId: string) {
-  const parish = MOCK_PARISHES.find((p) => p.id === parishId);
-  if (!parish) throw new Error("Parish not found.");
-  const theme = getCertTheme(themeId);
-  certThemeByParishId[parishId] = theme.id;
-  MOCK_AUDIT_LOG.unshift({
-    id: nextId(
-      "aud",
-      MOCK_AUDIT_LOG.map((a) => a.id)
-    ),
-    parishId,
-    actorId: "u-super",
-    action: "parish.cert_theme_updated",
-    entityType: "parish",
-    entityId: parishId,
-    metadata: { theme: theme.name },
-    createdAt: new Date().toISOString(),
-  });
-  return { parish, theme };
 }
