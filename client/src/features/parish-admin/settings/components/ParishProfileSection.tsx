@@ -1,13 +1,15 @@
 // src/features/parish-admin/settings/components/ParishProfileSection.tsx
 import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useRevalidator } from "react-router-dom";
+import { forgetParishes } from "@/features/parish/parishApi";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { getParishProfile, updateParishProfile } from "../api/settingsApi";
 import type { LocalFeast, ParishProfile } from "../types";
 import type { Parish } from "@/types";
 import { formatMonthDay } from "../monthDay";
 import { MonthDayInput } from "./MonthDayInput";
-import { notifyError } from "@/lib/notify";
+import { notify, notifyError } from "@/lib/notify";
+import { ParishLogoField } from "./ParishLogoField";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import {
   SettingsAvatar,
@@ -33,6 +35,7 @@ type Panel = "identity" | "contact" | "dates";
 
 export function ParishProfileSection() {
   const { parish } = useOutletContext<{ parish: Parish }>();
+  const revalidator = useRevalidator();
   const [saved, setSaved] = useState<ParishProfile>(emptyProfile);
   const [draft, setDraft] = useState<ParishProfile>(emptyProfile);
   const [loading, setLoading] = useState(true);
@@ -92,6 +95,15 @@ export function ParishProfileSection() {
     }
   }
 
+  /** A new or removed logo: show it here, then reload the parish so the top bar and every other page pick it up. */
+  function handleLogoChanged(sealUrl: string | undefined, message: string) {
+    setSaved((prev) => ({ ...prev, sealUrl }));
+    setDraft((prev) => ({ ...prev, sealUrl }));
+    forgetParishes();
+    void revalidator.revalidate();
+    notify(message);
+  }
+
   if (loading) {
     return <SkeletonList rows={4} className="px-0" />;
   }
@@ -103,7 +115,7 @@ export function ParishProfileSection() {
       </SettingsPillButton>
     );
 
-  // The saved logo, or the one the rest of the portal already shows for this parish.
+  // The uploaded logo, or the one the rest of the portal already shows for this parish.
   const logoUrl = saved.sealUrl || parish.sealUrl;
 
   return (
@@ -131,17 +143,26 @@ export function ParishProfileSection() {
             <SettingsFormActions saving={saving} onSave={handleSave} onCancel={cancelEditing} />
           </>
         ) : (
-          <div className="flex flex-wrap items-center gap-4">
-            <SettingsAvatar text={saved.name.charAt(0) || "?"} imageUrl={logoUrl} />
-            <div className="min-w-0 flex-1">
-              <p className="text-[1.0625rem] font-semibold text-admin-ink">{saved.name || "Unnamed parish"}</p>
-              <p className="mt-0.5 text-admin-body text-admin-green-700">
-                {saved.patron || <span className="text-admin-ink-faint">No patron saint set</span>}
-              </p>
-              <p className="mt-0.5 text-admin-support text-admin-ink-muted">{saved.diocese || "No diocese set"}</p>
+          <>
+            <div className="flex flex-wrap items-center gap-4">
+              {/* The parish's logo is its profile picture; it is also what the portal shows and certificates print. */}
+              <SettingsAvatar text={saved.name.charAt(0) || "?"} imageUrl={logoUrl} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[1.0625rem] font-semibold text-admin-ink">{saved.name || "Unnamed parish"}</p>
+                <p className="mt-0.5 text-admin-body text-admin-green-700">
+                  {saved.patron || <span className="text-admin-ink-faint">No patron saint set</span>}
+                </p>
+                <p className="mt-0.5 text-admin-support text-admin-ink-muted">{saved.diocese || "No diocese set"}</p>
+              </div>
+              {editButton("identity")}
             </div>
-            {editButton("identity")}
-          </div>
+            <ParishLogoField
+              logoUrl={logoUrl}
+              uploaded={Boolean(saved.sealUrl)}
+              parishName={saved.name || parish.name}
+              onChanged={handleLogoChanged}
+            />
+          </>
         )}
       </SettingsPanel>
 
@@ -248,35 +269,6 @@ export function ParishProfileSection() {
             />
           </SettingsFieldGrid>
         )}
-      </SettingsPanel>
-
-      <SettingsPanel
-        title="Parish logo / seal"
-        description="Printed on certificate templates and shown on the public verification page."
-      >
-        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-dashed border-admin-border-strong p-4">
-          {logoUrl ? (
-            <img src={logoUrl} alt={`${saved.name || parish.name} logo`} className="h-16 w-16 rounded-full bg-white object-contain" />
-          ) : (
-            <span className="flex h-12 w-12 items-center justify-center rounded-full border border-admin-border bg-admin-surface-alt font-serif text-lg font-bold text-admin-green-800">
-              {saved.name.charAt(0) || "?"}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-admin-body font-medium text-admin-ink">
-              {logoUrl ? "Current logo" : "No logo yet"}
-            </p>
-            <p className="text-admin-support text-admin-ink-faint">
-              {logoUrl
-                ? "Shown in the portal and printed on certificates. Changing it is coming soon."
-                : "Uploading a logo is coming soon."}
-            </p>
-          </div>
-          {/* TODO: wire to real upload once file storage is in place */}
-          <AdminButton variant="secondary" size="sm" type="button" disabled>
-            Upload new seal
-          </AdminButton>
-        </div>
       </SettingsPanel>
     </div>
   );

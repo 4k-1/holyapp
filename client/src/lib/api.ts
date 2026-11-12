@@ -10,6 +10,12 @@ import {
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 
+/** A file the API serves publicly (an uploaded parish logo), as an address an <img> can load. */
+export function apiFileUrl(path: string | null | undefined): string | undefined {
+  if (!path) return undefined;
+  return path.startsWith("/") ? `${API_URL}${path}` : path;
+}
+
 export class ApiError extends Error {
   status: number;
   /** The whole error response, for screens that need more than the message. */

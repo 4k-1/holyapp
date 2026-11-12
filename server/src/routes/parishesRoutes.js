@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../config/db');
+const { getLogo } = require('../controllers/parishLogoController');
 
 const router = express.Router();
 
@@ -50,5 +51,8 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Public: the sign-in page, the certificate check page and printed certificates all show it.
+router.get('/:parishId/logo', getLogo);
 
 module.exports = router;

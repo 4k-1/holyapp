@@ -89,7 +89,7 @@ function ParishHeader({ parish }: { parish: CertificateParish }) {
   return (
     <header className="pcert__header">
       {logoUrl ? (
-        <img className="pcert__logo" src={logoUrl} alt="" />
+        <img className="pcert__logo" src={logoUrl} alt="" crossOrigin="anonymous" />
       ) : (
         <div className="pcert__logo pcert__logo--initial" aria-hidden="true">
           {parish.name.trim().charAt(0)}

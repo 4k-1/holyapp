@@ -8,7 +8,8 @@ export async function saveCertificatePdf(element: HTMLElement, filename: string)
   if (formPages.length > 0) {
     const sheet = new jsPDF({ orientation: "portrait", unit: "pt", format: [612, 936] });
     for (const [i, page] of formPages.entries()) {
-      const canvas = await html2canvas(page, { scale: 3, backgroundColor: "#ffffff", logging: false });
+      // useCORS: an uploaded parish logo is served by the API, another address than this page.
+      const canvas = await html2canvas(page, { scale: 3, backgroundColor: "#ffffff", logging: false, useCORS: true });
       if (i > 0) sheet.addPage([612, 936], "portrait");
       sheet.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, 612, 936);
     }
@@ -21,6 +22,7 @@ export async function saveCertificatePdf(element: HTMLElement, filename: string)
     scale: paper ? 3 : 2,
     backgroundColor: paper ? "#ffffff" : CERT_PAPER,
     logging: false,
+    useCORS: true,
   });
   const image = canvas.toDataURL("image/png");
   if (paper) {

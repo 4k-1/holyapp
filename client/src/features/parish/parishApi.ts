@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFileUrl } from "@/lib/api";
 import type { Parish } from "@/types";
 import mtcarmellogo from "@/assets/mtcarmellogo.png";
 import mtcarmelChurch from "@/assets/mtcarmel-church.webp";
@@ -16,7 +16,7 @@ type BackendParish = {
   updated_at?: string | null;
 };
 
-/** Local seals until the API stores uploaded parish logos. */
+/** Bundled logos, used until a parish uploads its own in Parish settings. */
 const LOCAL_SEALS: Record<string, string> = {
   mtcarmel: mtcarmellogo,
 };
@@ -46,13 +46,18 @@ function mapParish(row: BackendParish): Parish {
     address: row.address,
     contact: row.contact ?? "",
     email: row.email ?? "",
-    sealUrl: row.seal_url ?? LOCAL_SEALS[row.slug],
-    backgroundImageUrl: LOCAL_SEALS[row.slug] ?? row.seal_url ?? undefined,
+    sealUrl: apiFileUrl(row.seal_url) ?? LOCAL_SEALS[row.slug],
+    backgroundImageUrl: apiFileUrl(row.seal_url) ?? LOCAL_SEALS[row.slug],
     photoUrl: LOCAL_PHOTOS[row.slug],
     tagline: row.tagline ?? LOCAL_TAGLINES[row.slug],
     createdAt: row.created_at ?? "",
     updatedAt: row.updated_at ?? "",
   };
+}
+
+/** Drop the remembered parish list, e.g. after the logo changes, so the next load fetches it fresh. */
+export function forgetParishes() {
+  parishCache = null;
 }
 
 export async function listParishes(): Promise<Parish[]> {

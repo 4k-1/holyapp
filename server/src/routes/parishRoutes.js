@@ -11,6 +11,7 @@ const {
   getCertificates,
   updateCertificates,
 } = require('../controllers/parishSettingsController');
+const { uploadLogo, removeLogo } = require('../controllers/parishLogoController');
 
 const router = express.Router();
 const office = [ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF];
@@ -93,6 +94,25 @@ router.put(
   requireParish,
   requireRole(ROLES.PARISH_ADMIN),
   updateCertificates
+);
+// The logo is the raw request body (Content-Type image/*), like a ledger page photo. The 6 MB limit leaves the
+// controller room to say "over 5 MB" itself.
+router.put(
+  '/settings/logo',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN),
+  express.raw({ type: 'image/*', limit: '6mb' }),
+  uploadLogo
+);
+router.delete(
+  '/settings/logo',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN),
+  removeLogo
 );
 router.get('/:parishId/context', authenticate, scopeParish, parishContext);
 
