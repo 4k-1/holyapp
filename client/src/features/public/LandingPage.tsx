@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { verificationCode } from "@/features/verification/verificationCode";
 import { HOLYAPP_CONTACT_EMAIL } from "./contact";
@@ -10,8 +10,8 @@ import "./landing.css";
 export function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Sections fade up as they scroll into view. The hidden start only applies once this runs, so nothing stays
-  // invisible if it doesn't.
+  // Sections fade up as they scroll into view, and the cards in a group follow one another. The hidden start
+  // only applies once this runs, so nothing stays invisible if it doesn't.
   useEffect(() => {
     const root = rootRef.current;
     if (!root || !("IntersectionObserver" in window)) return;
@@ -26,6 +26,9 @@ export function LandingPage() {
       },
       { rootMargin: "0px 0px -10% 0px", threshold: 0.12 }
     );
+    root.querySelectorAll<HTMLElement>("[data-stagger]").forEach((group) => {
+      Array.from(group.children).forEach((child, i) => (child as HTMLElement).style.setProperty("--i", String(i)));
+    });
     root.classList.add("landing--reveal");
     items.forEach((item) => observer.observe(item));
     return () => observer.disconnect();
@@ -123,13 +126,13 @@ function SiteHeader() {
         <div className="flex items-center gap-2">
           <Link
             to="/login"
-            className="hidden rounded-full border border-[#c6d5d8] px-4 py-2 text-[0.9375rem] font-medium text-[var(--l-teal-deep)] hover:bg-[var(--l-mist)] sm:inline-flex"
+            className="landing-btn hidden rounded-full border border-[#c6d5d8] px-4 py-2 text-[0.9375rem] font-medium text-[var(--l-teal-deep)] hover:bg-[var(--l-mist)] sm:inline-flex"
           >
             Sign in
           </Link>
           <Link
             to="/give"
-            className="inline-flex rounded-full bg-[var(--l-teal-deep)] px-4 py-2 text-[0.9375rem] font-semibold text-white shadow-[0_6px_16px_-6px_rgb(14_59_70/0.6)] hover:bg-[var(--l-teal)]"
+            className="landing-btn inline-flex rounded-full bg-[var(--l-teal-deep)] px-4 py-2 text-[0.9375rem] font-semibold text-white shadow-[0_6px_16px_-6px_rgb(14_59_70/0.6)] hover:bg-[var(--l-teal)]"
           >
             Give
           </Link>
@@ -166,13 +169,14 @@ function Hero() {
         <div className="landing-in mt-8 flex flex-col items-center justify-center gap-3 [animation-delay:340ms] sm:flex-row">
           <Link
             to="/login"
-            className="inline-flex min-h-[52px] items-center rounded-full bg-[var(--l-teal-deep)] px-7 text-[1rem] font-semibold text-white shadow-[0_10px_24px_-10px_rgb(14_59_70/0.7)] hover:bg-[var(--l-teal)]"
+            className="landing-btn inline-flex min-h-[52px] items-center gap-2 rounded-full bg-[var(--l-teal-deep)] px-7 text-[1rem] font-semibold text-white shadow-[0_10px_24px_-10px_rgb(14_59_70/0.7)] hover:bg-[var(--l-teal)]"
           >
             Find your parish
+            <ArrowIcon />
           </Link>
           <Link
             to="/give"
-            className="inline-flex min-h-[52px] items-center gap-2 rounded-full bg-white px-6 text-[1rem] font-medium text-[var(--l-teal-deep)] ring-1 ring-[#c6d5d8] hover:bg-[var(--l-mist)]"
+            className="landing-btn inline-flex min-h-[52px] items-center gap-2 rounded-full bg-white px-6 text-[1rem] font-medium text-[var(--l-teal-deep)] ring-1 ring-[#c6d5d8] hover:bg-[var(--l-mist)]"
           >
             <HeartIcon />
             Give or offer a Mass
@@ -240,7 +244,7 @@ function ProductStage() {
         <figcaption className="sr-only">The parish office dashboard in HolyApp</figcaption>
       </figure>
 
-      <figure className="absolute -bottom-2 right-[2%] z-10 w-[24%] max-w-[170px] sm:right-[6%] md:bottom-[-4%]">
+      <figure className="landing-in-phone absolute -bottom-2 right-[2%] z-10 w-[24%] max-w-[170px] sm:right-[6%] md:bottom-[-4%]">
         <div className="rounded-[26px] bg-[#132a30] p-[5px] shadow-[0_30px_50px_-20px_rgb(14_59_70/0.7)] sm:rounded-[30px] sm:p-[6px]">
           <img
             src="/landing/portal-phone.png"
@@ -250,7 +254,7 @@ function ProductStage() {
         </div>
       </figure>
 
-      <FloatCard className="left-[0%] top-[18%] w-[210px]">
+      <FloatCard order={1} side="left" className="left-[0%] top-[18%] w-[210px]">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--l-mist)] text-[var(--l-teal)]">
             <CheckIcon />
@@ -262,19 +266,23 @@ function ProductStage() {
         </div>
       </FloatCard>
 
-      <FloatCard className="left-[3%] top-[56%] w-[190px] !bg-[var(--l-gold)] [animation-delay:2s]">
+      <FloatCard order={2} side="left" className="left-[3%] top-[56%] w-[190px] !bg-[var(--l-gold)]">
         <p className="text-[0.8125rem] font-medium text-[var(--l-teal-deep)]/80">Mass intentions this Sunday</p>
         <div className="mt-2 flex items-end gap-3">
           <span className="landing-display text-[2.25rem] leading-none text-[var(--l-teal-deep)]">12</span>
           <span className="mb-1 flex items-end gap-1" aria-hidden="true">
-            {[14, 22, 10, 28].map((h) => (
-              <span key={h} className="w-2 rounded-sm bg-[var(--l-teal-deep)]" style={{ height: h }} />
+            {[14, 22, 10, 28].map((h, i) => (
+              <span
+                key={h}
+                className="landing-bar w-2 rounded-sm bg-[var(--l-teal-deep)]"
+                style={{ height: h, "--i": i } as CSSProperties}
+              />
             ))}
           </span>
         </div>
       </FloatCard>
 
-      <FloatCard className="right-[0%] top-[8%] w-[200px] !bg-[#dff3f1] [animation-delay:1s]">
+      <FloatCard order={0} side="right" className="right-[0%] top-[8%] w-[200px] !bg-[#dff3f1]">
         <p className="text-[0.8125rem] font-medium text-[var(--l-teal)]">Gift received · GCash</p>
         <p className="landing-display mt-1.5 text-[1.875rem] leading-none text-[var(--l-teal-deep)]">₱500.00</p>
         <p className="mt-2 inline-flex rounded-full bg-white px-2.5 py-0.5 text-[0.75rem] font-semibold text-[var(--l-teal-deep)]">
@@ -282,7 +290,7 @@ function ProductStage() {
         </p>
       </FloatCard>
 
-      <FloatCard className="right-[19%] top-[48%] w-auto !rounded-full !px-4 !py-2 [animation-delay:3s]">
+      <FloatCard order={3} side="right" className="right-[19%] top-[48%] w-auto !rounded-full !px-4 !py-2">
         <span className="flex items-center gap-2 text-[0.8125rem] font-semibold text-[var(--l-teal-deep)]">
           <span className="h-2 w-2 rounded-full bg-[var(--l-gold)]" />
           Simbang Gabi · Dec 16, 4:30 AM
@@ -293,10 +301,25 @@ function ProductStage() {
   );
 }
 
-function FloatCard({ className, children }: { className: string; children: ReactNode }) {
+/**
+ * A small card around the laptop. They arrive one at a time from their own side once the laptop and phone are in
+ * (`order` sets the turn), then keep a slow bob.
+ */
+function FloatCard({
+  className,
+  order,
+  side,
+  children,
+}: {
+  className: string;
+  order: number;
+  side: "left" | "right";
+  children: ReactNode;
+}) {
   return (
     <div
-      className={`landing-deco absolute z-10 hidden rounded-2xl bg-white p-4 shadow-[0_20px_40px_-18px_rgb(14_59_70/0.45)] ring-1 ring-black/5 lg:block ${className}`}
+      style={{ "--order": order, "--from-x": side === "left" ? "-28px" : "28px" } as CSSProperties}
+      className={`landing-float-card pointer-events-none absolute z-10 hidden rounded-2xl bg-white p-4 shadow-[0_20px_40px_-18px_rgb(14_59_70/0.45)] ring-1 ring-black/5 lg:block ${className}`}
       aria-hidden="true"
     >
       {children}
@@ -506,7 +529,7 @@ function FlowArrow() {
 /** Feature cards in a plain grid, every one in view. */
 function FeatureGrid({ features }: { features: Feature[] }) {
   return (
-    <ul data-reveal className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <ul data-reveal data-stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {features.map((f) => (
         <li key={f.title} className="rounded-[24px] bg-white p-6 ring-1 ring-[#e9eef0] shadow-[0_16px_36px_-30px_rgb(14_59_70/0.5)]">
           <IconTile name={f.icon} />
@@ -521,7 +544,7 @@ function FeatureGrid({ features }: { features: Feature[] }) {
 /** The office's features under Records, Certificates & requests, and Calendar & giving. */
 function OfficeGroups() {
   return (
-    <div data-reveal className="grid gap-4 lg:grid-cols-3">
+    <div data-reveal data-stagger className="grid gap-4 lg:grid-cols-3">
       {OFFICE_GROUPS.map((group) => (
         <section key={group.title} aria-label={group.title} className="rounded-[24px] bg-white p-6 ring-1 ring-[#e3eef0] sm:p-7">
           <h3 className="landing-display text-[1.25rem] text-[var(--l-teal-deep)]">{group.title}</h3>
@@ -581,7 +604,7 @@ function BeforeAfter() {
               <th scope="col" className="w-[40%] bg-[var(--l-teal-deep)] px-6 py-4 text-white">With HolyApp</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody data-stagger>
             {BEFORE_AFTER.map(([task, before, after]) => (
               <tr key={task} className="border-t border-[#e9eff0]">
                 <th scope="row" className="px-6 py-4 font-semibold text-[var(--l-ink)]">{task}</th>
@@ -604,7 +627,7 @@ function BeforeAfter() {
       </div>
 
       {/* Phones: one card per task. */}
-      <ul data-reveal className="flex flex-col gap-3 md:hidden">
+      <ul data-reveal data-stagger className="flex flex-col gap-3 md:hidden">
         {BEFORE_AFTER.map(([task, before, after]) => (
           <li key={task} className="overflow-hidden rounded-[20px] bg-white ring-1 ring-[#e3eef0]">
             <p className="px-5 pt-4 font-semibold text-[var(--l-ink)]">{task}</p>
@@ -660,10 +683,16 @@ function ParishionerPart() {
 
         <div data-reveal className="mt-14">
           <h3 className="landing-display text-[1.5rem] leading-tight text-[var(--l-ink)]">How a certificate request works</h3>
-          <ol className="mt-6 grid gap-4 md:grid-cols-3">
+          {/* As the steps come into view a gold line runs along each card in turn and its number fills gold. */}
+          <ol data-steps className="mt-6 grid gap-4 md:grid-cols-3">
             {REQUEST_STEPS.map(([title, body], i) => (
-              <li key={title} className="flex gap-4 rounded-[24px] bg-[var(--l-cream)] p-6 ring-1 ring-[#f0e7d2]">
-                <span className="landing-display flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--l-gold-soft)] text-[1rem] text-[#8a5f0a]">
+              <li
+                key={title}
+                style={{ "--i": i } as CSSProperties}
+                className="relative flex gap-4 overflow-hidden rounded-[24px] bg-[var(--l-cream)] p-6 ring-1 ring-[#f0e7d2]"
+              >
+                <span className="landing-step-line absolute inset-x-0 bottom-0 h-[3px] bg-[var(--l-gold)]" aria-hidden="true" />
+                <span className="landing-step-num landing-display flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--l-gold-soft)] text-[1rem] text-[#8a5f0a]">
                   {i + 1}
                 </span>
                 <div>
@@ -678,13 +707,14 @@ function ParishionerPart() {
         <div data-reveal className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
           <Link
             to="/login"
-            className="inline-flex min-h-[52px] items-center rounded-full bg-[var(--l-teal-deep)] px-7 text-[1rem] font-semibold text-white shadow-[0_10px_24px_-10px_rgb(14_59_70/0.7)] hover:bg-[var(--l-teal)]"
+            className="landing-btn inline-flex min-h-[52px] items-center gap-2 rounded-full bg-[var(--l-teal-deep)] px-7 text-[1rem] font-semibold text-white shadow-[0_10px_24px_-10px_rgb(14_59_70/0.7)] hover:bg-[var(--l-teal)]"
           >
             Find your parish
+            <ArrowIcon />
           </Link>
           <Link
             to="/give"
-            className="inline-flex min-h-[52px] items-center gap-2 rounded-full bg-white px-6 text-[1rem] font-medium text-[var(--l-teal-deep)] ring-1 ring-[#c6d5d8] hover:bg-[var(--l-mist)]"
+            className="landing-btn inline-flex min-h-[52px] items-center gap-2 rounded-full bg-white px-6 text-[1rem] font-medium text-[var(--l-teal-deep)] ring-1 ring-[#c6d5d8] hover:bg-[var(--l-mist)]"
           >
             <HeartIcon />
             Give or offer a Mass
@@ -729,15 +759,31 @@ function VerifySection() {
   const navigate = useNavigate();
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
+  const [opening, setOpening] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (opening) return;
     const code = verificationCode(value);
     if (!code) {
       setError("That isn't a verification link or code. Scan the QR code on the certificate, or copy the whole link.");
+      // A short side-to-side shake, restarted on every wrong try.
+      const input = inputRef.current;
+      if (input) {
+        input.classList.remove("landing-shake");
+        void input.offsetWidth;
+        input.classList.add("landing-shake");
+      }
       return;
     }
-    navigate(`/verify/${code}`);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      navigate(`/verify/${code}`);
+      return;
+    }
+    // Let the check mark draw itself, then open the result.
+    setOpening(true);
+    window.setTimeout(() => navigate(`/verify/${code}`), 550);
   }
 
   return (
@@ -776,12 +822,14 @@ function VerifySection() {
             </label>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <input
+                ref={inputRef}
                 id="verify-code"
                 value={value}
                 onChange={(e) => {
                   setValue(e.target.value);
                   setError("");
                 }}
+                onAnimationEnd={(e) => e.currentTarget.classList.remove("landing-shake")}
                 placeholder="Paste the link or code"
                 autoComplete="off"
                 spellCheck={false}
@@ -791,9 +839,19 @@ function VerifySection() {
               />
               <button
                 type="submit"
-                className="min-h-[50px] shrink-0 rounded-full bg-[var(--l-teal-deep)] px-6 text-[1rem] font-semibold text-white hover:bg-[var(--l-teal)]"
+                aria-live="polite"
+                className="landing-btn inline-flex min-h-[50px] shrink-0 items-center justify-center gap-2 rounded-full bg-[var(--l-teal-deep)] px-6 text-[1rem] font-semibold text-white hover:bg-[var(--l-teal)]"
               >
-                Check certificate
+                {opening ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                      <path className="landing-check-draw" d="M5 12.5l4.5 4.5L19 7.5" pathLength={1} />
+                    </svg>
+                    Opening…
+                  </>
+                ) : (
+                  "Check certificate"
+                )}
               </button>
             </div>
             {error && (
@@ -856,7 +914,7 @@ function TrustBlock() {
             the right hands.
           </p>
         </div>
-        <ul data-reveal className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul data-reveal data-stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TRUST_POINTS.map((point) => (
             <li key={point.title} className="rounded-[24px] bg-white p-6 ring-1 ring-[#e3eef0]">
               <IconTile name={point.icon} />
@@ -898,20 +956,21 @@ function ForParishes() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a
               href={mailto}
-              className="inline-flex min-h-[52px] items-center justify-center rounded-full bg-[var(--l-teal-deep)] px-7 text-[1rem] font-semibold text-white shadow-[0_10px_24px_-10px_rgb(14_59_70/0.7)] hover:bg-[var(--l-teal)]"
+              className="landing-btn inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[var(--l-teal-deep)] px-7 text-[1rem] font-semibold text-white shadow-[0_10px_24px_-10px_rgb(14_59_70/0.7)] hover:bg-[var(--l-teal)]"
             >
               Email us
+              <ArrowIcon />
             </a>
             <Link
               to="/super-admin/login"
-              className="inline-flex min-h-[52px] items-center justify-center rounded-full bg-white px-6 text-[1rem] font-medium text-[var(--l-teal-deep)] ring-1 ring-[#c6d5d8] hover:bg-[var(--l-mist)]"
+              className="landing-btn inline-flex min-h-[52px] items-center justify-center rounded-full bg-white px-6 text-[1rem] font-medium text-[var(--l-teal-deep)] ring-1 ring-[#c6d5d8] hover:bg-[var(--l-mist)]"
             >
               Diocese sign-in
             </Link>
           </div>
         </div>
 
-        <ol className="space-y-5 self-center">
+        <ol data-stagger className="space-y-5 self-center">
           {[
             ["Tell us about your parish", "Its name, address, and who will run the office."],
             ["Set up your parish", "Add staff accounts, your Mass schedule, service fees and certificate design."],
@@ -956,8 +1015,16 @@ function SiteFooter() {
 
 function HeartIcon() {
   return (
-    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+    <svg viewBox="0 0 20 20" fill="currentColor" className="landing-btn-heart h-4 w-4" aria-hidden="true">
       <path d="M9.65 16.9 9.6 16.87a20.8 20.8 0 0 1-3.6-2.6C4.1 12.6 2 10.2 2 7.25 2 4.9 3.9 3 6.25 3c1.5 0 2.84.78 3.75 1.95A4.73 4.73 0 0 1 13.75 3C16.1 3 18 4.9 18 7.25c0 2.95-2.1 5.35-4 7.02a20.8 20.8 0 0 1-3.65 2.62l-.05.03a.75.75 0 0 1-.65 0Z" />
+    </svg>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="landing-btn-arrow h-4 w-4" aria-hidden="true">
+      <path d="M4 10h11M11 5.5 15.5 10 11 14.5" />
     </svg>
   );
 }
