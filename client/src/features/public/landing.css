@@ -11,8 +11,6 @@
   --l-cream: #fbf8f1;
   --l-gold: #eeb531;
   --l-gold-soft: #fbefcf;
-  /* The second tone of a two-tone heading; 3.4:1 on white, for large text only. */
-  --l-soft: #6b8d95;
   --l-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-sans);

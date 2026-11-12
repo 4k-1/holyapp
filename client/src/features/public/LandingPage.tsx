@@ -382,12 +382,12 @@ function Tick({ className = "" }: { className?: string }) {
   );
 }
 
-/** A heading in two tones: the plain words in ink, the rest in a soft teal-grey. */
+/** A heading in two tones: the plain words in ink, the promise in logo teal (5.1:1 on white). */
 function TwoTone({ strong, soft }: { strong: string; soft: string }) {
   return (
     <>
       {strong}
-      <span className="text-[var(--l-soft)]">{soft}</span>
+      <span className="text-[var(--l-teal)]">{soft}</span>
     </>
   );
 }
