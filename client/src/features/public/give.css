@@ -1,0 +1,60 @@
+/* Public giving pages: one white card on a deep teal sky with drawn clouds, like the sign-in pages. Plus Jakarta Sans
+   throughout (loaded in app/index.css), and pill-shaped choices, fields and buttons. */
+.give {
+  --l-ink: #13262b;
+  --l-muted: #5b7079;
+  --l-line: #dfe7e9;
+  --l-track: #edf1f2;
+  --l-teal-deep: #0e3b46;
+  --l-teal: #16798c;
+  --l-teal-light: #8ed8d2;
+  --l-mist: #e8f5f5;
+  background:
+    radial-gradient(ellipse 55% 60% at 10% 0%, rgba(142, 216, 210, 0.3), transparent 70%),
+    radial-gradient(ellipse 45% 50% at 95% 8%, rgba(238, 181, 49, 0.14), transparent 70%),
+    linear-gradient(160deg, #16798c 0%, #0f5262 50%, #0a3a46 100%);
+  color: #ffffff;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 450;
+}
+
+/* Doubled class so it outranks the app's base h1 font rule. */
+.give .give-title.give-title {
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+/* The shared portal form pieces (marked with data-pf) take the card's look here; the portal keeps its own. */
+.give [data-pf="card"] {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.give [data-pf="section"] {
+  padding-left: 0;
+  padding-right: 0;
+}
+.give [data-pf="section"]:last-child,
+.give [data-pf="footer"] {
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+}
+.give [data-pf="choice"],
+.give [data-pf="input"],
+.give [data-pf="submit"] {
+  border-radius: 9999px;
+}
+.give [data-pf="input"] {
+  height: 3rem;
+}
+.give [data-pf="submit"] {
+  min-height: 3.25rem;
+  background: var(--l-teal);
+  font-size: 1rem;
+}
+.give [data-pf="submit"]:hover:not(:disabled) {
+  background: var(--l-teal-deep);
+}

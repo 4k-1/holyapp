@@ -38,6 +38,7 @@ import {
 } from "@/features/parish-admin/records/marriageHelpers";
 import type { IssuedRecordCertificate, MarriageParty, MarriagePartyRole } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import { PAGE_TITLE_CLASS, RECORD_DETAIL_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 export function AdminMarriageRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -83,7 +84,7 @@ export function AdminMarriageRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Record not found</h1>
         <p className="text-admin-body text-admin-ink-muted">
           This marriage record is not available for this parish.
         </p>
@@ -95,26 +96,26 @@ export function AdminMarriageRecordDetailPage() {
   const certs = record.certificates;
 
   return (
-    <div className="mx-auto max-w-[920px]">
+    <div className={RECORD_DETAIL_WIDTH_CLASS}>
       <RecordDetailBackLink />
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-gold-100 font-serif text-admin-group font-bold text-admin-gold-700 ring-1 ring-inset ring-admin-gold-600/20">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-admin-gold-100 font-serif text-admin-group font-bold text-admin-gold-700 ring-1 ring-inset ring-admin-gold-600/20">
             {initials(groomFullName(record))}
           </div>
           <div>
             <p className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">
               Marriage Record
             </p>
-            <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">
+            <h1 className={`mb-1.5 ${PAGE_TITLE_CLASS}`}>
               {couple}
             </h1>
             <p className="mb-2.5 text-admin-body text-admin-ink-muted">
               Married {formatRecordDate(record.dateOfMarriage)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
                 Book {record.bookNumber}
                 <span className="text-admin-border-strong">/</span>
                 Page {record.pageNumber}
@@ -192,7 +193,7 @@ export function AdminMarriageRecordDetailPage() {
             {[record.witnessOne, record.witnessTwo].map((name, i) => (
               <div
                 key={`${name}-${i}`}
-                className="flex items-center justify-between gap-2.5 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5"
+                className="flex items-center justify-between gap-2.5 rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-2.5"
               >
                 <span className="text-admin-body font-semibold text-admin-ink">{name}</span>
                 <span className="inline-flex items-center rounded-full bg-admin-green-100 px-2.5 py-1 text-admin-label font-semibold text-admin-green-700">
@@ -243,7 +244,7 @@ export function AdminMarriageRecordDetailPage() {
           fields={marriageCertificateFields(record)}
           issued={certificateModal === "new" ? undefined : certificateModal}
           onClose={() => setCertificateModal(null)}
-          onIssue={() => generateMarriageCertificate(parish.id, record.id)}
+          onIssue={(purpose) => generateMarriageCertificate(parish.id, record.id, purpose)}
           onIssued={(cert) => {
             setCertificateModal(cert);
             refetch();
@@ -318,7 +319,7 @@ function PartyDetailCard({
             {party.consentPersons.map((c) => (
               <div
                 key={c.id}
-                className="mb-2 rounded-[8px] border border-admin-border bg-admin-surface-alt px-3 py-2 last:mb-0"
+                className="mb-2 rounded-md border border-admin-border bg-admin-surface-alt px-3 py-2 last:mb-0"
               >
                 <p className="text-admin-body font-semibold text-admin-ink">{consentPersonName(c) || "—"}</p>
                 <p className="text-xs text-admin-ink-muted">

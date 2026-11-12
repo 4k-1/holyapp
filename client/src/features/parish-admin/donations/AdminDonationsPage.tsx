@@ -1,77 +1,255 @@
-import { useEffect, useMemo, useState } from "react";
+import { AdminRowActions } from "@/components/ui/AdminRowActions";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
+import { useOpenFromLink } from "@/features/parish-admin/components/useOpenFromLink";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
-import { getDonationTrend, listDonations } from "./api/donationsApi";
+import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
+import { PrintReceiptDialog } from "@/features/parish-admin/components/PrintReceiptDialog";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { isParishAdminRole } from "@/features/parish-admin/permissions";
+import { listDonations } from "./api/donationsApi";
 import { DonationSparkline } from "./components/DonationSparkline";
 import { RecordDonationModal } from "./components/RecordDonationModal";
+import { VoidDonationModal } from "./components/VoidDonationModal";
+import { SettleDonationModal } from "./components/SettleDonationModal";
 import {
+  countedDonations,
+  waitingDonations,
+  donationReceiptNumber,
   donationDateFilterLabel,
   emptyDonationDateFilter,
   filterDonationsByDate,
   formatAmount,
+  donationReceipt,
   formatDonationDate,
-  recordedByLabel,
+  monthlyTrend,
   type DonationDateFilter,
 } from "./donationsHelpers";
 import { donationTypeBadgeTone } from "./types";
-import type { Donation, DonationTrendPoint } from "./types";
+import type { Donation } from "./types";
 import type { Parish } from "@/types";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
+import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
 export function AdminDonationsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
+  const user = useCurrentUser();
+  // Voiding and correcting money is for the admin only, as a check on the office.
+  const canVoid = isParishAdminRole(user?.role);
   const [donations, setDonations] = useState<Donation[]>([]);
-  const [trend, setTrend] = useState<DonationTrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  // The dashboard's "Record a donation" opens the form straight away.
+  const [modalOpen, setModalOpen] = useState(useOpenFromLink("donation"));
+  const [receiptFor, setReceiptFor] = useState<Donation | null>(null);
+  const [voiding, setVoiding] = useState<Donation | null>(null);
+  const [correcting, setCorrecting] = useState<Donation | null>(null);
+  const [settling, setSettling] = useState<{ donation: Donation; outcome: "cleared" | "bounced" } | null>(null);
   const [draftFilter, setDraftFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
   const [appliedFilter, setAppliedFilter] = useState<DonationDateFilter>(emptyDonationDateFilter);
 
-  async function reload() {
+  const fetchDonations = useCallback(
+    () =>
+      listDonations(parish.id)
+        .then((data) => {
+          setDonations(data);
+          setLoadError("");
+        })
+        .catch((err: unknown) => setLoadError(err instanceof Error ? err.message : "Couldn't load donations."))
+        .finally(() => setLoading(false)),
+    [parish.id]
+  );
+
+  function reload() {
     setLoading(true);
-    const [donationsData, trendData] = await Promise.all([
-      listDonations(parish.id),
-      getDonationTrend(parish.id),
-    ]);
-    setDonations(donationsData);
-    setTrend(trendData);
-    setLoading(false);
+    return fetchDonations();
   }
 
   useEffect(() => {
-    reload();
-  }, [parish.id]);
+    fetchDonations();
+  }, [fetchDonations]);
+
+  // Voided gifts stay in the table but count toward no total, trend or donor count.
+  const trend = useMemo(() => monthlyTrend(countedDonations(donations)), [donations]);
+  const hasTrend = trend.some((point) => point.value > 0);
 
   const filtered = useMemo(
     () => filterDonationsByDate(donations, appliedFilter),
     [donations, appliedFilter]
+  );
+  const counted = useMemo(() => countedDonations(filtered), [filtered]);
+  const voidedCount = filtered.filter((d) => d.voided).length;
+  const waiting = useMemo(() => waitingDonations(filtered), [filtered]);
+  const waitingTotal = waiting.reduce((sum, d) => sum + d.amount, 0);
+  const bouncedCount = filtered.filter((d) => !d.voided && d.clearing?.status === "bounced").length;
+
+  const receiptById = useMemo(
+    () => new Map(donations.map((d) => [d.id, donationReceiptNumber(d)])),
+    [donations]
   );
 
   const filterActive = Boolean(appliedFilter.from || appliedFilter.to);
   const filterLabel = donationDateFilterLabel(appliedFilter);
 
   const stats = useMemo(() => {
-    const totalRecorded = filtered.reduce((sum, d) => sum + d.amount, 0);
-    const namedDonors = new Set(filtered.filter((d) => d.donorName).map((d) => d.donorName)).size;
-    const avgDonation = filtered.length ? totalRecorded / filtered.length : 0;
+    const totalRecorded = counted.reduce((sum, d) => sum + d.amount, 0);
+    const namedDonors = new Set(counted.filter((d) => d.donorName).map((d) => d.donorName)).size;
+    const avgDonation = counted.length ? totalRecorded / counted.length : 0;
 
-    return { totalRecorded, namedDonors, avgDonation, entryCount: filtered.length };
-  }, [filtered]);
+    return { totalRecorded, namedDonors, avgDonation, entryCount: counted.length };
+  }, [counted]);
 
   const donorFirstSeen = useMemo(() => {
     const map: Record<string, string> = {};
-    filtered.forEach((d) => {
+    counted.forEach((d) => {
       if (!d.donorName) return;
       if (!map[d.donorName] || d.donationDate < map[d.donorName]) map[d.donorName] = d.donationDate;
     });
     return map;
-  }, [filtered]);
+  }, [counted]);
 
-  const rows = useMemo(
-    () => [...filtered].sort((a, b) => (a.donationDate < b.donationDate ? 1 : -1)),
-    [filtered]
-  );
+  const rows = filtered;
+
+  const columns: AdminTableColumn<Donation>[] = [
+    { key: "date", header: "Date", sortValue: (d) => d.donationDate, render: (d) => formatDonationDate(d.donationDate) },
+    {
+      key: "receiptNo",
+      header: "Receipt no.",
+      sortValue: (d) => donationReceiptNumber(d),
+      render: (d) => (
+        <>
+          <span className={`whitespace-nowrap tabular-nums ${d.voided ? "text-admin-ink-faint line-through" : "text-admin-ink"}`}>
+            {donationReceiptNumber(d)}
+          </span>
+          {d.voided && (
+            <span className="ml-1.5" title={`Voided by ${d.voided.by}: ${d.voided.reason}`}>
+              <AdminBadge tone="red">Voided</AdminBadge>
+            </span>
+          )}
+          {!d.voided && d.clearing?.status === "pending" && (
+            <span className="ml-1.5" title={d.reference ? `${d.reference}${d.bank ? `, ${d.bank}` : ""}` : undefined}>
+              <AdminBadge tone="amber">Waiting to clear</AdminBadge>
+            </span>
+          )}
+          {!d.voided && d.clearing?.status === "bounced" && (
+            <span className="ml-1.5" title={`Marked bounced by ${d.clearing.by ?? "the office"}: ${d.clearing.reason ?? ""}`}>
+              <AdminBadge tone="red">Bounced</AdminBadge>
+            </span>
+          )}
+          {d.replacesId && receiptById.get(d.replacesId) && (
+            <span className="block text-admin-label text-admin-ink-muted">
+              Corrects {receiptById.get(d.replacesId)}
+            </span>
+          )}
+          {d.voided && (
+            <span className="block max-w-[220px] truncate text-admin-label text-admin-ink-muted" title={d.voided.reason}>
+              {d.voided.reason}
+            </span>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "donor",
+      header: "Donor",
+      sortValue: (d) => d.donorName,
+      render: (d) => (
+        <>
+          {d.donorName ? (
+            <span className="text-admin-ink">{d.donorName}</span>
+          ) : (
+            <span className="italic text-admin-ink-faint">Anonymous</span>
+          )}
+          {!d.voided && d.donorName && donorFirstSeen[d.donorName] === d.donationDate && (
+            <span className="ml-1.5">
+              <AdminBadge tone="gold">New donor</AdminBadge>
+            </span>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "type",
+      header: "Type",
+      sortValue: (d) => d.donationType,
+      render: (d) => <AdminBadge tone={donationTypeBadgeTone(d.donationType)}>{d.donationType}</AdminBadge>,
+    },
+    {
+      key: "purpose",
+      header: "Purpose",
+      sortValue: (d) => d.purpose,
+      className: "max-w-[180px]",
+      render: (d) => (
+        <span className="block truncate text-admin-ink-muted" title={d.remarks || d.purpose || undefined}>
+          {d.purpose || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "recordedBy",
+      header: "Recorded by",
+      sortValue: (d) => d.recordedBy,
+      render: (d) => <span className="text-admin-ink-muted">{d.recordedBy}</span>,
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      sortValue: (d) => d.amount,
+      className: "text-right",
+      render: (d) => (
+        <span
+          className={
+            d.voided || d.clearing?.status === "bounced"
+              ? "text-admin-ink-faint line-through"
+              : d.clearing?.status === "pending"
+                ? "font-semibold text-admin-ink-muted"
+                : "font-semibold text-admin-ink"
+          }
+        >
+          {formatAmount(d.amount)}
+        </span>
+      ),
+    },
+    {
+      key: "receipt",
+      header: "Actions",
+      className: "text-right",
+      render: (d) =>
+        d.voided ? null : (
+          <span className="inline-flex items-center gap-2 whitespace-nowrap">
+            <button type="button" onClick={() => setReceiptFor(d)} className="admin-table__action">
+              Receipt
+            </button>
+            <AdminRowActions
+              label={`More for receipt ${donationReceiptNumber(d)}`}
+              actions={[
+                {
+                  label: "Mark cleared",
+                  onSelect: () => setSettling({ donation: d, outcome: "cleared" }),
+                  hidden: !(canVoid && d.clearing?.status === "pending"),
+                },
+                { label: "Correct", onSelect: () => setCorrecting(d), hidden: !(canVoid && d.source === "office") },
+                {
+                  label: "Mark bounced",
+                  onSelect: () => setSettling({ donation: d, outcome: "bounced" }),
+                  danger: true,
+                  hidden: !(canVoid && d.clearing?.status === "pending"),
+                },
+                {
+                  label: "Void",
+                  onSelect: () => setVoiding(d),
+                  danger: true,
+                  hidden: !(canVoid && d.source !== "mass_intention"),
+                },
+              ]}
+            />
+          </span>
+        ),
+    },
+  ];
 
   function setDraftField(key: keyof DonationDateFilter, value: string) {
     setDraftFilter((prev) => ({ ...prev, [key]: value }));
@@ -93,16 +271,12 @@ export function AdminDonationsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Donations</h1>
-          <p className="mt-1 text-admin-body text-admin-ink-muted">
-            Donations recorded for this parish register.
-          </p>
-        </div>
-        <AdminButton onClick={() => setModalOpen(true)}>+ Record donation</AdminButton>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Donations"
+        description="Gifts recorded at the office and given online through GCash."
+        actions={<AdminButton onClick={() => setModalOpen(true)}>+ Record donation</AdminButton>}
+      />
 
       <AdminCard className="mb-4 p-5 px-[22px]">
         <h2 className="mb-3.5 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
@@ -144,7 +318,11 @@ export function AdminDonationsPage() {
       </AdminCard>
 
       {loading ? (
-        <p className="text-admin-body text-admin-ink-muted">Loading…</p>
+        <SkeletonList rows={4} className="px-0" />
+      ) : loadError ? (
+        <p className="text-admin-body text-red-700" role="alert">
+          {loadError}
+        </p>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
@@ -153,89 +331,54 @@ export function AdminDonationsPage() {
                 {filterActive ? "Total in selected range" : "Total donations (all time)"}
               </p>
               <div className="mb-4 flex items-baseline gap-2.5">
-                <p className="font-serif text-admin-metric font-semibold tabular-nums text-admin-green-900">
+                <p className="font-sans text-[1.75rem] font-semibold leading-none tracking-[-0.02em] tabular-nums text-admin-ink">
                   {formatAmount(stats.totalRecorded)}
                 </p>
               </div>
-              {!filterActive && trend.length > 0 && (
+              {waiting.length > 0 && (
+                <p className="-mt-2 mb-4 text-admin-support text-admin-gold-700">
+                  Waiting to clear: {formatAmount(waitingTotal)} in {waiting.length}{" "}
+                  {waiting.length === 1 ? "cheque or transfer" : "cheques and transfers"}, not counted yet
+                </p>
+              )}
+              {!filterActive && hasTrend && (
                 <DonationSparkline data={trend} highlightIndex={trend.length - 1} />
               )}
             </div>
 
             <div className="flex flex-col gap-4">
-              <StatCard label="Named Donors" value={String(stats.namedDonors)} />
-              <StatCard label="Entries" value={String(stats.entryCount)} />
-              <StatCard label="Average Donation" value={formatAmount(stats.avgDonation)} />
+              <AdminStatCard label="Named donors" value={stats.namedDonors} />
+              <AdminStatCard label="Entries" value={stats.entryCount} />
+              <AdminStatCard label="Average donation" value={formatAmount(stats.avgDonation)} />
             </div>
           </div>
 
-          <div className="rounded-[var(--radius)] border border-admin-border bg-admin-surface">
-            <div className="flex items-baseline justify-between px-5 pt-4 pb-1">
-              <p className="font-serif text-admin-section font-semibold text-admin-ink">
-                {filterActive ? "Filtered donations" : "All donations"}
-              </p>
-              <span className="text-admin-support text-admin-ink-muted">{rows.length} entries</span>
-            </div>
-            <table className="w-full text-left text-admin-body">
-              <thead>
-                <tr className="text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">
-                  <th className="px-5 py-2.5">Date</th>
-                  <th className="px-5 py-2.5">Donor</th>
-                  <th className="px-5 py-2.5">Type</th>
-                  <th className="px-5 py-2.5">Purpose</th>
-                  <th className="px-5 py-2.5">Recorded by</th>
-                  <th className="px-5 py-2.5 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((d) => {
-                  const isNew = d.donorName && donorFirstSeen[d.donorName] === d.donationDate;
-                  return (
-                    <tr key={d.id} className="border-t border-admin-border">
-                      <td className="px-5 py-2.5 text-admin-ink">{formatDonationDate(d.donationDate)}</td>
-                      <td className="px-5 py-2.5">
-                        {d.donorName ? (
-                          <span className="text-admin-ink">{d.donorName}</span>
-                        ) : (
-                          <span className="italic text-admin-ink-faint">Anonymous</span>
-                        )}
-                        {isNew && (
-                          <span className="ml-1.5">
-                            <AdminBadge tone="gold">New donor</AdminBadge>
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-2.5">
-                        <AdminBadge tone={donationTypeBadgeTone(d.donationType)}>
-                          {d.donationType}
-                        </AdminBadge>
-                      </td>
-                      <td
-                        className="max-w-[180px] truncate px-5 py-2.5 text-admin-ink-muted"
-                        title={d.remarks || d.purpose || undefined}
-                      >
-                        {d.purpose || "—"}
-                      </td>
-                      <td className="px-5 py-2.5 text-admin-ink-muted">
-                        {recordedByLabel(d.recordedBy)}
-                      </td>
-                      <td className="px-5 py-2.5 text-right font-semibold text-admin-ink">
-                        {formatAmount(d.amount)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {rows.length === 0 && (
-              <p className="px-5 py-6 text-admin-body text-admin-ink-muted">
-                {filterActive
-                  ? "No donations match this date range."
-                  : "No donations recorded yet."}
-              </p>
-            )}
-          </div>
+          <AdminTable
+            title={filterActive ? "Filtered donations" : "All donations"}
+            subtitle={`${rows.length} ${rows.length === 1 ? "entry" : "entries"}${
+              voidedCount ? ` · ${voidedCount} voided, not counted in totals` : ""
+            }${bouncedCount ? ` · ${bouncedCount} bounced, not counted` : ""}`}
+            columns={columns}
+            rows={rows}
+            getRowKey={(d) => d.id}
+            defaultSort={{ key: "date", dir: "desc" }}
+            pageKey="donations"
+            emptyMessage={
+              filterActive
+                ? "No donations match this date range."
+                : "No donations yet. Gifts made in the parishioner portal and ones you record here will appear in this list."
+            }
+          />
         </>
+      )}
+
+      {receiptFor && (
+        <PrintReceiptDialog
+          parish={parish}
+          receipt={donationReceipt(receiptFor)}
+          defaultReceivedFrom={receiptFor.donorName ?? ""}
+          onClose={() => setReceiptFor(null)}
+        />
       )}
 
       {modalOpen && (
@@ -248,16 +391,42 @@ export function AdminDonationsPage() {
           }}
         />
       )}
-    </div>
-  );
-}
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-1 flex-col justify-center rounded-[var(--radius)] border border-admin-border bg-admin-surface p-4">
-      <p className="text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">{label}</p>
-      <p className="mt-1 font-serif text-admin-metric font-semibold tabular-nums text-admin-ink">{value}</p>
-    </div>
+      {correcting && (
+        <RecordDonationModal
+          parishId={parish.id}
+          correcting={correcting}
+          onClose={() => setCorrecting(null)}
+          onRecorded={() => {
+            setCorrecting(null);
+            reload();
+          }}
+        />
+      )}
+
+      {settling && (
+        <SettleDonationModal
+          donation={settling.donation}
+          outcome={settling.outcome}
+          onClose={() => setSettling(null)}
+          onDone={() => {
+            setSettling(null);
+            reload();
+          }}
+        />
+      )}
+
+      {voiding && (
+        <VoidDonationModal
+          donation={voiding}
+          onClose={() => setVoiding(null)}
+          onVoided={() => {
+            setVoiding(null);
+            reload();
+          }}
+        />
+      )}
+    </AdminPage>
   );
 }
 

@@ -35,7 +35,7 @@ export function RequestReceiptPage() {
         </p>
       ) : (
         <div className="mt-6 rounded-2xl border border-border bg-surface p-6 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">{receipt.parishName}</p>
+          <p className="text-[12px] font-bold uppercase tracking-wide text-ink-muted">{receipt.parishName}</p>
           <p className="mt-1 font-serif text-xl font-bold text-ink">{receipt.number}</p>
           <dl className="mt-5 space-y-3 text-sm">
             <div className="flex justify-between gap-4">

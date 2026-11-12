@@ -10,19 +10,15 @@ const {
   sendRecordError,
 } = require('../utils/recordFields');
 const schedule = require('../services/scheduleService');
+const { TEMPLATES, normalizeCircumstances, applies } = require('../constants/marriageRequirements');
+const { manilaToday } = require('../constants/purposes');
+const banns = require('../services/banns');
 
-const DEFAULT_REQUIREMENTS = [
-  'Baptismal certificate (groom)',
-  'Baptismal certificate (bride)',
-  'Confirmation certificate (groom)',
-  'Confirmation certificate (bride)',
-  'Civil birth certificate (groom)',
-  'Civil birth certificate (bride)',
-  'CENOMAR',
-  'Marriage license',
-  'Pre-Cana / marriage preparation',
-  'Canonical interview',
-];
+/** "2026-11-09" + 180 → "2027-05-08". */
+function addDays(isoDate, days) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
 
 function httpError(status, message) {
   const err = new Error(message);
@@ -36,21 +32,40 @@ function partyName(row, who) {
     .join(' ');
 }
 
-function toRequirement(row) {
+/**
+ * One checklist line. `weddingDate` (or today) decides whether a dated document is still good:
+ * expiresOn is the last day it is accepted.
+ */
+function toRequirement(row, weddingDate) {
+  const documentDate = dateOnly(row.document_date) || null;
+  const expiresOn = documentDate && row.valid_for_days ? addDays(documentDate, row.valid_for_days) : null;
+  const today = manilaToday();
   return {
     id: row.id,
     typeId: row.requirement_type_id,
+    key: row.template_key || null,
     name: row.requirement_name,
+    note: row.note || '',
+    condition: row.condition || 'always',
     required: row.is_required,
+    validForDays: row.valid_for_days || null,
     submitted: row.submitted,
+    documentDate,
+    expiresOn,
+    expired: Boolean(expiresOn && expiresOn < today),
+    expiresBeforeWedding: Boolean(expiresOn && weddingDate && weddingDate > today && expiresOn < weddingDate),
     verifiedBy: row.verified_by || null,
     verifiedAt: row.verified_at ? new Date(row.verified_at).toISOString() : null,
+    verifiedByName: row.verified_by_name || null,
   };
 }
 
 function toApplication(row, requirements = [], event = null) {
+  const bannsPlan = banns.normalizeBanns(row.banns);
+  const weddingDate = (event && event.date) || dateOnly(row.preferred_wedding_date) || null;
   return {
     id: row.id,
+    referenceNo: row.reference_no,
     parishId: row.parish_id,
     parishionerId: row.parishioner_id || null,
     groomFirstName: row.groom_first_name,
@@ -72,37 +87,89 @@ function toApplication(row, requirements = [], event = null) {
     weddingEventId: row.wedding_event_id || null,
     weddingDateStatus: row.wedding_date_status || 'none',
     weddingEvent: event,
+    circumstances: normalizeCircumstances(row.circumstances),
     requirements,
+    // 5b: banns, and couples marrying in another parish who have their banns announced here.
+    weddingElsewhere: row.wedding_elsewhere === true,
+    weddingParish: row.wedding_parish || '',
+    banns: bannsPlan,
+    bannsAnnouncedHere: banns.announcedHere(bannsPlan),
+    bannsComplete: banns.bannsComplete(bannsPlan, { elsewhere: row.wedding_elsewhere }),
+    bannsSuggestedSundays: banns.suggestSundays(weddingDate),
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
     updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
   };
 }
 
+/**
+ * Adds any built-in requirement the parish has never had, matched by its permanent key, so an item
+ * the parish renamed or turned off is left alone. Then gives open applications a row for each new
+ * type. Confirmed and closed applications are left alone.
+ */
 async function ensureRequirementTypes(parishId, userId) {
   const existing = await pool.query(
-    'SELECT 1 FROM marriage_requirement_type WHERE parish_id = $1 LIMIT 1',
+    'SELECT template_key FROM marriage_requirement_type WHERE parish_id = $1 AND template_key IS NOT NULL',
     [parishId]
   );
-  if (existing.rowCount) return;
-  for (const name of DEFAULT_REQUIREMENTS) {
+  const have = new Set(existing.rows.map((row) => row.template_key));
+  const missing = TEMPLATES.filter((t) => !have.has(t.key));
+  if (missing.length === 0) return;
+  for (const t of missing) {
     await pool.query(
-      `INSERT INTO marriage_requirement_type (parish_id, requirement_name, is_required, created_by)
-       VALUES ($1, $2, true, $3)`,
-      [parishId, name, userId]
+      `INSERT INTO marriage_requirement_type
+         (parish_id, requirement_name, is_required, created_by, template_key, condition, skip_when,
+          valid_for_days, sort_order, note)
+       VALUES ($1, $2, true, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (parish_id, template_key) WHERE template_key IS NOT NULL DO NOTHING`,
+      [parishId, t.name, userId, t.key, t.condition || 'always', t.skipWhen || null, t.days || null, t.order, t.note || null]
     );
   }
+  await addMissingRows(pool, parishId);
 }
 
-async function loadRequirements(applicationId) {
+/** Every open application gets a row for every active requirement type of its parish. */
+async function addMissingRows(db, parishId) {
+  await db.query(
+    `INSERT INTO marriage_application_requirement (marriage_application_id, requirement_type_id)
+     SELECT a.id, t.id
+     FROM marriage_application a
+     JOIN marriage_requirement_type t ON t.parish_id = a.parish_id AND t.active
+     WHERE a.parish_id = $1
+       AND NOT a.wedding_elsewhere
+       AND a.status NOT IN ('approved', 'rejected', 'completed')
+       AND NOT EXISTS (
+         SELECT 1 FROM marriage_application_requirement r
+         WHERE r.marriage_application_id = a.id AND r.requirement_type_id = t.id
+       )`,
+    [parishId]
+  );
+}
+
+/**
+ * The couple's checklist: only the requirements that apply to them (their answers, and items the
+ * parish hasn't turned off). An item already received stays on the list even if it no longer applies.
+ */
+async function loadRequirements(row, weddingDate) {
   const result = await pool.query(
-    `SELECT r.*, t.requirement_name, t.is_required
+    `SELECT r.*, t.requirement_name, t.is_required, t.template_key, t.condition, t.skip_when,
+            t.valid_for_days, t.note, t.active,
+            NULLIF(trim(concat_ws(' ', u.first_name, u.last_name)), '') AS verified_by_name
      FROM marriage_application_requirement r
      JOIN marriage_requirement_type t ON t.id = r.requirement_type_id
+     LEFT JOIN app_user u ON u.id = r.verified_by
      WHERE r.marriage_application_id = $1
-     ORDER BY t.created_at`,
-    [applicationId]
+     ORDER BY t.sort_order, t.created_at`,
+    [row.id]
   );
-  return result.rows.map(toRequirement);
+  const answers = normalizeCircumstances(row.circumstances);
+  return result.rows
+    .filter((item) => item.submitted || applies(item, answers))
+    .map((item) => toRequirement(item, weddingDate));
+}
+
+/** The reserved wedding date, or the date the couple asked for. */
+function weddingDateOf(row, event) {
+  return (event && event.date) || dateOnly(row.preferred_wedding_date) || null;
 }
 
 async function loadWeddingEvent(eventId) {
@@ -124,19 +191,46 @@ async function loadApplication(parishId, id) {
 }
 
 async function hydrate(row) {
-  const [requirements, event] = await Promise.all([
-    loadRequirements(row.id),
-    loadWeddingEvent(row.wedding_event_id),
-  ]);
-  return toApplication(row, requirements, event);
+  const event = await loadWeddingEvent(row.wedding_event_id);
+  const requirements = await loadRequirements(row, weddingDateOf(row, event));
+  const app = toApplication(row, requirements, event);
+  app.linkedAccount = await loadLinkedAccount(row.parishioner_id);
+  return app;
 }
+
+/** The parishioner account that follows this application online: name and email, or null. */
+async function loadLinkedAccount(userId) {
+  if (!userId) return null;
+  const result = await pool.query('SELECT id, email, first_name, last_name FROM app_user WHERE id = $1', [userId]);
+  const user = result.rows[0];
+  if (!user) return null;
+  return {
+    id: user.id,
+    email: user.email,
+    name: [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email,
+  };
+}
+
+/** What a parishioner sees of their own application: the office's own notes and staff names stay out. */
+function forParishioner(app) {
+  return {
+    ...app,
+    remarks: '',
+    dispensationNotes: '',
+    requirements: app.requirements.map((item) => ({ ...item, verifiedBy: null, verifiedByName: null })),
+  };
+}
+
+const NO_ACCOUNT =
+  "No parishioner account in this parish uses this email. They can't track the application online until they " +
+  'sign up; you can link it later.';
 
 function requiredComplete(requirements) {
   return requirements.filter((item) => item.required).every((item) => item.submitted);
 }
 
 async function maybeAdvanceRequirements(row) {
-  const requirements = await loadRequirements(row.id);
+  const requirements = await loadRequirements(row, null);
   if (row.status === 'pending' && requiredComplete(requirements)) {
     const updated = await pool.query(
       `UPDATE marriage_application
@@ -164,9 +258,10 @@ async function findParishionerByEmail(parishId, email) {
 
 async function listApplications(req, res) {
   try {
+    await ensureRequirementTypes(req.parishId, req.user.id);
     const result = await pool.query(
       `SELECT * FROM marriage_application
-       WHERE parish_id = $1
+       WHERE parish_id = $1 AND NOT wedding_elsewhere
        ORDER BY created_at DESC`,
       [req.parishId]
     );
@@ -182,10 +277,12 @@ async function listApplications(req, res) {
 
 async function getApplication(req, res) {
   try {
+    if (req.user.role !== 'parishioner') await ensureRequirementTypes(req.parishId, req.user.id);
     const row = await loadApplication(req.parishId, req.params.id);
     if (!row) return res.status(404).json({ error: 'Application not found.' });
-    if (req.user.role === 'parishioner' && row.parishioner_id !== req.user.id) {
-      return res.status(404).json({ error: 'Application not found.' });
+    if (req.user.role === 'parishioner') {
+      if (row.parishioner_id !== req.user.id) return res.status(404).json({ error: 'Application not found.' });
+      return res.json({ application: forParishioner(await hydrate(row)) });
     }
     res.json({ application: await hydrate(row) });
   } catch (err) {
@@ -203,7 +300,7 @@ async function listMine(req, res) {
     );
     const applications = [];
     for (const row of result.rows) {
-      applications.push(await hydrate(row));
+      applications.push(forParishioner(await hydrate(row)));
     }
     res.json({ applications });
   } catch (err) {
@@ -222,6 +319,9 @@ async function createApplication(req, res) {
     await ensureRequirementTypes(req.parishId, req.user.id);
     const parishionerId =
       optionalUuid(body.parishionerId) || (await findParishionerByEmail(req.parishId, body.parishionerEmail));
+    if (!parishionerId && String(body.parishionerEmail || '').trim()) {
+      throw httpError(400, `${NO_ACCOUNT} Leave the email blank to file it as a walk-in.`);
+    }
 
     await client.query('BEGIN');
     const inserted = await client.query(
@@ -229,9 +329,9 @@ async function createApplication(req, res) {
          parish_id, groom_first_name, groom_middle_name, groom_last_name,
          bride_first_name, bride_middle_name, bride_last_name,
          status, remarks, created_by, parishioner_id,
-         dispensation_needed, dispensation_status, dispensation_notes
+         dispensation_needed, dispensation_status, dispensation_notes, circumstances
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11, $12, $13)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11, $12, $13, $14::jsonb)
        RETURNING *`,
       [
         req.parishId,
@@ -247,11 +347,12 @@ async function createApplication(req, res) {
         body.dispensationNeeded === true,
         body.dispensationNeeded === true ? 'pending' : 'none',
         optionalText(body.dispensationNotes),
+        JSON.stringify(normalizeCircumstances(body.circumstances)),
       ]
     );
     const row = inserted.rows[0];
     const types = await client.query(
-      'SELECT id FROM marriage_requirement_type WHERE parish_id = $1 ORDER BY created_at',
+      'SELECT id FROM marriage_requirement_type WHERE parish_id = $1 AND active ORDER BY sort_order, created_at',
       [req.parishId]
     );
     for (const type of types.rows) {
@@ -303,20 +404,32 @@ async function verifyRequirement(req, res) {
     if (row.status === 'rejected' || row.status === 'completed') {
       throw httpError(400, 'This application can no longer be updated.');
     }
-    const updated = await pool.query(
-      `UPDATE marriage_application_requirement r
+    const found = await pool.query(
+      `SELECT r.id, t.valid_for_days, t.requirement_name
+       FROM marriage_application_requirement r
+       JOIN marriage_requirement_type t ON t.id = r.requirement_type_id
+       WHERE r.id = $1 AND r.marriage_application_id = $2`,
+      [req.params.requirementId, row.id]
+    );
+    const item = found.rows[0];
+    if (!item) return res.status(404).json({ error: 'Requirement not found.' });
+
+    // A document that expires needs the date printed on it, so the app can check it against the wedding.
+    let documentDate = null;
+    if (submitted && item.valid_for_days) {
+      documentDate = dateValue(req.body?.documentDate, 'Date on the document', { required: false });
+      if (!documentDate) throw httpError(400, `Enter the date on the ${item.requirement_name}.`);
+      if (documentDate > manilaToday()) throw httpError(400, 'The date on the document cannot be in the future.');
+    }
+    await pool.query(
+      `UPDATE marriage_application_requirement
        SET submitted = $1,
            verified_by = $2,
-           verified_at = CASE WHEN $1 THEN NOW() ELSE NULL END
-       FROM marriage_application a
-       WHERE r.id = $3
-         AND r.marriage_application_id = a.id
-         AND a.id = $4
-         AND a.parish_id = $5
-       RETURNING r.id`,
-      [submitted, submitted ? req.user.id : null, req.params.requirementId, row.id, req.parishId]
+           verified_at = CASE WHEN $1 THEN NOW() ELSE NULL END,
+           document_date = $3
+       WHERE id = $4`,
+      [submitted, submitted ? req.user.id : null, documentDate, item.id]
     );
-    if (!updated.rowCount) return res.status(404).json({ error: 'Requirement not found.' });
     const next = await maybeAdvanceRequirements(row);
     await writeAudit({
       parishId: req.parishId,
@@ -324,9 +437,269 @@ async function verifyRequirement(req, res) {
       action: submitted ? 'marriage_application.requirement_verified' : 'marriage_application.requirement_cleared',
       entityType: 'marriage_application',
       entityId: row.id,
-      metadata: { requirementId: req.params.requirementId },
+      metadata: { requirementId: req.params.requirementId, name: item.requirement_name, documentDate },
     });
     res.json({ application: await hydrate(next) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** The couple's yes/no answers; they decide which conditional requirements are on the checklist. */
+async function updateCircumstances(req, res) {
+  try {
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row) return res.status(404).json({ error: 'Application not found.' });
+    if (['rejected', 'completed'].includes(row.status)) {
+      throw httpError(400, 'This application can no longer be updated.');
+    }
+    const circumstances = normalizeCircumstances(req.body?.circumstances);
+    const updated = await pool.query(
+      `UPDATE marriage_application SET circumstances = $1::jsonb, updated_at = NOW()
+       WHERE id = $2 AND parish_id = $3 RETURNING *`,
+      [JSON.stringify(circumstances), row.id, req.parishId]
+    );
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'marriage_application.circumstances_updated',
+      entityType: 'marriage_application',
+      entityId: row.id,
+      metadata: { circumstances },
+    });
+    res.json({ application: await hydrate(updated.rows[0]) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** Saves the banns (5b) and ticks the "Banns published" requirement once they are complete. */
+async function updateBanns(req, res) {
+  try {
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row) return res.status(404).json({ error: 'Application not found.' });
+    if (['rejected', 'completed'].includes(row.status)) {
+      throw httpError(400, 'This application can no longer be updated.');
+    }
+    const plan = banns.normalizeBanns(req.body?.banns);
+    const event = await loadWeddingEvent(row.wedding_event_id);
+    banns.checkBanns(plan, { weddingDate: weddingDateOf(row, event), elsewhere: row.wedding_elsewhere });
+    const updated = await pool.query(
+      `UPDATE marriage_application SET banns = $1::jsonb, updated_at = NOW()
+       WHERE id = $2 AND parish_id = $3 RETURNING *`,
+      [JSON.stringify(plan), row.id, req.parishId]
+    );
+    const complete = banns.bannsComplete(plan, { elsewhere: row.wedding_elsewhere });
+    await pool.query(
+      `UPDATE marriage_application_requirement r
+       SET submitted = $1,
+           verified_by = CASE WHEN $1 THEN $2::uuid ELSE NULL END,
+           verified_at = CASE WHEN $1 THEN NOW() ELSE NULL END
+       FROM marriage_requirement_type t
+       WHERE r.requirement_type_id = t.id AND t.template_key = 'banns'
+         AND r.marriage_application_id = $3 AND r.submitted <> $1`,
+      [complete, req.user.id, row.id]
+    );
+    const next = await maybeAdvanceRequirements(updated.rows[0]);
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'marriage_application.banns_updated',
+      entityType: 'marriage_application',
+      entityId: row.id,
+      metadata: { sundays: plan.sundays, announced: plan.announced, dispensed: plan.dispensed, complete },
+    });
+    res.json({ application: await hydrate(next) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** Couples marrying in another parish who have their banns announced here (5b). */
+async function listBannsElsewhere(req, res) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM marriage_application
+       WHERE parish_id = $1 AND wedding_elsewhere AND status <> 'rejected'
+       ORDER BY created_at DESC`,
+      [req.parishId]
+    );
+    res.json({ applications: result.rows.map((row) => toApplication(row)) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+async function createBannsElsewhere(req, res) {
+  try {
+    const body = req.body || {};
+    const weddingParish = requiredText(body.weddingParish, 'Parish of the wedding');
+    const weddingDate = dateValue(body.weddingDate, 'Wedding date', { required: false }) || null;
+    const plan = banns.normalizeBanns({
+      groomParish: body.groomParish,
+      brideParish: body.brideParish,
+      parents: body.parents,
+      groomAddress: body.groomAddress,
+      brideAddress: body.brideAddress,
+      onlineConsent: body.onlineConsent,
+      sundays: banns.suggestSundays(weddingDate),
+    });
+    banns.checkBanns(plan, { weddingDate, elsewhere: true });
+    const inserted = await pool.query(
+      `INSERT INTO marriage_application (
+         parish_id, groom_first_name, groom_middle_name, groom_last_name,
+         bride_first_name, bride_middle_name, bride_last_name,
+         status, created_by, wedding_elsewhere, wedding_parish, preferred_wedding_date, banns
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, true, $9, $10, $11::jsonb)
+       RETURNING *`,
+      [
+        req.parishId,
+        requiredText(body.groomFirstName, "Groom's first name"),
+        optionalText(body.groomMiddleName),
+        requiredText(body.groomLastName, "Groom's last name"),
+        requiredText(body.brideFirstName, "Bride's first name"),
+        optionalText(body.brideMiddleName),
+        requiredText(body.brideLastName, "Bride's last name"),
+        req.user.id,
+        weddingParish,
+        weddingDate,
+        JSON.stringify(plan),
+      ]
+    );
+    const row = inserted.rows[0];
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'marriage_application.banns_elsewhere_created',
+      entityType: 'marriage_application',
+      entityId: row.id,
+      metadata: { groom: partyName(row, 'groom'), bride: partyName(row, 'bride'), weddingParish },
+    });
+    res.status(201).json({ application: toApplication(row) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** Removes a banns-only entry made by mistake. Applications for weddings here are rejected instead. */
+async function removeBannsElsewhere(req, res) {
+  try {
+    const removed = await pool.query(
+      `DELETE FROM marriage_application WHERE id = $1 AND parish_id = $2 AND wedding_elsewhere RETURNING *`,
+      [req.params.id, req.parishId]
+    );
+    if (!removed.rowCount) return res.status(404).json({ error: 'Banns entry not found.' });
+    const row = removed.rows[0];
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'marriage_application.banns_elsewhere_removed',
+      entityType: 'marriage_application',
+      entityId: row.id,
+      metadata: { groom: partyName(row, 'groom'), bride: partyName(row, 'bride') },
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** The couples to announce on one Sunday, with the time of asking, for the priest or lector to read. */
+async function bannsList(req, res) {
+  try {
+    const date = dateValue(req.query.date, 'Sunday');
+    if (!banns.isSunday(date)) throw httpError(400, 'Banns are announced on Sundays.');
+    const [result, parish, open] = await Promise.all([
+      pool.query(
+        `SELECT * FROM marriage_application
+         WHERE parish_id = $1 AND status <> 'rejected' AND banns->'sundays' ? $2
+         ORDER BY groom_last_name, bride_last_name`,
+        [req.parishId, date]
+      ),
+      loadParishHeading(req.parishId),
+      // Weddings here still waiting for their Sundays to be planned.
+      pool.query(
+        `SELECT * FROM marriage_application
+         WHERE parish_id = $1 AND NOT wedding_elsewhere AND status NOT IN ('rejected', 'completed')
+           AND jsonb_array_length(COALESCE(banns->'sundays', '[]'::jsonb)) = 0
+         ORDER BY preferred_wedding_date NULLS LAST, created_at`,
+        [req.parishId]
+      ),
+    ]);
+    const unplanned = open.rows
+      .filter((row) => {
+        const plan = banns.normalizeBanns(row.banns);
+        return !plan.dispensed && banns.announcedHere(plan);
+      })
+      .map((row) => toApplication(row));
+    const couples = [];
+    for (const row of result.rows) {
+      const plan = banns.normalizeBanns(row.banns);
+      const asking = banns.askingOn(plan, date);
+      if (!asking) continue;
+      couples.push({
+        ...toApplication(row),
+        asking,
+        announced: plan.announced.includes(date),
+      });
+    }
+    res.json({ date, parish, couples, unplanned });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** The parish name, address, diocese and patron, and who signs, for printed banns papers. */
+async function loadParishHeading(parishId) {
+  const result = await pool.query(
+    `SELECT p.name, p.address, p.contact, p.email, s.patron, s.diocese, c.signatory_name, c.signatory_title
+     FROM parish p
+     LEFT JOIN parish_settings s ON s.parish_id = p.id
+     LEFT JOIN certificate_configuration c ON c.parish_id = p.id AND c.certificate_type = 'marriage'
+     WHERE p.id = $1`,
+    [parishId]
+  );
+  const row = result.rows[0] || {};
+  return {
+    name: row.name || '',
+    address: row.address || '',
+    patron: row.patron || '',
+    diocese: row.diocese || '',
+    contact: row.contact || '',
+    email: row.email || '',
+    signatoryName: row.signatory_name || '',
+    signatoryTitle: row.signatory_title || 'Parish Priest',
+  };
+}
+
+/** What the banns poster shows: one couple, for the bulletin board or the parish's Facebook page. */
+async function bannsPoster(req, res) {
+  try {
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row || row.status === 'rejected') return res.status(404).json({ error: 'Application not found.' });
+    const plan = banns.normalizeBanns(row.banns);
+    if (plan.dispensed) throw httpError(400, 'The banns were waived, so there is nothing to announce.');
+    if (!banns.announcedHere(plan)) throw httpError(400, 'These banns are announced in other parishes, not here.');
+    if (plan.sundays.length === 0) throw httpError(400, 'Plan the Sundays first.');
+    const [application, parish] = await Promise.all([hydrate(row), loadParishHeading(req.parishId)]);
+    res.json({ application, parish });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** What the Certificate of Banns prints, once all three Sundays are announced (wedding elsewhere). */
+async function bannsCertificate(req, res) {
+  try {
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row || !row.wedding_elsewhere) return res.status(404).json({ error: 'Banns entry not found.' });
+    const plan = banns.normalizeBanns(row.banns);
+    if (plan.dispensed) throw httpError(400, 'The banns were waived, so there is no Certificate of Banns.');
+    if (!banns.bannsComplete(plan, { elsewhere: true })) {
+      throw httpError(400, 'All three Sundays must be announced first.');
+    }
+    res.json({ application: toApplication(row), parish: await loadParishHeading(req.parishId) });
   } catch (err) {
     return sendRecordError(res, err);
   }
@@ -375,28 +748,31 @@ async function reserveWeddingDate(req, res) {
     const date = dateValue(req.body?.date, 'Wedding date');
     const start = requiredText(req.body?.start, 'Start time');
     const end = requiredText(req.body?.end, 'End time');
-    const assignee = optionalText(req.body?.assignee) || '';
-    const occurrences = await schedule.occurrencesForDate(req.parishId, date);
-    const conflict = schedule.findConflict(occurrences, start, end, row.wedding_event_id || undefined, assignee || undefined);
-    if (conflict) {
-      throw httpError(
-        409,
-        `${conflict.assignee ? `${conflict.assignee} already has` : "There's already"} ${conflict.title} at ${conflict.start}–${conflict.end} on this date.`
-      );
-    }
+    const who = schedule.assigneeInput(req.body || {});
+    await schedule.checkAssignee(req.parishId, who);
+    // Weddings are celebrated in the church, so they clash with anything else there or with the same priest.
+    await schedule.assertNoConflict(req.parishId, {
+      date,
+      start,
+      end,
+      ...who,
+      location: schedule.DEFAULT_LOCATION,
+      excludeId: row.wedding_event_id || undefined,
+    });
+    await schedule.assertCalendarOk(req.parishId, { date, type: 'wedding', calendarOk: req.body?.calendarOk });
 
     let eventId = row.wedding_event_id;
     const title = `Wedding — ${partyName(row, 'groom')} & ${partyName(row, 'bride')}`;
     if (eventId) {
-      const assignedTo = await schedule.resolvePersonnelId(req.parishId, assignee);
       const { toTimestamp } = require('../utils/scheduleTime');
       const updatedEvent = await pool.query(
         `UPDATE event
          SET title = $1, start_datetime = $2, end_datetime = $3,
-             assigned_to = $4, assignee_name = $5, updated_at = NOW(), status = 'upcoming'
+             assigned_to = $4, assignee_name = $5, updated_at = NOW(), status = 'upcoming',
+             location = COALESCE(location, $8)
          WHERE id = $6 AND parish_id = $7
          RETURNING id`,
-        [title, toTimestamp(date, start), toTimestamp(date, end), assignedTo, assignee, eventId, req.parishId]
+        [title, toTimestamp(date, start), toTimestamp(date, end), who.assigneeId, who.assigneeId ? null : who.assignee || null, eventId, req.parishId, schedule.DEFAULT_LOCATION]
       );
       if (!updatedEvent.rowCount) eventId = null;
     }
@@ -408,7 +784,8 @@ async function reserveWeddingDate(req, res) {
         end,
         type: 'wedding',
         source: 'Marriage Process',
-        assignee,
+        ...who,
+        location: schedule.DEFAULT_LOCATION,
         marriageApplicationId: row.id,
       });
     }
@@ -456,9 +833,14 @@ async function confirmWeddingDate(req, res) {
     if (row.wedding_date_status !== 'reserved' || !row.wedding_event_id) {
       throw httpError(400, 'Reserve a wedding date before confirming it.');
     }
-    const requirements = await loadRequirements(row.id);
+    const event = await loadWeddingEvent(row.wedding_event_id);
+    const requirements = await loadRequirements(row, weddingDateOf(row, event));
     if (!requiredComplete(requirements)) {
       throw httpError(400, 'Verify every required document before confirming the wedding date.');
+    }
+    const stale = requirements.find((item) => item.submitted && (item.expired || item.expiresBeforeWedding));
+    if (stale) {
+      throw httpError(400, `The ${stale.name} expires before the wedding. Ask for a newer copy first.`);
     }
     if (row.dispensation_needed && row.dispensation_status !== 'granted') {
       throw httpError(400, 'Dispensation must be granted before the wedding date is confirmed.');
@@ -522,7 +904,75 @@ async function rejectApplication(req, res) {
   }
 }
 
+/** Links a parishioner account by its email, so they can follow the application in the portal. */
+async function linkParishioner(req, res) {
+  try {
+    const email = String(req.body?.email || '').trim();
+    if (!email) throw httpError(400, 'Enter the email of their parishioner account.');
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row) return res.status(404).json({ error: 'Application not found.' });
+    const parishionerId = await findParishionerByEmail(req.parishId, email);
+    if (!parishionerId) throw httpError(400, NO_ACCOUNT);
+
+    const updated = await pool.query(
+      `UPDATE marriage_application SET parishioner_id = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+      [parishionerId, row.id]
+    );
+    if (row.parishioner_id !== parishionerId) {
+      await createNotification({
+        parishId: req.parishId,
+        recipientId: parishionerId,
+        kind: 'parishioner',
+        title: 'Marriage application linked',
+        body: `The parish office linked marriage application ${row.reference_no} to your account. You can follow its status in the portal.`,
+        href: 'marriage',
+      });
+    }
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'marriage_application.account_linked',
+      entityType: 'marriage_application',
+      entityId: row.id,
+      metadata: { parishionerId, previous: row.parishioner_id || null },
+    });
+    res.json({ application: await hydrate(updated.rows[0]) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
+/** Takes the application off the parishioner's account; the office keeps it as before. */
+async function unlinkParishioner(req, res) {
+  try {
+    const row = await loadApplication(req.parishId, req.params.id);
+    if (!row) return res.status(404).json({ error: 'Application not found.' });
+    const updated = await pool.query(
+      `UPDATE marriage_application SET parishioner_id = NULL, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [row.id]
+    );
+    if (row.parishioner_id) {
+      await writeAudit({
+        parishId: req.parishId,
+        actorId: req.user.id,
+        action: 'marriage_application.account_unlinked',
+        entityType: 'marriage_application',
+        entityId: row.id,
+        metadata: { parishionerId: row.parishioner_id },
+      });
+    }
+    res.json({ application: await hydrate(updated.rows[0]) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
 module.exports = {
+  linkParishioner,
+  unlinkParishioner,
+  updateCircumstances,
+  ensureRequirementTypes,
+  addMissingRows,
   listApplications,
   getApplication,
   listMine,
@@ -532,4 +982,11 @@ module.exports = {
   reserveWeddingDate,
   confirmWeddingDate,
   rejectApplication,
+  updateBanns,
+  listBannsElsewhere,
+  createBannsElsewhere,
+  removeBannsElsewhere,
+  bannsList,
+  bannsCertificate,
+  bannsPoster,
 };

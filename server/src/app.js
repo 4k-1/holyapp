@@ -45,6 +45,13 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const intentionRoutes = require('./routes/intentionRoutes');
 const marriageApplicationRoutes = require('./routes/marriageApplicationRoutes');
+const marriageRequirementRoutes = require('./routes/marriageRequirementRoutes');
+const donationRoutes = require('./routes/donationRoutes');
+const personnelRoutes = require('./routes/personnelRoutes');
+const publicGivingRoutes = require('./routes/publicGivingRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const ledgerRoutes = require('./routes/ledgerRoutes');
 app.use('/auth', authRoutes);
 app.use('/rbac', rbacRoutes);
 app.use('/parish', parishRoutes);
@@ -59,10 +66,22 @@ app.use('/notifications', notificationRoutes);
 app.use('/schedule', scheduleRoutes);
 app.use('/intentions', intentionRoutes);
 app.use('/marriage-applications', marriageApplicationRoutes);
+app.use('/marriage-requirements', marriageRequirementRoutes);
+app.use('/donations', donationRoutes);
+app.use('/personnel', personnelRoutes);
+app.use('/public/:slug', publicGivingRoutes);
+app.use('/dashboard', dashboardRoutes);
+app.use('/reports', reportRoutes);
+app.use('/ledgers', ledgerRoutes);
 
-const { frontendUrl } = require('./utils/frontendUrl');
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Password reset emails will use ${frontendUrl()}`);
-});
+// Start listening only when run directly (npm run dev / npm start). Tests load the app without a port.
+if (require.main === module) {
+  const { frontendUrl } = require('./utils/frontendUrl');
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Password reset emails will use ${frontendUrl()}`);
+  });
+}
+
+module.exports = app;

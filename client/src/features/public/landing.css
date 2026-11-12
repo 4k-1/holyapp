@@ -1,0 +1,195 @@
+/* HolyApp landing page: logo teal with candle gold, in Plus Jakarta Sans like the parish portal (loaded in
+   app/index.css). Text sits a little heavier than Jakarta's 400 so it stays easy to read for older parishioners. */
+.landing {
+  --l-ink: #13262b;
+  --l-muted: #55707a;
+  --l-teal-deep: #0e3b46;
+  --l-teal: #16798c;
+  --l-teal-mid: #2a9d9c;
+  --l-teal-light: #8ed8d2;
+  --l-mist: #e8f5f5;
+  --l-cream: #fbf8f1;
+  --l-gold: #eeb531;
+  --l-gold-soft: #fbefcf;
+  /* The second tone of a two-tone heading; 3.4:1 on white, for large text only. */
+  --l-soft: #6b8d95;
+  --l-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-sans);
+  background: #ffffff;
+  color: var(--l-ink);
+  font-family: var(--font-sans);
+  font-weight: 450;
+  overflow-x: hidden;
+}
+
+/* Scoped under .landing so it outranks the app's base h1–h4 font rule. */
+.landing .landing-display {
+  font-family: var(--l-display);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  font-optical-sizing: auto;
+}
+
+/* An early-morning sky in logo teal, with candle-gold light on one side, fading to the white page. */
+.landing-hero {
+  background:
+    radial-gradient(ellipse 45% 35% at 82% 8%, rgba(238, 181, 49, 0.16), transparent 70%),
+    linear-gradient(180deg, #c2e8e5 0%, #d2eeeb 35%, #dcf2f0 70%, #e8f6f5 92%, #ffffff 100%);
+}
+
+/* A dash travels along each line of the "How HolyApp works" drawing, from the faithful to the office. */
+.landing-flow {
+  stroke-dasharray: 10 190;
+  animation: landing-flow 3.2s linear infinite;
+}
+@keyframes landing-flow {
+  from { stroke-dashoffset: 200; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* "cloud." sits on a teal block, set slightly off square like a hand-placed label. */
+.landing-mark {
+  display: inline-block;
+  padding: 0 0.22em 0.04em;
+  background: var(--l-teal);
+  color: #ffffff;
+  border-radius: 0.12em;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 10px 28px -10px rgb(14 59 70 / 0.55);
+}
+
+/* Small scattered marks: crosses, sparkles and rings. */
+.landing-deco {
+  position: absolute;
+  pointer-events: none;
+  animation: landing-float 7s ease-in-out infinite;
+}
+
+/* Feature carousels move with the arrows or a swipe, so the scrollbar stays out of sight. */
+.landing-carousel {
+  scrollbar-width: none;
+}
+.landing-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* A feature row runs to both edges of the screen; its first card still lines up with the page column. */
+.landing-bleed {
+  margin-inline: calc(50% - 50vw);
+  padding-inline: max(1rem, calc(50vw - 560px));
+  scroll-padding-inline: max(1rem, calc(50vw - 560px));
+}
+@media (min-width: 640px) {
+  .landing-bleed {
+    padding-inline: max(1.5rem, calc(50vw - 560px));
+    scroll-padding-inline: max(1.5rem, calc(50vw - 560px));
+  }
+}
+
+/* An open card's drawing grows in, then keeps one small movement going. */
+.landing-art {
+  animation: landing-grow-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.landing-art-body {
+  transform-box: view-box;
+  transform-origin: 50% 55%;
+  animation: landing-grow-in 0.55s 0.12s cubic-bezier(0.3, 1.35, 0.5, 1) both;
+}
+.landing-art [class*="landing-art-"] {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+.landing-art-sway { transform-origin: 50% 0% !important; animation: landing-sway 3.2s ease-in-out infinite; }
+.landing-art-scan { animation: landing-scan 2.8s ease-in-out infinite alternate; }
+.landing-art-drop { animation: landing-drop 3.4s ease-in-out infinite; }
+.landing-art-ping { animation: landing-ping 2.2s ease-out infinite; }
+.landing-art-pulse { animation: landing-pulse 2.2s ease-in-out infinite; }
+.landing-art-glow { animation: landing-pulse 2.6s ease-in-out infinite; }
+.landing-art-flame { transform-origin: 50% 100% !important; animation: landing-flicker 1.6s ease-in-out infinite; }
+.landing-art-beat { animation: landing-beat 1.8s ease-in-out infinite; }
+.landing-art-twinkle { animation: landing-twinkle 2.4s ease-in-out infinite; }
+.landing-art-rise { transform-origin: 50% 100% !important; animation: landing-rise 0.8s 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.landing-art-fly { animation: landing-fly 3s ease-in-out infinite; }
+.landing-art-lift { animation: landing-lift 3.2s ease-in-out infinite; }
+.landing-art-rise-heart { animation: landing-heart-up 3s ease-in-out infinite; }
+.landing-art-pop { animation: landing-grow-in 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both; }
+.landing-art-spin { animation: landing-spin 18s linear infinite; }
+.landing-art-spin--back { animation-direction: reverse; animation-duration: 24s; }
+
+.landing-card {
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+.landing-card:hover {
+  transform: translateY(-6px) rotate(0deg) !important;
+}
+
+/* Hero: the headline, text, buttons and laptop rise in one after another when the page opens. */
+.landing-in {
+  animation: landing-in 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.landing-in-stage {
+  animation: landing-stage-in 1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.45s both;
+}
+.landing-mark--in {
+  animation: landing-mark-in 0.6s cubic-bezier(0.3, 1.4, 0.5, 1) 0.7s both;
+}
+
+/* Sections below fade up as they scroll into view. */
+.landing--reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.landing--reveal [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes landing-in {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes landing-stage-in {
+  from { opacity: 0; transform: translateY(48px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes landing-mark-in {
+  from { opacity: 0; transform: rotate(-1.5deg) translateY(10px) scale(0.9); }
+  to { opacity: 1; transform: rotate(-1.5deg); }
+}
+@keyframes landing-grow-in {
+  from { opacity: 0; transform: scale(0.45); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes landing-spin { to { transform: rotate(360deg); } }
+@keyframes landing-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes landing-scan { from { transform: translateY(-46px); } to { transform: translateY(54px); } }
+@keyframes landing-drop { 0%, 100% { transform: translateY(-6px); } 50% { transform: translateY(6px); } }
+@keyframes landing-ping { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(1.6); } }
+@keyframes landing-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@keyframes landing-flicker { 0%, 100% { transform: scale(1, 1) rotate(-2deg); } 50% { transform: scale(0.94, 1.06) rotate(2deg); } }
+@keyframes landing-beat { 0%, 60%, 100% { transform: scale(1); } 20% { transform: scale(1.14); } 40% { transform: scale(0.98); } }
+@keyframes landing-twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7); } }
+@keyframes landing-rise { from { transform: scaleY(0); } to { transform: none; } }
+@keyframes landing-fly { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(6px, -8px); } }
+@keyframes landing-lift { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes landing-heart-up { 0%, 100% { transform: translateY(2px); } 50% { transform: translateY(-8px); } }
+@keyframes landing-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-deco,
+  .landing-flow,
+  .landing-in,
+  .landing-in-stage,
+  .landing-mark--in { animation: none; }
+  .landing--reveal [data-reveal] { opacity: 1; transform: none; transition: none; }
+  .landing-card { transition: none; }
+  .landing-flow { display: none; }
+  .landing-art,
+  .landing-art-body,
+  .landing-art [class*="landing-art-"] { animation: none; }
+}

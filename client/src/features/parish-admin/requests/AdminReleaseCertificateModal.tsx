@@ -1,8 +1,8 @@
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { forwardRef, useRef, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminButton, AdminField, AdminInput, PrintIcon } from "@/features/parish-admin/components/AdminForm";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
-import { sacramentCertTitles } from "@/features/parish-admin/components/CertificateDocument";
+import { sacramentCertTitles } from "@/features/parish-admin/components/certificate/constants";
 import { getRequestCopyCount } from "@/features/parish-admin/requests/adminRequestHelpers";
 import { printElement } from "@/features/parish-admin/requests/printUtils";
 import { releaseCertificate } from "@/features/parish-admin/requests/api/requestsAdminApi";
@@ -10,6 +10,7 @@ import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptisma
 import { recordFullName } from "@/features/parish-admin/records/baptismalHelpers";
 import { useAsync } from "@/hooks/useAsync";
 import type { CertificateRequest, Parish } from "@/types";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
 // TODO: re-enable pickup receipt printing later
 const ENABLE_PRINT_RECEIPT = false;
@@ -57,17 +58,10 @@ export function AdminReleaseCertificateModal({
     ? `Book ${linked.bookNumber}, Page ${linked.pageNumber}, Entry ${linked.entryNumber}`
     : "—";
 
-  useEffect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape" && !submitting) onClose();
-    }
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [onClose, submitting]);
 
   function printReceipt() {
     if (!printRef.current) return;
-    printElement(printRef.current, `Pickup Receipt — ${request.id}`);
+    printElement(printRef.current, `Pickup Receipt — ${request.referenceNo}`);
   }
 
   async function handleRelease() {
@@ -93,180 +87,181 @@ export function AdminReleaseCertificateModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 pt-8 sm:pt-12">
-      <div className="absolute inset-0 bg-black/45" onClick={submitting ? undefined : onClose} aria-hidden="true" />
-      <div className="relative z-10 flex max-h-[92vh] w-full max-w-[640px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
-        <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
-          <div>
-            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
-              {done ? "Certificate released" : "Release certificate"}
-            </h3>
-            <p className="mt-0.5 text-admin-support text-admin-ink-muted">
-              Request {request.id} · {sacramentCertTitles[request.sacramentType]}
-            </p>
-          </div>
-          {!submitting && (
-            <button
-              type="button"
-              onClick={done ? handleDone : onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
-              aria-label="Close"
-            >
-              ✕
-            </button>
-          )}
+    <AdminModalFrame
+      onClose={onClose}
+      busy={submitting}
+      panelClassName="flex max-h-[92vh] max-w-[640px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+    >
+      <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
+        <div>
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
+            {done ? "Certificate released" : "Release certificate"}
+          </h3>
+          <p className="mt-0.5 text-admin-support text-admin-ink-muted">
+            Request {request.referenceNo} · {sacramentCertTitles[request.sacramentType]}
+          </p>
         </div>
+        {!submitting && (
+          <button
+            type="button"
+            onClick={done ? handleDone : onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        )}
+      </div>
 
-        <div className="overflow-y-auto px-6 py-5">
-          {loading ? (
-            <p className="text-admin-body text-admin-ink-muted">Loading record data…</p>
-          ) : done ? (
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-admin-green-100 text-admin-green-700">
-                <CheckIcon className="h-6 w-6" />
-              </div>
-              <h4 className="font-serif text-admin-page font-semibold text-admin-ink">Certificate released</h4>
-              <p className="mx-auto mt-2 max-w-sm text-admin-body leading-relaxed text-admin-ink-muted">
-                {copies} {copies > 1 ? "copies" : "copy"} of{" "}
-                <span className="font-semibold text-admin-ink">{registerName}</span>&apos;s certificate
-                handed to <span className="font-semibold text-admin-ink">{releasedTo}</span>.
-              </p>
-              {ENABLE_PRINT_RECEIPT && !printOnRelease && (
-                <AdminButton variant="secondary" className="mt-4" onClick={printReceipt}>
-                  <PrintIcon />
-                  Print pickup receipt
-                </AdminButton>
-              )}
+      <div className="overflow-y-auto px-6 py-5">
+        {loading ? (
+          <p className="text-admin-body text-admin-ink-muted">Loading record data…</p>
+        ) : done ? (
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-admin-green-100 text-admin-green-700">
+              <CheckIcon className="h-6 w-6" />
             </div>
-          ) : (
-            <>
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <AdminDeliveryTag method="pickup" />
-                <AdminBadge tone="gold">Ready for pickup</AdminBadge>
-                <span className="text-admin-support text-admin-ink-muted">
-                  {copies} {copies > 1 ? "copies" : "copy"} · {request.purpose ?? "General purpose"}
-                </span>
-              </div>
+            <h4 className="font-serif text-admin-page font-semibold text-admin-ink">Certificate released</h4>
+            <p className="mx-auto mt-2 max-w-sm text-admin-body leading-relaxed text-admin-ink-muted">
+              {copies} {copies > 1 ? "copies" : "copy"} of{" "}
+              <span className="font-semibold text-admin-ink">{registerName}</span>&apos;s certificate
+              handed to <span className="font-semibold text-admin-ink">{releasedTo}</span>.
+            </p>
+            {ENABLE_PRINT_RECEIPT && !printOnRelease && (
+              <AdminButton variant="secondary" className="mt-4" onClick={printReceipt}>
+                <PrintIcon />
+                Print pickup receipt
+              </AdminButton>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <AdminDeliveryTag method="pickup" />
+              <AdminBadge tone="gold">Ready for pickup</AdminBadge>
+              <span className="text-admin-support text-admin-ink-muted">
+                {copies} {copies > 1 ? "copies" : "copy"} · {request.purpose ?? "General purpose"}
+              </span>
+            </div>
 
-              <div className="mb-4 rounded-[10px] border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
-                <p className="text-admin-body font-semibold text-admin-green-900">{registerName}</p>
-                <p className="mt-0.5 text-admin-support text-admin-ink-muted">
-                  {sacramentCertTitles[request.sacramentType]} · {registerRef}
-                </p>
-              </div>
+            <div className="mb-4 rounded-md border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
+              <p className="text-admin-body font-semibold text-admin-green-900">{registerName}</p>
+              <p className="mt-0.5 text-admin-support text-admin-ink-muted">
+                {sacramentCertTitles[request.sacramentType]} · {registerRef}
+              </p>
+            </div>
 
-              <div className="mb-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-                <AdminField label="Released to" className="mb-0">
-                  <AdminInput
-                    value={releasedTo}
-                    onChange={(e) => setReleasedTo(e.target.value)}
-                    placeholder="Recipient full name"
-                    required
-                  />
-                </AdminField>
-                <AdminField label="Valid ID presented" className="mb-0">
-                  <AdminInput
-                    value={validId}
-                    onChange={(e) => setValidId(e.target.value)}
-                    placeholder="Optional — e.g. Driver's License"
-                  />
-                </AdminField>
-              </div>
+            <div className="mb-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+              <AdminField label="Released to" className="mb-0">
+                <AdminInput
+                  value={releasedTo}
+                  onChange={(e) => setReleasedTo(e.target.value)}
+                  placeholder="Recipient full name"
+                  required
+                />
+              </AdminField>
+              <AdminField label="Valid ID presented" className="mb-0">
+                <AdminInput
+                  value={validId}
+                  onChange={(e) => setValidId(e.target.value)}
+                  placeholder="Optional — e.g. Driver's License"
+                />
+              </AdminField>
+            </div>
 
-              {ENABLE_PRINT_RECEIPT && (
-                <div className="mb-4">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <h4 className="font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                      Pickup receipt preview
-                    </h4>
-                    <AdminButton variant="ghost" size="sm" className="py-0.5" onClick={printReceipt}>
-                      <PrintIcon />
-                      Print preview
-                    </AdminButton>
-                  </div>
-                  <PickupReceiptDocument
-                    ref={printRef}
-                    parish={parish}
-                    requestId={request.id}
-                    certTitle={sacramentCertTitles[request.sacramentType]}
-                    holderName={registerName}
-                    registerRef={registerRef}
-                    copies={copies}
-                    releasedTo={releasedTo || "—"}
-                    validId={validId || "—"}
-                    releaseDate={releaseDate}
-                  />
+            {ENABLE_PRINT_RECEIPT && (
+              <div className="mb-4">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h4 className="font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+                    Pickup receipt preview
+                  </h4>
+                  <AdminButton variant="ghost" size="sm" className="py-0.5" onClick={printReceipt}>
+                    <PrintIcon />
+                    Print preview
+                  </AdminButton>
                 </div>
-              )}
+                <PickupReceiptDocument
+                  ref={printRef}
+                  parish={parish}
+                  requestId={request.referenceNo}
+                  certTitle={sacramentCertTitles[request.sacramentType]}
+                  holderName={registerName}
+                  registerRef={registerRef}
+                  copies={copies}
+                  releasedTo={releasedTo || "—"}
+                  validId={validId || "—"}
+                  releaseDate={releaseDate}
+                />
+              </div>
+            )}
 
-              {ENABLE_PRINT_RECEIPT && (
-                <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-admin-border bg-admin-surface-alt px-3.5 py-3">
-                  <input
-                    type="checkbox"
-                    checked={printOnRelease}
-                    onChange={(e) => setPrintOnRelease(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-admin-border-strong accent-admin-green-700"
-                  />
-                  <span className="text-admin-body leading-relaxed text-admin-ink">
-                    Print pickup receipt when released (for parish records and recipient copy)
-                  </span>
-                </label>
-              )}
-
-              <label className="flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-admin-border bg-admin-surface-alt px-3.5 py-3">
+            {ENABLE_PRINT_RECEIPT && (
+              <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-3">
                 <input
                   type="checkbox"
-                  checked={confirmed}
-                  onChange={(e) => setConfirmed(e.target.checked)}
+                  checked={printOnRelease}
+                  onChange={(e) => setPrintOnRelease(e.target.checked)}
                   className="mt-0.5 h-4 w-4 rounded border-admin-border-strong accent-admin-green-700"
                 />
                 <span className="text-admin-body leading-relaxed text-admin-ink">
-                  I confirm the certificate was physically handed to the recipient listed above.
+                  Print pickup receipt when released (for parish records and recipient copy)
                 </span>
               </label>
-            </>
-          )}
-        </div>
+            )}
 
-        <div className="flex flex-wrap justify-end gap-2.5 border-t border-admin-border px-6 py-4">
-          {done ? (
-            <>
-              {ENABLE_PRINT_RECEIPT && (
-                <AdminButton variant="secondary" onClick={printReceipt}>
-                  <PrintIcon />
-                  Print again
-                </AdminButton>
-              )}
-              <AdminButton onClick={handleDone}>
-                <CheckIcon />
-                Done
-              </AdminButton>
-            </>
-          ) : (
-            <>
-              <AdminButton variant="secondary" onClick={onClose} disabled={submitting}>
-                Cancel
-              </AdminButton>
-              <AdminButton onClick={handleRelease} disabled={!confirmed || !releasedTo.trim() || submitting}>
-                {submitting ? (
-                  "Releasing…"
-                ) : (
-                  <>
-                    <CheckIcon />
-                    Release certificate
-                  </>
-                )}
-              </AdminButton>
-            </>
-          )}
-        </div>
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-3">
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-admin-border-strong accent-admin-green-700"
+              />
+              <span className="text-admin-body leading-relaxed text-admin-ink">
+                I confirm the certificate was physically handed to the recipient listed above.
+              </span>
+            </label>
+          </>
+        )}
       </div>
-    </div>
+
+      <div className="flex flex-wrap justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        {done ? (
+          <>
+            {ENABLE_PRINT_RECEIPT && (
+              <AdminButton variant="secondary" onClick={printReceipt}>
+                <PrintIcon />
+                Print again
+              </AdminButton>
+            )}
+            <AdminButton onClick={handleDone}>
+              <CheckIcon />
+              Done
+            </AdminButton>
+          </>
+        ) : (
+          <>
+            <AdminButton variant="secondary" onClick={onClose} disabled={submitting}>
+              Cancel
+            </AdminButton>
+            <AdminButton onClick={handleRelease} disabled={!confirmed || !releasedTo.trim() || submitting}>
+              {submitting ? (
+                "Releasing…"
+              ) : (
+                <>
+                  <CheckIcon />
+                  Release certificate
+                </>
+              )}
+            </AdminButton>
+          </>
+        )}
+      </div>
+    </AdminModalFrame>
   );
 }
 
-const PickupReceiptDocument = forwardRef
- < HTMLDivElement,
+const PickupReceiptDocument = forwardRef<
+  HTMLDivElement,
   {
     parish: Parish;
     requestId: string;
@@ -320,7 +315,7 @@ const PickupReceiptDocument = forwardRef
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "#7a8580" }}>{certTitle}</p>
       </div>
 
-      <ReceiptRow label="Request ID" value={requestId} />
+      <ReceiptRow label="Request no." value={requestId} />
       <ReceiptRow label="Register ref" value={registerRef} />
       <ReceiptRow label="Copies released" value={String(copies)} />
       <ReceiptRow label="Released to" value={releasedTo} />

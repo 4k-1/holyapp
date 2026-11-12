@@ -1,19 +1,5 @@
-import { useEffect, type ReactNode } from "react";
-
-export function useDialogDismiss(onClose: () => void, busy = false) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && !busy) onClose();
-    }
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previous;
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [onClose, busy]);
-}
+import type { ReactNode } from "react";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
 /**
  * `data-admin-dialog-*` attributes are the contract CertificatePreviewStage uses
@@ -30,18 +16,16 @@ export function AdminDialog({
   busy?: boolean;
   panelClassName?: string;
 }) {
-  useDialogDismiss(onClose, busy);
-
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden p-3 sm:p-4">
-      <div className="absolute inset-0 bg-black/45" onClick={busy ? undefined : onClose} aria-hidden="true" />
-      <div
-        data-admin-dialog-panel
-        className={`relative z-10 flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)] ${panelClassName}`}
-      >
-        {children}
-      </div>
-    </div>
+    <AdminModalFrame
+      onClose={onClose}
+      busy={busy}
+      align="center"
+      panelProps={{ "data-admin-dialog-panel": "", "data-enter-fields": "" }}
+      panelClassName={`flex max-h-[92dvh] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)] ${panelClassName}`}
+    >
+      {children}
+    </AdminModalFrame>
   );
 }
 

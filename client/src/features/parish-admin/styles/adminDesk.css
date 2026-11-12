@@ -1,30 +1,30 @@
-/* Shared ReadyTask-inspired desk system (Baskerville titles stay elsewhere) */
+/* Shared desk system in HolyApp teal (Baskerville titles stay elsewhere) */
 .admin-dash {
-  --dash-radius: 14px;
-  --dash-radius-sm: 10px;
-  /* ReadyTask palette */
-  --dash-gable: #172d31;
-  --dash-dollar: #71be62;
-  --dash-mint: #8ddcac;
+  --dash-radius: 8px;
+  --dash-radius-sm: 6px;
+  /* HolyApp teal palette */
+  --dash-gable: #0e3b46;
+  --dash-dollar: #2a9d9c;
+  --dash-mint: #8ed8d2;
   --dash-mango: #f9c96c;
-  --dash-cream: #f4f6f6;
+  --dash-cream: #f2f7f8;
   --dash-card: #ffffff;
-  --dash-ink: #172d31;
-  --dash-ink-soft: #5a6d71;
-  --dash-ink-faint: #8a9a9e;
-  --dash-border: #e6ebec;
-  --dash-border-strong: #cdd6d8;
-  --dash-green: #3f8f38;
-  --dash-green-deep: #172d31;
-  --dash-green-soft: #e6f4e6;
-  --dash-green-mid: #8ddcac;
+  --dash-ink: #15323a;
+  --dash-ink-soft: #55707a;
+  --dash-ink-faint: #8ba1a7;
+  --dash-border: #e0e9eb;
+  --dash-border-strong: #c6d5d8;
+  --dash-green: #16798c;
+  --dash-green-deep: #0e3b46;
+  --dash-green-soft: #e8f5f5;
+  --dash-green-mid: #8ed8d2;
   --dash-gold: #f9c96c;
   --dash-gold-deep: #8a6418;
   --dash-gold-soft: #fef6e4;
   --dash-amber-soft: #fef6e4;
   --dash-amber: #8a6418;
-  --dash-ok: #3f8f38;
-  --dash-ok-soft: #e6f4e6;
+  --dash-ok: #16798c;
+  --dash-ok-soft: #e8f5f5;
   --dash-shadow: 0 1px 2px rgba(23, 45, 49, 0.04), 0 8px 24px rgba(23, 45, 49, 0.05);
   --dash-shadow-hover: 0 2px 4px rgba(23, 45, 49, 0.05), 0 12px 28px rgba(23, 45, 49, 0.08);
 
@@ -50,7 +50,7 @@
   width: 2.25rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.75rem;
+  border-radius: 6px;
   background: var(--dash-green-soft);
   color: var(--dash-green);
 }
@@ -115,7 +115,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  border-radius: 10px;
+  border-radius: 6px;
   background: var(--dash-green);
   color: #fff;
   padding: 0.55rem 1.05rem;
@@ -127,7 +127,7 @@
 }
 
 .admin-dash__cta-primary:hover {
-  background: #2f6f2a;
+  background: #11616f;
   transform: translateY(-1px);
 }
 
@@ -135,7 +135,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  border-radius: 10px;
+  border-radius: 6px;
   border: 1px solid var(--dash-border-strong);
   background: var(--dash-card);
   color: var(--dash-ink);
@@ -158,7 +158,7 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 0.75rem;
+  border-radius: 6px;
 }
 
 .admin-dash__chip--amber {
@@ -200,7 +200,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  border-radius: 10px;
+  border-radius: 6px;
   background: var(--dash-card);
   border: 1px solid var(--dash-border);
   padding: 0.5rem 0.875rem;

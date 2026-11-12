@@ -19,12 +19,14 @@ export function SuperAdminKebabMenu({
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (!open) setPlaced(false);
+  }
 
   useLayoutEffect(() => {
-    if (!open) {
-      setPlaced(false);
-      return;
-    }
+    if (!open) return;
 
     function place() {
       const btn = buttonRef.current;
@@ -102,7 +104,7 @@ export function SuperAdminKebabMenu({
               data-portal="admin"
               data-surface="platform"
               style={{ top: coords.top, left: coords.left }}
-              className={`fixed z-[80] min-w-[168px] overflow-hidden rounded-[10px] border border-admin-border bg-admin-surface py-1 font-sans shadow-[0_8px_24px_-4px_rgba(20,30,25,0.18)] ${
+              className={`fixed z-[80] min-w-[168px] overflow-hidden rounded-md border border-admin-border bg-admin-surface py-1 font-sans shadow-[0_8px_24px_-4px_rgba(20,30,25,0.18)] ${
                 placed ? "opacity-100" : "opacity-0"
               }`}
             >
@@ -115,7 +117,7 @@ export function SuperAdminKebabMenu({
                     setOpen(false);
                     item.onClick();
                   }}
-                  className={`block w-full px-3 py-2 text-left text-[12.5px] font-medium hover:bg-admin-green-100 ${
+                  className={`block w-full px-3 py-2 text-left text-[13.5px] font-medium hover:bg-admin-green-100 ${
                     item.danger
                       ? "text-admin-red-700 hover:bg-admin-red-100 hover:text-admin-red-700"
                       : "text-admin-ink hover:text-admin-green-900"

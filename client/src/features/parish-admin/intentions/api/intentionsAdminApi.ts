@@ -89,18 +89,19 @@ export async function listAdminIntentions(_parishId: string): Promise<MassIntent
   }
 }
 
-export async function getMassIntentionCapacity(): Promise<number> {
+/** Intentions allowed per Mass, or null for no limit. */
+export async function getMassIntentionCapacity(): Promise<number | null> {
   try {
-    const data = await apiFetch<{ capacity: number }>("/intentions/capacity");
-    return data.capacity ?? 5;
+    const data = await apiFetch<{ capacity: number | null }>("/intentions/capacity");
+    return data.capacity === undefined ? 5 : data.capacity;
   } catch (err) {
     fail(err);
   }
 }
 
-export async function updateMassIntentionCapacity(maxIntentions: number): Promise<number> {
+export async function updateMassIntentionCapacity(maxIntentions: number | null): Promise<number | null> {
   try {
-    const data = await apiFetch<{ capacity: number }>("/intentions/capacity", {
+    const data = await apiFetch<{ capacity: number | null }>("/intentions/capacity", {
       method: "PATCH",
       body: { capacity: maxIntentions },
     });

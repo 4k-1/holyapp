@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useState } from "react";
 
 interface AsyncState<T> {
   data: T | undefined;
   loading: boolean;
   error: Error | null;
+}
+
+function sameKey(a: unknown[], b: unknown[]) {
+  return a.length === b.length && a.every((value, i) => Object.is(value, b[i]));
 }
 
 /**
@@ -21,14 +25,21 @@ interface AsyncState<T> {
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
   const [state, setState] = useState<AsyncState<T>>({ data: undefined, loading: true, error: null });
   const [version, setVersion] = useState(0);
-  const fnRef = useRef(fn);
-  fnRef.current = fn;
+  const key = [...deps, version];
+
+  // When the inputs change, flip to loading during this render rather than after the effect runs.
+  const [prevKey, setPrevKey] = useState(key);
+  if (!sameKey(prevKey, key)) {
+    setPrevKey(key);
+    setState((prev) => ({ ...prev, loading: true, error: null }));
+  }
+
+  const run = useEffectEvent(() => fn());
 
   useEffect(() => {
     let cancelled = false;
-    setState((prev) => ({ ...prev, loading: true, error: null }));
 
-    fnRef.current().then(
+    run().then(
       (data) => {
         if (!cancelled) setState({ data, loading: false, error: null });
       },
@@ -43,7 +54,7 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, version]);
+  }, key);
 
   const refetch = useCallback(() => setVersion((v) => v + 1), []);
 

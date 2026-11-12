@@ -1,6 +1,6 @@
 import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type { ConfirmationRecord, ConfirmationSearchCriteria } from "@/features/parish-admin/records/types";
-import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName, initials, parentName } from "@/features/parish-admin/records/baptismalHelpers";
+import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName, parentName } from "@/features/parish-admin/records/baptismalHelpers";
 
 export { initials, certStatusTone } from "@/features/parish-admin/records/baptismalHelpers";
 
@@ -28,12 +28,7 @@ export function recordFatherName(rec: ConfirmationRecord) {
   });
 }
 
-export function formatRecordDate(iso: string) {
-  if (!iso) return "—";
-  const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-}
+export { formatRecordDate } from "@/features/parish-admin/records/baptismalHelpers";
 
 export function formatDateTime(iso: string) {
   if (!iso) return "—";
@@ -102,5 +97,20 @@ export function confirmationCertificateFields(
     motherName: mother || undefined,
     fatherName: father || undefined,
     certCode: extras?.certCode,
+    printed: {
+      type: "CONFIRMATION",
+      personConfirmed: recordFullName(rec),
+      address: rec.address,
+      placeOfBaptism: rec.baptismPlace,
+      fatherName: father || undefined,
+      motherName: mother || undefined,
+      // Sponsors aren't recorded for confirmations yet.
+      sponsors: [],
+      minister: rec.minister,
+      dateConfirmed: rec.dateOfConfirmation,
+      bookNo: rec.bookNumber,
+      pageNo: rec.pageNumber,
+      lineNo: rec.entryNumber,
+    },
   };
 }

@@ -6,11 +6,11 @@ export function ConfirmationStep() {
       {/* Success badge */}
       <div className="relative mx-auto mb-5 h-[84px] w-[84px]">
         {/* soft ambient glow */}
-        <div className="absolute inset-0 -z-10 rounded-full bg-emerald-500/25 blur-xl" />
+        <div className="absolute inset-0 -z-10 rounded-full bg-primary/20 blur-xl" />
         {/* outer ring */}
-        <div className="absolute inset-0 rounded-full ring-8 ring-emerald-50" />
+        <div className="absolute inset-0 rounded-full ring-8 ring-primary/10" />
         {/* badge */}
-        <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-600/30">
+        <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary shadow-lg shadow-primary/30">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -25,10 +25,9 @@ export function ConfirmationStep() {
         </div>
       </div>
 
-      <h2 className="mb-1.5 font-serif text-2xl font-bold text-ink">Request submitted</h2>
+      <h2 className="mb-1.5 font-serif text-[1.75rem] font-bold leading-tight text-ink">Request sent</h2>
       <p className="mx-auto mb-6 max-w-sm text-sm text-ink-muted">
-        We'll email you at each step. Once staff match your record, pay the certificate fee through GCash.
-        No payment is needed until then.
+        Staff will now look for the entry in the parish register. We'll email you at each step, and once they find it you can pay the fee through GCash.
       </p>
 
       <div className="relative mx-auto flex max-w-md pt-1">
@@ -39,14 +38,14 @@ export function ConfirmationStep() {
             <div key={label} className="relative z-10 flex flex-1 flex-col items-center gap-2">
               <div
                 className={`flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 ${
-                  isCurrent ? "border-emerald-600 bg-white" : "border-dashed border-border bg-surface"
+                  isCurrent ? "border-primary bg-surface" : "border-dashed border-border bg-surface"
                 }`}
               >
-                {isCurrent && <span className="h-[8px] w-[8px] rounded-full bg-emerald-600" />}
+                {isCurrent && <span className="h-[8px] w-[8px] rounded-full bg-primary" />}
               </div>
               <span
-                className={`text-center text-[11px] leading-tight ${
-                  isCurrent ? "font-bold text-emerald-700" : "text-ink-muted"
+                className={`text-center text-[12px] leading-tight ${
+                  isCurrent ? "font-bold text-primary" : "text-ink-muted"
                 }`}
               >
                 {label}

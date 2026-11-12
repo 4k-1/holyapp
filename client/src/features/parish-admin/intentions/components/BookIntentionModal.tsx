@@ -17,12 +17,13 @@ export function BookIntentionModal({ parishId, slot, onClose, onBooked }: BookIn
   const [contact, setContact] = useState("");
   const [intentionType, setIntentionType] = useState<string>(MASS_INTENTION_TYPES[0]);
   const [intentionText, setIntentionText] = useState("");
-  const [offering, setOffering] = useState("100");
+  const [offering, setOffering] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const full = slot.remaining <= 0;
-  const offeringAmount = Number(offering);
+  const full = slot.remaining === 0;
+  // A donation is optional; leave it empty when nothing was given.
+  const offeringAmount = offering.trim() === "" ? 0 : Number(offering);
   const canSave = Boolean(
     !full &&
       requesterName.trim() &&
@@ -64,12 +65,14 @@ export function BookIntentionModal({ parishId, slot, onClose, onBooked }: BookIn
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {full ? (
-            <p className="mb-4 rounded-[9px] border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
+            <p className="mb-4 rounded-md border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
               This Mass is at full capacity. Choose another slot.
             </p>
           ) : (
             <p className="mb-4 text-admin-support text-admin-ink-muted">
-              {slot.remaining} of {slot.maxIntentions} places remaining on this Mass.
+              {slot.remaining === null
+                ? "There's no limit on intentions for this Mass."
+                : `${slot.remaining} of ${slot.maxIntentions} places remaining on this Mass.`}
             </p>
           )}
 
@@ -101,11 +104,12 @@ export function BookIntentionModal({ parishId, slot, onClose, onBooked }: BookIn
               ))}
             </AdminSelect>
           </AdminField>
-          <AdminField label="Offering (₱)">
+          <AdminField label="Donation received (optional, ₱)">
             <AdminInput
               type="number"
               min={0}
               step="1"
+              placeholder="Leave empty if none"
               value={offering}
               onChange={(e) => setOffering(e.target.value)}
               disabled={full}
@@ -122,7 +126,7 @@ export function BookIntentionModal({ parishId, slot, onClose, onBooked }: BookIn
           </AdminField>
 
           {error && (
-            <p className="mt-3 rounded-[9px] border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
+            <p className="mt-3 rounded-md border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-2.5 text-admin-support text-admin-red-700">
               {error}
             </p>
           )}

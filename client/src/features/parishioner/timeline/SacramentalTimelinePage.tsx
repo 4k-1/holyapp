@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CandleIcon, DoveIcon, DropletIcon, HeartIcon } from "@/components/ui/icons/SacramentIcons";
 import { listMyTimeline, type TimelineEvent } from "@/features/parishioner/timeline/api/timelineApi";
 import type { SacramentType } from "@/types";
+import { SkeletonList } from "@/components/ui/Skeleton";
 
 const ICONS: Record<SacramentType, typeof DropletIcon> = {
   baptism: DropletIcon,
@@ -50,7 +51,7 @@ export function SacramentalTimelinePage() {
         Entries the parish has on file that match your name. This is not a certificate.
       </p>
 
-      {loading && <p className="text-sm text-ink-muted">Loading…</p>}
+      {loading && <SkeletonList rows={3} className="px-0" />}
       {error && <p className="text-sm text-danger">{error}</p>}
       {!loading && !error && events.length === 0 && (
         <p className="rounded-2xl border border-border bg-surface px-4 py-5 text-sm text-ink-muted shadow-sm">

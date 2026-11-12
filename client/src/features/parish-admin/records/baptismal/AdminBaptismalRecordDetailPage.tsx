@@ -1,4 +1,4 @@
-import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useState } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton, FileIcon, NoteIcon, UserIcon } from "@/features/parish-admin/components/AdminForm";
@@ -35,6 +35,7 @@ import {
 } from "@/features/parish-admin/records/baptismalHelpers";
 import type { IssuedRecordCertificate, RecordAnnotation } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import { PAGE_TITLE_CLASS, RECORD_DETAIL_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 export function AdminBaptismalRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -62,7 +63,7 @@ export function AdminBaptismalRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>
           {error ? "Could not load record" : "Record not found"}
         </h1>
         <p className="text-admin-body text-admin-ink-muted">
@@ -89,21 +90,21 @@ export function AdminBaptismalRecordDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[920px]">
+    <div className={RECORD_DETAIL_WIDTH_CLASS}>
       <RecordDetailBackLink />
 
       <AdminCard className="mb-4 flex flex-wrap items-start justify-between gap-4 p-5 px-6">
         <div className="flex items-start gap-3.5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-admin-green-100 font-serif text-admin-group font-bold text-admin-green-700 ring-1 ring-inset ring-admin-green-600/20">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-admin-green-100 font-serif text-admin-group font-bold text-admin-green-700 ring-1 ring-inset ring-admin-green-600/20">
             {initials(name)}
           </div>
           <div>
-            <h1 className="mb-1 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
+            <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>{name}</h1>
             <p className="mb-2 text-admin-body text-admin-ink-muted">
               Baptized {formatRecordDate(record.dateOfBaptism)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
                 Book {record.bookNumber}
                 <span className="text-admin-border-strong">/</span>
                 Page {record.pageNumber}
@@ -113,6 +114,14 @@ export function AdminBaptismalRecordDetailPage() {
               <AdminBadge tone={record.status === "Archived" ? "muted" : "green"}>{record.status}</AdminBadge>
               {record.legitimacyStatus && <AdminBadge tone="muted">{record.legitimacyStatus}</AdminBadge>}
             </div>
+            {record.ledgerSource && (
+              <Link
+                to={`/${parish.slug}/admin/records/ledgers/${encodeURIComponent(record.ledgerSource.bookId)}/pages/${record.ledgerSource.pageNumber}`}
+                className="mt-2.5 inline-block text-admin-support font-semibold text-admin-green-700 hover:underline"
+              >
+                See the register page (row {record.ledgerSource.row}) →
+              </Link>
+            )}
           </div>
         </div>
 
@@ -157,8 +166,22 @@ export function AdminBaptismalRecordDetailPage() {
           <div className="p-5 px-[22px]">
             <RecordDetailInfoRow label="Date of baptism" value={formatRecordDate(record.dateOfBaptism)} />
             <RecordDetailInfoRow label="Minister" value={record.minister} />
-            <RecordDetailInfoRow label="Mother's name" value={recordMotherName(record)} />
-            <RecordDetailInfoRow label="Father's name" value={recordFatherName(record)} last />
+            <RecordDetailInfoRow label="Mother's name" value={recordMotherName(record) || "Not recorded"} />
+            <RecordDetailInfoRow label="Father's name" value={recordFatherName(record) || "Not recorded"} />
+            <RecordDetailInfoRow
+              label="Godparents"
+              value={
+                record.godparents?.length
+                  ? record.godparents
+                      .map((g) => {
+                        const n = [g.firstName, g.middleName, g.lastName].filter(Boolean).join(" ");
+                        return g.role ? `${n} (${g.role})` : n;
+                      })
+                      .join(", ")
+                  : "Not recorded"
+              }
+              last
+            />
           </div>
         </RecordDetailSection>
       </div>
@@ -167,10 +190,10 @@ export function AdminBaptismalRecordDetailPage() {
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <RecordDetailSection tone="green" icon={<FamilyIcon className="h-4.5 w-4.5" />} title="Grandparents" className="mb-0">
           <div className="p-5 px-[22px]">
-            <RecordDetailInfoRow label="Paternal grandfather" value={record.paternalGrandfather} />
-            <RecordDetailInfoRow label="Paternal grandmother" value={record.paternalGrandmother} />
-            <RecordDetailInfoRow label="Maternal grandfather" value={record.maternalGrandfather} />
-            <RecordDetailInfoRow label="Maternal grandmother" value={record.maternalGrandmother} last />
+            <RecordDetailInfoRow label="Paternal grandfather" value={record.paternalGrandfather || "—"} />
+            <RecordDetailInfoRow label="Paternal grandmother" value={record.paternalGrandmother || "—"} />
+            <RecordDetailInfoRow label="Maternal grandfather" value={record.maternalGrandfather || "—"} />
+            <RecordDetailInfoRow label="Maternal grandmother" value={record.maternalGrandmother || "—"} last />
           </div>
         </RecordDetailSection>
 
@@ -253,7 +276,7 @@ export function AdminBaptismalRecordDetailPage() {
       />
 
       <RecordDetailMeta
-        encodedBy={encodedByLabel(record.encodedBy)}
+        encodedBy={record.encodedByName ?? encodedByLabel(record.encodedBy)}
         created={formatDateTime(record.createdAt)}
         updated={formatDateTime(record.updatedAt)}
       />
@@ -309,7 +332,7 @@ export function AdminBaptismalRecordDetailPage() {
           fields={baptismCertificateFields(record)}
           issued={certificateModal === "new" ? undefined : certificateModal}
           onClose={() => setCertificateModal(null)}
-          onIssue={() => generateBaptismalCertificate(parish.id, record.id)}
+          onIssue={(purpose) => generateBaptismalCertificate(parish.id, record.id, purpose)}
           onIssued={(cert) => {
             setCertificateModal(cert);
             refetch();

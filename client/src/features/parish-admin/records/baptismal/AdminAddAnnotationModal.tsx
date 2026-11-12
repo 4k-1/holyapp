@@ -242,18 +242,29 @@ export function AdminAddAnnotationModal({
     }
   }
 
+  // Clear results or show "Searching…" as soon as the query changes; the effect only runs the debounced search.
+  const registerQuery = searchQuery.trim();
+  const searchKey = linkEntry && linkMode === "search" ? `${effectiveLinkedCategory}:${registerQuery}` : null;
+  const [prevSearchKey, setPrevSearchKey] = useState<string | null>(null);
+  if (searchKey !== prevSearchKey) {
+    setPrevSearchKey(searchKey);
+    if (searchKey !== null) {
+      if (registerQuery.length < 2) {
+        setHits([]);
+        setSearching(false);
+      } else {
+        setSearching(true);
+      }
+    }
+  }
+
   useEffect(() => {
     if (!linkEntry || linkMode !== "search") return;
 
     const q = searchQuery.trim();
-    if (q.length < 2) {
-      setHits([]);
-      setSearching(false);
-      return;
-    }
+    if (q.length < 2) return;
 
     let cancelled = false;
-    setSearching(true);
 
     const timer = window.setTimeout(async () => {
       try {
@@ -433,7 +444,7 @@ export function AdminAddAnnotationModal({
                     role="radio"
                     aria-checked={selected}
                     onClick={() => handleCategory(c)}
-                    className={`rounded-[7px] border px-2 py-2 text-admin-label font-bold uppercase tracking-admin-label transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
+                    className={`rounded-md border px-2 py-2 text-admin-label font-bold uppercase tracking-admin-label transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
                       selected
                         ? `${annotationTagClass[c]} border-transparent`
                         : "border-admin-border-strong bg-admin-surface text-admin-ink-muted hover:bg-admin-surface-alt"
@@ -447,7 +458,7 @@ export function AdminAddAnnotationModal({
           </AdminField>
 
           {alreadyNoted && (
-            <p className="mb-4 rounded-[9px] border border-admin-gold-700/25 bg-admin-gold-100 px-3.5 py-2.5 text-admin-support leading-relaxed text-admin-gold-700">
+            <p className="mb-4 rounded-md border border-admin-gold-700/25 bg-admin-gold-100 px-3.5 py-2.5 text-admin-support leading-relaxed text-admin-gold-700">
               {category} is already noted on this entry. Saving another will add a second line on the certificate.
             </p>
           )}
@@ -477,7 +488,7 @@ export function AdminAddAnnotationModal({
             </p>
           </AdminField>
 
-          <div className="mb-4 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-3">
+          <div className="mb-4 rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-3">
             <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
               On the certificate
             </p>
@@ -490,7 +501,7 @@ export function AdminAddAnnotationModal({
             </p>
           </div>
 
-          <div className="rounded-[9px] border border-admin-border bg-admin-surface-alt p-3.5">
+          <div className="rounded-md border border-admin-border bg-admin-surface-alt p-3.5">
             <label className="flex cursor-pointer items-start gap-2.5">
               <input
                 type="checkbox"
@@ -531,7 +542,7 @@ export function AdminAddAnnotationModal({
                   <p className="text-admin-support text-admin-ink-muted">{category} register</p>
                 )}
 
-                <div className="inline-flex flex-wrap rounded-[10px] border border-admin-border bg-admin-surface p-1">
+                <div className="inline-flex flex-wrap rounded-md border border-admin-border bg-admin-surface p-1">
                   {(
                     [
                       ["search", "Search records"],
@@ -543,7 +554,7 @@ export function AdminAddAnnotationModal({
                       key={mode}
                       type="button"
                       onClick={() => (mode === "create" ? enterCreateMode() : setLinkMode(mode))}
-                      className={`rounded-[7px] px-3 py-1.5 text-admin-support font-semibold transition ${
+                      className={`rounded-md px-3 py-1.5 text-admin-support font-semibold transition ${
                         linkMode === mode ? "bg-admin-surface-alt text-admin-ink shadow-sm" : "text-admin-ink-muted"
                       }`}
                     >
@@ -606,7 +617,7 @@ export function AdminAddAnnotationModal({
 
                 {linkMode === "create" && (
                   <div className="space-y-3">
-                    <p className="rounded-[9px] border border-admin-green-700/20 bg-admin-green-050 px-3 py-2.5 text-admin-support leading-relaxed text-admin-green-800">
+                    <p className="rounded-md border border-admin-green-700/20 bg-admin-green-050 px-3 py-2.5 text-admin-support leading-relaxed text-admin-green-800">
                       Encodes a new {effectiveLinkedCategory.toLowerCase()} register entry at{" "}
                       <span className="font-semibold">{parish.name}</span>, linked to this baptismal record (
                       {subjectName}).
@@ -825,7 +836,7 @@ function SearchLinkPanel({
       )}
 
       {hits.length > 0 && (
-        <ul className="max-h-48 space-y-1.5 overflow-y-auto rounded-[9px] border border-admin-border bg-admin-surface p-1.5">
+        <ul className="max-h-48 space-y-1.5 overflow-y-auto rounded-md border border-admin-border bg-admin-surface p-1.5">
           {hits.map((hit) => {
             const selected = selectedHitId === hit.id;
             return (
@@ -833,7 +844,7 @@ function SearchLinkPanel({
                 <button
                   type="button"
                   onClick={() => onSelect(hit)}
-                  className={`w-full rounded-[7px] px-3 py-2.5 text-left transition ${
+                  className={`w-full rounded-md px-3 py-2.5 text-left transition ${
                     selected ? "bg-admin-green-050 ring-1 ring-admin-green-700/40" : "hover:bg-admin-surface-alt"
                   }`}
                 >
@@ -847,7 +858,7 @@ function SearchLinkPanel({
       )}
 
       {(linkedBook || linkedPage || linkedLine) && (
-        <div className="rounded-[9px] border border-admin-green-700/25 bg-admin-green-050 px-3 py-2.5">
+        <div className="rounded-md border border-admin-green-700/25 bg-admin-green-050 px-3 py-2.5">
           <p className="text-admin-support font-semibold text-admin-green-800">
             Linked to Book {linkedBook}, Page {linkedPage}
             {linkedLine ? `, Line ${linkedLine}` : ""}

@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminDeliveryTag } from "@/features/parish-admin/components/AdminDeliveryTag";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
+import { PrintReceiptDialog } from "@/features/parish-admin/components/PrintReceiptDialog";
 import {
   canRejectRequest,
   deriveAdminStatusLabel,
@@ -52,6 +54,7 @@ export function AdminRequestDetailModal({
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const statusKey = deriveStatusKey(request);
   const canReject = canRejectRequest(request);
   const subjectName = request.details?.subjectName ?? request.requesterId;
@@ -72,13 +75,6 @@ export function AdminRequestDetailModal({
     [request.parishId, request.linkedRecordId]
   );
 
-  useEffect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [onClose]);
 
   const submitted = new Date(request.createdAt + "T00:00:00").toLocaleDateString("en-US", {
     month: "long",
@@ -118,14 +114,18 @@ export function AdminRequestDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_8px_28px_-6px_rgba(10,40,30,0.15)]">
+    <>
+      <AdminModalFrame
+        onClose={onClose}
+        align="center"
+        layer="z-50"
+        panelClassName="flex max-h-[90vh] max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_8px_28px_-6px_rgba(10,40,30,0.15)]"
+      >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
-              <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Request {request.id}</h3>
+              <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Request {request.referenceNo}</h3>
               <AdminBadge tone={getAdminStatusTone(request)}>{deriveAdminStatusLabel(request)}</AdminBadge>
             </div>
             <p className="mt-0.5 text-admin-support text-admin-ink-muted">
@@ -144,7 +144,7 @@ export function AdminRequestDetailModal({
 
         {/* Body */}
         <div className="overflow-y-auto px-6 py-[18px]">
-          <div className="mb-[18px] flex items-center gap-3.5 rounded-[10px] border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
+          <div className="mb-[18px] flex items-center gap-3.5 rounded-md border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
             <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-admin-green-700 font-serif text-admin-group font-semibold text-white">
               {initials(subjectName)}
             </div>
@@ -157,7 +157,7 @@ export function AdminRequestDetailModal({
             <AdminDeliveryTag method={request.deliveryMethod} />
           </div>
 
-          <div className="mb-3.5 rounded-[10px] border border-admin-border px-4 py-1">
+          <div className="mb-3.5 rounded-md border border-admin-border px-4 py-1">
             <h4 className="mb-1 mt-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
               Request details
             </h4>
@@ -171,7 +171,7 @@ export function AdminRequestDetailModal({
           </div>
 
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-            <div className="rounded-[10px] border border-admin-border p-4 px-[18px]">
+            <div className="rounded-md border border-admin-border p-4 px-[18px]">
               <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                 Sacramental record
               </h4>
@@ -179,7 +179,7 @@ export function AdminRequestDetailModal({
                 <Link
                   to={recordDetailPath(parish.slug, "baptismal", linked.id)}
                   onClick={onClose}
-                  className="flex items-start gap-2.5 rounded-[8px] outline-none hover:bg-admin-green-050 focus-visible:ring-2 focus-visible:ring-admin-green-600/30"
+                  className="flex items-start gap-2.5 rounded-md outline-none hover:bg-admin-green-050 focus-visible:ring-2 focus-visible:ring-admin-green-600/30"
                 >
                   <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-admin-green-100 text-admin-green-700">
                     <CheckIcon />
@@ -208,7 +208,7 @@ export function AdminRequestDetailModal({
               )}
             </div>
 
-            <div className="rounded-[10px] border border-admin-border p-4 px-[18px]">
+            <div className="rounded-md border border-admin-border p-4 px-[18px]">
               <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
                 Payment
               </h4>
@@ -227,25 +227,31 @@ export function AdminRequestDetailModal({
                 </div>
               </div>
               {request.payment?.status === "paid" && (
-                <p className="mt-3 text-admin-support text-admin-green-700">
-                  Receipt {request.payment.receiptNumber || "issued"}
-                  {request.payment.paidAt
-                    ? ` · ${new Date(request.payment.paidAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`
-                    : ""}
-                </p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-admin-support text-admin-green-700">
+                    Receipt {request.payment.receiptNumber || "issued"}
+                    {request.issuedCertificate?.code ? ` · for certificate ${request.issuedCertificate.code}` : ""}
+                    {request.payment.paidAt
+                      ? ` · ${new Date(request.payment.paidAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`
+                      : ""}
+                  </p>
+                  <AdminButton variant="secondary" size="sm" onClick={() => setReceiptOpen(true)}>
+                    Print receipt
+                  </AdminButton>
+                </div>
               )}
             </div>
           </div>
 
           {statusKey === "ready" && (
-            <div className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-green-100 bg-admin-green-050 px-2.5 py-1 text-xs font-semibold text-admin-green-700">
+            <div className="inline-flex items-center gap-1.5 rounded-md border border-admin-green-100 bg-admin-green-050 px-2.5 py-1 text-xs font-semibold text-admin-green-700">
               <CheckIcon />
               Certificate printed and sealed — ready for parishioner pickup at the office.
             </div>
           )}
 
           {statusKey === "rejected" && (
-            <div className="flex items-start gap-2.5 rounded-[9px] border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-3">
+            <div className="flex items-start gap-2.5 rounded-md border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-3">
               <span className="mt-0.5 text-admin-red-700">
                 <AlertIcon />
               </span>
@@ -324,7 +330,7 @@ export function AdminRequestDetailModal({
             </>
           )}
         </div>
-      </div>
+      </AdminModalFrame>
 
       {issueOpen && (
         <AdminIssueCertificateModal
@@ -351,7 +357,31 @@ export function AdminRequestDetailModal({
           }}
         />
       )}
-    </div>
+
+      {receiptOpen && request.payment?.status === "paid" && (
+        <PrintReceiptDialog
+          parish={parish}
+          receipt={{
+            title: "Payment Receipt",
+            number: request.payment.receiptNumber || request.id.replace(/-/g, "").slice(0, 10).toUpperCase(),
+            date: request.payment.paidAt ?? request.createdAt,
+            amount: fee,
+            forText: `${sacramentLabels[request.sacramentType]} certificate${copies > 1 ? ` × ${copies}` : ""}`,
+            note:
+              [
+                request.details?.subjectName ? `Certificate of ${request.details.subjectName}` : "",
+                request.issuedCertificate?.code ? `No. ${request.issuedCertificate.code}` : "",
+              ]
+                .filter(Boolean)
+                .join(" · ") || undefined,
+            method,
+            receivedBy: request.payment.collectedBy,
+          }}
+          defaultReceivedFrom={request.origin === "walkin" ? "" : request.details?.subjectName ?? ""}
+          onClose={() => setReceiptOpen(false)}
+        />
+      )}
+    </>
   );
 }
 

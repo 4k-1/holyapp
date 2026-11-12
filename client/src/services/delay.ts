@@ -4,6 +4,6 @@
  * already behave like they're talking to a real, asynchronous backend.
  * Delete this once real `fetch` calls provide their own latency.
  */
-export function delay(ms: number): Promise<void> {
+export function delay(ms = 200): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

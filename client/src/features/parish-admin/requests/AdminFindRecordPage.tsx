@@ -1,6 +1,8 @@
+import { formatTableDate } from "@/lib/dates";
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { Link, useOutletContext, useParams } from "react-router-dom";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
+import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import {
   getAdminRequest,
@@ -25,6 +27,9 @@ import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import type { BaptismalRecord } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 import "@/features/parish-admin/requests/AdminFindRecordPage.css";
+import { AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
+import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
+import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
 
 interface MatchFilters {
   name: string;
@@ -168,7 +173,6 @@ function searchLedger(
 export function AdminFindRecordPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { requestId = "" } = useParams();
-  const navigate = useNavigate();
 
   const { data: request, loading: requestLoading } = useAsync(
     () => getAdminRequest(parish.id, requestId),
@@ -210,9 +214,9 @@ export function AdminFindRecordPage() {
 
   // Wait until request, records, AND sponsor assignments are loaded before
   // the first search. Otherwise we search an incomplete list, set
-  // seeded=true, and never retry.
-  useEffect(() => {
-    if (!request || recordsLoading || sponsorsLoading || seeded) return;
+  // seeded=true, and never retry. Runs during render so the first results
+  // appear in the same paint as the loaded request.
+  if (request && !recordsLoading && !sponsorsLoading && !seeded) {
     const details = request.details;
     const initial: MatchFilters = {
       name: details?.subjectName ?? "",
@@ -228,13 +232,14 @@ export function AdminFindRecordPage() {
     const found = searchLedger(parishRecords, initial, sponsorsByRecordId);
     setResults(found);
     setSeeded(true);
-    if (found.length > 0) setMatchFlash({ count: found.length, id: Date.now() });
-  }, [request, parishRecords, recordsLoading, sponsorsByRecordId, sponsorsLoading, seeded]);
+    // Later flashes use Date.now() ids, so 0 never collides with them.
+    if (found.length > 0) setMatchFlash({ count: found.length, id: 0 });
+  }
 
   if (requestLoading || (request && (recordsLoading || sponsorsLoading) && !seeded)) {
     return (
       <div>
-        <BackLink />
+        <AdminBackLink />
         <p className="text-admin-body text-admin-ink-muted">Loading request…</p>
       </div>
     );
@@ -243,8 +248,8 @@ export function AdminFindRecordPage() {
   if (!request) {
     return (
       <div>
-        <BackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Request not found</h1>
+        <AdminBackLink />
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Request not found</h1>
       </div>
     );
   }
@@ -296,24 +301,27 @@ export function AdminFindRecordPage() {
     {
       key: "ref",
       header: "Bk:Page:Entry",
-      render: (r) => <span className="font-medium text-admin-ink">{baptismRecordRef(r)}</span>,
+      sortValue: (r) => baptismRecordRef(r),
+      render: (r) => <span className="admin-table__primary">{baptismRecordRef(r)}</span>,
     },
-    { key: "name", header: "Name", render: (r) => recordFullName(r) },
+    { key: "name", header: "Name", sortValue: (r) => recordFullName(r), render: (r) => recordFullName(r) },
     {
       key: "dateOfBaptism",
-      header: "Bapt Date",
-      render: (r) => formatRecordDate(r.dateOfBaptism),
+      header: "Bapt. date",
+      sortValue: (r) => r.dateOfBaptism,
+      render: (r) => formatTableDate(r.dateOfBaptism),
     },
     {
       key: "dateOfBirth",
       header: "Birthdate",
-      render: (r) => formatRecordDate(r.dateOfBirth),
+      sortValue: (r) => r.dateOfBirth,
+      render: (r) => formatTableDate(r.dateOfBirth),
     },
-    { key: "mother", header: "Mother", render: (r) => recordMotherName(r) },
-    { key: "father", header: "Father", render: (r) => recordFatherName(r) },
+    { key: "mother", header: "Mother", sortValue: (r) => recordMotherName(r), render: (r) => recordMotherName(r) },
+    { key: "father", header: "Father", sortValue: (r) => recordFatherName(r), render: (r) => recordFatherName(r) },
     {
       key: "sponsors",
-      header: "Sponsors",
+      header: "Godparents",
       render: (r) => (sponsorsByRecordId[r.id] ?? []).map(sponsorFullName).join(", ") || "—",
     },
     {
@@ -324,7 +332,7 @@ export function AdminFindRecordPage() {
           type="button"
           onClick={() => setReviewRecord(r)}
           disabled={closed}
-          className="font-semibold text-admin-green-700 hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline"
+          className="admin-table__action disabled:cursor-not-allowed disabled:opacity-40"
         >
           Review match
         </button>
@@ -333,23 +341,21 @@ export function AdminFindRecordPage() {
   ];
 
   return (
-    <div>
-      <BackLink />
+    <div className={PAGE_WIDTH_CLASS}>
+      <AdminBackLink />
 
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record Matching</h1>
-          <p className="text-admin-body text-admin-ink-muted">
-            Request {request.id} · {subjectName}
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5 pt-1">
-          <StatusPill status={status} />
-          <AdminButton variant="danger" size="sm" onClick={() => setRejectOpen(true)} disabled={closed}>
-            Reject request
-          </AdminButton>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Record Matching"
+        description={`Request ${request.referenceNo} · ${subjectName}`}
+        actions={
+          <>
+            <StatusPill status={status} />
+            <AdminButton variant="danger" size="sm" onClick={() => setRejectOpen(true)} disabled={closed}>
+              Reject request
+            </AdminButton>
+          </>
+        }
+      />
 
       {status === "confirmed" && confirmedRecord && (
         <StatusBanner tone="confirmed">
@@ -590,120 +596,121 @@ function ReviewMatchModal({
   const strongMatch = misses === 0 && partials === 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 pt-10">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
-        <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
-          <div>
-            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Review candidate record</h3>
-            <p className="mt-0.5 text-admin-support text-admin-ink-muted">{baptismRecordRef(record)}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
-            aria-label="Close"
-          >
-            ✕
-          </button>
+    <AdminModalFrame
+      onClose={onClose}
+      layer="z-50"
+      panelClassName="flex max-h-[90vh] max-w-[620px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+    >
+      <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
+        <div>
+          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Review candidate record</h3>
+          <p className="mt-0.5 text-admin-support text-admin-ink-muted">{baptismRecordRef(record)}</p>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
 
-        <div className="flex gap-2 px-6 pt-4">
-          <span className="rounded-full bg-admin-ink px-2.5 py-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-surface">
-            Request
-          </span>
-          <span className="rounded-full border border-admin-gold-700/30 bg-admin-gold-700/10 px-2.5 py-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">
-            Ledger record
-          </span>
-        </div>
+      <div className="flex gap-2 px-6 pt-4">
+        <span className="rounded-full bg-admin-ink px-2.5 py-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-surface">
+          Request
+        </span>
+        <span className="rounded-full border border-admin-gold-700/30 bg-admin-gold-700/10 px-2.5 py-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-gold-700">
+          Ledger record
+        </span>
+      </div>
 
-        <div className="overflow-y-auto px-6 py-[14px]">
-          {fields.map(([label, left, right], i) => (
-            <div
-              key={label}
-              className="grid grid-cols-[1fr_20px_1fr] items-start gap-2.5 border-b border-admin-border py-2.5 last:border-b-0"
-            >
-              <div>
-                <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                  {label}
-                </div>
-                <div className="text-admin-body text-admin-ink">
-                  {left || <span className="italic text-admin-ink-muted">—</span>}
-                </div>
-              </div>
-              <MatchIcon state={states[i]} />
-              <div className="text-admin-body text-admin-ink">
-                {right || <span className="italic text-admin-ink-muted">—</span>}
-              </div>
-            </div>
-          ))}
-
+      <div className="overflow-y-auto px-6 py-[14px]">
+        {fields.map(([label, left, right], i) => (
           <div
-            className={`mt-4 rounded-[var(--radius)] border px-3.5 py-2.5 text-admin-support ${
-              strongMatch
-                ? "border-admin-green-700/30 bg-admin-green-100 text-admin-green-900"
-                : "border-admin-gold-700/30 bg-admin-gold-700/10 text-admin-gold-700"
-            }`}
+            key={label}
+            className="grid grid-cols-[1fr_20px_1fr] items-start gap-2.5 border-b border-admin-border py-2.5 last:border-b-0"
           >
-            {strongMatch ? (
-              <>
-                <strong>
-                  {matches} of {states.length} fields match exactly.
-                </strong>{" "}
-                Strong candidate.
-              </>
-            ) : misses === 0 ? (
-              <>
-                {matches} exact, {partials} similar, 0 mismatched — likely the same entry with minor
-                recording differences.
-              </>
-            ) : (
-              <>
-                {matches} exact, {partials} similar, <strong>{misses} mismatched</strong> — review
-                carefully before confirming.
-              </>
-            )}
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-2 border-t border-dashed border-admin-border pt-3.5 sm:grid-cols-2">
             <div>
               <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                Baptismal date
+                {label}
               </div>
               <div className="text-admin-body text-admin-ink">
-                {formatRecordDate(record.dateOfBaptism)}{" "}
-                <span className="text-admin-label text-admin-ink-muted">
-                  {requestBaptismDate
-                    ? sameCalendarDay(requestBaptismDate, record.dateOfBaptism)
-                      ? `(request: ${displayDate(requestBaptismDate)})`
-                      : `(request says ${displayDate(requestBaptismDate)})`
-                    : "(not stated in request)"}
-                </span>
+                {left || <span className="italic text-admin-ink-muted">—</span>}
               </div>
             </div>
-            {record.minister && (
-              <div>
-                <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                  Minister
-                </div>
-                <div className="text-admin-body text-admin-ink">{record.minister}</div>
-              </div>
-            )}
+            <MatchIcon state={states[i]} />
+            <div className="text-admin-body text-admin-ink">
+              {right || <span className="italic text-admin-ink-muted">—</span>}
+            </div>
           </div>
+        ))}
+
+        <div
+          className={`mt-4 rounded-[var(--radius)] border px-3.5 py-2.5 text-admin-support ${
+            strongMatch
+              ? "border-admin-green-700/30 bg-admin-green-100 text-admin-green-900"
+              : "border-admin-gold-700/30 bg-admin-gold-700/10 text-admin-gold-700"
+          }`}
+        >
+          {strongMatch ? (
+            <>
+              <strong>
+                {matches} of {states.length} fields match exactly.
+              </strong>{" "}
+              Strong candidate.
+            </>
+          ) : misses === 0 ? (
+            <>
+              {matches} exact, {partials} similar, 0 mismatched — likely the same entry with minor
+              recording differences.
+            </>
+          ) : (
+            <>
+              {matches} exact, {partials} similar, <strong>{misses} mismatched</strong> — review
+              carefully before confirming.
+            </>
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
-          {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
-          <AdminButton variant="secondary" onClick={onClose}>
-            Back to results
-          </AdminButton>
-          <AdminButton onClick={onLink}>
-            <LinkIcon />
-            Confirm this record
-          </AdminButton>
+        <div className="mt-4 grid grid-cols-1 gap-x-5 gap-y-2 border-t border-dashed border-admin-border pt-3.5 sm:grid-cols-2">
+          <div>
+            <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+              Baptismal date
+            </div>
+            <div className="text-admin-body text-admin-ink">
+              {formatRecordDate(record.dateOfBaptism)}{" "}
+              <span className="text-admin-label text-admin-ink-muted">
+                {requestBaptismDate
+                  ? sameCalendarDay(requestBaptismDate, record.dateOfBaptism)
+                    ? `(request: ${displayDate(requestBaptismDate)})`
+                    : `(request says ${displayDate(requestBaptismDate)})`
+                  : "(not stated in request)"}
+              </span>
+            </div>
+          </div>
+          {record.minister && (
+            <div>
+              <div className="mb-0.5 text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+                Minister
+              </div>
+              <div className="text-admin-body text-admin-ink">{record.minister}</div>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+
+      <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
+        <AdminButton variant="secondary" onClick={onClose}>
+          Back to results
+        </AdminButton>
+        <AdminButton onClick={onLink}>
+          <LinkIcon />
+          Confirm this record
+        </AdminButton>
+      </div>
+    </AdminModalFrame>
   );
 }
 
@@ -721,46 +728,47 @@ function RejectModal({
   error?: string | null;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 pt-10">
-      <div className="absolute inset-0 bg-black/40" onClick={onCancel} aria-hidden="true" />
-      <div className="relative z-10 flex w-full max-w-[460px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]">
-        <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
-          <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Reject this request</h3>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="px-6 py-4">
-          <p className="mb-3 text-admin-body text-admin-ink-muted">
-            Use this when no matching entry can be found in the baptismal ledger. The requester will be
-            notified that their certificate could not be issued.
-          </p>
-          <label className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-            Note for the record (optional)
-          </label>
-          <textarea
-            value={reason}
-            onChange={(e) => onReasonChange(e.target.value)}
-            placeholder="e.g. Searched Books 09, 14 and 21 for 1993–1995; no entry matches the details submitted."
-            className="min-h-[80px] w-full resize-y rounded-[var(--radius)] border border-admin-border bg-admin-surface-alt px-2.5 py-2 text-admin-body text-admin-ink"
-          />
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
-          {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
-          <AdminButton variant="secondary" onClick={onCancel}>
-            Cancel
-          </AdminButton>
-          <AdminButton variant="danger" onClick={onConfirm}>
-            Reject request
-          </AdminButton>
-        </div>
+    <AdminModalFrame
+      onClose={onCancel}
+      layer="z-50"
+      panelClassName="flex max-w-[460px] flex-col overflow-hidden rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+    >
+      <div className="flex items-start justify-between gap-3 border-b border-admin-border px-6 py-4">
+        <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Reject this request</h3>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
+          aria-label="Close"
+        >
+          ✕
+        </button>
       </div>
-    </div>
+      <div className="px-6 py-4">
+        <p className="mb-3 text-admin-body text-admin-ink-muted">
+          Use this when no matching entry can be found in the baptismal ledger. The requester will be
+          notified that their certificate could not be issued.
+        </p>
+        <label className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
+          Note for the record (optional)
+        </label>
+        <textarea
+          value={reason}
+          onChange={(e) => onReasonChange(e.target.value)}
+          placeholder="e.g. Searched Books 09, 14 and 21 for 1993–1995; no entry matches the details submitted."
+          className="min-h-[80px] w-full resize-y rounded-[var(--radius)] border border-admin-border bg-admin-surface-alt px-2.5 py-2 text-admin-body text-admin-ink"
+        />
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        {error && <p className="mr-auto text-admin-body text-admin-red-700">{error}</p>}
+        <AdminButton variant="secondary" onClick={onCancel}>
+          Cancel
+        </AdminButton>
+        <AdminButton variant="danger" onClick={onConfirm}>
+          Reject request
+        </AdminButton>
+      </div>
+    </AdminModalFrame>
   );
 }
 
@@ -823,21 +831,6 @@ function MatchIcon({ state }: { state: MatchState }) {
   return <span />;
 }
 
-function BackLink() {
-  const navigate = useNavigate();
-  return (
-    <button
-      type="button"
-      onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-admin-body text-admin-ink-muted hover:text-admin-green-700"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-        <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      Back to Requests
-    </button>
-  );
-}
 
 // Compact label + value row for the request card — same footprint as search fields.
 function MatchReadRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {

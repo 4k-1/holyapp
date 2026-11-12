@@ -1,0 +1,45 @@
+/*
+ * A pop-up taller than the screen stays inside it. The title bar (first part) and the button row (last
+ * part) keep their size; the parts between them shrink and scroll. A form wrapping the whole pop-up is
+ * laid out the same way. Anything else scrolls as a whole, with its title bar and button row kept in
+ * view where their borders mark them.
+ */
+.admin-modal-scroll,
+.admin-modal-scroll > form:only-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-modal-scroll > form:only-child {
+  min-height: 0;
+}
+
+.admin-modal-scroll > *,
+.admin-modal-scroll > form:only-child > * {
+  flex-shrink: 0;
+}
+
+.admin-modal-scroll > form:only-child {
+  flex-shrink: 1;
+}
+
+.admin-modal-scroll > :not(:first-child):not(:last-child),
+.admin-modal-scroll > form:only-child > :not(:first-child):not(:last-child) {
+  flex-shrink: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.admin-modal-scroll > [class*="border-b"]:first-child {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: inherit;
+}
+
+.admin-modal-scroll > [class*="border-t"]:last-child {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background-color: inherit;
+}

@@ -12,10 +12,13 @@ const {
   recordStatus,
 } = require('../utils/recordFields');
 const { findParishRecord, archivedListClause } = require('../utils/recordQuery');
+const { scheduleEventFor, linkScheduleEvent } = require('../utils/scheduleRecordLink');
 const { listRecordCertificates } = require('./certificateController');
 
 function toConfirmationRecord(row) {
   return {
+    // The schedule event it was recorded from (C11), if any.
+    scheduleEventId: row.schedule_event_id || null,
     id: row.id,
     parishId: row.parish_id,
     firstName: row.first_name,
@@ -94,6 +97,7 @@ async function createConfirmation(req, res) {
 
   try {
     const fields = await parseConfirmationBody(req.parishId, body);
+    const eventId = await scheduleEventFor(pool, { parishId: req.parishId, table: 'confirmation', body });
 
     const inserted = await pool.query(
       `INSERT INTO confirmation (
@@ -143,6 +147,8 @@ async function createConfirmation(req, res) {
       ]
     );
 
+    await linkScheduleEvent(pool, { table: 'confirmation', recordId: inserted.rows[0].id, eventId });
+    inserted.rows[0].schedule_event_id = eventId;
     const record = toConfirmationRecord(inserted.rows[0]);
     await annotateFromSacrament(pool, {
       parishId: req.parishId,

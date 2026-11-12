@@ -11,8 +11,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-primary text-white hover:opacity-90",
-  accent: "bg-accent text-white hover:opacity-90",
+  primary: "bg-primary text-white shadow-[var(--shadow-button)] hover:opacity-90",
+  accent: "bg-accent text-primary hover:bg-accent/85",
   role: "bg-role-accent text-white hover:opacity-90",
   secondary: "bg-surface-alt text-ink border border-border hover:bg-border/40",
   outline: "bg-transparent text-ink border border-border hover:bg-surface-alt",
@@ -23,7 +23,7 @@ const variantClasses: Record<Variant, string> = {
 
 const sizeClasses: Record<Size, string> = {
   sm: "text-sm px-3 py-1.5",
-  md: "text-sm px-4 py-2",
+  md: "text-sm px-4 py-2.5",
   lg: "text-base px-5 py-2.5",
 };
 
@@ -36,7 +36,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`cursor-pointer inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`cursor-pointer inline-flex items-center justify-center gap-2 rounded-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25 disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {children}

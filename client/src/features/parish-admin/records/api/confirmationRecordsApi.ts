@@ -69,11 +69,12 @@ export async function unarchiveConfirmationRecord(_parishId: string, recordId: s
 
 export async function generateConfirmationCertificate(
   parishId: string,
-  recordId: string
+  recordId: string,
+  purpose: string
 ): Promise<ConfirmationRecord> {
   await apiFetch(`/records/confirmation/${encodeURIComponent(recordId)}/certificates`, {
     method: "POST",
-    body: {},
+    body: { purpose },
   });
   const record = await getConfirmationRecord(parishId, recordId);
   if (!record) throw new Error("Record not found.");

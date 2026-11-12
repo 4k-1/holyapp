@@ -10,11 +10,26 @@ export interface SubmitIntentionInput {
   scheduleDate: string;
   scheduleTime: string;
   scheduleLabel: string;
+  /** Optional GCash donation in pesos; 0 or missing means none. */
+  donation?: number;
+  /** Mobile number or email so the office can reach the requester; required for guests. */
+  contact?: string;
+}
+
+/** A Mass that still has room for another intention. */
+export interface OpenMassSlot {
+  id: string;
+  date: string;
+  time: string;
+  scheduleLabel: string;
+  /** null when the parish sets no limit on intentions per Mass. */
+  remaining: number | null;
+  maxIntentions: number | null;
 }
 
 function fail(err: unknown): never {
-  if (err instanceof ApiError) throw new Error(err.message);
-  throw new Error("Unable to reach the server.");
+  if (err instanceof ApiError) throw new Error(err.message, { cause: err });
+  throw new Error("Unable to reach the server.", { cause: err });
 }
 
 export async function listMassIntentions(
@@ -29,9 +44,20 @@ export async function listMassIntentions(
   }
 }
 
-export async function submitMassIntention(input: SubmitIntentionInput): Promise<MassIntentionRequest> {
+export async function listOpenMassSlots(): Promise<{ slots: OpenMassSlot[]; gcashDonations: boolean }> {
   try {
-    const data = await apiFetch<{ intention: MassIntentionRequest }>("/intentions", {
+    const data = await apiFetch<{ slots: OpenMassSlot[]; gcashDonations: boolean }>("/intentions/open-slots");
+    return { slots: data.slots ?? [], gcashDonations: Boolean(data.gcashDonations) };
+  } catch (err) {
+    fail(err);
+  }
+}
+
+export async function submitMassIntention(
+  input: SubmitIntentionInput
+): Promise<{ intention: MassIntentionRequest; checkoutUrl: string | null }> {
+  try {
+    const data = await apiFetch<{ intention: MassIntentionRequest; checkoutUrl?: string | null }>("/intentions", {
       method: "POST",
       body: {
         intentionType: input.intentionType,
@@ -40,9 +66,24 @@ export async function submitMassIntention(input: SubmitIntentionInput): Promise<
         scheduleDate: input.scheduleDate,
         scheduleTime: input.scheduleTime,
         scheduleLabel: input.scheduleLabel,
+        donation: input.donation ?? 0,
+        contact: input.contact,
       },
     });
-    return data.intention;
+    return { intention: data.intention, checkoutUrl: data.checkoutUrl ?? null };
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** After returning from GCash, ask the server to confirm the donation with PayMongo. */
+export async function syncIntentionDonation(intentionId: string): Promise<{ paid: boolean }> {
+  try {
+    const data = await apiFetch<{ paid: boolean }>(`/intentions/${encodeURIComponent(intentionId)}/donation/sync`, {
+      method: "POST",
+      body: {},
+    });
+    return { paid: Boolean(data.paid) };
   } catch (err) {
     fail(err);
   }

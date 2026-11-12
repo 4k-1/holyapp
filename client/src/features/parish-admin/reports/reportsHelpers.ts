@@ -13,7 +13,7 @@ export const REPORT_SECTIONS: { id: ReportKind; path: string; label: string; blu
     id: "certificates",
     path: "certificates",
     label: "Certificates",
-    blurb: "Certificate requests the office took in, month by month.",
+    blurb: "Every certificate copy issued, with its number, receipt and status, and the totals by month.",
   },
   {
     id: "donations",
@@ -71,11 +71,13 @@ export function monthInRange(month: string, range: ReportDateRange) {
 
 export function reportPeriodLabel(range: ReportDateRange) {
   if (!range.from && !range.to) return "the whole register";
+  const year = range.from.slice(0, 4);
+  if (range.from === `${year}-01-01` && range.to === `${year}-12-31`) return year;
   if (range.from && range.to) {
     return `${formatRecordDate(range.from)} – ${formatRecordDate(range.to)}`;
   }
-  if (range.from) return `from ${formatRecordDate(range.from)}`;
-  return `through ${formatRecordDate(range.to ?? "")}`;
+  if (range.from) return `${formatRecordDate(range.from)} onward`;
+  return `the register up to ${formatRecordDate(range.to ?? "")}`;
 }
 
 export function normalizeReportRange(range: ReportDateRange): ReportDateRange {

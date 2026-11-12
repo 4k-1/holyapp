@@ -14,6 +14,7 @@ const {
   recordStatus,
 } = require('../utils/recordFields');
 const { findParishRecord, archivedListClause } = require('../utils/recordQuery');
+const { scheduleEventFor, linkScheduleEvent } = require('../utils/scheduleRecordLink');
 const { listRecordCertificates } = require('./certificateController');
 
 const ROLE_TO_DB = {
@@ -110,6 +111,8 @@ function toMarriageParty(row, consentPersons = []) {
 
 function toMarriageRecord(row, partyRows = []) {
   return {
+    // The schedule event it was recorded from (C11), if any.
+    scheduleEventId: row.schedule_event_id || null,
     id: row.id,
     parishId: row.parish_id,
     placeOfMarriage: row.place_of_marriage,
@@ -336,6 +339,9 @@ async function createMarriage(req, res) {
       ]
     );
     const marriageRow = insertedMarriage.rows[0];
+    const eventId = await scheduleEventFor(client, { parishId: req.parishId, table: 'marriage', body });
+    await linkScheduleEvent(client, { table: 'marriage', recordId: marriageRow.id, eventId });
+    marriageRow.schedule_event_id = eventId;
     const partyRows = await insertMarriageParties(client, marriageRow.id, fields.parsedParties);
 
     for (const party of fields.parsedParties) {

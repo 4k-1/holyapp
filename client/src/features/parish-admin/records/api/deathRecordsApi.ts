@@ -88,11 +88,12 @@ export async function unarchiveDeathRecord(_parishId: string, recordId: string):
 
 export async function generateDeathCertificate(
   parishId: string,
-  recordId: string
+  recordId: string,
+  purpose: string
 ): Promise<DeathRecord> {
   await apiFetch(`/records/death/${encodeURIComponent(recordId)}/certificates`, {
     method: "POST",
-    body: {},
+    body: { purpose },
   });
   const record = await getDeathRecord(parishId, recordId);
   if (!record) throw new Error("Record not found.");

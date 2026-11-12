@@ -30,16 +30,6 @@ export function formatMassDate(iso: string) {
   });
 }
 
-export function formatSlotHeading(date: string, time: string) {
-  if (!date) return time;
-  const day = new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-  return `${day} • ${time}`;
-}
-
 export function formatRequestedOn(iso: string) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -51,8 +41,9 @@ export function intentionLabel(intention: MassIntentionRequest) {
   return `${intention.intentionType} — ${intention.intentionFor}`;
 }
 
-export function offeringTotal(intentions: MassIntentionRequest[]) {
-  return intentions.reduce((sum, intention) => sum + (intention.offering ?? 0), 0);
+/** Donations actually received; pending GCash donations are not counted yet. */
+export function donationTotal(intentions: MassIntentionRequest[]) {
+  return intentions.reduce((sum, intention) => sum + (intention.payment === "paid" ? intention.offering ?? 0 : 0), 0);
 }
 
 export function formatPeso(amount: number) {

@@ -1,3 +1,4 @@
+import { formatTableDate } from "@/lib/dates";
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
@@ -11,7 +12,6 @@ import {
   emptyDeathSearchCriteria,
   filterDeathRecords,
   formatAge,
-  formatRecordDate,
   recordFullName,
 } from "@/features/parish-admin/records/deathHelpers";
 import type { DeathRecord, DeathSearchCriteria } from "@/features/parish-admin/records/types";
@@ -25,7 +25,7 @@ export function AdminDeathRecordsPage() {
 
   const [showArchived, setShowArchived] = useState(false);
 
-  const { data: parishRecords = [], error } = useAsync(
+  const { data: parishRecords = [], error, loading } = useAsync(
     () => listDeathRecords(parish.id, { archived: showArchived }),
     [parish.id, showArchived]
   );
@@ -35,23 +35,26 @@ export function AdminDeathRecordsPage() {
     {
       key: "ref",
       header: "Bk:Page:Entry",
+      sortValue: (r) => deathRecordRef(r),
       render: (r) => <span className="admin-table__primary">{deathRecordRef(r)}</span>,
     },
-    { key: "name", header: "Name", render: (r) => recordFullName(r) },
+    { key: "name", header: "Name", sortValue: (r) => recordFullName(r), render: (r) => recordFullName(r) },
     {
       key: "dateOfDeath",
       header: "Date of death",
-      render: (r) => formatRecordDate(r.dateOfDeath),
+      sortValue: (r) => r.dateOfDeath,
+      render: (r) => formatTableDate(r.dateOfDeath),
     },
     {
       key: "dateOfBurial",
       header: "Date of burial",
-      render: (r) => formatRecordDate(r.dateOfBurial),
+      sortValue: (r) => r.dateOfBurial,
+      render: (r) => formatTableDate(r.dateOfBurial),
     },
-    { key: "age", header: "Age", render: (r) => formatAge(r) },
+    { key: "age", header: "Age", sortValue: (r) => formatAge(r), render: (r) => formatAge(r) },
     {
       key: "actions",
-      header: "",
+      header: "Actions",
       render: (r) => (
         <Link to={encodeURIComponent(r.id)} className="admin-table__action">
           View
@@ -65,7 +68,7 @@ export function AdminDeathRecordsPage() {
   }
 
   return (
-    <div className="admin-dash mx-auto max-w-[1180px]">
+    <div className="admin-dash mx-auto w-full max-w-[1920px]">
       <header className="mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)] sm:text-[1.5rem]">
@@ -128,6 +131,9 @@ export function AdminDeathRecordsPage() {
       </SearchCriteriaCard>
 
       <AdminTable
+        loading={loading}
+        pageKey="records"
+        defaultSort={{ key: "dateOfDeath", dir: "desc" }}
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}

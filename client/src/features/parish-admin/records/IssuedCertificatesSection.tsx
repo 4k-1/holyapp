@@ -32,9 +32,14 @@ export function IssuedCertificatesSection({
                 <div className="flex flex-wrap items-center gap-2 text-admin-body font-semibold text-admin-ink">
                   {c.type}
                   <AdminBadge tone={certStatusTone(c.status)}>{c.status}</AdminBadge>
+                  {c.status === "Valid" && c.printConfirmed === false && (
+                    <AdminBadge tone="amber">Not confirmed</AdminBadge>
+                  )}
                 </div>
                 <p className="mt-0.5 text-xs text-admin-ink-muted">
                   Issued {c.date} by {c.by} · {c.code}
+                  {c.receiptNumber ? ` · Receipt ${c.receiptNumber}` : ""}
+                  {c.reprints ? ` · Reprinted ${c.reprints}×` : ""}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

@@ -33,6 +33,7 @@ import {
 } from "@/features/parish-admin/records/confirmationHelpers";
 import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import { PAGE_TITLE_CLASS, RECORD_DETAIL_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 export function AdminConfirmationRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -67,7 +68,7 @@ export function AdminConfirmationRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Record not found</h1>
         <p className="text-admin-body text-admin-ink-muted">
           This confirmation record is not available for this parish.
         </p>
@@ -83,24 +84,24 @@ export function AdminConfirmationRecordDetailPage() {
   ].filter(Boolean) as string[];
 
   return (
-    <div className="mx-auto max-w-[920px]">
+    <div className={RECORD_DETAIL_WIDTH_CLASS}>
       <RecordDetailBackLink />
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-[#E3E8F5] font-serif text-admin-group font-bold text-[#3B4E8A] ring-1 ring-inset ring-[#3B4E8A]/20">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[#E3E8F5] font-serif text-admin-group font-bold text-[#3B4E8A] ring-1 ring-inset ring-[#3B4E8A]/20">
             {initials(name)}
           </div>
           <div>
             <p className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-[#3B4E8A]">
               Confirmation Record
             </p>
-            <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
+            <h1 className={`mb-1.5 ${PAGE_TITLE_CLASS}`}>{name}</h1>
             <p className="mb-2.5 text-admin-body text-admin-ink-muted">
               Confirmed {formatRecordDate(record.dateOfConfirmation)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
                 Book {record.bookNumber}
                 <span className="text-admin-border-strong">/</span>
                 Page {record.pageNumber}
@@ -239,7 +240,7 @@ export function AdminConfirmationRecordDetailPage() {
           fields={confirmationCertificateFields(record)}
           issued={certificateModal === "new" ? undefined : certificateModal}
           onClose={() => setCertificateModal(null)}
-          onIssue={() => generateConfirmationCertificate(parish.id, record.id)}
+          onIssue={(purpose) => generateConfirmationCertificate(parish.id, record.id, purpose)}
           onIssued={(cert) => {
             setCertificateModal(cert);
             refetch();

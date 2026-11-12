@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate, useOutletContext } from "react-router-dom";
-import { getCurrentUser, logout } from "@/features/auth/api/authApi";
-import { AccountListRow } from "@/features/parishioner/account/components/AccountListRow";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import { getCurrentUser, logout, sendPasswordResetEmail } from "@/features/auth/api/authApi";
+import { AccountSection } from "@/features/parishioner/account/components/AccountSection";
 import { PersonalInfoPanel } from "@/features/parishioner/account/components/PersonalInfoPanel";
-import { ChangePasswordPanel } from "@/features/parishioner/account/components/ChangePasswordPanel";
-import { DeleteAccountPanel } from "@/features/parishioner/account/components/DeleteAccountPanel";
+import { Button } from "@/components/ui/Button";
+import { askConfirm, notifyError } from "@/lib/notify";
 import type { CurrentUser, Parish } from "@/types";
 
 export function AccountPage() {
@@ -22,73 +22,106 @@ export function AccountPage() {
     .toUpperCase();
 
   async function handleLogout() {
+    const ok = await askConfirm({
+      title: "Log out?",
+      message: "You'll need to log in again to use the parishioner portal.",
+      confirmLabel: "Log out",
+    });
+    if (!ok) return;
     await logout();
     navigate(`/${parish.slug}/login`, { replace: true });
+  }
+
+  /** Back to the previous page, or the dashboard when this page was opened directly. */
+  function handleBack() {
+    if ((window.history.state as { idx?: number } | null)?.idx) navigate(-1);
+    else navigate("..");
   }
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8 sm:px-6">
       <button
         type="button"
-        onClick={() => navigate(-1)}
+        onClick={handleBack}
         className="mb-6 flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink"
       >
         ← Back
       </button>
 
-      {/* Hero */}
-      <div className="mb-8 flex flex-col items-center text-center">
-        <div className="relative">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/70 font-serif text-2xl font-bold text-primary shadow-sm">
-            {initials}
-          </div>
-          <button
-            type="button"
-            title="Change photo"
-            className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface bg-primary text-xs text-white shadow-sm"
-          >
-            
-          </button>
+      <div className="mb-6 flex items-center gap-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent font-serif text-xl font-bold text-primary">
+          {initials}
         </div>
-        <h2 className="mt-3 font-serif text-xl font-bold text-ink">{user.fullName}</h2>
+        <div className="min-w-0">
+          <h1 className="font-serif text-2xl font-bold text-ink">{user.fullName}</h1>
+          <p className="truncate text-sm text-ink-muted">{user.email}</p>
+        </div>
       </div>
 
-      <p className="mb-2.5 ml-1 text-xs font-bold uppercase tracking-wide text-ink-muted">My Account</p>
-      <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-        <AccountListRow icon="ℹ" label="Personal Information">
-          <PersonalInfoPanel user={user} onUpdated={setUser} />
-        </AccountListRow>
-        <Link
-          to="../timeline"
-          className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-surface-alt"
-        >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            ✝
-          </span>
-          <span className="flex-1 text-[14.5px] font-semibold text-ink">Sacramental timeline</span>
-          <span className="shrink-0 text-ink-muted" aria-hidden="true">
-            ›
-          </span>
-        </Link>
-      </div>
+      <div className="flex flex-col gap-4">
+        <PersonalInfoPanel user={user} onUpdated={setUser} />
 
-      <p className="mb-2.5 ml-1 text-xs font-bold uppercase tracking-wide text-ink-muted">Security</p>
-      <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-        <AccountListRow icon="🛡" label="Change Password">
-          <ChangePasswordPanel email={user.email} />
-        </AccountListRow>
-        <AccountListRow icon="🗑" label="Account Deletion" danger>
-          <DeleteAccountPanel />
-        </AccountListRow>
+        <AccountSection title="Password">
+          <PasswordReset email={user.email} />
+        </AccountSection>
+
+        <AccountSection title="Closing your account">
+          <p className="text-sm leading-relaxed text-ink-muted">
+            To close your portal account, contact the parish office
+            {parish.email || parish.contact ? " at " : "."}
+            {parish.email && (
+              <a href={`mailto:${parish.email}`} className="font-medium text-primary underline-offset-2 hover:underline">
+                {parish.email}
+              </a>
+            )}
+            {parish.email && parish.contact && " or "}
+            {parish.contact && <span className="font-medium text-ink">{parish.contact}</span>}
+            {(parish.email || parish.contact) && "."} Your sacramental records stay in the parish register either way.
+          </p>
+        </AccountSection>
       </div>
 
       <button
         type="button"
         onClick={handleLogout}
-        className="w-full rounded-2xl border border-border bg-surface px-4 py-3.5 text-center text-sm font-semibold text-danger shadow-sm transition-colors hover:bg-danger/5"
+        className="mx-auto mt-8 block rounded-lg px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/5"
       >
-        Log Out
+        Log out
       </button>
+    </div>
+  );
+}
+
+function PasswordReset({ email }: { email: string }) {
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  async function handleSend() {
+    setSending(true);
+    try {
+      await sendPasswordResetEmail();
+      setSent(true);
+    } catch (err) {
+      notifyError(err, "Could not send the reset email. Try again in a moment.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (sent) {
+    return (
+      <p className="text-sm leading-relaxed text-ink">
+        Reset link sent to <strong>{email}</strong>. It works for 30 minutes.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm leading-relaxed text-ink-muted">We'll email you a link to set a new password.</p>
+      <Button variant="secondary" onClick={handleSend} disabled={sending} className="shrink-0">
+        {sending ? "Sending…" : "Send reset link"}
+      </Button>
     </div>
   );
 }

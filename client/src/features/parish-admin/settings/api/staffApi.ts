@@ -7,8 +7,7 @@ function fail(err: unknown): never {
 }
 
 function asStaffRole(role: string): StaffRole {
-  if (role === "Priest" || role === "Parish Secretary" || role === "Admin Staff") return role;
-  return "Admin Staff";
+  return role || "Admin Staff";
 }
 
 function asStaff(row: StaffAccount): StaffAccount {
@@ -19,6 +18,7 @@ function asStaff(row: StaffAccount): StaffAccount {
     email: row.email,
     status: row.status === "Inactive" ? "Inactive" : "Active",
     accessRole: row.accessRole === "admin" ? "admin" : "staff",
+    personnelId: row.personnelId ?? null,
   };
 }
 

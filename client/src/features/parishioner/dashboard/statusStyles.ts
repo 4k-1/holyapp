@@ -6,9 +6,9 @@ export function getStatusPillClasses(request: CertificateRequest): string {
 
   switch (label) {
     case "Pending":
-      return "bg-[#f2e6c8] text-[#8a6c1f]";
+      return "bg-[#f2e6c8] text-[#6a5010]";
     case "Awaiting Payment":
-      return "bg-[#f6d9b8] text-[#a15c1f]";
+      return "bg-[#f6d9b8] text-[#7f4210]";
     case "Processing":
       return "bg-[#dbe6ee] text-[#33607e]";
     case "Ready for Pickup":

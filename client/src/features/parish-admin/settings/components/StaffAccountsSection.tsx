@@ -1,14 +1,18 @@
 // src/features/parish-admin/settings/components/StaffAccountsSection.tsx
 import { useEffect, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
+import { AdminRowActions } from "@/components/ui/AdminRowActions";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { addStaffAccount, listStaffAccounts, setStaffAccountStatus, updateStaffAccount } from "../api/staffApi";
 import { DeactivateStaffModal } from "./DeactivateStaffModal";
+import { HandoverModal } from "@/features/parish-admin/staff/components/HandoverModal";
 import { StaffAccountModal } from "./StaffAccountModal";
 import type { NewStaffInput, StaffAccount, StaffRole } from "../types";
+import { notifyError } from "@/lib/notify";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import { SettingsPanel } from "./SettingsUI";
 
 const ROLE_AVATAR_STYLES: Record<StaffRole, string> = {
   Priest: "bg-admin-gold-100 text-admin-gold-700",
@@ -40,7 +44,7 @@ export function StaffAccountsSection() {
     listStaffAccounts()
       .then(setAccounts)
       .catch((err: unknown) => {
-        window.alert(err instanceof Error ? err.message : "Could not load staff accounts.");
+        notifyError(err, "Could not load staff accounts.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -71,7 +75,7 @@ export function StaffAccountsSection() {
       }
       closeModal();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Could not save staff account.");
+      notifyError(err, "Could not save staff account.");
     }
   }
 
@@ -88,7 +92,7 @@ export function StaffAccountsSection() {
   }
 
   if (loading) {
-    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
+    return <SkeletonList rows={4} className="px-0" />;
   }
 
   const adminCount = accounts.filter((a) => a.accessRole === "admin").length;
@@ -98,10 +102,11 @@ export function StaffAccountsSection() {
     {
       key: "staff",
       header: "Staff member",
+      sortValue: (s) => s.name,
       render: (s) => (
         <div className="flex items-center gap-3">
           <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-serif text-admin-support font-bold ${ROLE_AVATAR_STYLES[s.role]}`}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-serif text-admin-support font-bold ${ROLE_AVATAR_STYLES[s.role] ?? "bg-admin-gold-100 text-admin-gold-700"}`}
           >
             {initials(s.name)}
           </span>
@@ -117,10 +122,11 @@ export function StaffAccountsSection() {
         </div>
       ),
     },
-    { key: "role", header: "Role", render: (s) => s.role },
+    { key: "role", header: "Role", sortValue: (s) => s.role, render: (s) => s.role },
     {
       key: "access",
       header: "Access",
+      sortValue: (s) => s.accessRole,
       render: (s) => (
         <AdminBadge tone={s.accessRole === "admin" ? "gold" : "muted"}>
           {s.accessRole === "admin" ? "Admin access" : "Staff access"}
@@ -130,39 +136,25 @@ export function StaffAccountsSection() {
     {
       key: "status",
       header: "Status",
+      sortValue: (s) => s.status,
       render: (s) => <AdminBadge tone={s.status === "Active" ? "green" : "muted"}>{s.status}</AdminBadge>,
     },
     {
       key: "actions",
       header: "Actions",
+      className: "w-12 text-right",
       render: (s) => {
         const isSelf = s.email === currentUser?.email;
         return (
-          <div className="inline-flex gap-3">
-            <button
-              onClick={() => openEdit(s)}
-              className="text-admin-support font-semibold text-admin-green-700 hover:underline"
-            >
-              Edit
-            </button>
-            {s.status === "Active" ? (
-              <button
-                onClick={() => setDeactivateTarget(s)}
-                disabled={isSelf}
-                title={isSelf ? "You can't deactivate your own account." : undefined}
-                className="text-admin-support font-semibold text-red-700 hover:underline disabled:cursor-not-allowed disabled:text-admin-ink-faint disabled:no-underline"
-              >
-                Deactivate
-              </button>
-            ) : (
-              <button
-                onClick={() => handleReactivate(s)}
-                className="text-admin-support font-semibold text-admin-green-700 hover:underline"
-              >
-                Reactivate
-              </button>
-            )}
-          </div>
+          <AdminRowActions
+            label={`Actions for ${s.name}`}
+            actions={[
+              { label: "Edit", onSelect: () => openEdit(s) },
+              { label: "Reactivate", onSelect: () => handleReactivate(s), hidden: s.status === "Active" },
+              // You can't lock yourself out, so your own row has no Deactivate.
+              { label: "Deactivate", onSelect: () => setDeactivateTarget(s), danger: true, hidden: s.status !== "Active" || isSelf },
+            ]}
+          />
         );
       },
     },
@@ -170,31 +162,26 @@ export function StaffAccountsSection() {
 
   return (
     <>
-      <AdminCard className="overflow-hidden p-0">
-        <div className="flex items-start justify-between gap-3 px-[22px] py-5">
-          <div>
-            <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Staff Accounts</h2>
-            <p className="mt-1 text-admin-support text-admin-ink-muted">
-              People who can sign in to this parish's admin console.
-            </p>
-            <p className="mt-1.5 text-admin-label text-admin-ink-faint">
-              {accounts.length} account{accounts.length === 1 ? "" : "s"} · {activeCount} active ·{" "}
-              {adminCount} with admin access
-            </p>
-          </div>
-          <AdminButton size="sm" onClick={openAdd} className="shrink-0">
+      <SettingsPanel
+        title="Accounts"
+        description={`${accounts.length} account${accounts.length === 1 ? "" : "s"} · ${activeCount} active · ${adminCount} with admin access`}
+        action={
+          <AdminButton size="sm" onClick={openAdd} className="rounded-full">
             <PlusIcon />
             Add staff account
           </AdminButton>
-        </div>
+        }
+        flush
+      >
 
         <AdminTable
           columns={columns}
           rows={accounts}
           getRowKey={(s) => s.id}
+          pageKey="staff-accounts"
           emptyMessage="No staff accounts yet. Add your first staff member to get started."
         />
-      </AdminCard>
+      </SettingsPanel>
 
       {modalMode && (
         <StaffAccountModal
@@ -205,7 +192,20 @@ export function StaffAccountsSection() {
         />
       )}
 
-      {deactivateTarget && (
+      {deactivateTarget?.personnelId && (
+        <HandoverModal
+          personId={deactivateTarget.personnelId}
+          personName={deactivateTarget.name}
+          onClose={() => setDeactivateTarget(null)}
+          onDone={() => {
+            const id = deactivateTarget.id;
+            setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, status: "Inactive" } : a)));
+            setDeactivateTarget(null);
+          }}
+        />
+      )}
+
+      {deactivateTarget && !deactivateTarget.personnelId && (
         <DeactivateStaffModal
           account={deactivateTarget}
           onClose={() => setDeactivateTarget(null)}

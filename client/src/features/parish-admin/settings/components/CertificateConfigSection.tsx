@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { CandleIcon, DoveIcon, DropletIcon, HeartIcon } from "@/components/ui/icons/SacramentIcons";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import {
   CertificateDocument,
+  CertificatePreviewStage,
   type CertificateFields,
 } from "@/features/parish-admin/components/CertificateDocument";
+import { CERT_PREVIEW_STAGE_BG } from "@/features/parish-admin/components/certificate/constants";
 import { SAMPLE_CERTIFICATE } from "@/features/parish-admin/components/certificate/sampleCertificate";
 import { AdminButton, AdminField, AdminInput, AdminTextarea } from "@/features/parish-admin/components/AdminForm";
 import { normalizeNumberingPrefix, previewCertificateCode } from "@/features/parish-admin/certificates/numbering";
 import { getCertificateConfig, updateCertificateConfig } from "../api/certificateConfigApi";
 import type { CertificateAppearance, CertificateConfigBySacrament } from "../types";
 import type { Parish, SacramentType } from "@/types";
+import { notifyError } from "@/lib/notify";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import { SettingsPanel } from "./SettingsUI";
 
 const SACRAMENTS: {
   type: SacramentType;
@@ -44,12 +48,19 @@ function sameAppearance(a: CertificateAppearance, b: CertificateAppearance) {
   );
 }
 
-function validateAppearance(value: CertificateAppearance): FieldErrors {
+function validateAppearance(config: CertificateConfigBySacrament, type: SacramentType): FieldErrors {
+  const value = config[type];
   const errors: FieldErrors = {};
   if (!value.signatoryName.trim()) errors.signatoryName = "Enter the name that will print under the signature line.";
   if (!value.signatoryTitle.trim()) errors.signatoryTitle = "Enter the office or title under that name.";
   if (!/^[A-Z0-9]{2,5}$/.test(value.numberingPrefix)) {
-    errors.numberingPrefix = "Use 2 to 5 letters or numbers. This becomes the middle of CF-XXX-…";
+    errors.numberingPrefix = "Use 2 to 5 letters or numbers. It starts each certificate number, e.g. BAP-2026-000143.";
+  } else {
+    // Numbers are counted per sacrament, so a shared prefix would give two certificates the same number.
+    const clash = SACRAMENTS.find((s) => s.type !== type && config[s.type].numberingPrefix === value.numberingPrefix);
+    if (clash) {
+      errors.numberingPrefix = `${value.numberingPrefix} is already the ${clash.label.toLowerCase()} prefix. Each certificate needs its own.`;
+    }
   }
   return errors;
 }
@@ -72,7 +83,7 @@ export function CertificateConfigSection() {
         setDraft(cloneConfig(config));
       })
       .catch((err: unknown) => {
-        window.alert(err instanceof Error ? err.message : "Could not load certificate settings.");
+        notifyError(err, "Could not load certificate settings.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -110,7 +121,7 @@ export function CertificateConfigSection() {
 
   async function handleSave() {
     if (!draft) return;
-    const nextErrors = validateAppearance(draft[activeType]);
+    const nextErrors = validateAppearance(draft, activeType);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       setSaveError("Fix the highlighted fields on this sacrament before saving.");
@@ -118,11 +129,11 @@ export function CertificateConfigSection() {
     }
 
     const otherInvalid = (Object.keys(draft) as SacramentType[]).find(
-      (type) => type !== activeType && Object.keys(validateAppearance(draft[type])).length > 0
+      (type) => type !== activeType && Object.keys(validateAppearance(draft, type)).length > 0
     );
     if (otherInvalid) {
       setActiveType(otherInvalid);
-      setErrors(validateAppearance(draft[otherInvalid]));
+      setErrors(validateAppearance(draft, otherInvalid));
       setSaveError("Another sacrament still has incomplete appearance fields.");
       return;
     }
@@ -134,15 +145,15 @@ export function CertificateConfigSection() {
       setSaved(cloneConfig(result));
       setDraft(cloneConfig(result));
       setJustSaved(true);
-    } catch {
-      setSaveError("Couldn't save certificate appearance. Try again.");
+    } catch (err) {
+      setSaveError(err instanceof Error && err.message ? err.message : "Couldn't save certificate appearance. Try again.");
     } finally {
       setSaving(false);
     }
   }
 
   if (loading || !draft || !saved || !appearance) {
-    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
+    return <SkeletonList rows={4} className="px-0" />;
   }
 
   const sample = SAMPLE_CERTIFICATE[activeType];
@@ -153,24 +164,20 @@ export function CertificateConfigSection() {
 
   return (
     <div className="selection:bg-admin-green-100 selection:text-admin-ink">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-[54ch]">
-          <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Certificate Configuration</h2>
-          <p className="mt-1 text-admin-support leading-relaxed text-admin-ink-muted">
-            How each issued certificate looks: who signs it, what it says at the foot, and how it is numbered.
-            Parish name and seal come from the parish record.{" "}
-            <Link to="../fees" className="font-semibold text-admin-green-700 hover:underline">
-              Certificate fees
-            </Link>{" "}
-            stay under Service Fees.
-          </p>
-        </div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-[54ch] text-admin-support text-admin-ink-muted">
+          Parish name and seal come from the parish profile.{" "}
+          <Link to="../fees" className="font-semibold text-admin-green-700 hover:underline">
+            Certificate fees
+          </Link>{" "}
+          are under Service Fees.
+        </p>
         <div className="flex shrink-0 items-center gap-2.5">
           {justSaved && !dirty && <span className="text-admin-support text-admin-green-700">Saved</span>}
-          <AdminButton variant="secondary" onClick={cancelEditing} disabled={saving || !dirty}>
+          <AdminButton variant="secondary" className="rounded-full" onClick={cancelEditing} disabled={saving || !dirty}>
             Cancel
           </AdminButton>
-          <AdminButton onClick={handleSave} disabled={saving || !dirty}>
+          <AdminButton className="rounded-full" onClick={handleSave} disabled={saving || !dirty}>
             {saving ? "Saving…" : "Save changes"}
           </AdminButton>
         </div>
@@ -179,7 +186,7 @@ export function CertificateConfigSection() {
       <div
         role="tablist"
         aria-label="Sacrament"
-        className="mb-5 flex flex-wrap gap-1 rounded-[10px] border border-admin-border bg-admin-surface p-1"
+        className="mb-5 flex flex-wrap gap-1 rounded-lg bg-admin-surface-alt p-1"
       >
         {SACRAMENTS.map(({ type, label, Icon }) => {
           const selected = activeType === type;
@@ -199,8 +206,8 @@ export function CertificateConfigSection() {
               }}
               className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-admin-body font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25 ${
                 selected
-                  ? "bg-admin-green-100 text-admin-green-900"
-                  : "text-admin-ink-muted hover:bg-admin-surface-alt hover:text-admin-ink"
+                  ? "bg-admin-surface text-admin-green-800 shadow-sm"
+                  : "text-admin-ink-muted hover:text-admin-ink"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -214,7 +221,7 @@ export function CertificateConfigSection() {
       </div>
 
       {saveError && (
-        <p className="mb-4 rounded-[9px] border border-admin-red-700/20 bg-admin-red-100 px-3.5 py-2.5 text-admin-body text-admin-red-700">
+        <p className="mb-4 rounded-md border border-admin-red-700/20 bg-admin-red-100 px-3.5 py-2.5 text-admin-body text-admin-red-700">
           {saveError}
         </p>
       )}
@@ -223,9 +230,9 @@ export function CertificateConfigSection() {
         id="certificate-config-panel"
         role="tabpanel"
         aria-labelledby={`certificate-tab-${activeType}`}
-        className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]"
+        className="grid grid-cols-1 items-start gap-4 2xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]"
       >
-        <AdminCard className="p-5 px-[22px]">
+        <SettingsPanel title="Appearance" description="Applies to this sacrament's certificates.">
           <AdminField label="Signatory name">
             <AdminInput
               value={appearance.signatoryName}
@@ -283,24 +290,28 @@ export function CertificateConfigSection() {
               rows={4}
             />
             <p className="mt-1.5 text-admin-label text-admin-ink-faint">
-              Shown above the register reference. Leave blank to hide it.
+              Printed at the bottom of the PDF copy parishioners download. Not printed on the paper
+              certificate. Leave blank to hide it.
             </p>
           </AdminField>
-        </AdminCard>
+        </SettingsPanel>
 
-        <div>
-          <div className="mb-2 flex items-baseline justify-between gap-3">
-            <h3 className="font-serif text-admin-section font-semibold text-admin-ink">Preview</h3>
-            <p className="text-admin-support text-admin-ink-muted">Sample names only — not an issued certificate.</p>
+        <SettingsPanel title="Preview" description="Sample names only — not an issued certificate.">
+          <div
+            className="relative h-[min(78vh,720px)] overflow-hidden rounded-md p-3"
+            style={{ background: CERT_PREVIEW_STAGE_BG }}
+          >
+            <CertificatePreviewStage>
+              <CertificateDocument
+                parish={parish}
+                sacramentType={activeType}
+                subjectName={sample.name}
+                fields={previewFields}
+                appearance={appearance}
+              />
+            </CertificatePreviewStage>
           </div>
-          <CertificateDocument
-            parish={parish}
-            sacramentType={activeType}
-            subjectName={sample.name}
-            fields={previewFields}
-            appearance={appearance}
-          />
-        </div>
+        </SettingsPanel>
       </div>
     </div>
   );

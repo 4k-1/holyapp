@@ -4,7 +4,7 @@ import type {
   DeathSacramentName,
   DeathSearchCriteria,
 } from "@/features/parish-admin/records/types";
-import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName, initials } from "@/features/parish-admin/records/baptismalHelpers";
+import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName } from "@/features/parish-admin/records/baptismalHelpers";
 
 export { initials, certStatusTone } from "@/features/parish-admin/records/baptismalHelpers";
 
@@ -45,12 +45,7 @@ export function formatAge(record: Pick<DeathRecord, "age" | "ageMonths" | "ageDa
   return parts.join(", ");
 }
 
-export function formatRecordDate(iso: string) {
-  if (!iso) return "—";
-  const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-}
+export { formatRecordDate } from "@/features/parish-admin/records/baptismalHelpers";
 
 export function formatDateTime(iso: string) {
   if (!iso) return "—";
@@ -115,5 +110,28 @@ export function deathCertificateFields(
     registerRef: certificateRegisterRef(rec),
     deathDate: formatSharedDate(rec.dateOfDeath),
     certCode: extras?.certCode,
+    printed: {
+      type: "DEATH",
+      nameOfDeceased: recordFullName(rec),
+      ageYears: rec.age,
+      ageMonths: rec.ageMonths,
+      ageDays: rec.ageDays,
+      fatherName: kinNamed(rec, "father"),
+      motherName: kinNamed(rec, "mother"),
+      address: rec.residence,
+      dateOfDeath: rec.dateOfDeath,
+      dateOfBurial: rec.dateOfBurial,
+      placeOfBurial: rec.placeOfBurial,
+      minister: rec.minister,
+      bookNo: rec.bookNumber,
+      pageNo: rec.pageNumber,
+      lineNo: rec.entryNumber,
+    },
   };
+}
+
+/** Parents are kept only as next-of-kin rows whose relation is typed by hand ("Father"). */
+function kinNamed(rec: DeathRecord, relation: "father" | "mother") {
+  const kin = (rec.kin ?? []).find((k) => k.relationToDeceased.trim().toLowerCase() === relation);
+  return kin ? [kin.firstName, kin.lastName].filter(Boolean).join(" ") || undefined : undefined;
 }

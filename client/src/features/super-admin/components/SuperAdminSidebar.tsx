@@ -25,8 +25,11 @@ export function SuperAdminSidebar({
 
   return (
     <aside
+      // On phones the sidebar leaves the page entirely when collapsed and slides over it when open.
       className={`flex h-full shrink-0 flex-col border-r border-admin-border bg-admin-surface transition-[width] duration-200 ${
-        collapsed ? "w-14" : "w-[230px]"
+        collapsed
+          ? "w-14 max-sm:invisible max-sm:w-0 max-sm:border-r-0"
+          : "w-[230px] max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:top-16 max-sm:z-40 max-sm:h-auto max-sm:shadow-[0_12px_40px_rgb(14_59_70/0.25)]"
       }`}
     >
       <nav className="admin-sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden px-2 pb-2.5 pt-2.5">
@@ -52,7 +55,7 @@ export function SuperAdminSidebar({
 
         <NavSection label="Oversight" collapsed={collapsed}>
           <SidebarLink to="/super-admin/audit" icon={<ClipboardIcon />} label="Audit Logs" collapsed={collapsed} />
-          <SidebarLink to="/super-admin/reports" icon={<ReportIcon />} label="System Reports" collapsed={collapsed} />
+          <SidebarLink to="/super-admin/reports" icon={<ReportIcon />} label="Reports" collapsed={collapsed} />
         </NavSection>
       </nav>
 
@@ -61,7 +64,7 @@ export function SuperAdminSidebar({
         <button
           type="button"
           onClick={onSignOut}
-          className={`group relative mb-0.5 flex w-full items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-[13.3px] font-medium text-admin-ink-muted hover:bg-admin-green-100 ${
+          className={`group relative mb-0.5 flex w-full items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-[14px] font-medium text-admin-ink-muted hover:bg-admin-green-100 ${
             collapsed ? "justify-center px-0 py-2.5" : "px-2.5 py-[9px]"
           }`}
         >
@@ -92,7 +95,7 @@ function NavSection({
       {collapsed ? (
         first ? null : <div className="mx-2 my-2 h-px bg-admin-border" />
       ) : (
-        <p className={`mb-1.5 px-2 text-[10.5px] font-bold tracking-[0.08em] text-admin-ink-faint ${first ? "mt-1" : "mt-3.5"}`}>
+        <p className={`mb-1.5 px-2 text-[12px] font-bold tracking-[0.08em] text-admin-ink-faint ${first ? "mt-1" : "mt-3.5"}`}>
           {label.toUpperCase()}
         </p>
       )}
@@ -122,7 +125,7 @@ function SidebarLink({
       end={end}
       className={({ isActive }) => {
         const on = active ?? isActive;
-        return `group relative mb-0.5 flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-[13.3px] ${
+        return `group relative mb-0.5 flex items-center gap-2.5 overflow-hidden whitespace-nowrap rounded-lg text-[14px] ${
           collapsed ? "justify-center px-0 py-2.5" : "px-2.5 py-[9px]"
         } ${
           on
@@ -149,7 +152,7 @@ function SidebarLink({
 
 function CollapsedTip({ label }: { label: string }) {
   return (
-    <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[100] -translate-y-1/2 whitespace-nowrap rounded-[7px] bg-admin-ink px-2.5 py-[5px] text-xs font-semibold text-white opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-opacity duration-100 group-hover:opacity-100">
+    <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[100] -translate-y-1/2 whitespace-nowrap rounded-md bg-admin-ink px-2.5 py-[5px] text-xs font-semibold text-white opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-opacity duration-100 group-hover:opacity-100">
       {label}
     </span>
   );

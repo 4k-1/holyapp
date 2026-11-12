@@ -19,9 +19,24 @@ export interface LedgerPage {
   parishId: string;
   bookId: string;
   pageNumber: number;
-  imageUrl: string;
+  /** The stored photo's size in pixels. */
+  width: number;
+  height: number;
   scannedAt: string;
-  /** Full-page OCR text used only for findability search — not structured fields. */
+  /** When the page was last read (null until it is). */
+  readAt: string | null;
+  /** Baptism records made from this page. */
+  recordCount: number;
+}
+
+/** A page's read text, for the ledger search. */
+export interface LedgerSearchPage {
+  id: string;
+  parishId: string;
+  bookId: string;
+  pageNumber: number;
+  scannedAt: string;
+  /** Lines of the page's last reading, joined with " · ". */
   ocrText: string;
 }
 
@@ -40,10 +55,7 @@ export interface LedgerSearchHit {
 export interface LedgerPageUploadInput {
   bookId: string;
   pageNumber: number;
-  /** Filename only in the mock; a real upload would send the scan. */
-  fileName: string;
-  /** Preview of the photo in the prototype; a real upload would store the file. */
-  imageUrl?: string;
+  file: File;
 }
 
 export interface LedgerBookCreateInput {
@@ -66,7 +78,7 @@ export const LEDGER_SEARCH_FIELDS: { value: LedgerSearchField; label: string }[]
   { value: "name", label: "Name" },
   { value: "date", label: "Date" },
   { value: "priest", label: "Priest / minister" },
-  { value: "sponsor", label: "Sponsor / witness" },
+  { value: "sponsor", label: "Godparent / sponsor / witness" },
 ];
 
 export const LEDGER_SACRAMENT_LABELS: Record<SacramentType, string> = {

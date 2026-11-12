@@ -54,7 +54,7 @@ export function ScheduleKebabMenu({ items }: ScheduleKebabMenuProps) {
       </button>
       {open && (
         <div
-          className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-[10px] border border-admin-border bg-admin-surface py-1 shadow-[0_8px_24px_-4px_rgba(10,40,30,0.2)]"
+          className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-md border border-admin-border bg-admin-surface py-1 shadow-[0_8px_24px_-4px_rgba(10,40,30,0.2)]"
           onClick={(e) => e.stopPropagation()}
         >
           {visible.map((it, i) => (

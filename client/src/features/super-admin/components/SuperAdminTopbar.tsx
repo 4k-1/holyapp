@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "@/components/ui/icons/AdminIcons";
 import type { CurrentUser } from "@/types";
 
@@ -36,33 +37,34 @@ export function SuperAdminTopbar({
           </button>
 
           <div className="flex min-w-0 items-center gap-2.5">
-            <div
-              className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] text-[15px] font-extrabold text-admin-gold-600"
-              style={{
-                background: "linear-gradient(145deg, var(--color-admin-green-700), var(--color-admin-green-900))",
-              }}
+            <Link
+              to="/super-admin"
+              title="HolyApp"
+              aria-label="HolyApp, back to the dashboard"
+              className="ml-1 flex h-[34px] w-[34px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-admin-border bg-white shadow-sm transition-shadow hover:shadow-md"
             >
-              H
-            </div>
+              <img src="/holyapp-logo.webp" alt="" className="h-[26px] w-[26px] object-contain" />
+            </Link>
             <div className="min-w-0 overflow-hidden whitespace-nowrap leading-tight">
-              <p className="truncate text-[13.5px] font-extrabold tracking-[0.2px] text-admin-ink">HolyApp</p>
-              <p className="mt-px truncate text-[10.5px] text-admin-ink-faint">Diocesan Control Center</p>
+              <p className="truncate text-[14.5px] font-extrabold tracking-[0.2px] text-admin-ink">HolyApp</p>
+              <p className="mt-px truncate text-[12px] text-admin-ink-faint">Platform console</p>
             </div>
-            <span className="hidden shrink-0 rounded-full border border-admin-gold-600 bg-admin-gold-100 px-[7px] py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-admin-green-900 sm:inline-block">
-              Super Admin
-            </span>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <Link
+          to="/super-admin/settings"
+          className="flex shrink-0 items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-admin-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/30"
+          title="Update profile"
+        >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-admin-green-100 text-xs font-bold text-admin-green-900">
             {initials}
           </div>
           <div className="hidden leading-tight sm:block">
-            <p className="text-[12.5px] font-semibold text-admin-ink">{user.fullName}</p>
-            <p className="text-[10.5px] text-admin-ink-faint">Super Admin</p>
+            <p className="text-[13.5px] font-semibold text-admin-ink">{user.fullName}</p>
+            <p className="text-[12px] text-admin-ink-faint">Super Admin</p>
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   );

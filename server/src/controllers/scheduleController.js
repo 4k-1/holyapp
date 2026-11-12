@@ -2,9 +2,44 @@ const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { requiredText, optionalText, dateValue, sendRecordError } = require('../utils/recordFields');
 const schedule = require('../services/scheduleService');
+const { ROLES } = require('../constants/roles');
+const massTimes = require('../services/massTimeChanges');
+const liturgical = require('../utils/liturgicalCalendar');
+const funerals = require('../services/funeralBooking');
+
+/** Runs `work` in a transaction; rolls back if it throws. */
+async function inTransaction(work) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await work(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
 function send(res, err) {
   return sendRecordError(res, err);
+}
+
+/** The regular Mass timetable lives in Settings, so only the parish admin may change it. */
+async function assertCanEditRecurring(req, nextType, id) {
+  let touchesMass = nextType === 'mass';
+  if (id) {
+    const current = await pool.query(
+      'SELECT event_type FROM parish_recurring_commitment WHERE id = $1 AND parish_id = $2',
+      [id, req.parishId]
+    );
+    if (current.rows[0]?.event_type === 'mass') touchesMass = true;
+  }
+  if (touchesMass && req.user.role !== ROLES.PARISH_ADMIN) {
+    throw schedule.httpError(403, 'Only the parish admin can change the Mass schedule.');
+  }
 }
 
 function parseBlockInput(body) {
@@ -15,7 +50,7 @@ function parseBlockInput(body) {
     end: requiredText(body.end, 'End time'),
     type: requiredText(body.type, 'Type'),
     source: optionalText(body.source) || 'manual',
-    assignee: optionalText(body.assignee) || '',
+    ...schedule.assigneeInput(body),
     location: optionalText(body.location),
     showOnOverview: body.showOnOverview !== false,
   };
@@ -29,8 +64,11 @@ async function listMonth(req, res) {
     if (!Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 11) {
       return res.status(400).json({ error: 'year and month are required.' });
     }
-    const occurrences = await schedule.occurrencesForMonth(req.parishId, year, month);
-    res.json({ occurrences });
+    const [occurrences, local] = await Promise.all([
+      schedule.occurrencesForMonth(req.parishId, year, month),
+      schedule.loadLocalDates(req.parishId),
+    ]);
+    res.json({ occurrences, calendar: liturgical.monthCalendar(year, month, local) });
   } catch (err) {
     return send(res, err);
   }
@@ -60,14 +98,64 @@ async function checkConflict(req, res) {
     const start = requiredText(req.body?.start, 'Start time');
     const end = requiredText(req.body?.end, 'End time');
     const occurrences = await schedule.occurrencesForDate(req.parishId, date);
-    const conflict = schedule.findConflict(
-      occurrences,
-      start,
-      end,
-      optionalText(req.body?.excludeId) || undefined,
-      optionalText(req.body?.assignee) || undefined
-    );
-    res.json({ conflict: conflict || null });
+    const conflict = schedule.findConflict(occurrences, start, end, {
+      excludeId: optionalText(req.body?.excludeId) || undefined,
+      ...schedule.assigneeInput(req.body || {}),
+      location: optionalText(req.body?.location) || undefined,
+    });
+    res.json({ conflict: conflict || null, message: conflict ? schedule.conflictMessage(conflict) : null });
+  } catch (err) {
+    return send(res, err);
+  }
+}
+
+/** The day in the Church calendar and any booking warnings for an event type (B5 + C5). */
+async function calendarDay(req, res) {
+  try {
+    const date = dateValue(req.query.date, 'Date');
+    res.json(await schedule.calendarCheck(req.parishId, date, optionalText(req.query.type)));
+  } catch (err) {
+    return send(res, err);
+  }
+}
+
+/** Open church times for a funeral over the next few days, with the priests free at each (C7). */
+async function funeralSlots(req, res) {
+  try {
+    const from = req.query.from ? dateValue(req.query.from, 'From') : '';
+    const days = Math.min(Math.max(Number(req.query.days) || 3, 1), 7);
+    await schedule.ensureDefaultMassSchedule(req.parishId, req.user.id);
+    res.json({ days: await funerals.funeralSlots(req.parishId, from, days) });
+  } catch (err) {
+    return send(res, err);
+  }
+}
+
+/** Books a funeral and any follow-up Masses for the deceased together (C7). */
+async function bookFuneral(req, res) {
+  try {
+    await schedule.ensureDefaultMassSchedule(req.parishId, req.user.id);
+    const { eventId, input, intentions } = await funerals.bookFuneral(req.parishId, req.user.id, req.body || {});
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'schedule.event_created',
+      entityType: 'event',
+      entityId: eventId,
+      metadata: { title: input.title, date: input.date, type: 'funeral' },
+    });
+    for (const item of intentions) {
+      await writeAudit({
+        parishId: req.parishId,
+        actorId: req.user.id,
+        action: 'mass_intention.booked',
+        entityType: 'mass_intention',
+        entityId: item.id,
+        metadata: { date: item.date, time: item.time, funeralEventId: eventId },
+      });
+    }
+    const block = (await schedule.loadBlocks(req.parishId)).find((item) => item.id === eventId);
+    res.status(201).json({ block, intentions });
   } catch (err) {
     return send(res, err);
   }
@@ -76,6 +164,8 @@ async function checkConflict(req, res) {
 async function createBlock(req, res) {
   try {
     const input = parseBlockInput(req.body || {});
+    await schedule.assertNoConflict(req.parishId, input);
+    await schedule.assertCalendarOk(req.parishId, { ...input, calendarOk: req.body.calendarOk });
     const id = await schedule.createEvent(req.parishId, req.user.id, input);
     const blocks = await schedule.loadBlocks(req.parishId);
     const block = blocks.find((item) => item.id === id);
@@ -93,18 +183,49 @@ async function createBlock(req, res) {
   }
 }
 
+/** Edits an event added by hand. Weddings and other events made by another module change from their source. */
+async function updateBlock(req, res) {
+  try {
+    const current = await pool.query('SELECT id, source FROM event WHERE id = $1 AND parish_id = $2', [
+      req.params.id,
+      req.parishId,
+    ]);
+    const row = current.rows[0];
+    if (!row) return res.status(404).json({ error: 'Event not found.' });
+    if ((row.source || 'manual') !== 'manual') {
+      throw schedule.httpError(400, `This event comes from ${row.source}. Change it there instead.`);
+    }
+    const input = parseBlockInput(req.body || {});
+    await schedule.assertNoConflict(req.parishId, { ...input, excludeId: row.id });
+    await schedule.assertCalendarOk(req.parishId, { ...input, calendarOk: req.body.calendarOk });
+    await schedule.updateEvent(req.parishId, row.id, input);
+    const block = (await schedule.loadBlocks(req.parishId)).find((item) => item.id === row.id);
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'schedule.event_updated',
+      entityType: 'event',
+      entityId: row.id,
+      metadata: { title: input.title, date: input.date, location: input.location, assignee: block?.assignee || '' },
+    });
+    res.json({ block });
+  } catch (err) {
+    return send(res, err);
+  }
+}
+
 async function assignOccurrence(req, res) {
   try {
     const occurrenceId = requiredText(req.body?.occurrenceId, 'Occurrence');
-    const assignee = optionalText(req.body?.assignee) || '';
-    await schedule.assignOccurrence(req.parishId, occurrenceId, assignee);
+    const who = schedule.assigneeInput(req.body || {});
+    const assignee = await schedule.assignOccurrence(req.parishId, occurrenceId, who);
     await writeAudit({
       parishId: req.parishId,
       actorId: req.user.id,
       action: 'schedule.assigned',
       entityType: 'event',
       entityId: occurrenceId,
-      metadata: { assignee },
+      metadata: { assignee, assigneeId: who.assigneeId },
     });
     res.json({ ok: true });
   } catch (err) {
@@ -152,7 +273,7 @@ function parseRecurring(body) {
     type: requiredText(body.type, 'Type'),
     days,
     slots,
-    assignee: optionalText(body.assignee) || '',
+    ...schedule.assigneeInput(body),
     showOnOverview: body.showOnOverview !== false,
   };
 }
@@ -160,23 +281,26 @@ function parseRecurring(body) {
 async function createRecurring(req, res) {
   try {
     const input = parseRecurring(req.body || {});
+    await assertCanEditRecurring(req, input.type);
+    await schedule.checkAssignee(req.parishId, input);
     const inserted = await pool.query(
       `INSERT INTO parish_recurring_commitment
-         (parish_id, label, event_type, days, slots, assignee, show_on_overview, created_by)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8)
-       RETURNING *`,
+         (parish_id, label, event_type, days, slots, assigned_to, assignee, show_on_overview, created_by)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9)
+       RETURNING id`,
       [
         req.parishId,
         input.label,
         input.type,
         input.days,
         JSON.stringify(input.slots),
+        input.assigneeId,
         input.assignee,
         input.showOnOverview,
         req.user.id,
       ]
     );
-    res.status(201).json({ commitment: schedule.toRecurring(inserted.rows[0]) });
+    res.status(201).json({ commitment: await schedule.loadCommitment(req.parishId, inserted.rows[0].id) });
   } catch (err) {
     return send(res, err);
   }
@@ -185,25 +309,51 @@ async function createRecurring(req, res) {
 async function updateRecurring(req, res) {
   try {
     const input = parseRecurring(req.body || {});
-    const updated = await pool.query(
-      `UPDATE parish_recurring_commitment
-       SET label = $1, event_type = $2, days = $3, slots = $4::jsonb,
-           assignee = $5, show_on_overview = $6, updated_at = NOW()
-       WHERE id = $7 AND parish_id = $8
-       RETURNING *`,
-      [
-        input.label,
-        input.type,
-        input.days,
-        JSON.stringify(input.slots),
-        input.assignee,
-        input.showOnOverview,
-        req.params.id,
-        req.parishId,
-      ]
+    await assertCanEditRecurring(req, input.type, req.params.id);
+    await schedule.checkAssignee(req.parishId, input);
+    const before = await schedule.loadRecurring(req.parishId);
+    if (!before.some((c) => c.id === req.params.id)) return res.status(404).json({ error: 'Commitment not found.' });
+    // Intentions on a Mass time this edit takes away move with it, or staff say where they go.
+    const after = before.map((c) =>
+      c.id === req.params.id ? { ...c, type: input.type, days: input.days, slots: input.slots } : c
     );
-    if (!updated.rowCount) return res.status(404).json({ error: 'Commitment not found.' });
-    res.json({ commitment: schedule.toRecurring(updated.rows[0]) });
+    const plan = await inTransaction(async (client) => {
+      const moves = await massTimes.planIntentionMoves(
+        client,
+        req.parishId,
+        before,
+        after,
+        massTimes.movesFrom(req.body)
+      );
+      await client.query(
+        `UPDATE parish_recurring_commitment
+         SET label = $1, event_type = $2, days = $3, slots = $4::jsonb,
+             assigned_to = $5, assignee = $6, show_on_overview = $7, updated_at = NOW()
+         WHERE id = $8 AND parish_id = $9
+         RETURNING id`,
+        [
+          input.label,
+          input.type,
+          input.days,
+          JSON.stringify(input.slots),
+          input.assigneeId,
+          input.assignee,
+          input.showOnOverview,
+          req.params.id,
+          req.parishId,
+        ]
+      );
+      await massTimes.applyIntentionMoves(client, moves);
+      return moves;
+    });
+    await massTimes.announceIntentionMoves({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      commitmentId: req.params.id,
+      label: input.label,
+      plan,
+    });
+    res.json({ commitment: await schedule.loadCommitment(req.parishId, req.params.id), movedIntentions: plan.length });
   } catch (err) {
     return send(res, err);
   }
@@ -211,17 +361,39 @@ async function updateRecurring(req, res) {
 
 async function removeRecurring(req, res) {
   try {
-    const deleted = await pool.query(
-      `DELETE FROM parish_recurring_commitment WHERE id = $1 AND parish_id = $2 RETURNING id`,
-      [req.params.id, req.parishId]
-    );
-    if (!deleted.rowCount) return res.status(404).json({ error: 'Commitment not found.' });
-    await pool.query(
-      `DELETE FROM parish_schedule_override
-       WHERE parish_id = $1 AND occurrence_id LIKE $2`,
-      [req.parishId, `${req.params.id}-%`]
-    );
-    res.json({ ok: true });
+    await assertCanEditRecurring(req, null, req.params.id);
+    const before = await schedule.loadRecurring(req.parishId);
+    const removed = before.find((c) => c.id === req.params.id);
+    if (!removed) return res.status(404).json({ error: 'Commitment not found.' });
+    const after = before.filter((c) => c.id !== req.params.id);
+    const plan = await inTransaction(async (client) => {
+      const moves = await massTimes.planIntentionMoves(
+        client,
+        req.parishId,
+        before,
+        after,
+        massTimes.movesFrom(req.body)
+      );
+      await client.query(`DELETE FROM parish_recurring_commitment WHERE id = $1 AND parish_id = $2`, [
+        req.params.id,
+        req.parishId,
+      ]);
+      await client.query(
+        `DELETE FROM parish_schedule_override
+         WHERE parish_id = $1 AND occurrence_id LIKE $2`,
+        [req.parishId, `${req.params.id}-%`]
+      );
+      await massTimes.applyIntentionMoves(client, moves);
+      return moves;
+    });
+    await massTimes.announceIntentionMoves({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      commitmentId: req.params.id,
+      label: removed.label,
+      plan,
+    });
+    res.json({ ok: true, movedIntentions: plan.length });
   } catch (err) {
     return send(res, err);
   }
@@ -253,7 +425,11 @@ module.exports = {
   listBlocks,
   listStaffNames,
   checkConflict,
+  calendarDay,
+  funeralSlots,
+  bookFuneral,
   createBlock,
+  updateBlock,
   assignOccurrence,
   markRecord,
   listRecurring,

@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { AdminBadge } from "@/components/ui/AdminBadge";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { BookIcon } from "@/features/parish-admin/components/AdminForm";
-import { ledgerSacramentLabel, ledgerYearRange } from "@/features/parish-admin/ledgers/ledgersHelpers";
 import {
-  LedgerSacramentIcon,
   ledgerBookCoverClass,
   ledgerSacramentBadgeTone,
-} from "@/features/parish-admin/ledgers/ledgerVisuals";
+  ledgerSacramentLabel,
+  ledgerYearRange,
+} from "@/features/parish-admin/ledgers/ledgersHelpers";
+import { LedgerSacramentIcon } from "@/features/parish-admin/ledgers/ledgerVisuals";
 import type { LedgerBook, LedgerSearchHit } from "@/features/parish-admin/ledgers/types";
 
 export function LedgerBookCard({ book, coverIndex }: { book: LedgerBook; coverIndex: number }) {

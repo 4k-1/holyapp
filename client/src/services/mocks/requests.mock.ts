@@ -3,6 +3,7 @@ import type { CertificateRequest } from "@/types";
 export const MOCK_REQUESTS: CertificateRequest[] = [
   {
     id: "req-1",
+    referenceNo: "CR-2026-00001",
     parishId: "parish-1",
     requesterId: "u-parishioner",
     sacramentType: "baptism",
@@ -26,6 +27,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
   },
   {
     id: "req-2",
+    referenceNo: "CR-2026-00002",
     parishId: "parish-1",
     requesterId: "u-parishioner",
     sacramentType: "marriage",
@@ -49,6 +51,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
   },
   {
     id: "req-3",
+    referenceNo: "CR-2026-00003",
     parishId: "parish-1",
     requesterId: "u-parishioner",
     sacramentType: "confirmation",
@@ -72,6 +75,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
   },
   {
     id: "req-4",
+    referenceNo: "CR-2026-00004",
     parishId: "parish-1",
     requesterId: "u-parishioner",
     sacramentType: "death",
@@ -96,6 +100,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
   },
   {
     id: "req-5",
+    referenceNo: "CR-2026-00005",
     parishId: "parish-1",
     requesterId: "u-parishioner",
     sacramentType: "baptism",
@@ -119,6 +124,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
   },
   {
     id: "req-6",
+    referenceNo: "CR-2026-00006",
     parishId: "parish-1",
     requesterId: "u-parishioner",
     sacramentType: "confirmation",
@@ -142,6 +148,7 @@ export const MOCK_REQUESTS: CertificateRequest[] = [
   },
   {
     id: "req-7",
+    referenceNo: "CR-2026-00007",
     parishId: "parish-1",
     requesterId: "u-parishioner",
     sacramentType: "baptism",

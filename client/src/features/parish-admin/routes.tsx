@@ -21,21 +21,25 @@ import { AdminDonationsPage } from "@/features/parish-admin/donations/AdminDonat
 import { AdminLedgersPage } from "@/features/parish-admin/ledgers/AdminLedgersPage";
 import { AdminLedgerBookPage } from "@/features/parish-admin/ledgers/AdminLedgerBookPage";
 import { AdminLedgerPageViewer } from "@/features/parish-admin/ledgers/AdminLedgerPageViewer";
+import { AdminLedgerPageRecordsPage } from "@/features/parish-admin/ledgers/AdminLedgerPageRecordsPage";
 import { AdminMassIntentionsPage } from "@/features/parish-admin/intentions/AdminMassIntentionsPage";
 import { AdminMarriageApplicationsPage } from "@/features/parish-admin/marriage-applications/AdminMarriageApplicationsPage";
 import { AdminMarriageApplicationDetailPage } from "@/features/parish-admin/marriage-applications/AdminMarriageApplicationDetailPage";
+import { AdminBannsPage } from "@/features/parish-admin/marriage-applications/AdminBannsPage";
+import { AdminBannsPosterPage } from "@/features/parish-admin/marriage-applications/AdminBannsPosterPage";
 import { AdminNotificationsPage } from "@/features/parish-admin/notifications/AdminNotificationsPage";
 import { AdminReportsLayout } from "@/features/parish-admin/reports/AdminReportsLayout";
-import { AdminSacramentsReportPage } from "@/features/parish-admin/reports/AdminSacramentsReportPage";
-import { AdminCertificatesReportPage } from "@/features/parish-admin/reports/AdminCertificatesReportPage";
-import { AdminDonationsReportPage } from "@/features/parish-admin/reports/AdminDonationsReportPage";
-import { AdminIntentionsReportPage } from "@/features/parish-admin/reports/AdminIntentionsReportPage";
+import { AdminReportPage } from "@/features/parish-admin/reports/AdminReportPage";
+import { AdminDaySummaryPage } from "@/features/parish-admin/reports/AdminDaySummaryPage";
 import { AdminSettingsLayout } from "@/features/parish-admin/settings/AdminSettingsLayout";
 import { SettingsHomeRedirect } from "@/features/parish-admin/settings/SettingsHomeRedirect";
 import { ParishProfileSection } from "@/features/parish-admin/settings/components/ParishProfileSection";
 import { ServiceFeesSection } from "@/features/parish-admin/settings/components/ServiceFeesSection";
 import { StaffAccountsSection } from "@/features/parish-admin/settings/components/StaffAccountsSection";
+import { AdminStaffPage } from "@/features/parish-admin/staff/AdminStaffPage";
 import { CertificateConfigSection } from "@/features/parish-admin/settings/components/CertificateConfigSection";
+import { MassScheduleSection } from "@/features/parish-admin/settings/components/MassScheduleSection";
+import { MarriageRequirementsSection } from "@/features/parish-admin/settings/components/MarriageRequirementsSection";
 import { AccountSecuritySection } from "@/features/parish-admin/settings/components/AccountSecuritySection";
 import { AdminPersonalInfoSection } from "@/features/parish-admin/settings/components/AdminPersonalInfoSection";
 import { RequireParishAdmin } from "@/features/parish-admin/RequireParishAdmin";
@@ -95,23 +99,28 @@ export const parishAdminRoutes: RouteObject[] = [
       { path: "records/ledgers", element: <AdminLedgersPage /> },
       { path: "records/ledgers/:bookId", element: <AdminLedgerBookPage /> },
       { path: "records/ledgers/:bookId/pages/:pageNumber", element: <AdminLedgerPageViewer /> },
+      { path: "records/ledgers/:bookId/pages/:pageNumber/records", element: <AdminLedgerPageRecordsPage /> },
       { path: "mass-intentions", element: <AdminMassIntentionsPage /> },
       { path: "marriage-applications", element: <AdminMarriageApplicationsPage /> },
+      { path: "marriage-applications/banns", element: <AdminBannsPage /> },
       { path: "marriage-applications/:applicationId", element: <AdminMarriageApplicationDetailPage /> },
+      { path: "marriage-applications/:applicationId/banns-poster", element: <AdminBannsPosterPage /> },
       {
         path: "schedule",
         element: <AdminSchedulePage />,
       },
       { path: "donations", element: <AdminDonationsPage /> },
+      { path: "staff", element: <AdminStaffPage /> },
       {
         path: "reports",
         element: <AdminReportsLayout />,
         children: [
           { index: true, element: <Navigate to="sacraments" replace /> },
-          { path: "sacraments", element: <AdminSacramentsReportPage /> },
-          { path: "certificates", element: <AdminCertificatesReportPage /> },
-          { path: "donations", element: <AdminDonationsReportPage /> },
-          { path: "intentions", element: <AdminIntentionsReportPage /> },
+          { path: "day", element: <AdminDaySummaryPage /> },
+          { path: "sacraments", element: <AdminReportPage key="sacraments" kind="sacraments" /> },
+          { path: "certificates", element: <AdminReportPage key="certificates" kind="certificates" /> },
+          { path: "donations", element: <AdminReportPage key="donations" kind="donations" /> },
+          { path: "intentions", element: <AdminReportPage key="intentions" kind="intentions" /> },
         ],
       },
       {
@@ -126,6 +135,8 @@ export const parishAdminRoutes: RouteObject[] = [
               { path: "fees", element: <ServiceFeesSection /> },
               { path: "staff", element: <StaffAccountsSection /> },
               { path: "certificates", element: <CertificateConfigSection /> },
+              { path: "mass-schedule", element: <MassScheduleSection /> },
+              { path: "marriage-requirements", element: <MarriageRequirementsSection /> },
             ],
           },
           { path: "security", element: <AccountSecuritySection /> },

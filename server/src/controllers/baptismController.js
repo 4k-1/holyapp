@@ -10,8 +10,27 @@ const {
   recordStatus,
 } = require('../utils/recordFields');
 const { findParishRecord, archivedListClause } = require('../utils/recordQuery');
+const { scheduleEventFor, linkScheduleEvent } = require('../utils/scheduleRecordLink');
 const { listRecordCertificates } = require('./certificateController');
 const { listBaptismAnnotations } = require('../utils/baptismAnnotation');
+const { parseGodparents, saveGodparents, listGodparents } = require('../utils/baptismGodparents');
+
+// Runs fn with one connection inside a transaction, so a baptism and its godparents are
+// saved together or not at all.
+async function inTransaction(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
 const LEGITIMACY = {
   legitimate: 'Legitimate',
@@ -30,10 +49,12 @@ function legitimacyToDb(value) {
 
 function toBaptismalRecord(row) {
   return {
+    // The schedule event it was recorded from (C11), if any.
+    scheduleEventId: row.schedule_event_id || null,
     id: row.id,
     parishId: row.parish_id,
     firstName: row.first_name,
-    middleName: row.middle_name,
+    middleName: row.middle_name || '',
     lastName: row.last_name,
     sex: row.sex || undefined,
     dateOfBirth: dateOnly(row.date_of_birth),
@@ -43,10 +64,10 @@ function toBaptismalRecord(row) {
     legitimacyStatus: LEGITIMACY[row.status] || undefined,
     address: row.address || undefined,
     minister: row.minister,
-    fatherLastName: row.father_last_name,
-    fatherFirstName: row.father_first_name,
-    motherLastName: row.mother_last_name,
-    motherFirstName: row.mother_first_name,
+    fatherLastName: row.father_last_name || '',
+    fatherFirstName: row.father_first_name || '',
+    motherLastName: row.mother_last_name || '',
+    motherFirstName: row.mother_first_name || '',
     paternalGrandfather: row.paternal_grandfather || '',
     paternalGrandmother: row.paternal_grandmother || '',
     maternalGrandfather: row.maternal_grandfather || '',
@@ -63,13 +84,55 @@ function toBaptismalRecord(row) {
     status: recordStatus(row.archived_at),
     certificates: [],
     annotations: [],
+    godparents: [],
+    ledgerPageId: row.ledger_page_id || undefined,
+    ledgerRow: row.ledger_row ?? undefined,
   };
 }
 
+// Where a record came from on a scanned register page: { pageId, row } or null. The page
+// must belong to this parish, and each row of a page becomes one record at most.
+async function parseLedgerSource(db, parishId, body) {
+  if (!body.ledgerPageId) return null;
+  const row = Number(body.ledgerRow);
+  if (!Number.isInteger(row) || row < 1) throw httpError(400, 'Say which row of the register page this record is.');
+  const page = await db.query('SELECT id FROM ledger_page WHERE id::text = $1 AND parish_id = $2', [
+    String(body.ledgerPageId),
+    parishId,
+  ]);
+  if (!page.rows.length) throw httpError(400, 'That register page was not found.');
+  const taken = await db.query(
+    'SELECT id FROM baptism WHERE ledger_page_id = $1 AND ledger_row = $2 AND archived_at IS NULL',
+    [page.rows[0].id, row],
+  );
+  if (taken.rows.length) throw httpError(409, `Row ${row} of this page is already a record.`);
+  return { pageId: page.rows[0].id, row };
+}
+
+// What a baptism entry must hold follows can. 877 of the Code of Canon Law: the person,
+// minister, place and date of baptism, and date of birth. Parents are entered only as the
+// canon allows (an unmarried mother's child may have no father recorded; a foundling no
+// parents), grandparents aren't asked for, and old registers often give only a middle initial.
+function parent(body, who) {
+  const first = optionalText(body[`${who.toLowerCase()}FirstName`]);
+  const last = optionalText(body[`${who.toLowerCase()}LastName`]);
+  if (first && !last) throw httpError(400, `${who}'s last name is required when a first name is given.`);
+  return { first, last };
+}
+
 function parseBaptismBody(body) {
+  const father = parent(body, 'Father');
+  const mother = parent(body, 'Mother');
+  const remarks = optionalText(body.remarks);
+  if (!father.last && !mother.last && !remarks) {
+    throw httpError(
+      400,
+      'Both parents are blank. Add a remark saying why (for a foundling: when, where and by whom the child was found).',
+    );
+  }
   return {
     firstName: requiredText(body.firstName, 'First name'),
-    middleName: requiredText(body.middleName, 'Middle name'),
+    middleName: optionalText(body.middleName),
     lastName: requiredText(body.lastName, 'Last name'),
     sex: optionalText(body.sex),
     dateOfBirth: dateValue(body.dateOfBirth, 'Date of birth'),
@@ -79,29 +142,33 @@ function parseBaptismBody(body) {
     legitimacyStatus: legitimacyToDb(body.legitimacyStatus),
     address: optionalText(body.address),
     minister: requiredText(body.minister, 'Minister'),
-    fatherLastName: requiredText(body.fatherLastName, "Father's last name"),
-    fatherFirstName: requiredText(body.fatherFirstName, "Father's first name"),
-    motherLastName: requiredText(body.motherLastName, "Mother's last name"),
-    motherFirstName: requiredText(body.motherFirstName, "Mother's first name"),
-    paternalGrandfather: requiredText(body.paternalGrandfather, 'Paternal grandfather'),
-    paternalGrandmother: requiredText(body.paternalGrandmother, 'Paternal grandmother'),
-    maternalGrandfather: requiredText(body.maternalGrandfather, 'Maternal grandfather'),
-    maternalGrandmother: requiredText(body.maternalGrandmother, 'Maternal grandmother'),
+    fatherLastName: father.last,
+    fatherFirstName: father.first,
+    motherLastName: mother.last,
+    motherFirstName: mother.first,
+    paternalGrandfather: optionalText(body.paternalGrandfather),
+    paternalGrandmother: optionalText(body.paternalGrandmother),
+    maternalGrandfather: optionalText(body.maternalGrandfather),
+    maternalGrandmother: optionalText(body.maternalGrandmother),
     withMarriageCertificate: Boolean(body.withMarriageCertificate),
     withBirthCertificate: Boolean(body.withBirthCertificate),
     bookNumber: requiredText(body.bookNumber, 'Book number'),
     pageNumber: requiredText(body.pageNumber, 'Page number'),
     entryNumber: requiredText(body.entryNumber, 'Entry number'),
-    remarks: optionalText(body.remarks),
+    remarks,
   };
 }
 
 async function createBaptism(req, res) {
   try {
     const fields = parseBaptismBody(req.body || {});
+    const godparents = parseGodparents((req.body || {}).godparents) || [];
 
-    const inserted = await pool.query(
-      `INSERT INTO baptism (
+    const record = await inTransaction(async (db) => {
+      const source = await parseLedgerSource(db, req.parishId, req.body || {});
+      const eventId = await scheduleEventFor(db, { parishId: req.parishId, table: 'baptism', body: req.body });
+      const inserted = await db.query(
+        `INSERT INTO baptism (
          parish_id, first_name, middle_name, last_name, sex,
          date_of_birth, place_of_birth, date_of_baptism, place_of_baptism,
          status, address, minister,
@@ -120,38 +187,53 @@ async function createBaptism(req, res) {
          $23, $24, $25, $26, $27
        )
        RETURNING *`,
-      [
-        req.parishId,
-        fields.firstName,
-        fields.middleName,
-        fields.lastName,
-        fields.sex,
-        fields.dateOfBirth,
-        fields.placeOfBirth,
-        fields.dateOfBaptism,
-        fields.placeOfBaptism,
-        fields.legitimacyStatus,
-        fields.address,
-        fields.minister,
-        fields.fatherLastName,
-        fields.fatherFirstName,
-        fields.motherLastName,
-        fields.motherFirstName,
-        fields.paternalGrandfather,
-        fields.paternalGrandmother,
-        fields.maternalGrandfather,
-        fields.maternalGrandmother,
-        fields.withMarriageCertificate,
-        fields.withBirthCertificate,
-        fields.bookNumber,
-        fields.pageNumber,
-        fields.entryNumber,
-        fields.remarks,
-        req.user.id,
-      ]
-    );
+        [
+          req.parishId,
+          fields.firstName,
+          fields.middleName,
+          fields.lastName,
+          fields.sex,
+          fields.dateOfBirth,
+          fields.placeOfBirth,
+          fields.dateOfBaptism,
+          fields.placeOfBaptism,
+          fields.legitimacyStatus,
+          fields.address,
+          fields.minister,
+          fields.fatherLastName,
+          fields.fatherFirstName,
+          fields.motherLastName,
+          fields.motherFirstName,
+          fields.paternalGrandfather,
+          fields.paternalGrandmother,
+          fields.maternalGrandfather,
+          fields.maternalGrandmother,
+          fields.withMarriageCertificate,
+          fields.withBirthCertificate,
+          fields.bookNumber,
+          fields.pageNumber,
+          fields.entryNumber,
+          fields.remarks,
+          req.user.id,
+        ],
+      );
+      if (source) {
+        await db.query('UPDATE baptism SET ledger_page_id = $2, ledger_row = $3 WHERE id = $1', [
+          inserted.rows[0].id,
+          source.pageId,
+          source.row,
+        ]);
+        inserted.rows[0].ledger_page_id = source.pageId;
+        inserted.rows[0].ledger_row = source.row;
+      }
+      await linkScheduleEvent(db, { table: 'baptism', recordId: inserted.rows[0].id, eventId });
+      inserted.rows[0].schedule_event_id = eventId;
+      const created = toBaptismalRecord(inserted.rows[0]);
+      await saveGodparents(db, created.id, godparents);
+      created.godparents = await listGodparents(db, created.id);
+      return created;
+    });
 
-    const record = toBaptismalRecord(inserted.rows[0]);
     await writeAudit({
       parishId: req.parishId,
       actorId: req.user.id,
@@ -173,7 +255,7 @@ async function listBaptisms(req, res) {
       `SELECT * FROM baptism
        WHERE parish_id = $1 ${archivedListClause(req)}
        ORDER BY date_of_baptism DESC, created_at DESC`,
-      [req.parishId]
+      [req.parishId],
     );
     res.json({ records: result.rows.map(toBaptismalRecord) });
   } catch (err) {
@@ -188,6 +270,13 @@ async function getBaptism(req, res) {
       return res.status(404).json({ error: 'Record not found.' });
     }
     const record = toBaptismalRecord(row);
+    if (row.encoded_by) {
+      const encoder = await pool.query(
+        `SELECT NULLIF(trim(concat_ws(' ', first_name, last_name)), '') AS name FROM app_user WHERE id = $1`,
+        [row.encoded_by],
+      );
+      record.encodedByName = encoder.rows[0]?.name || undefined;
+    }
     try {
       record.annotations = await listBaptismAnnotations(pool, row.id);
     } catch (annotationErr) {
@@ -199,6 +288,24 @@ async function getBaptism(req, res) {
     } catch (certErr) {
       console.error('listRecordCertificates failed', certErr);
       record.certificates = [];
+    }
+    record.godparents = await listGodparents(pool, row.id);
+    if (row.ledger_page_id) {
+      const source = await pool.query(
+        `SELECT p.id, p.page_number, b.id AS book_id, b.title
+         FROM ledger_page p JOIN ledger_book b ON b.id = p.book_id WHERE p.id = $1`,
+        [row.ledger_page_id],
+      );
+      const s = source.rows[0];
+      if (s) {
+        record.ledgerSource = {
+          pageId: s.id,
+          bookId: s.book_id,
+          bookTitle: s.title,
+          pageNumber: s.page_number,
+          row: row.ledger_row,
+        };
+      }
     }
     res.json({ record });
   } catch (err) {
@@ -213,8 +320,10 @@ async function updateBaptism(req, res) {
       return res.status(404).json({ error: 'Record not found.' });
     }
     const fields = parseBaptismBody(req.body || {});
-    const updated = await pool.query(
-      `UPDATE baptism
+    const godparents = parseGodparents((req.body || {}).godparents);
+    const updated = await inTransaction(async (db) => {
+      const result = await db.query(
+        `UPDATE baptism
        SET first_name = $1,
            middle_name = $2,
            last_name = $3,
@@ -243,37 +352,42 @@ async function updateBaptism(req, res) {
            updated_at = NOW()
        WHERE id = $26 AND parish_id = $27
        RETURNING *`,
-      [
-        fields.firstName,
-        fields.middleName,
-        fields.lastName,
-        fields.sex,
-        fields.dateOfBirth,
-        fields.placeOfBirth,
-        fields.dateOfBaptism,
-        fields.placeOfBaptism,
-        fields.legitimacyStatus,
-        fields.address,
-        fields.minister,
-        fields.fatherLastName,
-        fields.fatherFirstName,
-        fields.motherLastName,
-        fields.motherFirstName,
-        fields.paternalGrandfather,
-        fields.paternalGrandmother,
-        fields.maternalGrandfather,
-        fields.maternalGrandmother,
-        fields.withMarriageCertificate,
-        fields.withBirthCertificate,
-        fields.bookNumber,
-        fields.pageNumber,
-        fields.entryNumber,
-        fields.remarks,
-        current.id,
-        req.parishId,
-      ]
-    );
+        [
+          fields.firstName,
+          fields.middleName,
+          fields.lastName,
+          fields.sex,
+          fields.dateOfBirth,
+          fields.placeOfBirth,
+          fields.dateOfBaptism,
+          fields.placeOfBaptism,
+          fields.legitimacyStatus,
+          fields.address,
+          fields.minister,
+          fields.fatherLastName,
+          fields.fatherFirstName,
+          fields.motherLastName,
+          fields.motherFirstName,
+          fields.paternalGrandfather,
+          fields.paternalGrandmother,
+          fields.maternalGrandfather,
+          fields.maternalGrandmother,
+          fields.withMarriageCertificate,
+          fields.withBirthCertificate,
+          fields.bookNumber,
+          fields.pageNumber,
+          fields.entryNumber,
+          fields.remarks,
+          current.id,
+          req.parishId,
+        ],
+      );
+      // Godparents are left as they are when the request doesn't send them.
+      if (godparents) await saveGodparents(db, current.id, godparents);
+      return result;
+    });
     const record = toBaptismalRecord(updated.rows[0]);
+    record.godparents = await listGodparents(pool, record.id);
     record.annotations = await listBaptismAnnotations(pool, record.id);
     record.certificates = await listRecordCertificates(req.parishId, 'baptism', record.id);
     await writeAudit({

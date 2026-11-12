@@ -1,3 +1,4 @@
+import { formatTableDate } from "@/lib/dates";
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
@@ -10,7 +11,6 @@ import {
   baptismRecordRef,
   emptySearchCriteria,
   filterBaptismalRecords,
-  formatRecordDate,
   recordFatherName,
   recordFullName,
   recordMotherName,
@@ -26,7 +26,7 @@ export function AdminBaptismalRecordsPage() {
 
   const [showArchived, setShowArchived] = useState(false);
 
-  const { data: parishRecords = [] } = useAsync(
+  const { data: parishRecords = [], error, loading } = useAsync(
     () => listBaptismalRecords(parish.id, { archived: showArchived }),
     [parish.id, showArchived]
   );
@@ -36,24 +36,27 @@ export function AdminBaptismalRecordsPage() {
     {
       key: "ref",
       header: "Bk:Page:Entry",
+      sortValue: (r) => baptismRecordRef(r),
       render: (r) => <span className="admin-table__primary">{baptismRecordRef(r)}</span>,
     },
-    { key: "name", header: "Name", render: (r) => recordFullName(r) },
+    { key: "name", header: "Name", sortValue: (r) => recordFullName(r), render: (r) => recordFullName(r) },
     {
       key: "dateOfBaptism",
       header: "Bapt. date",
-      render: (r) => formatRecordDate(r.dateOfBaptism),
+      sortValue: (r) => r.dateOfBaptism,
+      render: (r) => formatTableDate(r.dateOfBaptism),
     },
     {
       key: "dateOfBirth",
       header: "Birthdate",
-      render: (r) => formatRecordDate(r.dateOfBirth),
+      sortValue: (r) => r.dateOfBirth,
+      render: (r) => formatTableDate(r.dateOfBirth),
     },
-    { key: "mother", header: "Mother", render: (r) => recordMotherName(r) },
-    { key: "father", header: "Father", render: (r) => recordFatherName(r) },
+    { key: "mother", header: "Mother", sortValue: (r) => recordMotherName(r), render: (r) => recordMotherName(r) },
+    { key: "father", header: "Father", sortValue: (r) => recordFatherName(r), render: (r) => recordFatherName(r) },
     {
       key: "actions",
-      header: "",
+      header: "Actions",
       render: (r) => (
         <Link to={encodeURIComponent(r.id)} className="admin-table__action">
           View
@@ -67,7 +70,7 @@ export function AdminBaptismalRecordsPage() {
   }
 
   return (
-    <div className="admin-dash mx-auto max-w-[1180px]">
+    <div className="admin-dash mx-auto w-full max-w-[1920px]">
       <header className="mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)] sm:text-[1.5rem]">
@@ -137,13 +140,18 @@ export function AdminBaptismalRecordsPage() {
       </SearchCriteriaCard>
 
       <AdminTable
+        loading={loading}
+        pageKey="records"
+        defaultSort={{ key: "dateOfBaptism", dir: "desc" }}
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}
-        rows={filtered}
+        rows={error ? [] : filtered}
         getRowKey={(r) => r.id}
         emptyMessage={
-          showArchived
+          error
+            ? `Could not load baptismal records: ${error.message}`
+            : showArchived
             ? "No archived baptismal records."
             : "No matching baptismal records. Try different search criteria."
         }

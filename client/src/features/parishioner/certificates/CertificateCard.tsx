@@ -38,7 +38,7 @@ export function CertificateCard({ certificate, onView, onDownload, downloading =
         aria-hidden="true"
       />
       {revoked && (
-        <span className="absolute right-3 top-3 rounded-full bg-[#7A3C35] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+        <span className="absolute right-3 top-3 rounded-full bg-[#7A3C35] px-2.5 py-0.5 text-[12px] font-bold text-white">
           Revoked
         </span>
       )}
@@ -52,26 +52,26 @@ export function CertificateCard({ certificate, onView, onDownload, downloading =
       <p className="relative mt-3 font-serif text-[16.5px] font-bold leading-tight text-ink">
         {sacramentLabels[certificate.sacramentType]}
       </p>
-      <p className="relative mt-1 text-[11.5px] text-ink-muted">
+      <p className="relative mt-1 text-[13px] text-ink-muted">
         {certificate.holderName} · Issued{" "}
         {new Date(certificate.issuedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
       </p>
       {revoked && (
-        <p className="relative mt-1.5 text-[11.5px] font-medium text-[#7A3C35]">
+        <p className="relative mt-1.5 text-[13px] font-medium text-[#7A3C35]">
           This certificate is no longer valid.
         </p>
       )}
       <div className="relative mt-3.5 flex gap-1.5">
       <Button
         variant="outline"
-        className="flex-1 py-2 text-xs active:scale-95"
+        className="flex-1 py-2.5 text-sm active:scale-95"
         onClick={() => onView(certificate)}
       >
         View
       </Button>
       <Button
         variant="primary"
-        className="flex-1 py-2 text-xs active:scale-95"
+        className="flex-1 py-2.5 text-sm active:scale-95"
         onClick={() => onDownload(certificate)}
         disabled={downloading || revoked}
       >

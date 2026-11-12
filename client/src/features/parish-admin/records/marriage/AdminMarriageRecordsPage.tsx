@@ -1,3 +1,4 @@
+import { formatTableDate } from "@/lib/dates";
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
@@ -10,7 +11,6 @@ import {
   brideFullName,
   emptyMarriageSearchCriteria,
   filterMarriageRecords,
-  formatRecordDate,
   groomFullName,
   marriageRecordRef,
 } from "@/features/parish-admin/records/marriageHelpers";
@@ -25,7 +25,7 @@ export function AdminMarriageRecordsPage() {
 
   const [showArchived, setShowArchived] = useState(false);
 
-  const { data: parishRecords = [], error } = useAsync(
+  const { data: parishRecords = [], error, loading } = useAsync(
     () => listMarriageRecords(parish.id, { archived: showArchived }),
     [parish.id, showArchived]
   );
@@ -35,18 +35,20 @@ export function AdminMarriageRecordsPage() {
     {
       key: "ref",
       header: "Bk:Page:Entry",
+      sortValue: (r) => marriageRecordRef(r),
       render: (r) => <span className="admin-table__primary">{marriageRecordRef(r)}</span>,
     },
-    { key: "groom", header: "Groom", render: (r) => groomFullName(r) },
-    { key: "bride", header: "Bride", render: (r) => brideFullName(r) },
+    { key: "groom", header: "Groom", sortValue: (r) => groomFullName(r), render: (r) => groomFullName(r) },
+    { key: "bride", header: "Bride", sortValue: (r) => brideFullName(r), render: (r) => brideFullName(r) },
     {
       key: "dateOfMarriage",
       header: "Marriage date",
-      render: (r) => formatRecordDate(r.dateOfMarriage),
+      sortValue: (r) => r.dateOfMarriage,
+      render: (r) => formatTableDate(r.dateOfMarriage),
     },
     {
       key: "actions",
-      header: "",
+      header: "Actions",
       render: (r) => (
         <Link to={encodeURIComponent(r.id)} className="admin-table__action">
           View
@@ -60,7 +62,7 @@ export function AdminMarriageRecordsPage() {
   }
 
   return (
-    <div className="admin-dash mx-auto max-w-[1180px]">
+    <div className="admin-dash mx-auto w-full max-w-[1920px]">
       <header className="mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)] sm:text-[1.5rem]">
@@ -123,6 +125,9 @@ export function AdminMarriageRecordsPage() {
       </SearchCriteriaCard>
 
       <AdminTable
+        loading={loading}
+        pageKey="records"
+        defaultSort={{ key: "dateOfMarriage", dir: "desc" }}
         title={showArchived ? "Archived records" : "Records"}
         subtitle={`${filtered.length} matching ${filtered.length === 1 ? "entry" : "entries"}`}
         columns={columns}

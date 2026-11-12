@@ -91,14 +91,14 @@ export function AdminLedgersPage() {
   }
 
   return (
-    <div className="admin-dash mx-auto max-w-[1180px]">
+    <div className="admin-dash mx-auto w-full max-w-[1920px]">
       <header className="mb-6">
         <h1 className="font-serif text-[1.35rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)] sm:text-[1.5rem]">
           Digitized Ledger
         </h1>
         <p className="admin-dash__muted mt-1.5 text-admin-body">
-          Browse register books or search across all pages. Pages are viewed as scanned — no data is
-          auto-extracted into records.
+          Start a register book, upload photos of its pages, then make records from each page. Search looks
+          through every page that has been read.
         </p>
       </header>
 
@@ -135,7 +135,7 @@ export function AdminLedgersPage() {
             <AdminInput
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Search ${LEDGER_SACRAMENT_LABELS[activeTab]} Register — name, date, priest, sponsor…`}
+              placeholder={`Search ${LEDGER_SACRAMENT_LABELS[activeTab]} Register — name, date, priest, ${activeTab === "baptism" ? "godparent" : activeTab === "marriage" ? "witness" : "sponsor"}…`}
               aria-label="Search digitized ledgers"
               className="pl-10"
             />
@@ -219,10 +219,20 @@ export function AdminLedgersPage() {
         )
       ) : booksLoading && books.length === 0 ? (
         <LedgerStateMessage>Loading register books…</LedgerStateMessage>
+      ) : tabBooks.length === 0 && canUpload ? (
+        <div>
+          <p className="mb-4 text-admin-body text-[var(--dash-ink-soft)]">
+            No {LEDGER_SACRAMENT_LABELS[activeTab].toLowerCase()} registers digitized yet. Start with the book
+            you&apos;re scanning.
+          </p>
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 xl:grid-cols-4">
+            <NewLedgerBookCard onClick={() => setNewBookOpen(true)} />
+          </div>
+        </div>
       ) : tabBooks.length === 0 ? (
         <LedgerStateMessage>
-          No {LEDGER_SACRAMENT_LABELS[activeTab].toLowerCase()} registers digitized yet.
-          {canUpload ? " Use New Book to start one." : ""}
+          No {LEDGER_SACRAMENT_LABELS[activeTab].toLowerCase()} registers digitized yet. Ask a parish admin to
+          start one.
         </LedgerStateMessage>
       ) : visibleBooks.length === 0 ? (
         <LedgerStateMessage>No register books match these filters.</LedgerStateMessage>

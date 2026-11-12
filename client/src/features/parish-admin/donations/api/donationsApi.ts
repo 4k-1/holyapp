@@ -1,48 +1,61 @@
-import { delay } from "@/services/delay";
-import { recordBelongsToParish } from "@/features/parish/parishApi";
-import { DONATIONS_LIST, DONATION_TREND } from "@/services/mocks/donations.mock";
-import type { Donation, DonationTrendPoint, NewDonationInput } from "../types";
+import { apiFetch, ApiError } from "@/lib/api";
+import type { Donation, NewDonationInput } from "../types";
 
-export async function listDonations(parishId: string): Promise<Donation[]> {
-  await delay();
-  const out: Donation[] = [];
-  for (const d of DONATIONS_LIST) {
-    if (await recordBelongsToParish(d.parishId, parishId)) out.push(d);
-  }
-  return out;
+function fail(err: unknown): never {
+  if (err instanceof ApiError) throw new Error(err.message, { cause: err });
+  throw new Error("Unable to reach the server.", { cause: err });
 }
 
-export async function getDonationTrend(parishId: string): Promise<DonationTrendPoint[]> {
-  await delay(80);
-  let hasParishData = false;
-  for (const d of DONATIONS_LIST) {
-    if (await recordBelongsToParish(d.parishId, parishId)) {
-      hasParishData = true;
-      break;
-    }
+/** Office gifts, paid online gifts, and paid Mass intention donations for the signed-in parish. */
+export async function listDonations(_parishId: string): Promise<Donation[]> {
+  try {
+    const data = await apiFetch<{ donations: Donation[] }>("/donations");
+    return data.donations ?? [];
+  } catch (err) {
+    fail(err);
   }
-  if (!hasParishData) return [];
-  return [...DONATION_TREND];
 }
 
-export async function recordDonation(
-  parishId: string,
-  input: NewDonationInput,
-  recordedBy = "u-admin"
-): Promise<Donation> {
-  await delay();
-  const donation: Donation = {
-    id: `don-${Date.now()}`,
-    parishId,
-    donorName: input.donorName,
-    donationType: input.donationType,
-    amount: input.amount,
-    donationDate: input.donationDate,
-    purpose: input.purpose,
-    remarks: input.remarks,
-    recordedBy,
-    createdAt: new Date().toISOString(),
-  };
-  DONATIONS_LIST.unshift(donation);
-  return donation;
+export async function recordDonation(_parishId: string, input: NewDonationInput): Promise<void> {
+  try {
+    await apiFetch("/donations", { method: "POST", body: input });
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Admins only. The gift stays on record, marked voided, and leaves the totals. */
+export async function voidDonation(id: string, reason: string): Promise<void> {
+  try {
+    await apiFetch(`/donations/${encodeURIComponent(id)}/void`, { method: "POST", body: { reason } });
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Admins only (D4). A pending cheque or transfer is in the bank: it starts counting. */
+export async function clearDonation(id: string): Promise<void> {
+  try {
+    await apiFetch(`/donations/${encodeURIComponent(id)}/clear`, { method: "POST" });
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Admins only (D4). The cheque or transfer bounced: it stays listed and never counts. */
+export async function bounceDonation(id: string, reason: string): Promise<void> {
+  try {
+    await apiFetch(`/donations/${encodeURIComponent(id)}/bounce`, { method: "POST", body: { reason } });
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Admins only. Voids an office gift and saves the corrected one with a new receipt number. */
+export async function correctDonation(id: string, input: NewDonationInput & { reason: string }): Promise<void> {
+  try {
+    await apiFetch(`/donations/${encodeURIComponent(id)}/correct`, { method: "POST", body: input });
+  } catch (err) {
+    fail(err);
+  }
 }

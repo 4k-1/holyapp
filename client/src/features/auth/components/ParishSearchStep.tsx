@@ -13,10 +13,15 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
     setLoading(true);
     setError(null);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
     void searchParishes(query)
       .then((parishes) => {
         if (!cancelled) setResults(parishes);
@@ -36,7 +41,7 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
   }, [query]);
 
   return (
-    <div className="auth-desk flex w-full flex-col gap-5">
+    <div className="auth-desk flex w-full flex-col gap-7">
       <div>
         <h1 className="auth-desk__title">Find your parish</h1>
         <p className="auth-desk__subtitle">Search by name or location to continue.</p>
@@ -56,8 +61,14 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
         />
       </div>
 
-      <div className="flex max-h-[min(22rem,50vh)] flex-col gap-2 overflow-y-auto">
-        {loading && (
+      {/* Fixed height, so the card (and the search box) doesn't jump as the number of results changes. */}
+      <div
+        className={`flex h-[min(24rem,50vh)] flex-col gap-2.5 overflow-y-auto transition-opacity duration-150 ${
+          loading && results.length > 0 ? "opacity-60" : ""
+        }`}
+        aria-busy={loading}
+      >
+        {loading && results.length === 0 && (
           <p className="text-[0.84375rem] text-[var(--auth-ink-soft)]">Loading parishes…</p>
         )}
         {error && (
@@ -65,8 +76,7 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
             {error}
           </p>
         )}
-        {!loading &&
-          !error &&
+        {!error &&
           results.map((parish) => {
             const photo = parish.backgroundImageUrl || parish.sealUrl;
             return (
@@ -84,8 +94,8 @@ export function ParishSearchStep({ onSelect }: ParishSearchStepProps) {
                 </span>
               )}
               <span className="min-w-0">
-                <p className="text-[0.875rem] font-semibold text-[var(--auth-ink)]">{parish.name}</p>
-                <p className="mt-0.5 text-[0.78rem] text-[var(--auth-ink-soft)]">{parish.address}</p>
+                <p className="auth-desk__result-name">{parish.name}</p>
+                <p className="auth-desk__result-address">{parish.address}</p>
               </span>
             </button>
             );

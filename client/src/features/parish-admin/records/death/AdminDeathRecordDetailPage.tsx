@@ -34,6 +34,7 @@ import {
 import { baptismRecordRef, recordFullName as baptismFullName } from "@/features/parish-admin/records/baptismalHelpers";
 import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import { PAGE_TITLE_CLASS, RECORD_DETAIL_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 
 export function AdminDeathRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -67,7 +68,7 @@ export function AdminDeathRecordDetailPage() {
     return (
       <div>
         <RecordDetailBackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Record not found</h1>
         <p className="text-admin-body text-admin-ink-muted">
           This death record is not available for this parish.
         </p>
@@ -79,24 +80,24 @@ export function AdminDeathRecordDetailPage() {
   const certs = record.certificates;
 
   return (
-    <div className="mx-auto max-w-[920px]">
+    <div className={RECORD_DETAIL_WIDTH_CLASS}>
       <RecordDetailBackLink />
 
       <AdminCard className="mb-[18px] flex flex-wrap items-start justify-between gap-4 p-[26px] px-7">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-admin-surface-alt font-serif text-admin-group font-bold text-admin-ink-muted ring-1 ring-inset ring-admin-border-strong">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-admin-surface-alt font-serif text-admin-group font-bold text-admin-ink-muted ring-1 ring-inset ring-admin-border-strong">
             {initials(name)}
           </div>
           <div>
             <p className="mb-1 text-admin-label font-bold uppercase tracking-admin-label text-admin-ink-muted">
               Death Record
             </p>
-            <h1 className="mb-1.5 font-serif text-admin-page font-semibold leading-tight text-admin-ink">{name}</h1>
+            <h1 className={`mb-1.5 ${PAGE_TITLE_CLASS}`}>{name}</h1>
             <p className="mb-2.5 text-admin-body text-admin-ink-muted">
               Died {formatRecordDate(record.dateOfDeath)} · Buried {formatRecordDate(record.dateOfBurial)}
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-[7px] border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-admin-border bg-admin-surface-alt px-2.5 py-1 font-mono text-xs text-admin-ink-muted">
                 Book {record.bookNumber}
                 <span className="text-admin-border-strong">/</span>
                 Page {record.pageNumber}
@@ -197,7 +198,7 @@ export function AdminDeathRecordDetailPage() {
               {record.kin.map((k) => (
                 <div
                   key={k.id}
-                  className="flex items-center justify-between gap-2.5 rounded-[9px] border border-admin-border bg-admin-surface-alt px-3.5 py-2.5"
+                  className="flex items-center justify-between gap-2.5 rounded-md border border-admin-border bg-admin-surface-alt px-3.5 py-2.5"
                 >
                   <span className="text-admin-body font-semibold text-admin-ink">{kinFullName(k)}</span>
                   <span className="inline-flex items-center rounded-full bg-[#F8D6E0] px-2.5 py-1 text-admin-label font-semibold text-[#B85A75]">
@@ -249,7 +250,7 @@ export function AdminDeathRecordDetailPage() {
           fields={deathCertificateFields(record)}
           issued={certificateModal === "new" ? undefined : certificateModal}
           onClose={() => setCertificateModal(null)}
-          onIssue={() => generateDeathCertificate(parish.id, record.id)}
+          onIssue={(purpose) => generateDeathCertificate(parish.id, record.id, purpose)}
           onIssued={(cert) => {
             setCertificateModal(cert);
             refetch();

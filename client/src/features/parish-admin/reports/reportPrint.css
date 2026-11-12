@@ -1,0 +1,13 @@
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  /* The sheet brings its own background; keep it and the chart fills when printing. */
+  .report-print-sheet {
+    font-family: inherit;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

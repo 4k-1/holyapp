@@ -12,18 +12,25 @@ const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\
 
 export class ApiError extends Error {
   status: number;
+  /** The whole error response, for screens that need more than the message. */
+  data: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, data: unknown = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.data = data;
   }
 }
 
 type ApiFetchOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
+  /** Sent as-is instead of JSON (e.g. an image File). Set the Content-Type header yourself. */
+  rawBody?: BodyInit;
   /** When false, skip attaching the access token (login/logout/refresh). Default true. */
   auth?: boolean;
+  /** Internal: read the response as a Blob instead of JSON. */
+  _blob?: boolean;
   /** Internal: set after one refresh+retry so we don't loop. */
   _retried?: boolean;
 };
@@ -75,12 +82,40 @@ export async function refreshAccessToken(): Promise<boolean> {
   return refreshInflight;
 }
 
+/** Fired with the number of requests still on their way, for the loading bar at the top. */
+export const API_ACTIVITY_EVENT = "holyapp-api-activity";
+let inFlight = 0;
+
+function reportActivity(change: number) {
+  inFlight += change;
+  window.dispatchEvent(new CustomEvent<number>(API_ACTIVITY_EVENT, { detail: inFlight }));
+}
+
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
+  reportActivity(1);
+  try {
+    return await request<T>(path, options);
+  } finally {
+    reportActivity(-1);
+  }
+}
+
+/** Fetches a file the API serves (e.g. a scanned page) with the signed-in user's token. */
+export async function apiFetchBlob(path: string, options: ApiFetchOptions = {}): Promise<Blob> {
+  reportActivity(1);
+  try {
+    return await request<Blob>(path, { ...options, _blob: true });
+  } finally {
+    reportActivity(-1);
+  }
+}
+
+async function request<T>(path: string, options: ApiFetchOptions): Promise<T> {
   if (!API_URL) {
     throw new ApiError("VITE_API_URL is not configured.", 500);
   }
 
-  const { body, headers, auth = true, _retried = false, ...rest } = options;
+  const { body, rawBody, headers, auth = true, _retried = false, _blob = false, ...rest } = options;
   const accessToken = auth ? getAccessToken() : null;
 
   const response = await fetch(`${API_URL}${path.startsWith("/") ? path : `/${path}`}`, {
@@ -91,8 +126,10 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...headers,
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: rawBody ?? (body !== undefined ? JSON.stringify(body) : undefined),
   });
+
+  if (_blob && response.ok) return (await response.blob()) as T;
 
   let payload: unknown = null;
   const text = await response.text();
@@ -108,7 +145,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     if (response.status === 401 && auth && !_retried) {
       const refreshed = await refreshAccessToken();
       if (refreshed) {
-        return apiFetch<T>(path, { ...options, _retried: true });
+        return request<T>(path, { ...options, _retried: true });
       }
     }
 
@@ -119,7 +156,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
       typeof (payload as { error: unknown }).error === "string"
         ? (payload as { error: string }).error
         : `Request failed (${response.status})`;
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, payload);
   }
 
   return payload as T;

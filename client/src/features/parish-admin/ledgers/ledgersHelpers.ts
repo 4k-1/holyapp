@@ -1,3 +1,4 @@
+import type { AdminSectionTone } from "@/features/parish-admin/components/AdminForm";
 import type { SacramentType } from "@/types";
 import {
   LEDGER_SACRAMENT_LABELS,
@@ -5,6 +6,7 @@ import {
   type LedgerBook,
   type LedgerPage,
   type LedgerSearchField,
+  type LedgerSearchPage,
   type LedgerSearchHit,
 } from "@/features/parish-admin/ledgers/types";
 
@@ -66,12 +68,9 @@ const LEDGER_FIELD_PATTERNS: Record<Exclude<LedgerSearchField, "all" | "name">, 
   sponsor: /\b(Sponsor|Witness(?:es)?)\b/i,
 };
 
-/**
- * Heuristic-only line filter for the "Field" search narrowing. Real
- * field-scoped search would need structured OCR output rather than regex
- * over raw scanned text.
- * TODO: replace with structured field matching once OCR emits fields.
- */
+// Each line of a page's read text holds one detail of one entry ("Entry 4: born 4 Mar 2016
+// at ...", "Entry 4: Minister Rev. Fr. ..."; see ledgerController.searchTextOf on the
+// server), so "Field" narrows the search to the lines of that kind.
 function lineMatchesField(line: string, field: LedgerSearchField) {
   if (field === "all" || field === "name") return true;
   return LEDGER_FIELD_PATTERNS[field].test(line);
@@ -79,7 +78,7 @@ function lineMatchesField(line: string, field: LedgerSearchField) {
 
 export function searchLedgerPages(
   books: LedgerBook[],
-  pages: LedgerPage[],
+  pages: LedgerSearchPage[],
   query: string,
   options: { field?: LedgerSearchField; bookId?: string; sacrament?: SacramentType | "all" } = {}
 ): LedgerSearchHit[] {
@@ -118,4 +117,41 @@ export function searchLedgerPages(
 
 export function ledgerPageAlt(book: LedgerBook, page: Pick<LedgerPage, "pageNumber">) {
   return `Scanned ${ledgerSacramentLabel(book.sacramentType).toLowerCase()} register ${book.title}, page ${page.pageNumber}`;
+}
+
+export function ledgerSacramentBadgeTone(type: SacramentType) {
+  switch (type) {
+    case "baptism":
+      return "green" as const;
+    case "confirmation":
+      return "muted" as const;
+    case "marriage":
+      return "gold" as const;
+    case "death":
+      return "muted" as const;
+  }
+}
+
+export function ledgerSacramentSectionTone(type: SacramentType): AdminSectionTone {
+  switch (type) {
+    case "baptism":
+      return "green";
+    case "confirmation":
+      return "blue";
+    case "marriage":
+      return "gold";
+    case "death":
+      return "rose";
+  }
+}
+
+const BOOK_COVER_GRADIENTS = [
+  "from-[#5b3a29] to-[#2e1c14]",
+  "from-[#1a3d2b] to-[#0c1f16]",
+  "from-[#d4a017] to-[#8a6710]",
+  "from-[#33475a] to-[#17232e]",
+];
+
+export function ledgerBookCoverClass(index: number) {
+  return `bg-gradient-to-br ${BOOK_COVER_GRADIENTS[index % BOOK_COVER_GRADIENTS.length]}`;
 }

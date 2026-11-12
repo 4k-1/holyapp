@@ -12,8 +12,16 @@ export function CapacityBadge({
   remaining,
 }: {
   state: MassSlotCapacityState;
-  remaining: number;
+  /** null when there is no limit. */
+  remaining: number | null;
 }) {
-  const label = state === "full" ? "Full" : state === "nearly_full" ? `${remaining} remaining` : `${remaining} open`;
+  const label =
+    remaining === null
+      ? "No limit"
+      : state === "full"
+        ? "Full"
+        : state === "nearly_full"
+          ? `${remaining} remaining`
+          : `${remaining} open`;
   return <AdminBadge tone={TONE[state]}>{label}</AdminBadge>;
 }

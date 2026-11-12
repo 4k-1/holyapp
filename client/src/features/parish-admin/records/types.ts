@@ -9,7 +9,7 @@ export const LINKABLE_ANNOTATION_CATEGORIES: LinkableAnnotationCategory[] = [
 
 export type RecordStatus = "Active" | "Archived";
 
-export type IssuedCertificateStatus = "Valid" | "Superseded" | "Invalid";
+export type IssuedCertificateStatus = "Valid" | "Superseded" | "Invalid" | "Spoiled";
 
 export interface RecordAnnotation {
   id: string;
@@ -34,6 +34,14 @@ export interface IssuedRecordCertificate {
   by: string;
   status: IssuedCertificateStatus;
   code: string;
+  /** Where the copy's QR code points; sent by the server for each issued copy. */
+  verifyUrl?: string;
+  /** How many times this copy has been reprinted. */
+  reprints?: number;
+  /** Someone checked the printout and said it printed correctly (digital copies: always). */
+  printConfirmed?: boolean;
+  /** The paid receipt this copy was issued against, if any. */
+  receiptNumber?: string;
 }
 
 export type LegitimacyStatus = "Legitimate" | "Illegitimate";
@@ -67,6 +75,8 @@ export interface SacramentSponsorAssignment {
 }
 
 export interface BaptismalRecord {
+  /** The schedule event it was recorded from (C11). */
+  scheduleEventId?: string | null;
   id: string;
   parishId: string;
   firstName: string;
@@ -95,11 +105,27 @@ export interface BaptismalRecord {
   entryNumber: string;
   remarks?: string;
   encodedBy: string;
+  /** The encoder's name, sent with a single record. */
+  encodedByName?: string;
   createdAt: string;
   updatedAt: string;
   status: RecordStatus;
   certificates: IssuedRecordCertificate[];
   annotations: RecordAnnotation[];
+  /** Godparents (stored in the sponsor tables), primary first. At most two (can. 873). */
+  godparents?: Godparent[];
+  /** The scanned register page and row this record was made from (when it was). */
+  ledgerPageId?: string;
+  ledgerRow?: number;
+  /** Sent with a single record: that page's book and number, for a link to it. */
+  ledgerSource?: { pageId: string; bookId: string; bookTitle: string; pageNumber: number; row: number };
+}
+
+export interface Godparent {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  role?: "Godfather" | "Godmother";
 }
 
 export interface BaptismalSearchCriteria {
@@ -112,6 +138,8 @@ export interface BaptismalSearchCriteria {
 }
 
 export interface ConfirmationRecord {
+  /** The schedule event it was recorded from (C11). */
+  scheduleEventId?: string | null;
   id: string;
   parishId: string;
   firstName: string;
@@ -191,6 +219,8 @@ export interface MarriageParty {
 }
 
 export interface MarriageRecord {
+  /** The schedule event it was recorded from (C11). */
+  scheduleEventId?: string | null;
   id: string;
   parishId: string;
   placeOfMarriage: string;
@@ -236,6 +266,8 @@ export interface DeathSacramentReceived {
 }
 
 export interface DeathRecord {
+  /** The schedule event it was recorded from (C11). */
+  scheduleEventId?: string | null;
   id: string;
   parishId: string;
   firstName: string;

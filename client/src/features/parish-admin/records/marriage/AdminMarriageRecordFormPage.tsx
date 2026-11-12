@@ -1,20 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext, useParams } from "react-router-dom";
 import {
   AdminButton,
   AdminField,
-  AdminFieldGroup,
   AdminFormPage,
-  AdminFormSection,
   AdminInput,
   AdminSelect,
   AdminTextarea,
-  BookIcon,
-  NoteIcon,
-  UserIcon,
-  type AdminSectionTone,
 } from "@/features/parish-admin/components/AdminForm";
-import { HeartIcon } from "@/components/ui/icons/SacramentIcons";
+import { RecordFormShell, RecordSection } from "@/features/parish-admin/records/RecordFormShell";
+import { span } from "@/features/parish-admin/records/recordFormSpan";
 import {
   createMarriageRecord,
   getMarriageRecord,
@@ -23,9 +18,14 @@ import {
 } from "@/features/parish-admin/records/api/marriageRecordsApi";
 import { BaptismalRecordLinkField } from "@/features/parish-admin/records/BaptismalRecordLinkField";
 import { getMarriageParty } from "@/features/parish-admin/records/marriageHelpers";
+import { schedulePrefillOf } from "@/features/parish-admin/records/scheduleLink";
+import { ScheduleLinkNotice } from "@/features/parish-admin/records/ScheduleLinkNotice";
+import { getMarriageApplication } from "@/features/parish-admin/marriage-applications/api/marriageApplicationsApi";
 import { useAsync } from "@/hooks/useAsync";
 import type { BaptismalRecord, CivilStatus, MarriagePartyRole } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
+import { PAGE_TITLE_CLASS } from "@/features/parish-admin/components/adminPageStyles";
+import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
 
 interface ConsentFormState {
   lastName: string;
@@ -191,18 +191,62 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
   const { parish } = useOutletContext<{ parish: Parish }>();
   const { recordId = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const id = decodeURIComponent(recordId);
+  // Opened from a wedding on the schedule (C11).
+  const prefill = mode === "create" ? schedulePrefillOf(location.state) : null;
 
   const { data: existing, loading: existingLoading } = useAsync(
     () => (mode === "edit" ? getMarriageRecord(parish.id, id) : Promise.resolve(undefined)),
     [parish.id, id, mode]
   );
 
-  const [form, setForm] = useState<FormState>(() => emptyForm(parish.name));
+  const [form, setForm] = useState<FormState>(() =>
+    prefill
+      ? {
+          ...emptyForm(parish.name),
+          dateOfMarriage: prefill.date ?? "",
+          timeOfMarriage: prefill.time ?? "",
+          minister: prefill.priest ?? "",
+        }
+      : emptyForm(parish.name)
+  );
+
+  // A wedding booked through a marriage application brings the couple's names.
+  const applicationId = prefill?.marriageApplicationId ?? null;
+  useEffect(() => {
+    if (!applicationId) return;
+    let live = true;
+    getMarriageApplication(applicationId)
+      .then((app) => {
+        if (!live) return;
+        setForm((prev) => ({
+          ...prev,
+          groom: {
+            ...prev.groom,
+            firstName: prev.groom.firstName || app.groomFirstName,
+            middleName: prev.groom.middleName || app.groomMiddleName,
+            lastName: prev.groom.lastName || app.groomLastName,
+          },
+          bride: {
+            ...prev.bride,
+            firstName: prev.bride.firstName || app.brideFirstName,
+            middleName: prev.bride.middleName || app.brideMiddleName,
+            lastName: prev.bride.lastName || app.brideLastName,
+          },
+        }));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [applicationId]);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!existing) return;
+  // Fill the form once the record being edited has loaded.
+  const [loadedRecord, setLoadedRecord] = useState<typeof existing>(undefined);
+  if (existing && existing !== loadedRecord) {
+    setLoadedRecord(existing);
     setForm({
       placeOfMarriage: existing.placeOfMarriage,
       marriageAddress: existing.marriageAddress ?? "",
@@ -218,12 +262,12 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
       groom: partyToForm(getMarriageParty(existing, "Groom")),
       bride: partyToForm(getMarriageParty(existing, "Bride")),
     });
-  }, [existing]);
+  }
 
   if (mode === "edit" && existingLoading) {
     return (
       <AdminFormPage>
-        <BackLink />
+        <AdminBackLink />
         <p className="text-admin-body text-admin-ink-muted">Loading record…</p>
       </AdminFormPage>
     );
@@ -232,8 +276,8 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
   if (mode === "edit" && !existing) {
     return (
       <AdminFormPage>
-        <BackLink />
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">Record not found</h1>
+        <AdminBackLink />
+        <h1 className={`mb-1 ${PAGE_TITLE_CLASS}`}>Record not found</h1>
       </AdminFormPage>
     );
   }
@@ -295,6 +339,7 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
       entryNumber: form.entryNumber,
       remarks: form.remarks || undefined,
       parties: [partyFromForm("Groom", form.groom), partyFromForm("Bride", form.bride)],
+      ...(prefill ? { scheduleEventId: prefill.scheduleBlockId } : {}),
     };
     try {
       if (mode === "edit") {
@@ -309,162 +354,129 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
   }
 
   return (
-    <AdminFormPage>
-      <BackLink />
+    <RecordFormShell
+      title={`${mode === "edit" ? "Edit" : "Add"} Marriage Record`}
+      subtitle="Enter details exactly as they appear in the parish marriage register."
+      notice={prefill && <ScheduleLinkNotice prefill={prefill} saved={[]} />}
+      submitting={submitting}
+      submitLabel={mode === "edit" ? "Save changes" : "Confirm & add record"}
+      onSubmit={handleSubmit}
+    >
+      <RecordSection title="Marriage" note="Date, minister and church.">
+        <AdminField label="Date of marriage" className={`mb-0 ${span.third}`}>
+          <AdminInput
+            type="date"
+            value={form.dateOfMarriage}
+            onChange={(e) => setMarriageField("dateOfMarriage", e.target.value)}
+            required
+          />
+        </AdminField>
+        <AdminField label="Time" className={`mb-0 ${span.third}`}>
+          <AdminInput
+            type="time"
+            value={form.timeOfMarriage}
+            onChange={(e) => setMarriageField("timeOfMarriage", e.target.value)}
+          />
+        </AdminField>
+        <AdminField label="Minister" className={`mb-0 ${span.full}`}>
+          <AdminInput
+            placeholder="Rev. Fr."
+            value={form.minister}
+            onChange={(e) => setMarriageField("minister", e.target.value)}
+            required
+          />
+        </AdminField>
+        <AdminField label="Place of marriage" className={`mb-0 ${span.full}`}>
+          <AdminInput
+            value={form.placeOfMarriage}
+            onChange={(e) => setMarriageField("placeOfMarriage", e.target.value)}
+            required
+          />
+        </AdminField>
+        <AdminField label="Marriage address" className={`mb-0 ${span.full}`}>
+          <AdminInput
+            placeholder="Street address, if recorded separately"
+            value={form.marriageAddress}
+            onChange={(e) => setMarriageField("marriageAddress", e.target.value)}
+          />
+        </AdminField>
+      </RecordSection>
 
-      <div className="mb-5">
-        <h1 className="mb-1 text-admin-page font-semibold text-admin-ink">
-          {mode === "edit" ? "Edit" : "Add"} Marriage Record
-        </h1>
-        <p className="text-admin-body text-admin-ink-muted">
-          Enter details exactly as they appear in the parish marriage register.
-        </p>
-      </div>
+      <RecordSection title="Register and witnesses" note="Where this entry sits in the book, and the two witnesses.">
+        <AdminField label="Book no." className={`mb-0 ${span.sixth}`}>
+          <AdminInput
+            value={form.bookNumber}
+            onChange={(e) => setMarriageField("bookNumber", e.target.value)}
+            required
+          />
+        </AdminField>
+        <AdminField label="Page no." className={`mb-0 ${span.sixth}`}>
+          <AdminInput
+            value={form.pageNumber}
+            onChange={(e) => setMarriageField("pageNumber", e.target.value)}
+            required
+          />
+        </AdminField>
+        <AdminField label="Entry no." className={`mb-0 ${span.sixth}`}>
+          <AdminInput
+            value={form.entryNumber}
+            onChange={(e) => setMarriageField("entryNumber", e.target.value)}
+            required
+          />
+        </AdminField>
+        <AdminField label="First witness" className={`mb-0 ${span.half}`}>
+          <AdminInput
+            value={form.witnessOne}
+            onChange={(e) => setMarriageField("witnessOne", e.target.value)}
+            required
+          />
+        </AdminField>
+        <AdminField label="Second witness" className={`mb-0 ${span.half}`}>
+          <AdminInput
+            value={form.witnessTwo}
+            onChange={(e) => setMarriageField("witnessTwo", e.target.value)}
+            required
+          />
+        </AdminField>
+      </RecordSection>
 
-      <form onSubmit={handleSubmit}>
-        <AdminFormSection
-          tone="gold"
-          icon={<HeartIcon className="h-4.5 w-4.5" />}
-          title="Marriage details"
-          description="Where and when the marriage took place, and the officiating minister."
-        >
-          <AdminFieldGroup cols={2}>
-            <AdminField label="Place of marriage" className="mb-0 sm:col-span-2">
-              <AdminInput
-                value={form.placeOfMarriage}
-                onChange={(e) => setMarriageField("placeOfMarriage", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Marriage address" className="mb-0 sm:col-span-2">
-              <AdminInput
-                placeholder="Street address, if recorded separately"
-                value={form.marriageAddress}
-                onChange={(e) => setMarriageField("marriageAddress", e.target.value)}
-              />
-            </AdminField>
-            <AdminField label="Date of marriage" className="mb-0">
-              <AdminInput
-                type="date"
-                value={form.dateOfMarriage}
-                onChange={(e) => setMarriageField("dateOfMarriage", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Time" className="mb-0">
-              <AdminInput
-                type="time"
-                value={form.timeOfMarriage}
-                onChange={(e) => setMarriageField("timeOfMarriage", e.target.value)}
-              />
-            </AdminField>
-            <AdminField label="Minister" className="mb-0 sm:col-span-2">
-              <AdminInput
-                placeholder="Rev. Fr."
-                value={form.minister}
-                onChange={(e) => setMarriageField("minister", e.target.value)}
-                required
-              />
-            </AdminField>
-          </AdminFieldGroup>
-        </AdminFormSection>
+      <PartySections
+        title="Groom"
+        parishId={parish.id}
+        party={form.groom}
+        onChange={(key, value) => setPartyField("groom", key, value)}
+        onBaptismalLink={(recordId, rec) => applyPartyBaptismalLink("groom", recordId, rec)}
+      />
+      <PartySections
+        title="Bride"
+        parishId={parish.id}
+        party={form.bride}
+        onChange={(key, value) => setPartyField("bride", key, value)}
+        onBaptismalLink={(recordId, rec) => applyPartyBaptismalLink("bride", recordId, rec)}
+      />
 
-        <AdminFormSection
-          tone="green"
-          icon={<BookIcon className="h-4.5 w-4.5" />}
-          title="Register & witnesses"
-          description="Book/page/entry reference and the two required witnesses."
-        >
-          <AdminFieldGroup cols={3} title="Register reference">
-            <AdminField label="Book no." className="mb-0">
-              <AdminInput
-                value={form.bookNumber}
-                onChange={(e) => setMarriageField("bookNumber", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Page no." className="mb-0">
-              <AdminInput
-                value={form.pageNumber}
-                onChange={(e) => setMarriageField("pageNumber", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Entry no." className="mb-0">
-              <AdminInput
-                value={form.entryNumber}
-                onChange={(e) => setMarriageField("entryNumber", e.target.value)}
-                required
-              />
-            </AdminField>
-          </AdminFieldGroup>
-
-          <AdminFieldGroup cols={2} title="Witnesses" className="mb-0">
-            <AdminField label="Witness one" className="mb-0">
-              <AdminInput
-                value={form.witnessOne}
-                onChange={(e) => setMarriageField("witnessOne", e.target.value)}
-                required
-              />
-            </AdminField>
-            <AdminField label="Witness two" className="mb-0">
-              <AdminInput
-                value={form.witnessTwo}
-                onChange={(e) => setMarriageField("witnessTwo", e.target.value)}
-                required
-              />
-            </AdminField>
-          </AdminFieldGroup>
-        </AdminFormSection>
-
-        <PartyFormSection
-          title="Groom"
-          tone="blue"
-          parishId={parish.id}
-          party={form.groom}
-          onChange={(key, value) => setPartyField("groom", key, value)}
-          onBaptismalLink={(recordId, rec) => applyPartyBaptismalLink("groom", recordId, rec)}
-        />
-        <PartyFormSection
-          title="Bride"
-          tone="rose"
-          parishId={parish.id}
-          party={form.bride}
-          onChange={(key, value) => setPartyField("bride", key, value)}
-          onBaptismalLink={(recordId, rec) => applyPartyBaptismalLink("bride", recordId, rec)}
-        />
-
-        <AdminFormSection tone="neutral" icon={<NoteIcon className="h-4.5 w-4.5" />} title="Remarks" className="mb-0">
+      <RecordSection title="Remarks">
+        <AdminField label="Remarks" className={`mb-0 ${span.full}`}>
           <AdminTextarea
+            className="min-h-[84px]"
             value={form.remarks}
             onChange={(e) => setMarriageField("remarks", e.target.value)}
             placeholder="Additional notes about this entry"
           />
-        </AdminFormSection>
-
-        <div className="mt-5 flex justify-end gap-2.5">
-          <AdminButton variant="secondary" type="button" onClick={() => navigate(-1)}>
-            Cancel
-          </AdminButton>
-          <AdminButton type="submit" disabled={submitting}>
-            {submitting ? "Saving…" : mode === "edit" ? "Save changes" : "Confirm & add record"}
-          </AdminButton>
-        </div>
-      </form>
-    </AdminFormPage>
+        </AdminField>
+      </RecordSection>
+    </RecordFormShell>
   );
 }
 
-function PartyFormSection({
+function PartySections({
   title,
-  tone,
   parishId,
   party,
   onChange,
   onBaptismalLink,
 }: {
   title: string;
-  tone: AdminSectionTone;
   parishId: string;
   party: PartyFormState;
   onChange: (key: keyof PartyFormState, value: unknown) => void;
@@ -486,29 +498,22 @@ function PartyFormSection({
     );
   }
 
+  // First name, middle initial and last name: the narrow middle box lines up with "Middle name" above
+  // and the last name reaches the right edge, so the rows stay on the same grid lines.
   return (
-    <AdminFormSection tone={tone} icon={<UserIcon className="h-4.5 w-4.5" />} title={title}>
-      <AdminFieldGroup cols={3}>
-        <AdminField label="First name" className="mb-0">
+    <>
+      <PartyBanner role={title === "Bride" ? "Bride" : "Groom"} />
+      <RecordSection title={title} note="As written in the register.">
+        <AdminField label="First name" className={`mb-0 ${span.third}`}>
           <AdminInput value={party.firstName} onChange={(e) => onChange("firstName", e.target.value)} required />
         </AdminField>
-        <AdminField label="Middle name" className="mb-0">
+        <AdminField label="Middle name" className={`mb-0 ${span.third}`}>
           <AdminInput value={party.middleName} onChange={(e) => onChange("middleName", e.target.value)} />
         </AdminField>
-        <AdminField label="Last name" className="mb-0">
+        <AdminField label="Last name" className={`mb-0 ${span.third}`}>
           <AdminInput value={party.lastName} onChange={(e) => onChange("lastName", e.target.value)} required />
         </AdminField>
-      </AdminFieldGroup>
-
-      <AdminFieldGroup cols={3} title="Birth details">
-        <AdminField label="Sex" className="mb-0">
-          <AdminSelect value={party.sex} onChange={(e) => onChange("sex", e.target.value)}>
-            <option value="">—</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </AdminSelect>
-        </AdminField>
-        <AdminField label="Date of birth" className="mb-0 sm:col-span-2">
+        <AdminField label="Date of birth" className={`mb-0 ${span.third}`}>
           <AdminInput
             type="date"
             value={party.dateOfBirth}
@@ -516,20 +521,15 @@ function PartyFormSection({
             required
           />
         </AdminField>
-        <AdminField label="Birthplace" className="mb-0 sm:col-span-3">
-          <AdminInput value={party.birthplace} onChange={(e) => onChange("birthplace", e.target.value)} />
+        <AdminField label="Sex" className={`mb-0 ${span.third}`}>
+          <AdminSelect value={party.sex} onChange={(e) => onChange("sex", e.target.value)}>
+            <option value="">—</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </AdminSelect>
         </AdminField>
-      </AdminFieldGroup>
-
-      <AdminFieldGroup cols={2}>
-        <AdminField label="Citizenship" className="mb-0">
-          <AdminInput value={party.citizenship} onChange={(e) => onChange("citizenship", e.target.value)} />
-        </AdminField>
-        <AdminField label="Civil status" className="mb-0">
-          <AdminSelect
-            value={party.civilStatus}
-            onChange={(e) => onChange("civilStatus", e.target.value)}
-          >
+        <AdminField label="Civil status" className={`mb-0 ${span.third}`}>
+          <AdminSelect value={party.civilStatus} onChange={(e) => onChange("civilStatus", e.target.value)}>
             <option value="">—</option>
             <option value="Single">Single</option>
             <option value="Widowed">Widowed</option>
@@ -537,113 +537,131 @@ function PartyFormSection({
             <option value="Annulled">Annulled</option>
           </AdminSelect>
         </AdminField>
-        <AdminField label="Address" className="mb-0 sm:col-span-2">
-          <AdminInput value={party.address} onChange={(e) => onChange("address", e.target.value)} />
+        <AdminField label="Birthplace" className={`mb-0 ${span.third}`}>
+          <AdminInput value={party.birthplace} onChange={(e) => onChange("birthplace", e.target.value)} />
         </AdminField>
-        <AdminField label="Religion" className="mb-0 sm:col-span-2">
+        <AdminField label="Citizenship" className={`mb-0 ${span.third}`}>
+          <AdminInput value={party.citizenship} onChange={(e) => onChange("citizenship", e.target.value)} />
+        </AdminField>
+        <AdminField label="Religion" className={`mb-0 ${span.third}`}>
           <AdminInput value={party.religion} onChange={(e) => onChange("religion", e.target.value)} />
         </AdminField>
-      </AdminFieldGroup>
+        <AdminField label="Address" className={`mb-0 ${span.full}`}>
+          <AdminInput value={party.address} onChange={(e) => onChange("address", e.target.value)} />
+        </AdminField>
+        <BaptismalRecordLinkField
+          parishId={parishId}
+          value={party.baptismalRecordId}
+          initialQuery={[party.firstName, party.middleName, party.lastName].filter(Boolean).join(" ")}
+          label="Baptismal record (optional)"
+          onChange={onBaptismalLink}
+          className={span.full}
+        />
+      </RecordSection>
 
-      <BaptismalRecordLinkField
-        parishId={parishId}
-        value={party.baptismalRecordId}
-        initialQuery={[party.firstName, party.middleName, party.lastName].filter(Boolean).join(" ")}
-        label="Baptismal record (optional)"
-        onChange={onBaptismalLink}
-        className="mb-5"
-      />
-
-      <AdminFieldGroup cols={3} title="Father">
-        <AdminField label="First name" className="mb-0">
+      <RecordSection title={`${title}'s parents`}>
+        <AdminField label="Father's first name" className={`mb-0 ${span.third}`}>
           <AdminInput value={party.fatherFirstName} onChange={(e) => onChange("fatherFirstName", e.target.value)} />
         </AdminField>
-        <AdminField label="Middle initial" className="mb-0">
+        <AdminField label="M.I." className={`mb-0 ${span.sixth}`}>
           <AdminInput
             value={party.fatherMiddleInitial}
             onChange={(e) => onChange("fatherMiddleInitial", e.target.value)}
           />
         </AdminField>
-        <AdminField label="Last name" className="mb-0">
+        <AdminField label="Father's last name" className={`mb-0 ${span.half}`}>
           <AdminInput value={party.fatherLastName} onChange={(e) => onChange("fatherLastName", e.target.value)} />
         </AdminField>
-      </AdminFieldGroup>
-
-      <AdminFieldGroup cols={3} title="Mother" className="mb-0">
-        <AdminField label="First name" className="mb-0">
+        <AdminField label="Mother's first name" className={`mb-0 ${span.third}`}>
           <AdminInput value={party.motherFirstName} onChange={(e) => onChange("motherFirstName", e.target.value)} />
         </AdminField>
-        <AdminField label="Middle initial" className="mb-0">
+        <AdminField label="M.I." className={`mb-0 ${span.sixth}`}>
           <AdminInput
             value={party.motherMiddleInitial}
             onChange={(e) => onChange("motherMiddleInitial", e.target.value)}
           />
         </AdminField>
-        <AdminField label="Last name" className="mb-0">
+        <AdminField label="Mother's last name" className={`mb-0 ${span.half}`}>
           <AdminInput value={party.motherLastName} onChange={(e) => onChange("motherLastName", e.target.value)} />
         </AdminField>
-      </AdminFieldGroup>
+      </RecordSection>
 
-      <div className="mt-5 border-t border-dashed border-admin-border pt-5">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-[0.8125rem] font-semibold text-admin-ink">Consent persons</p>
-          <AdminButton variant="secondary" size="sm" type="button" onClick={addConsent}>
-            Add consent
-          </AdminButton>
-        </div>
-        {party.consentPersons.length === 0 ? (
-          <p className="text-admin-support text-admin-ink-faint">None recorded.</p>
-        ) : (
-          party.consentPersons.map((c, i) => (
-            <div key={i} className="mb-3 rounded-[8px] border border-admin-border bg-admin-surface-alt p-4">
-              <AdminFieldGroup cols={3} className="mb-4">
-                <AdminField label="First name" className="mb-0">
-                  <AdminInput
-                    value={c.firstName}
-                    onChange={(e) => updateConsent(i, "firstName", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Middle initial" className="mb-0">
-                  <AdminInput
-                    value={c.middleInitial}
-                    onChange={(e) => updateConsent(i, "middleInitial", e.target.value)}
-                  />
-                </AdminField>
-                <AdminField label="Last name" className="mb-0">
-                  <AdminInput value={c.lastName} onChange={(e) => updateConsent(i, "lastName", e.target.value)} />
-                </AdminField>
-              </AdminFieldGroup>
-              <AdminFieldGroup cols={2} className="mb-3">
-                <AdminField label="Relation" className="mb-0">
-                  <AdminInput value={c.relation} onChange={(e) => updateConsent(i, "relation", e.target.value)} />
-                </AdminField>
-                <AdminField label="Residence" className="mb-0">
-                  <AdminInput value={c.residence} onChange={(e) => updateConsent(i, "residence", e.target.value)} />
-                </AdminField>
-              </AdminFieldGroup>
+      <RecordSection title={`${title}'s consent`} note="Parents or guardians who gave consent, if any.">
+        {party.consentPersons.length === 0 && (
+          <p className={`${span.full} text-admin-support text-admin-ink-faint`}>None recorded.</p>
+        )}
+        {party.consentPersons.map((c, i) => (
+          <div key={i} className={`${span.full} grid grid-cols-6 gap-x-3 gap-y-5`}>
+            <AdminField label="First name" className={`mb-0 ${span.third}`}>
+              <AdminInput value={c.firstName} onChange={(e) => updateConsent(i, "firstName", e.target.value)} />
+            </AdminField>
+            <AdminField label="M.I." className={`mb-0 ${span.sixth}`}>
+              <AdminInput
+                value={c.middleInitial}
+                onChange={(e) => updateConsent(i, "middleInitial", e.target.value)}
+              />
+            </AdminField>
+            <AdminField label="Last name" className={`mb-0 ${span.half}`}>
+              <AdminInput value={c.lastName} onChange={(e) => updateConsent(i, "lastName", e.target.value)} />
+            </AdminField>
+            <AdminField label="Relation" className={`mb-0 ${span.third}`}>
+              <AdminInput value={c.relation} onChange={(e) => updateConsent(i, "relation", e.target.value)} />
+            </AdminField>
+            <AdminField label="Residence" className={`mb-0 ${span.half}`}>
+              <AdminInput value={c.residence} onChange={(e) => updateConsent(i, "residence", e.target.value)} />
+            </AdminField>
+            <div className="col-span-6 flex items-center justify-end @min-[36rem]:col-span-1">
               <AdminButton variant="ghost" size="sm" type="button" onClick={() => removeConsent(i)}>
                 Remove
               </AdminButton>
             </div>
-          ))
-        )}
-      </div>
-    </AdminFormSection>
+          </div>
+        ))}
+        <div className={span.full}>
+          <AdminButton variant="secondary" size="sm" type="button" onClick={addConsent}>
+            Add consent person
+          </AdminButton>
+        </div>
+      </RecordSection>
+    </>
   );
 }
 
-function BackLink() {
-  const navigate = useNavigate();
+const PARTY_BANNER = {
+  Groom: {
+    band: "border-[#C9DDF2] bg-[#EAF2FB]",
+    badge: "bg-[#D6EAF8] text-[#2F6FA8] ring-[#2F6FA8]/20",
+    rule: "bg-[#2F6FA8]",
+  },
+  Bride: {
+    band: "border-[#F1CFDA] bg-[#FBEFF3]",
+    badge: "bg-[#F8D6E0] text-[#B85A75] ring-[#B85A75]/20",
+    rule: "bg-[#B85A75]",
+  },
+} as const;
+
+/** Marks where one party's fields begin: same colours as the Groom and Bride cards on the record page. */
+function PartyBanner({ role }: { role: "Groom" | "Bride" }) {
+  const tone = PARTY_BANNER[role];
   return (
-    <button
-      type="button"
-      onClick={() => navigate(-1)}
-      className="mb-3.5 inline-flex items-center gap-1.5 text-admin-body text-admin-ink-muted hover:text-admin-green-700"
+    <div
+      className={`relative mb-1 mt-6 flex items-center gap-3 overflow-hidden rounded-lg border py-3 pl-5 pr-4 ${tone.band}`}
+      role="presentation"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-        <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      Back
-    </button>
+      <span className={`absolute inset-y-0 left-0 w-1 ${tone.rule}`} aria-hidden="true" />
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-serif text-[0.95rem] font-bold ring-1 ring-inset ${tone.badge}`}
+        aria-hidden="true"
+      >
+        {role === "Groom" ? "G" : "B"}
+      </span>
+      <div className="min-w-0">
+        <p className="font-serif text-admin-group font-semibold leading-tight text-admin-ink">
+          {role === "Groom" ? "Groom's information" : "Bride's information"}
+        </p>
+        <p className="text-admin-support text-admin-ink-muted">Name and birth, parents, and consent</p>
+      </div>
+    </div>
   );
 }
+

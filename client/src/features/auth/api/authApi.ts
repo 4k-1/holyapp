@@ -47,13 +47,13 @@ export async function login(email: string, password: string): Promise<CurrentUse
     });
   } catch (err) {
     if (err instanceof ApiError) {
-      if (err.status === 401) throw new Error("Invalid email or password.");
+      if (err.status === 401) throw new Error("Invalid email or password.", { cause: err });
       if (err.status === 403) {
-        throw new Error("This account has been suspended. Contact the parish office.");
+        throw new Error("This account has been suspended. Contact the parish office.", { cause: err });
       }
-      throw new Error(err.message);
+      throw new Error(err.message, { cause: err });
     }
-    throw new Error("Unable to reach the server. Is the backend running?");
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
 
   if (data.user.role === "super_admin") {
@@ -76,10 +76,10 @@ export async function loginSuperAdmin(email: string, password: string): Promise<
     });
   } catch (err) {
     if (err instanceof ApiError) {
-      if (err.status === 401) throw new Error("Invalid email or password.");
-      throw new Error(err.message);
+      if (err.status === 401) throw new Error("Invalid email or password.", { cause: err });
+      throw new Error(err.message, { cause: err });
     }
-    throw new Error("Unable to reach the server. Is the backend running?");
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
 
   if (data.user.role !== "super_admin") {
@@ -125,9 +125,9 @@ export async function startRegistration(input: RegisterInput): Promise<void> {
     pendingVerificationEmail = input.email.trim();
   } catch (err) {
     if (err instanceof ApiError) {
-      throw new Error(err.message);
+      throw new Error(err.message, { cause: err });
     }
-    throw new Error("Unable to reach the server. Is the backend running?");
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
 }
 
@@ -149,9 +149,9 @@ export async function verifyRegistrationCode(code: string): Promise<CurrentUser>
     return user;
   } catch (err) {
     if (err instanceof ApiError) {
-      throw new Error(err.message);
+      throw new Error(err.message, { cause: err });
     }
-    throw new Error("Unable to reach the server. Is the backend running?");
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
 }
 
@@ -165,9 +165,9 @@ export async function resendVerificationCode(): Promise<void> {
     });
   } catch (err) {
     if (err instanceof ApiError) {
-      throw new Error(err.message);
+      throw new Error(err.message, { cause: err });
     }
-    throw new Error("Unable to reach the server. Is the backend running?");
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
 }
 
@@ -250,6 +250,18 @@ export async function validateSession(): Promise<CurrentUser | null> {
   }
 }
 
+export async function fetchCurrentProfile(): Promise<CurrentUser> {
+  try {
+    const data = await apiFetch<{ user: BackendAuthUser }>("/auth/me");
+    const user = mapBackendUser(data.user);
+    setCurrentUser(user);
+    return user;
+  } catch (err) {
+    if (err instanceof ApiError) throw new Error(err.message, { cause: err });
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
+  }
+}
+
 export interface UpdateProfileInput {
   firstName: string;
   lastName: string;
@@ -257,6 +269,7 @@ export interface UpdateProfileInput {
   birthday: string;
   email: string;
   address: string;
+  contactNumber?: string;
 }
 
 export async function updateProfile(input: UpdateProfileInput): Promise<CurrentUser> {
@@ -267,18 +280,19 @@ export async function updateProfile(input: UpdateProfileInput): Promise<CurrentU
       body: {
         firstName: input.firstName,
         lastName: input.lastName,
-        middleName: input.middleName,
+        middleName: input.middleName ?? "",
         birthday: input.birthday,
         email: input.email,
         address: input.address,
+        contactNumber: input.contactNumber ?? "",
       },
     });
     const updated = mapBackendUser(data.user);
     setCurrentUser(updated);
     return updated;
   } catch (err) {
-    if (err instanceof ApiError) throw new Error(err.message);
-    throw new Error("Unable to reach the server. Is the backend running?");
+    if (err instanceof ApiError) throw new Error(err.message, { cause: err });
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
 }
 
@@ -293,9 +307,9 @@ export async function requestPasswordReset(email: string): Promise<void> {
     });
   } catch (err) {
     if (err instanceof ApiError) {
-      throw new Error(err.message);
+      throw new Error(err.message, { cause: err });
     }
-    throw new Error("Unable to reach the server. Is the backend running?");
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
 }
 
@@ -317,14 +331,8 @@ export async function resetPassword(token: string, password: string): Promise<vo
     });
   } catch (err) {
     if (err instanceof ApiError) {
-      throw new Error(err.message);
+      throw new Error(err.message, { cause: err });
     }
-    throw new Error("Unable to reach the server. Is the backend running?");
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
-}
-
-export async function deleteAccount(): Promise<void> {
-  await new Promise((r) => setTimeout(r, 500));
-  clearSession();
-  setCurrentUser(null);
 }

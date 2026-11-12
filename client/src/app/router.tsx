@@ -1,4 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { ParishLayout } from "@/features/parish/ParishLayout";
 import { parishLayoutLoader } from "@/features/parish/parish-loader";
 import { parishionerRoutes } from "@/features/parishioner/routes";
@@ -9,8 +10,10 @@ import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 import { GivePage } from "@/features/public/GivePage";
+import { LandingPage } from "@/features/public/LandingPage";
 import { PublicDonatePage } from "@/features/public/PublicDonatePage";
 import { PublicIntentionPage } from "@/features/public/PublicIntentionPage";
+import { PrivacyPage } from "@/features/public/PrivacyPage";
 import { ParishLoginPage } from "@/features/auth/pages/ParishLoginPage";
 import { ParishRegisterPage } from "@/features/auth/pages/ParishRegisterPage";
 import { parishAdminRoutes } from "@/features/parish-admin/routes";
@@ -25,12 +28,17 @@ import { SuperAdminAuditPage } from "@/features/super-admin/pages/SuperAdminAudi
 import { SuperAdminReportsPage } from "@/features/super-admin/pages/SuperAdminReportsPage";
 import { SuperAdminSettingsPage } from "@/features/super-admin/pages/SuperAdminSettingsPage";
 import { VerifyCertificatePage } from "@/features/verification/VerifyCertificatePage";
+import { CertificateTemplatePreviewPage } from "@/features/parish-admin/certificates/CertificateTemplatePreviewPage";
 
 
 // inside createBrowserRouter([...]) array:
 
 
 export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <LandingPage />,
+  },
   {
     path: "/give",
     element: <GivePage />,
@@ -42,6 +50,10 @@ export const router = createBrowserRouter([
   {
     path: "/give/:parishSlug/intention",
     element: <PublicIntentionPage />,
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPage />,
   },
   {
     path: "/login",
@@ -79,6 +91,7 @@ export const router = createBrowserRouter([
     path: "/super-admin",
     element: <SuperAdminLayout />,
     loader: requireSuperAdmin,
+    hydrateFallbackElement: <PageLoader />,
     children: [
       { index: true, element: <SuperAdminDashboardPage /> },
       { path: "parishes", element: <SuperAdminParishesPage /> },
@@ -94,17 +107,27 @@ export const router = createBrowserRouter([
     path: "/:parishSlug",
     element: <ParishLayout />,
     loader: parishLayoutLoader,
+    hydrateFallbackElement: <PageLoader />,
     children: [
       { path: "login", element: <ParishLoginPage /> },
       { path: "register", element: <ParishRegisterPage /> },
       {
         path: "portal",
         loader: requireRole(["parishioner"]),
+        hydrateFallbackElement: <PageLoader />,
         children: parishionerRoutes,
+      },
+      {
+        // Full-page print preview of the certificate templates, outside the admin chrome.
+        path: "admin/certificate-templates",
+        loader: requireRole(["parish_admin", "parish_staff"]),
+        hydrateFallbackElement: <PageLoader />,
+        element: <CertificateTemplatePreviewPage />,
       },
       {
         path: "admin",
         loader: requireRole(["parish_admin", "parish_staff"]),
+        hydrateFallbackElement: <PageLoader />,
         children: parishAdminRoutes,
       },
     ],

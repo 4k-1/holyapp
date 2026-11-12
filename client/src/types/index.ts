@@ -1,3 +1,4 @@
+import type { PrintedRecord } from "@/features/parish-admin/components/certificate/certificateData";
 export type Role = "super_admin" | "parish_admin" | "parish_staff" | "parishioner";
 
 /** Mirrors `user_status` in the identity schema. */
@@ -23,6 +24,8 @@ export interface Parish {
   email: string;
   sealUrl?: string;
   backgroundImageUrl?: string;
+  /** A photo of the church building, shown on the parishioner dashboard. */
+  photoUrl?: string;
   tagline?: string;
   createdAt: string;
   updatedAt: string;
@@ -52,11 +55,14 @@ export interface AuditLogEntry {
   id: string;
   parishId: string | null;
   actorId: string;
+  actorName?: string;
   action: string;
   entityType: string;
   entityId: string;
   metadata: Record<string, unknown>;
   createdAt: string;
+  /** Sent by the server with each entry; null for platform-wide actions. */
+  parishName?: string | null;
 }
 
 export interface Payment {
@@ -66,6 +72,8 @@ export interface Payment {
   receiptNumber?: string;
   receiptUrl?: string;
   paidAt?: string;
+  /** Staff member who took the payment at the office; absent for GCash. */
+  collectedBy?: string;
 }
 
 export interface PaymentReceipt {
@@ -93,6 +101,8 @@ export interface CertificateRequestDetails {
 
 export interface CertificateRequest {
   id: string;
+  /** Short reference people read and search for, e.g. CR-2026-00042. The id stays the key. */
+  referenceNo: string;
   parishId: string;
   requesterId: string;
   sacramentType: SacramentType;
@@ -134,6 +144,14 @@ export interface IssuedCertificateFields {
   fatherName?: string;
   notations?: string[];
   verifyUrl?: string;
+  /** The full record as it was printed when the copy was issued. */
+  printed?: PrintedRecord;
+  /** ISO date the copy was issued. */
+  issuedOn?: string;
+  /** What the copy is for (B2), printed under the QR code. */
+  purpose?: string;
+  /** Marriage copies: the last day it is accepted (ISO date). */
+  validUntil?: string;
 }
 
 export interface IssuedCertificate {
@@ -170,7 +188,8 @@ export type MassIntentionTypeName = (typeof MASS_INTENTION_TYPES)[number];
 /** Online origin for now. `said` = already offered at Mass. */
 export type MassIntentionStatus = "pending" | "confirmed" | "said";
 
-export type MassIntentionPayment = "paid" | "unpaid";
+/** Donations are optional: `none`, a GCash donation still `pending`, or `paid`. */
+export type MassIntentionPayment = "paid" | "pending" | "none";
 
 export type MassSlotCapacityState = "open" | "nearly_full" | "full";
 
@@ -182,6 +201,8 @@ export const MASS_INTENTION_MAX_PER_SLOT = 5;
 
 export interface MassIntentionRequest {
   id: string;
+  /** Short reference people read and search for, e.g. MI-2026-00007. */
+  referenceNo: string;
   parishId: string;
   /** Portal user id, or `"online"` for public / office-recorded online requests. */
   requesterId: string | null;
@@ -190,7 +211,9 @@ export interface MassIntentionRequest {
   requestedBy: string;
   contact?: string;
   status: MassIntentionStatus;
+  /** Optional donation in pesos; 0 when none was given. */
   offering: number;
+  donation?: number;
   payment: MassIntentionPayment;
   scheduleDate: string;   // ISO date, e.g. "2026-07-05"
   scheduleTime: string;   // snapshotted display string, e.g. "8:00 AM" — NOT a live reference to MassScheduleEntry
@@ -206,53 +229,11 @@ export interface MassSlotView {
   time: string;
   scheduleLabel: string;
   location: string;
-  maxIntentions: number;
+  /** null when the parish sets no limit on intentions per Mass. */
+  maxIntentions: number | null;
   bookedCount: number;
-  remaining: number;
+  /** null when there is no limit. */
+  remaining: number | null;
   capacityState: MassSlotCapacityState;
   intentions: MassIntentionRequest[];
 }
-
-interface EventTypeStyle {
-  tag: string;
-  card: string;
-}
-
-export const EVENT_TYPE_STYLES: Record<EventType, EventTypeStyle> = {
-  mass: {
-    tag: "bg-admin-green-100 text-admin-green-700",
-    card: "bg-admin-green-100 border-l-[3px] border-l-admin-green-700",
-  },
-  novena: {
-    tag: "bg-admin-gold-100 text-admin-gold-700",
-    card: "bg-admin-gold-100 border-l-[3px] border-l-admin-gold-700",
-  },
-  blessing: {
-    tag: "bg-[#E3E9F5] text-[#3B6FB4]",
-    card: "bg-[#E3E9F5] border-l-[3px] border-l-[#3B6FB4]",
-  },
-  interview: {
-    tag: "bg-[#EDE3F5] text-[#6A3B9E]",
-    card: "bg-[#EDE3F5] border-l-[3px] border-l-[#6A3B9E]",
-  },
-  manual: {
-    tag: "bg-admin-surface-alt text-admin-ink-muted",
-    card: "bg-admin-surface-alt border-l-[3px] border-l-admin-ink-muted",
-  },
-  baptism: {
-    tag: "bg-[#E1F0EE] text-[#2E8B87]",
-    card: "bg-[#E1F0EE] border-l-[3px] border-l-[#2E8B87]",
-  },
-  confirmation: {
-    tag: "bg-[#E3E9F5] text-[#3B4E8A]",
-    card: "bg-[#E3E9F5] border-l-[3px] border-l-[#3B4E8A]",
-  },
-  wedding: {
-    tag: "bg-[#F5E3EA] text-[#B4577A]",
-    card: "bg-[#F5E3EA] border-l-[3px] border-l-[#B4577A]",
-  },
-  funeral: {
-    tag: "bg-admin-surface-alt text-[#5B5750]",
-    card: "bg-admin-surface-alt border-l-[3px] border-l-[#5B5750]",
-  },
-};

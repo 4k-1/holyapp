@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
+const { isMonthDay } = require('../utils/liturgicalCalendar');
 
 const SACRAMENTS = ['baptism', 'confirmation', 'marriage', 'death'];
 
@@ -64,7 +65,37 @@ function toProfile(parish, settings) {
     phone: parish.contact,
     email: parish.email || '',
     sealUrl: parish.seal_url || (settings && settings.logo_url) || undefined,
+    fiestaDate: (settings && settings.fiesta_date) || '',
+    localFeasts: (settings && Array.isArray(settings.local_feasts) && settings.local_feasts) || [],
   };
+}
+
+/** The parish's own yearly dates (B5 + C5): a fiesta "MM-DD" and other local feasts { name, date }. */
+function parseLocalDates(body) {
+  const fiestaDate = String(body.fiestaDate || '').trim();
+  if (fiestaDate && !isMonthDay(fiestaDate)) {
+    const err = new Error('The fiesta date is not a valid day of the year.');
+    err.status = 400;
+    throw err;
+  }
+  const list = Array.isArray(body.localFeasts) ? body.localFeasts : [];
+  if (list.length > 30) {
+    const err = new Error('Add at most 30 local feasts.');
+    err.status = 400;
+    throw err;
+  }
+  const localFeasts = list.map((item) => ({
+    name: String((item && item.name) || '').trim().slice(0, 120),
+    date: String((item && item.date) || '').trim(),
+  }));
+  if (localFeasts.some((item) => !item.name || !isMonthDay(item.date))) {
+    const err = new Error('Each local feast needs a name and a valid day of the year.');
+    err.status = 400;
+    throw err;
+  }
+  // Left out (an older screen): keep what's saved.
+  const given = 'fiestaDate' in body || 'localFeasts' in body;
+  return { given, fiestaDate: fiestaDate || null, localFeasts };
 }
 
 function toFee(row) {
@@ -152,7 +183,7 @@ async function getProfile(req, res) {
       return res.status(404).json({ error: 'Parish not found.' });
     }
     const settings = await pool.query(
-      `SELECT patron, diocese, logo_url FROM parish_settings WHERE parish_id = $1`,
+      `SELECT patron, diocese, logo_url, fiesta_date, local_feasts FROM parish_settings WHERE parish_id = $1`,
       [req.parishId]
     );
     res.json({ profile: toProfile(parish.rows[0], settings.rows[0]) });
@@ -173,6 +204,12 @@ async function updateProfile(req, res) {
   if (!name || !address) {
     return res.status(400).json({ error: 'Parish name and address are required.' });
   }
+  let localDates;
+  try {
+    localDates = parseLocalDates(req.body);
+  } catch (err) {
+    return res.status(err.status || 400).json({ error: err.message });
+  }
 
   try {
     await ensureSettings(req.parishId, req.user.id);
@@ -185,10 +222,21 @@ async function updateProfile(req, res) {
     );
     const settings = await pool.query(
       `UPDATE parish_settings
-       SET patron = $1, diocese = $2, logo_url = COALESCE($3, logo_url), updated_by = $4, updated_at = NOW()
+       SET patron = $1, diocese = $2, logo_url = COALESCE($3, logo_url), updated_by = $4, updated_at = NOW(),
+           fiesta_date = CASE WHEN $8 THEN $6 ELSE fiesta_date END,
+           local_feasts = CASE WHEN $8 THEN $7::jsonb ELSE local_feasts END
        WHERE parish_id = $5
-       RETURNING patron, diocese, logo_url`,
-      [patron, diocese, sealUrl, req.user.id, req.parishId]
+       RETURNING patron, diocese, logo_url, fiesta_date, local_feasts`,
+      [
+        patron,
+        diocese,
+        sealUrl,
+        req.user.id,
+        req.parishId,
+        localDates.fiestaDate,
+        JSON.stringify(localDates.localFeasts),
+        localDates.given,
+      ]
     );
     await writeAudit({
       parishId: req.parishId,
@@ -282,10 +330,58 @@ async function getCertificates(req, res) {
   }
 }
 
+const PREFIX_FORMAT = /^[A-Z0-9]{2,5}$/;
+
+function normalizePrefix(value) {
+  return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+/**
+ * Each sacrament needs its own prefix: certificate numbers are counted per sacrament, so two
+ * sacraments sharing a prefix would both issue e.g. MC-2026-000001. A prefix already printed on
+ * another sacrament's certificates is refused for the same reason. Returns an error message or null.
+ */
+async function prefixProblem(parishId, body) {
+  const current = await pool.query(
+    'SELECT certificate_type, numbering_prefix FROM certificate_configuration WHERE parish_id = $1',
+    [parishId]
+  );
+  const prefixes = {};
+  for (const row of current.rows) prefixes[row.certificate_type] = row.numbering_prefix;
+  for (const type of SACRAMENTS) {
+    if (body[type]) prefixes[type] = normalizePrefix(body[type].numberingPrefix);
+  }
+
+  for (const type of SACRAMENTS) {
+    const prefix = prefixes[type] || DEFAULT_CERTS[type].numberingPrefix;
+    if (!PREFIX_FORMAT.test(prefix)) {
+      return `The ${type} prefix must be 2 to 5 letters or numbers.`;
+    }
+    const clash = SACRAMENTS.find(
+      (other) => other !== type && (prefixes[other] || DEFAULT_CERTS[other].numberingPrefix) === prefix
+    );
+    if (clash) {
+      return `${prefix} is set for both ${clash} and ${type}. Give each certificate its own prefix.`;
+    }
+    const used = await pool.query(
+      `SELECT record_type FROM certificate
+       WHERE parish_id = $1 AND record_type <> $2 AND certificate_code LIKE $3
+       LIMIT 1`,
+      [parishId, type, `${prefix}-%`]
+    );
+    if (used.rows[0]) {
+      return `${prefix} is already printed on this parish's ${used.rows[0].record_type} certificates. Choose another prefix for ${type}.`;
+    }
+  }
+  return null;
+}
+
 async function updateCertificates(req, res) {
   const body = req.body.certificates || req.body;
   try {
     await ensureCertificates(req.parishId, req.user.id);
+    const problem = await prefixProblem(req.parishId, body);
+    if (problem) return res.status(400).json({ error: problem });
     for (const type of SACRAMENTS) {
       const appearance = body[type];
       if (!appearance) continue;
@@ -301,7 +397,7 @@ async function updateCertificates(req, res) {
         [
           String(appearance.signatoryName || '').trim(),
           String(appearance.signatoryTitle || '').trim(),
-          String(appearance.numberingPrefix || '').trim().toUpperCase(),
+          normalizePrefix(appearance.numberingPrefix),
           String(appearance.footerText || '').trim(),
           req.user.id,
           req.parishId,

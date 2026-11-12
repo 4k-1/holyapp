@@ -1,8 +1,12 @@
 const pool = require('../config/db');
+const { NEEDS_RECORDING } = require('../utils/scheduleRecordLink');
+const { isClergyRank, formatPersonName } = require('../constants/personnelRoles');
+const liturgical = require('../utils/liturgicalCalendar');
 const {
   convert24to12,
   dayAbbrev,
   daysInMonth,
+  conflictMessage,
   findConflict,
   parseTimeToMinutes,
   toISO,
@@ -41,10 +45,28 @@ const DEFAULT_MASS = [
   },
 ];
 
+/** Regular Masses and other standing commitments are held in the church itself. */
+const DEFAULT_LOCATION = 'Main church';
+
 function httpError(status, message) {
   const err = new Error(message);
   err.status = status;
   return err;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The name as shown ("Fr. Juan Santos, SVD"), always from the Staff record. */
+const PERSON_NAME = `concat_ws(' ', p.honorific, p.full_name) || COALESCE(', ' || p.post_nominals, '')`;
+
+/**
+ * Who is assigned (C2): a person on the staff list by id, with their current name, or a guest by the name typed
+ * in (a visiting priest). The text column is kept only for guests.
+ */
+function assigneeOf(personId, personName, guestName) {
+  if (personId) return { assigneeId: personId, assignee: personName || '', guest: false };
+  const name = String(guestName || '').trim();
+  return { assigneeId: null, assignee: name, guest: name !== '' };
 }
 
 function toRecurring(row) {
@@ -54,7 +76,7 @@ function toRecurring(row) {
     type: row.event_type,
     days: row.days || [],
     slots: Array.isArray(row.slots) ? row.slots : [],
-    assignee: row.assignee || '',
+    ...assigneeOf(row.assigned_to, row.assigned_personnel_name, row.assignee),
     showOnOverview: row.show_on_overview !== false,
   };
 }
@@ -68,8 +90,13 @@ function toBlock(row) {
     title: row.title,
     type: row.event_type,
     source: row.source || 'manual',
-    assignee: row.assignee_name || row.assigned_personnel_name || '',
+    ...assigneeOf(row.assigned_to, row.assigned_personnel_name, row.assignee_name),
+    location: row.location || '',
     recordStatus: row.record_status || undefined,
+    /** Register entries made from it: [{ id, register, name }]. */
+    recorded: row.recorded || [],
+    /** A wedding booked through a marriage application. */
+    marriageApplicationId: row.marriage_application_id || null,
     showOnOverview: row.show_on_overview !== false,
   };
 }
@@ -82,6 +109,8 @@ function getOccurrencesForDate(dateStr, recurring, blocks, overrides) {
     if (!rc.days.includes(day)) continue;
     for (const slot of rc.slots) {
       const occId = `${rc.id}-${dateStr}-${slot.start}`;
+      // A change for this one Mass wins over the regular assignment.
+      const who = overrides[occId] || rc;
       occurrences.push({
         id: occId,
         date: dateStr,
@@ -90,7 +119,10 @@ function getOccurrencesForDate(dateStr, recurring, blocks, overrides) {
         title: rc.label,
         type: rc.type,
         source: 'recurring',
-        assignee: overrides[occId] || rc.assignee || '',
+        assigneeId: who.assigneeId || null,
+        assignee: who.assignee || '',
+        guest: Boolean(who.guest),
+        location: DEFAULT_LOCATION,
         showOnOverview: rc.showOnOverview !== false,
         isRecurringOccurrence: true,
       });
@@ -116,28 +148,67 @@ const EVENT_SELECT = `
          to_char(e.start_datetime, 'YYYY-MM-DD') AS event_date,
          to_char(e.start_datetime, 'HH24:MI') AS start_24,
          to_char(COALESCE(e.end_datetime, e.start_datetime + interval '1 hour'), 'HH24:MI') AS end_24,
-         p.full_name AS assigned_personnel_name
+         ${PERSON_NAME} AS assigned_personnel_name,
+         rec.recorded
   FROM event e
   LEFT JOIN parish_personnel p ON p.id = e.assigned_to
+  -- Register entries made from this event (C11): a baptism session can have several.
+  LEFT JOIN LATERAL (
+    SELECT json_agg(json_build_object('id', r.id, 'register', r.register, 'name', r.name) ORDER BY r.created_at) AS recorded
+    FROM (
+      SELECT id, 'baptismal' AS register, concat_ws(' ', first_name, last_name) AS name, created_at
+        FROM baptism WHERE schedule_event_id = e.id AND archived_at IS NULL
+      UNION ALL
+      SELECT id, 'confirmation', concat_ws(' ', first_name, last_name), created_at
+        FROM confirmation WHERE schedule_event_id = e.id AND archived_at IS NULL
+      UNION ALL
+      SELECT m.id, 'marriage', (
+               SELECT string_agg(concat_ws(' ', mp.first_name, mp.last_name), ' & ' ORDER BY mp.role)
+               FROM marriage_party mp WHERE mp.marriage_id = m.id
+             ), m.created_at
+        FROM marriage m WHERE m.schedule_event_id = e.id AND m.archived_at IS NULL
+      UNION ALL
+      SELECT id, 'death', concat_ws(' ', first_name, last_name), created_at
+        FROM death WHERE schedule_event_id = e.id AND archived_at IS NULL
+    ) r
+  ) rec ON true
+`;
+
+const RECURRING_SELECT = `
+  SELECT c.*, ${PERSON_NAME} AS assigned_personnel_name
+  FROM parish_recurring_commitment c
+  LEFT JOIN parish_personnel p ON p.id = c.assigned_to
 `;
 
 async function loadRecurring(parishId) {
   const result = await pool.query(
-    `SELECT * FROM parish_recurring_commitment
-     WHERE parish_id = $1
-     ORDER BY created_at`,
+    `${RECURRING_SELECT}
+     WHERE c.parish_id = $1
+     ORDER BY c.created_at`,
     [parishId]
   );
   return result.rows.map(toRecurring);
 }
 
+async function loadCommitment(parishId, id) {
+  const result = await pool.query(`${RECURRING_SELECT} WHERE c.parish_id = $1 AND c.id = $2`, [parishId, id]);
+  return result.rows[0] ? toRecurring(result.rows[0]) : null;
+}
+
+/** Changes for single Masses, by occurrence id. A cleared change falls back to the regular assignment. */
 async function loadOverrides(parishId) {
   const result = await pool.query(
-    `SELECT occurrence_id, assignee FROM parish_schedule_override WHERE parish_id = $1`,
+    `SELECT o.occurrence_id, o.assigned_to, o.assignee, ${PERSON_NAME} AS assigned_personnel_name
+     FROM parish_schedule_override o
+     LEFT JOIN parish_personnel p ON p.id = o.assigned_to
+     WHERE o.parish_id = $1`,
     [parishId]
   );
   const map = {};
-  for (const row of result.rows) map[row.occurrence_id] = row.assignee || '';
+  for (const row of result.rows) {
+    const who = assigneeOf(row.assigned_to, row.assigned_personnel_name, row.assignee);
+    if (who.assigneeId || who.guest) map[row.occurrence_id] = who;
+  }
   return map;
 }
 
@@ -167,26 +238,92 @@ async function ensureDefaultMassSchedule(parishId, userId) {
   }
 }
 
-async function resolvePersonnelId(parishId, name) {
-  const text = String(name || '').trim();
-  if (!text) return null;
-  const result = await pool.query(
-    `SELECT id FROM parish_personnel
-     WHERE parish_id = $1 AND lower(full_name) = lower($2)
-     LIMIT 1`,
-    [parishId, text]
-  );
-  return result.rows[0]?.id || null;
+/**
+ * Reads who to assign from a request body: `assigneeId` (someone on the staff list) or `assignee` (a guest's
+ * name). Returns { assigneeId, assignee } with `assignee` set only for a guest; nobody is { null, '' }.
+ */
+function assigneeInput(body = {}) {
+  const id = String(body.assigneeId || '').trim();
+  if (id) {
+    if (!UUID.test(id)) throw httpError(400, 'Choose someone from the staff list.');
+    return { assigneeId: id, assignee: '' };
+  }
+  return { assigneeId: null, assignee: String(body.assignee || '').trim().slice(0, 255) };
 }
 
+/** The person must be on this parish's staff list. Returns their name as shown, or the guest's name. */
+async function checkAssignee(parishId, { assigneeId, assignee }) {
+  if (!assigneeId) return assignee || '';
+  const result = await pool.query(
+    `SELECT ${PERSON_NAME} AS name FROM parish_personnel p WHERE p.id = $1 AND p.parish_id = $2`,
+    [assigneeId, parishId]
+  );
+  if (!result.rows[0]) throw httpError(400, 'Choose someone from the staff list.');
+  return result.rows[0].name;
+}
+
+/** Clergy first so priests are easy to find when assigning; everyone carries their role for identification. */
 async function listAssignableStaff(parishId) {
   const result = await pool.query(
-    `SELECT full_name FROM parish_personnel
+    `SELECT id, full_name, role_title, honorific, post_nominals, clergy_rank FROM parish_personnel
      WHERE parish_id = $1 AND status = 'active'
      ORDER BY full_name`,
     [parishId]
   );
-  return result.rows.map((row) => row.full_name).filter(Boolean);
+  return result.rows
+    .filter((row) => row.full_name)
+    // Clergy from their clergy status (item 4), so a priest who is also a chaplain stays with the priests.
+    .map((row) => ({
+      id: row.id,
+      name: formatPersonName({ honorific: row.honorific, name: row.full_name, postNominals: row.post_nominals }),
+      role: row.role_title,
+      clergy: isClergyRank(row.clergy_rank),
+    }))
+    .sort((a, b) => Number(b.clergy) - Number(a.clergy) || a.name.localeCompare(b.name));
+}
+
+/** Throws 409 when the new time clashes with an event in the same place or with the same priest. */
+async function assertNoConflict(parishId, { date, start, end, assigneeId, assignee, location, excludeId }) {
+  const occurrences = await occurrencesForDate(parishId, date);
+  const conflict = findConflict(occurrences, start, end, { excludeId, assigneeId, assignee, location });
+  if (conflict) throw httpError(409, conflictMessage(conflict));
+}
+
+/** The parish's own dates for the liturgical calendar (B5 + C5): fiesta, patron and local feasts. */
+async function loadLocalDates(parishId, db = pool) {
+  const result = await db.query(
+    'SELECT patron, fiesta_date, local_feasts FROM parish_settings WHERE parish_id = $1',
+    [parishId]
+  );
+  const row = result.rows[0] || {};
+  return {
+    patron: row.patron || '',
+    fiestaDate: row.fiesta_date || '',
+    localFeasts: Array.isArray(row.local_feasts) ? row.local_feasts : [],
+  };
+}
+
+/** The day in the Church calendar, and why booking this type of event on it may not be allowed. */
+async function calendarCheck(parishId, date, type) {
+  const local = await loadLocalDates(parishId);
+  return {
+    day: liturgical.liturgicalDay(date, local),
+    warnings: liturgical.bookingWarnings(type, date, local),
+  };
+}
+
+/**
+ * Throws 409 `calendar_warning` when the Church doesn't allow this booking on that day, unless staff
+ * chose to book anyway (`calendarOk`). Notes such as the parish fiesta never stop a booking.
+ */
+async function assertCalendarOk(parishId, { date, type, calendarOk }) {
+  if (calendarOk === true) return;
+  const { warnings } = await calendarCheck(parishId, date, type);
+  const rules = warnings.filter((w) => w.level === 'rule');
+  if (rules.length === 0) return;
+  const err = httpError(409, rules.map((w) => w.message).join(' '));
+  err.details = { code: 'calendar_warning', warnings };
+  throw err;
 }
 
 async function occurrencesForDate(parishId, dateStr) {
@@ -247,9 +384,10 @@ function scheduleLabelForDate(dateStr, schedule) {
   return schedule.find((entry) => entry.dayType === dayType)?.label || '';
 }
 
-async function createEvent(parishId, userId, input) {
-  const assignedTo = await resolvePersonnelId(parishId, input.assignee);
-  const inserted = await pool.query(
+/** `db`: a client when the event is saved inside a larger transaction (funeral booking). */
+async function createEvent(parishId, userId, input, db = pool) {
+  await checkAssignee(parishId, input);
+  const inserted = await db.query(
     `INSERT INTO event (
        parish_id, event_type, title, description, start_datetime, end_datetime,
        location, status, created_by, assigned_to, assignee_name, source,
@@ -266,10 +404,11 @@ async function createEvent(parishId, userId, input) {
       toTimestamp(input.date, input.end),
       input.location || null,
       userId,
-      assignedTo,
-      input.assignee || '',
+      input.assigneeId || null,
+      input.assigneeId ? null : input.assignee || null,
       input.source || 'manual',
-      input.recordStatus || null,
+      // Sacraments wait to be written in the register (C11).
+      input.recordStatus || (NEEDS_RECORDING.includes(input.type) ? 'Pending' : null),
       input.showOnOverview !== false,
       input.marriageApplicationId || null,
     ]
@@ -277,28 +416,80 @@ async function createEvent(parishId, userId, input) {
   return inserted.rows[0].id;
 }
 
-async function assignOccurrence(parishId, occurrenceId, assignee) {
-  const uuid =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(occurrenceId);
-  const assignedTo = await resolvePersonnelId(parishId, assignee);
+/** Recurring occurrence ids end in "-YYYY-MM-DD-h:mm AM"; event ids are UUIDs. */
+function occurrenceDate(occurrenceId) {
+  const match = /(\d{4}-\d{2}-\d{2})-\d{1,2}:\d{2} [AP]M$/.exec(occurrenceId);
+  return match ? match[1] : null;
+}
+
+async function updateEvent(parishId, eventId, input) {
+  await checkAssignee(parishId, input);
+  await pool.query(
+    `UPDATE event
+     SET title = $1, event_type = $2, start_datetime = $3, end_datetime = $4, location = $5,
+         assigned_to = $6, assignee_name = $7, show_on_overview = $8, updated_at = NOW()
+     WHERE id = $9 AND parish_id = $10`,
+    [
+      input.title,
+      input.type,
+      toTimestamp(input.date, input.start),
+      toTimestamp(input.date, input.end),
+      input.location || null,
+      input.assigneeId || null,
+      input.assigneeId ? null : input.assignee || null,
+      input.showOnOverview !== false,
+      eventId,
+      parishId,
+    ]
+  );
+}
+
+/** `who` is { assigneeId, assignee } from assigneeInput. Returns the name as shown. */
+async function assignOccurrence(parishId, occurrenceId, who) {
+  const uuid = UUID.test(occurrenceId);
+  const name = await checkAssignee(parishId, who);
+  if (who.assigneeId || who.assignee) {
+    let date = occurrenceDate(occurrenceId);
+    if (uuid) {
+      const found = await pool.query(
+        "SELECT to_char(start_datetime, 'YYYY-MM-DD') AS d FROM event WHERE id = $1 AND parish_id = $2",
+        [occurrenceId, parishId]
+      );
+      date = found.rows[0]?.d || null;
+    }
+    if (date) {
+      const occurrence = (await occurrencesForDate(parishId, date)).find((o) => o.id === occurrenceId);
+      if (occurrence) {
+        await assertNoConflict(parishId, {
+          date,
+          start: occurrence.start,
+          end: occurrence.end,
+          assigneeId: who.assigneeId,
+          assignee: who.assignee,
+          excludeId: occurrenceId,
+        });
+      }
+    }
+  }
   if (uuid) {
     const updated = await pool.query(
       `UPDATE event
        SET assigned_to = $1, assignee_name = $2, updated_at = NOW()
        WHERE id = $3 AND parish_id = $4
        RETURNING id`,
-      [assignedTo, assignee || '', occurrenceId, parishId]
+      [who.assigneeId || null, who.assigneeId ? null : who.assignee || null, occurrenceId, parishId]
     );
     if (!updated.rowCount) throw httpError(404, 'Event not found.');
-    return;
+    return name;
   }
   await pool.query(
-    `INSERT INTO parish_schedule_override (parish_id, occurrence_id, assignee)
-     VALUES ($1, $2, $3)
+    `INSERT INTO parish_schedule_override (parish_id, occurrence_id, assigned_to, assignee)
+     VALUES ($1, $2, $3, $4)
      ON CONFLICT (parish_id, occurrence_id)
-     DO UPDATE SET assignee = EXCLUDED.assignee`,
-    [parishId, occurrenceId, assignee || '']
+     DO UPDATE SET assigned_to = EXCLUDED.assigned_to, assignee = EXCLUDED.assignee`,
+    [parishId, occurrenceId, who.assigneeId || null, who.assigneeId ? '' : who.assignee || '']
   );
+  return name;
 }
 
 module.exports = {
@@ -307,17 +498,27 @@ module.exports = {
   toBlock,
   getOccurrencesForDate,
   loadRecurring,
+  loadCommitment,
   loadOverrides,
   loadBlocks,
   ensureDefaultMassSchedule,
-  resolvePersonnelId,
+  assigneeInput,
+  checkAssignee,
+  occurrenceDate,
   listAssignableStaff,
+  assertNoConflict,
+  assertCalendarOk,
+  calendarCheck,
+  loadLocalDates,
+  DEFAULT_LOCATION,
   occurrencesForDate,
   occurrencesForMonth,
   massScheduleFromCommitments,
   scheduleLabelForDate,
   createEvent,
+  updateEvent,
   assignOccurrence,
   EVENT_SELECT,
   findConflict,
+  conflictMessage,
 };

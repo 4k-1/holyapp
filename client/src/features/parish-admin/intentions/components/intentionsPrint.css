@@ -1,0 +1,82 @@
+/* Mass intentions print sheet; showing and hiding is handled by the shared print sheet. */
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  .intentions-print-sheet {
+    font-size: 12.5pt;
+    line-height: 1.45;
+  }
+
+  /* Each Mass starts on its own page so it can be handed to the presider. */
+  .intentions-print-sheet__mass + .intentions-print-sheet__mass {
+    break-before: page;
+  }
+
+  .intentions-print-sheet__parish {
+    margin: 0;
+    font-size: 10.5pt;
+    color: #444;
+    text-align: center;
+  }
+
+  .intentions-print-sheet__title {
+    margin: 4pt 0 0;
+    font-size: 20pt;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .intentions-print-sheet__when {
+    margin: 2pt 0 16pt;
+    padding-bottom: 10pt;
+    border-bottom: 1px solid #999;
+    font-size: 12pt;
+    text-align: center;
+  }
+
+  .intentions-print-sheet__group {
+    margin-bottom: 12pt;
+    break-inside: avoid;
+  }
+
+  .intentions-print-sheet__group h2 {
+    margin: 0 0 4pt;
+    font-size: 13pt;
+    font-weight: 600;
+  }
+
+  .intentions-print-sheet__group ol {
+    margin: 0;
+    padding-left: 20pt;
+  }
+
+  .intentions-print-sheet__group li {
+    margin-bottom: 4pt;
+  }
+
+  .intentions-print-sheet__for {
+    display: block;
+    font-size: 13pt;
+  }
+
+  .intentions-print-sheet__by {
+    display: block;
+    font-size: 10pt;
+    color: #555;
+  }
+
+  .intentions-print-sheet__empty {
+    font-style: italic;
+    color: #555;
+  }
+
+  .intentions-print-sheet__count {
+    margin-top: 16pt;
+    padding-top: 8pt;
+    border-top: 1px solid #ccc;
+    font-size: 10pt;
+    color: #555;
+  }
+}

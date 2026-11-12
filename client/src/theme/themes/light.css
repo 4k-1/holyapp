@@ -1,11 +1,12 @@
 [data-theme="light"] {
-  --color-primary: #1a3d2b;
-  /* --color-accent: #d4a017; */
-  --color-accent: #e8cd8f;
+  /* Deep teal from the HolyApp logo; the light teal accent is decoration only. */
+  --color-primary: #0e4a57;
+  --color-accent: #8ed8d2;
+  --color-accent-ink: #0f5e6e;
   --color-surface: #ffffff;
-  --color-surface-alt: #f8f6f1;
-  --color-ink: #14181a;
-  --color-ink-muted: #5b6663;
-  --color-border: #e2e5e0;
+  --color-surface-alt: #f2f7f8;
+  --color-ink: #13262b;
+  --color-ink-muted: #55707a;
+  --color-border: #dce7e9;
   --color-danger: #b3261e;
 }

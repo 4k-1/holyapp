@@ -1,212 +1,133 @@
-import type { ReportPdfDocument } from "@/features/parish-admin/reports/reportDocument";
+import type { CsvCell, ReportDocument } from "@/features/parish-admin/reports/reportDocument";
 
-/**
- * Tiny text PDF writer for office reports — no third-party PDF library.
- * Uses Helvetica / WinAnsi so stick to ASCII-friendly values in the document.
- */
-
-function pdfEscape(text: string) {
-  return text.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-}
-
-function toWinAnsi(text: string) {
-  return text
-    .replace(/₱/g, "PHP ")
-    .replace(/–/g, "-")
-    .replace(/—/g, "-")
-    .replace(/’/g, "'")
-    .replace(/‘/g, "'")
-    .replace(/“/g, '"')
-    .replace(/”/g, '"')
-    .replace(/…/g, "...")
-    .replace(/[^\x20-\x7E]/g, "?");
-}
-
-function wrapText(text: string, maxChars: number) {
-  const words = toWinAnsi(text).split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const next = current ? `${current} ${word}` : word;
-    if (next.length > maxChars && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = next;
-    }
-  }
-  if (current) lines.push(current);
-  return lines.length ? lines : [""];
-}
-
-function buildPageContents(doc: ReportPdfDocument) {
-  const pageWidth = 612;
-  const pageHeight = 792;
-  const margin = 48;
-  const maxWidth = pageWidth - margin * 2;
-  const pages: string[] = [];
-  let ops: string[] = [];
-  let y = pageHeight - margin;
-
-  function flushPage() {
-    pages.push(ops.join("\n"));
-    ops = [];
-    y = pageHeight - margin;
-  }
-
-  function ensureSpace(needed: number) {
-    if (y - needed < margin) flushPage();
-  }
-
-  function writeText(text: string, size: number, opts?: { bold?: boolean; gap?: number }) {
-    const font = opts?.bold ? "F2" : "F1";
-    const wrapped = wrapText(text, Math.floor(maxWidth / (size * 0.5)));
-    for (const line of wrapped) {
-      ensureSpace(size + 4);
-      ops.push("BT", `/${font} ${size} Tf`, `${margin} ${y} Td`, `(${pdfEscape(line)}) Tj`, "ET");
-      y -= size + 4;
-    }
-    if (opts?.gap) y -= opts.gap;
-  }
-
-  function writeTable(headers: string[], rows: string[][]) {
-    const colCount = Math.max(headers.length, 1);
-    const colWidth = maxWidth / colCount;
-    const rowHeight = 16;
-
-    const drawRow = (cells: string[], header: boolean) => {
-      ensureSpace(rowHeight + 2);
-      let x = margin;
-      for (const cell of cells) {
-        const clipped = toWinAnsi(cell).slice(0, Math.max(4, Math.floor(colWidth / 5.2)));
-        ops.push(
-          "BT",
-          `/${header ? "F2" : "F1"} 9 Tf`,
-          `${x + 2} ${y - 11} Td`,
-          `(${pdfEscape(clipped)}) Tj`,
-          "ET"
-        );
-        x += colWidth;
-      }
-      y -= rowHeight;
-    };
-
-    y -= 2;
-    drawRow(headers, true);
-    ops.push(`${margin} ${y + 2} m ${margin + maxWidth} ${y + 2} l S`);
-    y -= 4;
-    for (const row of rows) drawRow(row, false);
-    y -= 10;
-  }
-
-  writeText(doc.parishName, 11, { bold: true, gap: 2 });
-  writeText(`${doc.title} report`, 18, { bold: true, gap: 4 });
-  writeText(`Period: ${doc.period}`, 10, { gap: 1 });
-  writeText(`Generated: ${doc.generatedOn}`, 10, { gap: 8 });
-  writeText(doc.summary, 11, { gap: 14 });
-
-  if (doc.sections.every((section) => section.rows.length === 0)) {
-    writeText("No entries for this period.", 11);
-  } else {
-    for (const section of doc.sections) {
-      writeText(section.title, 13, { bold: true, gap: 6 });
-      if (section.rows.length === 0) {
-        writeText("No entries.", 10, { gap: 10 });
-      } else {
-        writeTable(section.headers, section.rows);
-      }
-    }
-  }
-
-  flushPage();
-  return { pages, pageWidth, pageHeight };
-}
-
-export function buildReportPdfBlob(doc: ReportPdfDocument): Blob {
-  const { pages, pageWidth, pageHeight } = buildPageContents(doc);
-  const encoder = new TextEncoder();
-
-  type Piece = { id: number; body: Uint8Array };
-  const pieces: Piece[] = [];
-  let nextId = 1;
-
-  function add(body: string) {
-    const id = nextId++;
-    pieces.push({ id, body: encoder.encode(body) });
-    return id;
-  }
-
-  const catalogId = add(""); // fill later
-  const pagesId = add(""); // fill later
-  const fontRegularId = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-  const fontBoldId = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
-
-  const pageIds: number[] = [];
-  for (const content of pages) {
-    const streamBytes = encoder.encode(content);
-    const contentId = add(
-      `<< /Length ${streamBytes.length} >>\nstream\n${content}\nendstream`
-    );
-    const pageId = add(
-      `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] ` +
-        `/Resources << /Font << /F1 ${fontRegularId} 0 R /F2 ${fontBoldId} 0 R >> >> ` +
-        `/Contents ${contentId} 0 R >>`
-    );
-    pageIds.push(pageId);
-    void contentId;
-  }
-
-  const catalogBody = encoder.encode(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
-  const pagesBody = encoder.encode(
-    `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`
-  );
-  pieces[0] = { id: catalogId, body: catalogBody };
-  pieces[1] = { id: pagesId, body: pagesBody };
-
-  const header = encoder.encode("%PDF-1.4\n");
-  const chunks: Uint8Array[] = [header];
-  let offset = header.length;
-  const offsets: number[] = [0];
-
-  for (const piece of pieces) {
-    offsets[piece.id] = offset;
-    const objHeader = encoder.encode(`${piece.id} 0 obj\n`);
-    const objFooter = encoder.encode("\nendobj\n");
-    chunks.push(objHeader, piece.body, objFooter);
-    offset += objHeader.length + piece.body.length + objFooter.length;
-  }
-
-  const xrefStart = offset;
-  let xref = `xref\n0 ${pieces.length + 1}\n0000000000 65535 f \n`;
-  for (let id = 1; id <= pieces.length; id++) {
-    xref += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
-  }
-  xref += `trailer\n<< /Size ${pieces.length + 1} /Root ${catalogId} 0 R >>\n`;
-  xref += `startxref\n${xrefStart}\n%%EOF`;
-  chunks.push(encoder.encode(xref));
-
-  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-  const out = new Uint8Array(total);
-  let cursor = 0;
-  for (const chunk of chunks) {
-    out.set(chunk, cursor);
-    cursor += chunk.length;
-  }
-  return new Blob([out], { type: "application/pdf" });
-}
-
-export function downloadReportPdf(doc: ReportPdfDocument) {
-  const blob = buildReportPdfBlob(doc);
+function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = doc.filename;
+  anchor.download = filename;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
 }
 
-export function reportPdfObjectUrl(doc: ReportPdfDocument) {
-  return URL.createObjectURL(buildReportPdfBlob(doc));
+function csvCell(value: CsvCell) {
+  const text = String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+/** The report's rows as a CSV file. The BOM lets Excel read it as UTF-8. */
+export function downloadReportCsv(doc: ReportDocument) {
+  const lines = [doc.csv.headers, ...doc.csv.rows].map((row) => row.map(csvCell).join(","));
+  saveBlob(new Blob([`\uFEFF${lines.join("\r\n")}\r\n`], { type: "text/csv;charset=utf-8" }), `${doc.filename}.csv`);
+}
+
+const PAGE_BG = "#f2f7f8";
+/** Space above the content on every page after the first, in points. */
+const CONTINUED_TOP = 28;
+
+/** A PDF drawn but not yet saved: each page as an image, for a preview, and a way to save it. */
+export interface BuiltReportPdf {
+  pages: string[];
+  save: (filename: string) => void;
+}
+
+/** Save the report sheet as a landscape A4 PDF; see buildReportPdf. */
+export async function saveReportPdf(element: HTMLElement, filename: string): Promise<void> {
+  (await buildReportPdf(element)).save(filename);
+}
+
+/**
+ * Draw the report sheet as a landscape A4 PDF, the shape of the on-screen dashboard. Pages break at the bottom of a card or table row
+ * (anything marked `data-pdf-break`) so nothing is cut through the middle of a line.
+ */
+export async function buildReportPdf(element: HTMLElement): Promise<BuiltReportPdf> {
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
+  const scale = 2;
+  const canvas = await html2canvas(element, {
+    scale,
+    backgroundColor: PAGE_BG,
+    logging: false,
+    useCORS: true,
+    // html2canvas sets small text a little low against flex-centred dots and pills; nudge those back in its copy.
+    onclone: (clone) => {
+      clone.querySelectorAll<HTMLElement>("[data-pdf-nudge]").forEach((node) => {
+        node.style.position = "relative";
+        node.style.top = `${node.dataset.pdfNudge}px`;
+      });
+    },
+  });
+
+  const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const ptPerPx = pageWidth / element.offsetWidth;
+  const totalPx = element.offsetHeight;
+
+  // A sheet only a little taller than the page is shrunk onto one page rather than spilling a row or two.
+  if (totalPx * ptPerPx <= pageHeight * 1.15) {
+    const fit = Math.min(1, pageHeight / (totalPx * ptPerPx));
+    const width = pageWidth * fit;
+    const image = canvas.toDataURL("image/jpeg", 0.92);
+    pdf.setFillColor(PAGE_BG);
+    pdf.rect(0, 0, pageWidth, pageHeight, "F");
+    pdf.addImage(image, "JPEG", (pageWidth - width) / 2, 0, width, totalPx * ptPerPx * fit);
+    return { pages: [image], save: (filename) => pdf.save(`${filename}.pdf`) };
+  }
+
+  const pages: string[] = [];
+
+  const top = element.getBoundingClientRect().top;
+  const breaks = Array.from(element.querySelectorAll<HTMLElement>("[data-pdf-break]"))
+    .map((node) => node.getBoundingClientRect().bottom - top)
+    .sort((a, b) => a - b);
+
+  let start = 0;
+  let page = 0;
+  while (start < totalPx - 1) {
+    const offsetPt = page === 0 ? 0 : CONTINUED_TOP;
+    const room = (pageHeight - offsetPt) / ptPerPx;
+    let end = start + room;
+    if (end >= totalPx) {
+      end = totalPx;
+    } else {
+      const fit = breaks.filter((b) => b > start + 40 && b <= end);
+      if (fit.length) end = fit[fit.length - 1] + 1;
+    }
+
+    const slice = document.createElement("canvas");
+    slice.width = canvas.width;
+    slice.height = Math.ceil((end - start) * scale);
+    const ctx = slice.getContext("2d");
+    if (!ctx) throw new Error("Could not draw the PDF page.");
+    ctx.fillStyle = PAGE_BG;
+    ctx.fillRect(0, 0, slice.width, slice.height);
+    ctx.drawImage(canvas, 0, Math.floor(start * scale), canvas.width, slice.height, 0, 0, slice.width, slice.height);
+
+    if (page > 0) pdf.addPage();
+    pdf.setFillColor(PAGE_BG);
+    pdf.rect(0, 0, pageWidth, pageHeight, "F");
+    // JPEG keeps a page to a few hundred KB; PNG at this scale runs to megabytes.
+    const image = slice.toDataURL("image/jpeg", 0.92);
+    pdf.addImage(image, "JPEG", 0, offsetPt, pageWidth, (end - start) * ptPerPx);
+    // The preview shows the whole page, so the image is padded the same way the PDF page is.
+    pages.push(page === 0 ? image : padTop(slice, CONTINUED_TOP / ptPerPx, scale));
+
+    start = end;
+    page += 1;
+  }
+
+  return { pages, save: (filename) => pdf.save(`${filename}.pdf`) };
+}
+
+function padTop(slice: HTMLCanvasElement, padPx: number, scale: number) {
+  const padded = document.createElement("canvas");
+  padded.width = slice.width;
+  padded.height = slice.height + Math.round(padPx * scale);
+  const ctx = padded.getContext("2d");
+  if (!ctx) return slice.toDataURL("image/jpeg", 0.92);
+  ctx.fillStyle = PAGE_BG;
+  ctx.fillRect(0, 0, padded.width, padded.height);
+  ctx.drawImage(slice, 0, Math.round(padPx * scale));
+  return padded.toDataURL("image/jpeg", 0.92);
 }

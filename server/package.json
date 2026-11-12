@@ -10,9 +10,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node test/run.js",
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
+    "migrate": "node scripts/migrate.js up",
+    "migrate:status": "node scripts/migrate.js status",
+    "migrate:baseline": "node scripts/migrate.js baseline",
     "seed:auth": "node scripts/seed-auth-users.js",
     "hash-password": "node scripts/hash-password.js"
   },
@@ -29,9 +32,11 @@
     "nodemailer": "^10.0.0",
     "pdfkit": "^0.20.2",
     "pg": "^8.22.0",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "supertest": "^7.3.2"
   }
 }

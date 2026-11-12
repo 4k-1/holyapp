@@ -1,42 +1,69 @@
 // src/features/parish-admin/schedule/AdminSchedulePage.tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
+import { useOpenFromLink } from "@/features/parish-admin/components/useOpenFromLink";
 import { getOccurrencesForMonth } from "./api/scheduleApi";
-import { toISO } from "./scheduleHelpers";
+import { splitRegularMasses, toISO } from "./scheduleHelpers";
 import { MonthCalendarGrid } from "./components/MonthCalendarGrid";
 import { DayAgendaSidebar } from "./components/DayAgendaSidebar";
 import { EventsListView } from "./components/EventsListView";
-import { AddScheduleBlockModal } from "./components/AddScheduleBlockModal";
+import { ScheduleEventModal } from "./components/ScheduleEventModal";
 import { AssignBlockModal } from "./components/AssignBlockModal";
-import { RecurringCommitmentsManagerModal } from "./components/RecurringCommitmentsManagerModal";
-import type { ScheduleOccurrence } from "./types";
+import { FuneralBookingModal } from "./components/FuneralBookingModal";
+import type { LiturgicalDay, ScheduleBlock, ScheduleOccurrence } from "./types";
+import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
 const TODAY_ISO = toISO(new Date());
 
 export function AdminSchedulePage() {
-  const [view, setView] = useState<"calendar" | "list">("calendar");
+  // The dashboard links here with ?needs=record to list sacraments still to be written in the register.
+  const [searchParams] = useSearchParams();
+  const needsRecording = searchParams.get("needs") === "record";
+  const [view, setView] = useState<"calendar" | "list">(needsRecording ? "list" : "calendar");
   const [cursor, setCursor] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(TODAY_ISO);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [monthData, setMonthData] = useState<Record<string, ScheduleOccurrence[]>>({});
+  const [calendar, setCalendar] = useState<Record<string, LiturgicalDay>>({});
   const [loading, setLoading] = useState(true);
   const [listSearch, setListSearch] = useState("");
 
   const [addModalDate, setAddModalDate] = useState<string | null>(null);
   const [assignTarget, setAssignTarget] = useState<ScheduleOccurrence | null>(null);
-  const [managerOpen, setManagerOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ScheduleBlock | null>(null);
+  // The dashboard's "Book a funeral" opens the booking form straight away.
+  const [bookingFuneral, setBookingFuneral] = useState(useOpenFromLink("funeral"));
+  /** Bumped after an edit so the list view fetches again. */
+  const [listVersion, setListVersion] = useState(0);
 
-  async function reload() {
+  const fetchMonth = useCallback(
+    () =>
+      getOccurrencesForMonth(cursor.getFullYear(), cursor.getMonth()).then((data) => {
+        setMonthData(data.occurrences);
+        setCalendar(data.calendar);
+        setLoading(false);
+      }),
+    [cursor]
+  );
+
+  function reload() {
     setLoading(true);
-    const data = await getOccurrencesForMonth(cursor.getFullYear(), cursor.getMonth());
-    setMonthData(data);
-    setLoading(false);
+    return fetchMonth();
+  }
+
+  const { events: eventsByDate, massTimes: massTimesByDate } = useMemo(() => splitRegularMasses(monthData), [monthData]);
+
+  // Show the loading state as soon as the month changes.
+  const [prevCursor, setPrevCursor] = useState(cursor);
+  if (cursor !== prevCursor) {
+    setPrevCursor(cursor);
+    setLoading(true);
   }
 
   useEffect(() => {
-    reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursor]);
+    fetchMonth();
+  }, [fetchMonth]);
 
   function shiftMonth(dir: number) {
     setCursor((prev) => {
@@ -61,34 +88,26 @@ export function AdminSchedulePage() {
     setView("list");
   }
 
-  const monthLabel = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-
   return (
-    <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-admin-page font-semibold text-admin-ink">Parish Schedule & Events</h1>
-          <p className="mt-1 max-w-xl text-admin-body text-admin-ink-muted">
-            Internal tool for parish staff — tracks Masses, devotions, blessings, and interviews so nothing gets
-            double-booked. Not visible to parishioners.
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setManagerOpen(true)}
-            className="whitespace-nowrap shrink-0 text-admin-support font-semibold text-admin-green-700 hover:underline"
-          >
-            Manage recurring schedule
-          </button>
-          <AdminButton onClick={() => setAddModalDate(selectedDate)}>+ Add block</AdminButton>
-        </div>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Parish Schedule & Events"
+        description="Baptisms, weddings, funerals, and other events. Regular Masses are in Settings."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <AdminButton variant="secondary" onClick={() => setBookingFuneral(true)}>
+              Book a funeral
+            </AdminButton>
+            <AdminButton onClick={() => setAddModalDate(selectedDate)}>+ Add block</AdminButton>
+          </div>
+        }
+      />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-[10px] border border-admin-border bg-admin-surface-alt p-1">
+        <div className="inline-flex rounded-md border border-admin-border bg-admin-surface-alt p-1">
           <button
             onClick={() => setView("calendar")}
-            className={`rounded-[7px] px-3.5 py-1.5 text-admin-support font-semibold transition ${
+            className={`rounded-md px-3.5 py-1.5 text-admin-support font-semibold transition ${
               view === "calendar" ? "bg-admin-surface text-admin-ink shadow-sm" : "text-admin-ink-muted"
             }`}
           >
@@ -96,7 +115,7 @@ export function AdminSchedulePage() {
           </button>
           <button
             onClick={() => setView("list")}
-            className={`rounded-[7px] px-3.5 py-1.5 text-admin-support font-semibold transition ${
+            className={`rounded-md px-3.5 py-1.5 text-admin-support font-semibold transition ${
               view === "list" ? "bg-admin-surface text-admin-ink shadow-sm" : "text-admin-ink-muted"
             }`}
           >
@@ -106,26 +125,6 @@ export function AdminSchedulePage() {
 
         {view === "calendar" && (
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => shiftMonth(-1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border bg-surface text-admin-ink-muted hover:bg-admin-surface-alt"
-              aria-label="Previous month"
-            >
-              ‹
-            </button>
-            <span className="min-w-[140px] text-center font-serif text-admin-group font-semibold text-admin-ink">
-              {monthLabel}
-            </span>
-            <button
-              onClick={() => shiftMonth(1)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-admin-border bg-surface text-admin-ink-muted hover:bg-admin-surface-alt"
-              aria-label="Next month"
-            >
-              ›
-            </button>
-            <AdminButton variant="secondary" size="sm" onClick={goToday}>
-              Today
-            </AdminButton>
             <AdminButton variant="secondary" size="sm" onClick={() => setSidebarCollapsed((v) => !v)}>
               {sidebarCollapsed ? "Show details" : "Hide details"}
             </AdminButton>
@@ -138,24 +137,39 @@ export function AdminSchedulePage() {
           onViewDay={jumpToDay}
           searchQuery={listSearch}
           onSearchQueryChange={setListSearch}
+          onEdit={setEditTarget}
+          onAssign={setAssignTarget}
+          reloadKey={listVersion}
+          initialNeedsRecording={needsRecording}
         />
       ) : (
-        <div className={`grid grid-cols-1 gap-4 ${sidebarCollapsed ? "" : "lg:grid-cols-[1fr_400px]"}`}>
+        <div className={`grid grid-cols-1 items-start gap-4 ${sidebarCollapsed ? "" : "lg:grid-cols-[minmax(0,1fr)_360px]"}`}>
           <MonthCalendarGrid
             cursor={cursor}
-            monthData={monthData}
+            monthData={eventsByDate}
+            calendar={calendar}
             loading={loading}
             selectedDate={selectedDate}
             todayStr={TODAY_ISO}
             onSelectDate={setSelectedDate}
+            onPrevMonth={() => shiftMonth(-1)}
+            onNextMonth={() => shiftMonth(1)}
+            onToday={goToday}
+            onAddOnDate={(date) => {
+              setSelectedDate(date);
+              setAddModalDate(date);
+            }}
           />
           {!sidebarCollapsed && (
             <DayAgendaSidebar
               dateStr={selectedDate}
-              occurrences={monthData[selectedDate] ?? []}
+              occurrences={eventsByDate[selectedDate] ?? []}
+              massTimes={massTimesByDate[selectedDate] ?? []}
+              liturgicalDay={calendar[selectedDate]}
               todayStr={TODAY_ISO}
               onAdd={() => setAddModalDate(selectedDate)}
               onAssign={setAssignTarget}
+              onEdit={setEditTarget}
               onChanged={reload}
               onViewAssignee={viewAssigneeSchedule}
             />
@@ -164,12 +178,37 @@ export function AdminSchedulePage() {
       )}
 
       {addModalDate && (
-        <AddScheduleBlockModal
+        <ScheduleEventModal
           defaultDate={addModalDate}
           onClose={() => setAddModalDate(null)}
-          onCreated={() => {
+          onSaved={() => {
             setAddModalDate(null);
             reload();
+            setListVersion((v) => v + 1);
+          }}
+        />
+      )}
+
+      {editTarget && (
+        <ScheduleEventModal
+          event={editTarget}
+          defaultDate={editTarget.date}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => {
+            setEditTarget(null);
+            reload();
+            setListVersion((v) => v + 1);
+          }}
+        />
+      )}
+
+      {bookingFuneral && (
+        <FuneralBookingModal
+          onClose={() => setBookingFuneral(false)}
+          onSaved={() => {
+            setBookingFuneral(false);
+            reload();
+            setListVersion((v) => v + 1);
           }}
         />
       )}
@@ -181,13 +220,10 @@ export function AdminSchedulePage() {
           onAssigned={() => {
             setAssignTarget(null);
             reload();
+            setListVersion((v) => v + 1);
           }}
         />
       )}
-
-      {managerOpen && (
-        <RecurringCommitmentsManagerModal onClose={() => setManagerOpen(false)} onChanged={reload} />
-      )}
-    </div>
+    </AdminPage>
   );
 }

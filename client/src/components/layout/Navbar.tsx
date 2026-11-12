@@ -24,6 +24,15 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
       <div className="mx-auto flex h-[64px] max-w-6xl items-center justify-between gap-3 px-4 sm:h-[68px] sm:px-6">
         {/* ⬇️ THIS is the block that got replaced */}
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <Link
+            to="."
+            title="HolyApp"
+            aria-label="HolyApp, back to your dashboard"
+            className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/35 bg-white shadow-sm sm:h-9 sm:w-9"
+          >
+            <img src="/holyapp-logo.webp" alt="" className="h-6 w-6 object-contain sm:h-7 sm:w-7" />
+          </Link>
+          <span className="h-7 w-px shrink-0 bg-white/25" aria-hidden="true" />
           {parish.sealUrl ? (
             <img
               src={parish.sealUrl}
@@ -37,12 +46,12 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
           )}
           <div className="min-w-0 leading-tight">
             <div
-              className="truncate font-serif text-[14px] font-semibold leading-tight sm:line-clamp-2 sm:max-w-[280px] sm:text-[12.5px] sm:whitespace-normal lg:max-w-[420px]"
+              className="truncate font-serif text-[14px] font-semibold leading-tight sm:line-clamp-2 sm:max-w-[280px] sm:text-[13.5px] sm:whitespace-normal lg:max-w-[420px]"
               title={parish.name}
             >
               {parish.name}
             </div>
-            <div className="mt-0.5 truncate text-[9px] uppercase tracking-wide text-white/60">
+            <div className="mt-0.5 truncate text-[11px] font-semibold uppercase tracking-wide text-white/75">
               Parishioner Portal
             </div>
           </div>
@@ -50,7 +59,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
         {/* ⬆️ end of replaced block */}
 
         {/* Desktop nav */}
-        <div className="hidden shrink-0 items-center gap-1 md:flex">
+        <div className="hidden shrink-0 items-center gap-1 lg:flex">
           {navItems.map((item) => (
             <NavLink
               key={item.label}
@@ -58,7 +67,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
               end={item.end}
               className={({ isActive }) =>
                 `shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
-                  isActive ? "bg-accent/20 font-semibold text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
+                  isActive ? "bg-white/15 font-semibold text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
                 }`
               }
             >
@@ -70,7 +79,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <NavLink
             to="verify"
-            className="hidden items-center gap-1.5 rounded-full border border-accent/40 px-3 py-1.5 text-xs text-accent transition-colors hover:border-accent hover:bg-accent/10 sm:flex"
+            className="hidden items-center gap-1.5 rounded-full border border-white/30 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-white/60 hover:bg-white/10 sm:flex"
           >
             🛡 Verify
           </NavLink>
@@ -88,7 +97,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label="Toggle navigation menu"
             aria-expanded={menuOpen}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xl text-white md:hidden"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xl text-white lg:hidden"
           >
             {menuOpen ? "✕" : "☰"}
           </button>
@@ -97,7 +106,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
 
       {/* Mobile menu panel */}
       {menuOpen && (
-        <div className="absolute w-full flex flex-col gap-1 border-t border-white/10 bg-primary px-4 pb-4 pt-2 shadow-lg md:hidden">
+        <div className="absolute w-full flex flex-col gap-1 border-t border-white/10 bg-primary px-4 pb-4 pt-2 shadow-lg lg:hidden">
           {navItems.map((item) => (
             <NavLink
               key={item.label}
@@ -106,7 +115,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
               onClick={() => setMenuOpen(false)}
               className={({ isActive }) =>
                 `rounded-lg px-4 py-2.5 text-sm ${
-                  isActive ? "bg-accent/20 font-semibold text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
+                  isActive ? "bg-white/15 font-semibold text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
                 }`
               }
             >
@@ -116,7 +125,7 @@ export function Navbar({ parish, userInitials, userName }: NavbarProps) {
           <NavLink
             to="verify"
             onClick={() => setMenuOpen(false)}
-            className="mt-1 rounded-lg px-4 py-2.5 text-sm text-accent hover:bg-white/10"
+            className="mt-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white hover:bg-white/10"
           >
             🛡 Verify a Certificate
           </NavLink>

@@ -1,0 +1,27 @@
+/*
+ * Print sheets render outside the app root and are the only thing on the page when printing.
+ * Every printable sheet (intentions, receipts) carries the .print-sheet class.
+ */
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  body > *:not(.print-sheet) {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: block;
+    color: #111;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  /* Beat the app-wide heading font so each sheet is one serif face. */
+  .print-sheet h1,
+  .print-sheet h2,
+  .print-sheet h3 {
+    font-family: inherit;
+    letter-spacing: normal;
+  }
+}

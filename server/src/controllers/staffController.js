@@ -4,17 +4,22 @@ const { hashPassword } = require('../utils/password');
 const { writeAudit } = require('../utils/audit');
 const { notifyStaffRoleChange } = require('../utils/notify');
 
-const JOB_TITLES = new Set(['Priest', 'Parish Secretary', 'Admin Staff']);
+const { PERSONNEL_ROLES, rankForHonorific, splitHonorific, formatPersonName } = require('../constants/personnelRoles');
+const { assertCanBeParishPriest } = require('../utils/personnel');
+
+const JOB_TITLES = new Set(PERSONNEL_ROLES);
 const DEV_PASSWORD = 'password123';
 
 function displayName(row) {
-  if (row.personnel_name) return row.personnel_name;
+  if (row.personnel_name) {
+    return formatPersonName({ honorific: row.honorific, name: row.personnel_name, postNominals: row.post_nominals });
+  }
   return [row.first_name, row.middle_name, row.last_name].filter(Boolean).join(' ') || row.email;
 }
 
 function jobTitle(row) {
   if (JOB_TITLES.has(row.role_title)) return row.role_title;
-  return row.role === ROLES.PARISH_ADMIN ? 'Admin Staff' : 'Priest';
+  return row.role === ROLES.PARISH_ADMIN ? 'Admin Staff' : 'Staff';
 }
 
 function toStaff(row) {
@@ -25,6 +30,7 @@ function toStaff(row) {
     email: row.email,
     status: row.status === 'active' ? 'Active' : 'Inactive',
     accessRole: row.role === ROLES.PARISH_ADMIN ? 'admin' : 'staff',
+    personnelId: row.personnel_id || null,
   };
 }
 
@@ -45,7 +51,7 @@ function accessToRole(accessRole) {
 async function loadOfficeUser(parishId, userId) {
   const result = await pool.query(
     `SELECT u.id, u.email, u.role, u.status, u.first_name, u.middle_name, u.last_name,
-            p.full_name AS personnel_name, p.role_title, p.id AS personnel_id
+            p.full_name AS personnel_name, p.role_title, p.id AS personnel_id, p.honorific, p.post_nominals
      FROM app_user u
      LEFT JOIN parish_personnel p ON p.user_id = u.id
      WHERE u.id = $1
@@ -56,25 +62,36 @@ async function loadOfficeUser(parishId, userId) {
   return result.rows[0] || null;
 }
 
+/**
+ * Keeps the Staff list in step with the account. The name's honorific ("Fr.") is kept apart; the
+ * account's title becomes the person's primary title, and their other titles stay as they are.
+ */
 async function upsertPersonnel({ parishId, userId, fullName, roleTitle, status }) {
   const existing = await pool.query(
-    'SELECT id FROM parish_personnel WHERE user_id = $1',
+    'SELECT id, honorific, role_title FROM parish_personnel WHERE user_id = $1',
     [userId]
   );
   const personnelStatus = status === 'active' ? 'active' : 'inactive';
-  if (existing.rows.length > 0) {
+  const typed = splitHonorific(fullName);
+  const person = existing.rows[0];
+  const honorific = typed.honorific || person?.honorific || null;
+  if (roleTitle === 'Parish Priest') {
+    await assertCanBeParishPriest(pool, { parishId, personId: person ? person.id : null, honorific, status: personnelStatus });
+  }
+  if (person) {
     await pool.query(
       `UPDATE parish_personnel
-       SET full_name = $1, role_title = $2, status = $3, updated_at = NOW()
+       SET full_name = $1, role_title = $2, status = $3, honorific = $5, clergy_rank = $6,
+           role_scope = CASE WHEN role_title = $2 THEN role_scope END, updated_at = NOW()
        WHERE user_id = $4`,
-      [fullName, roleTitle, personnelStatus, userId]
+      [typed.name, roleTitle, personnelStatus, userId, honorific, rankForHonorific(honorific)]
     );
     return;
   }
   await pool.query(
-    `INSERT INTO parish_personnel (parish_id, full_name, role_title, contact_info, user_id, status)
-     VALUES ($1, $2, $3, NULL, $4, $5)`,
-    [parishId, fullName, roleTitle, userId, personnelStatus]
+    `INSERT INTO parish_personnel (parish_id, full_name, role_title, contact_info, user_id, status, honorific, clergy_rank)
+     VALUES ($1, $2, $3, NULL, $4, $5, $6, $7)`,
+    [parishId, typed.name, roleTitle, userId, personnelStatus, typed.honorific, rankForHonorific(typed.honorific)]
   );
 }
 
@@ -82,7 +99,7 @@ async function listStaff(req, res) {
   try {
     const result = await pool.query(
       `SELECT u.id, u.email, u.role, u.status, u.first_name, u.middle_name, u.last_name,
-              p.full_name AS personnel_name, p.role_title
+              p.full_name AS personnel_name, p.role_title, p.honorific, p.post_nominals, p.id AS personnel_id
        FROM app_user u
        LEFT JOIN parish_personnel p ON p.user_id = u.id
        WHERE u.parish_id = $1
@@ -92,27 +109,53 @@ async function listStaff(req, res) {
     );
     res.json({ staff: result.rows.map(toStaff) });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 }
 
+/**
+ * Creates a sign-in. With `personnelId` the account is attached to someone already on the Staff list, who keeps
+ * their name, role and schedule; without it a new person is added to the list along with the account.
+ */
 async function createStaff(req, res) {
-  const name = String(req.body.name || '').trim();
+  let name = String(req.body.name || '').trim();
   const email = String(req.body.email || '').trim().toLowerCase();
-  const roleTitle = JOB_TITLES.has(req.body.role) ? req.body.role : 'Admin Staff';
+  let roleTitle = JOB_TITLES.has(req.body.role) ? req.body.role : 'Admin Staff';
   const accessRole = req.body.accessRole === 'admin' ? 'admin' : 'staff';
-
-  if (!name || !email) {
-    return res.status(400).json({ error: 'Name and email are required.' });
-  }
+  const personnelId = req.body.personnelId ? String(req.body.personnelId) : null;
 
   try {
+    let person = null;
+    if (personnelId) {
+      const found = await pool.query(
+        'SELECT id, full_name, honorific, role_title, user_id FROM parish_personnel WHERE id = $1 AND parish_id = $2',
+        [personnelId, req.parishId]
+      );
+      person = found.rows[0];
+      if (!person) return res.status(404).json({ error: 'That person is not on the Staff list.' });
+      if (person.user_id) return res.status(409).json({ error: `${person.full_name} already has a sign-in.` });
+      name = person.full_name;
+      roleTitle = person.role_title;
+    }
+
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Name and email are required.' });
+    }
     const taken = await pool.query('SELECT id FROM app_user WHERE lower(email) = $1', [email]);
     if (taken.rows.length > 0) {
       return res.status(409).json({ error: 'An account with this email already exists.' });
     }
 
-    const { firstName, lastName } = splitName(name);
+    // Check the one-Parish-Priest rule before anything is saved.
+    if (roleTitle === 'Parish Priest') {
+      await assertCanBeParishPriest(pool, {
+        parishId: req.parishId,
+        personId: person ? person.id : null,
+        honorific: splitHonorific(name).honorific || person?.honorific,
+        status: 'active',
+      });
+    }
+    const { firstName, lastName } = splitName(splitHonorific(name).name);
     const passwordHash = await hashPassword(DEV_PASSWORD);
     const userRole = accessToRole(accessRole);
     const inserted = await pool.query(
@@ -124,26 +167,33 @@ async function createStaff(req, res) {
       [req.parishId, userRole, firstName, lastName, email, passwordHash]
     );
     const user = inserted.rows[0];
-    await upsertPersonnel({
-      parishId: req.parishId,
-      userId: user.id,
-      fullName: name,
-      roleTitle,
-      status: 'active',
-    });
+    if (person) {
+      await pool.query(
+        `UPDATE parish_personnel SET user_id = $1, status = 'active', updated_at = NOW() WHERE id = $2`,
+        [user.id, person.id]
+      );
+    } else {
+      await upsertPersonnel({
+        parishId: req.parishId,
+        userId: user.id,
+        fullName: name,
+        roleTitle,
+        status: 'active',
+      });
+    }
     await writeAudit({
       parishId: req.parishId,
       actorId: req.user.id,
       action: 'app_user.created',
       entityType: 'app_user',
       entityId: user.id,
-      metadata: { role: userRole, email },
+      metadata: { role: userRole, email, linkedPersonnelId: person ? person.id : null },
     });
 
     const loaded = await loadOfficeUser(req.parishId, user.id);
     res.status(201).json({ staff: toStaff(loaded) });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 }
 
@@ -175,7 +225,15 @@ async function updateStaff(req, res) {
       return res.status(409).json({ error: 'An account with this email already exists.' });
     }
 
-    const { firstName, lastName } = splitName(name);
+    if (roleTitle === 'Parish Priest') {
+      await assertCanBeParishPriest(pool, {
+        parishId: req.parishId,
+        personId: current.personnel_id,
+        honorific: splitHonorific(name).honorific || current.honorific,
+        status: current.status,
+      });
+    }
+    const { firstName, lastName } = splitName(splitHonorific(name).name);
     const nextRole = accessToRole(accessRole);
     await pool.query(
       `UPDATE app_user
@@ -228,7 +286,7 @@ async function updateStaff(req, res) {
     const loaded = await loadOfficeUser(req.parishId, current.id);
     res.json({ staff: toStaff(loaded) });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 }
 
@@ -248,6 +306,9 @@ async function setStaffStatus(req, res) {
       `UPDATE app_user SET status = $1, updated_at = NOW() WHERE id = $2`,
       [nextStatus, current.id]
     );
+    if (nextStatus === 'suspended') {
+      await pool.query('UPDATE refresh_token SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL', [current.id]);
+    }
     await upsertPersonnel({
       parishId: req.parishId,
       userId: current.id,
@@ -267,7 +328,7 @@ async function setStaffStatus(req, res) {
     const loaded = await loadOfficeUser(req.parishId, current.id);
     res.json({ staff: toStaff(loaded) });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 }
 

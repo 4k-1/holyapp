@@ -1,63 +1,22 @@
-import type {
-  ButtonHTMLAttributes,
-  InputHTMLAttributes,
-  KeyboardEvent,
-  ReactNode,
-  SelectHTMLAttributes,
-  SVGProps,
-  TextareaHTMLAttributes,
+import {
+  createContext,
+  useContext,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type SVGProps,
+  type TextareaHTMLAttributes,
 } from "react";
 import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 
 const fieldInputClass =
-  "w-full rounded-[10px] border border-admin-border-strong bg-white px-3.5 py-[11px] text-[0.84375rem] leading-normal text-admin-ink placeholder:text-admin-ink-faint transition-[border-color,box-shadow] focus:border-admin-green-700 focus:outline-none focus:ring-2 focus:ring-admin-green-700/15";
+  "w-full rounded-lg border border-admin-border-strong bg-white px-3.5 py-[10px] text-[0.875rem] leading-normal text-admin-ink placeholder:text-admin-ink-faint transition-[border-color,box-shadow] focus:border-admin-green-700 focus:outline-none focus:ring-[3px] focus:ring-admin-green-100";
 
 const fieldSelectClass = `${fieldInputClass} appearance-none bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-9`;
 
 const SELECT_CHEVRON =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%238a9a9e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")";
-
-const FIELD_SELECTOR =
-  'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
-
-function isVisibleField(el: HTMLElement) {
-  return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
-}
-
-/** Enter moves focus to the next nearest field in the same form (does not submit). */
-function focusNextFormField(current: HTMLElement) {
-  const form = current.closest("form");
-  if (!form) return;
-
-  const fields = Array.from(form.querySelectorAll<HTMLElement>(FIELD_SELECTOR)).filter(isVisibleField);
-  const index = fields.indexOf(current);
-  if (index === -1) return;
-
-  const next = fields[index + 1];
-  if (!next) return;
-
-  next.focus();
-  if (next instanceof HTMLInputElement || next instanceof HTMLTextAreaElement) {
-    const valueLength = next.value.length;
-    try {
-      next.setSelectionRange(0, valueLength);
-    } catch {
-      // date/number/etc. may not support selection
-    }
-  }
-}
-
-function handleEnterToNextField(
-  event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
-  onKeyDown?: (event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => void
-) {
-  onKeyDown?.(event);
-  if (event.defaultPrevented) return;
-  if (event.key !== "Enter" || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
-
-  event.preventDefault();
-  focusNextFormField(event.currentTarget);
-}
 
 export function AdminFormPage({
   children,
@@ -69,6 +28,16 @@ export function AdminFormPage({
   return <div className={`mx-auto w-full max-w-[760px] ${className}`}>{children}</div>;
 }
 
+const NotchedLabelsContext = createContext(false);
+
+/**
+ * Fields inside sit their label on the input's top border, like a notch in the outline,
+ * which keeps a long form compact and easy to scan.
+ */
+export function AdminNotchedLabels({ children }: { children: ReactNode }) {
+  return <NotchedLabelsContext.Provider value>{children}</NotchedLabelsContext.Provider>;
+}
+
 export function AdminField({
   label,
   children,
@@ -78,6 +47,18 @@ export function AdminField({
   children: ReactNode;
   className?: string;
 }) {
+  const notched = useContext(NotchedLabelsContext);
+  if (notched) {
+    // Wrapping in <label> ties the text to its input and lets a click on the notch focus it.
+    return (
+      <label className={`group relative mb-4 block ${className}`}>
+        <span className="pointer-events-none absolute left-2.5 top-0 z-[1] max-w-[calc(100%-1.5rem)] -translate-y-1/2 truncate bg-admin-surface px-1 text-[0.75rem] font-medium leading-none text-admin-ink-muted transition-colors group-focus-within:text-admin-green-700">
+          {label}
+        </span>
+        {children}
+      </label>
+    );
+  }
   return (
     <div className={`mb-4 ${className}`}>
       <label className="mb-1.5 block text-[0.8125rem] font-semibold leading-snug text-admin-ink">
@@ -92,20 +73,19 @@ export function AdminTextarea({
   className = "",
   ...props
 }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={`${fieldInputClass} min-h-[100px] resize-y ${className}`} {...props} />;
+  // A className replaces the default height, since two min-h classes can't be ordered reliably.
+  return <textarea className={`${fieldInputClass} resize-y ${className || "min-h-[100px]"}`} {...props} />;
 }
 
 export function AdminSelect({
   className = "",
   style,
-  onKeyDown,
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       className={`${fieldSelectClass} ${className}`}
       style={{ backgroundImage: SELECT_CHEVRON, ...style }}
-      onKeyDown={(e) => handleEnterToNextField(e, onKeyDown)}
       {...props}
     />
   );
@@ -116,7 +96,6 @@ export function AdminInput({
   type,
   max,
   onChange,
-  onKeyDown,
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
   const isDate = type === "date";
@@ -133,7 +112,6 @@ export function AdminInput({
         }
         onChange?.(e);
       }}
-      onKeyDown={(e) => handleEnterToNextField(e, onKeyDown)}
       {...props}
     />
   );
@@ -142,8 +120,8 @@ export function AdminInput({
 type AdminBtnVariant = "primary" | "secondary" | "danger" | "ghost";
 
 const btnVariants: Record<AdminBtnVariant, string> = {
-  primary: "border-transparent bg-admin-green-700 text-white hover:bg-admin-green-600",
-  secondary: "border-admin-border-strong bg-admin-surface text-admin-ink hover:bg-admin-surface-alt",
+  primary: "border-transparent bg-admin-green-700 text-white shadow-[var(--shadow-button)] hover:bg-admin-green-600",
+  secondary: "border-admin-border bg-admin-surface text-admin-ink shadow-[0_1px_2px_rgb(14_59_70/0.05)] hover:border-admin-border-strong hover:bg-admin-surface-alt",
   danger: "border-[#E3C3BC] bg-admin-surface text-admin-red-700 hover:bg-admin-red-100",
   ghost: "border-transparent bg-transparent px-1.5 text-admin-green-700 hover:underline",
 };
@@ -371,11 +349,11 @@ export function AdminButton({
   size?: "sm" | "md";
   children: ReactNode;
 }) {
-  const sizeClass = size === "sm" ? "px-[11px] py-1.5 text-admin-support" : "px-4 py-[9px] text-admin-body";
+  const sizeClass = size === "sm" ? "px-3 py-1.5 text-admin-support" : "px-4 py-2.5 text-admin-body";
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-lg border font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${btnVariants[variant]} ${sizeClass} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-md border font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-admin-green-100 disabled:cursor-not-allowed disabled:opacity-45 ${btnVariants[variant]} ${sizeClass} ${className}`}
       {...props}
     >
       {children}

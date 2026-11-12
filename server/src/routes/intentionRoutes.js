@@ -4,6 +4,8 @@ const { scopeParish, requireParish } = require('../middleware/scopeParish');
 const { ROLES } = require('../constants/roles');
 const {
   listSlots,
+  listOpenSlots,
+  syncDonation,
   listMine,
   listParishIntentions,
   submitIntention,
@@ -24,7 +26,9 @@ const office = [
 ];
 
 router.get('/mine', ...parishioner, listMine);
+router.get('/open-slots', ...parishioner, listOpenSlots);
 router.post('/', ...parishioner, submitIntention);
+router.post('/:id/donation/sync', ...parishioner, syncDonation);
 router.get('/slots', ...office, listSlots);
 router.get('/capacity', ...office, getCapacitySetting);
 router.patch('/capacity', ...office, updateCapacitySetting);

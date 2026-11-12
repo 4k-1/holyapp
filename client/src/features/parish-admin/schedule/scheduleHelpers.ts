@@ -123,3 +123,20 @@ export function findConflict(
     return startMin < bEnd && endMin > bStart;
   });
 }
+/** Regular Masses come from the Mass schedule in Settings; the calendar shows them as context, not as events. */
+export function isRegularMass(o: ScheduleOccurrence) {
+  return o.isRecurringOccurrence && o.type === "mass";
+}
+
+/** Splits a month of occurrences into the events staff arrange and each day's regular Mass times. */
+export function splitRegularMasses(monthData: Record<string, ScheduleOccurrence[]>) {
+  const events: Record<string, ScheduleOccurrence[]> = {};
+  const massTimes: Record<string, string[]> = {};
+  for (const [date, occurrences] of Object.entries(monthData)) {
+    events[date] = occurrences.filter((o) => !isRegularMass(o));
+    massTimes[date] = [...new Set(occurrences.filter(isRegularMass).map((o) => o.start))].sort(
+      (a, b) => parseTimeToMinutes(a) - parseTimeToMinutes(b)
+    );
+  }
+  return { events, massTimes };
+}

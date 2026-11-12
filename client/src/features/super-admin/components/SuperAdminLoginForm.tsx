@@ -104,13 +104,13 @@ export function SuperAdminLoginForm() {
       {error && (
         <p
           role="alert"
-          className="mt-4 rounded-[10px] bg-admin-red-100 px-3 py-2 text-admin-body text-admin-red-700"
+          className="mt-4 rounded-md bg-admin-red-100 px-3 py-2 text-admin-body text-admin-red-700"
         >
           {error}
         </p>
       )}
 
-      <AdminButton type="submit" variant="primary" disabled={loading} className="mt-6 w-full !rounded-[10px] py-2.5">
+      <AdminButton type="submit" variant="primary" disabled={loading} className="mt-6 w-full !rounded-md py-2.5">
         {loading ? "Signing in…" : "Sign in"}
       </AdminButton>
 

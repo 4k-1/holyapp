@@ -61,16 +61,43 @@ function toTimestamp(date, time12) {
   return `${date} ${to24Hour(time12)}:00`;
 }
 
-function findConflict(occurrences, start, end, excludeId, assignee) {
+function sameText(a, b) {
+  const left = String(a || '').trim().toLowerCase();
+  return left !== '' && left === String(b || '').trim().toLowerCase();
+}
+
+/**
+ * Same person: staff are compared by their record id (C2), so two people with the same name never clash and a
+ * renamed person still does. A guest (a typed name, no id) only clashes with a guest of the same name.
+ */
+function samePerson({ assigneeId, assignee }, b) {
+  if (assigneeId) return b.assigneeId === assigneeId;
+  return !b.assigneeId && sameText(assignee, b.assignee);
+}
+
+/**
+ * Overlapping events may run side by side (a house blessing during a wedding) unless they share a place or a
+ * priest. Returns the first clashing occurrence with `reason` set to 'priest' or 'place', or undefined.
+ */
+function findConflict(occurrences, start, end, { excludeId, assigneeId, assignee, location } = {}) {
   const startMin = parseTimeToMinutes(start);
   const endMin = parseTimeToMinutes(end);
-  return occurrences.find((b) => {
-    if (excludeId && b.id === excludeId) return false;
-    if (assignee && b.assignee !== assignee) return false;
-    const bStart = parseTimeToMinutes(b.start);
-    const bEnd = parseTimeToMinutes(b.end);
-    return startMin < bEnd && endMin > bStart;
-  });
+  for (const b of occurrences) {
+    if (excludeId && b.id === excludeId) continue;
+    const overlaps = startMin < parseTimeToMinutes(b.end) && endMin > parseTimeToMinutes(b.start);
+    if (!overlaps) continue;
+    if (samePerson({ assigneeId, assignee }, b)) return { ...b, reason: 'priest' };
+    if (sameText(location, b.location)) return { ...b, reason: 'place' };
+  }
+  return undefined;
+}
+
+function conflictMessage(conflict) {
+  const when = `${conflict.start}–${conflict.end}`;
+  if (conflict.reason === 'priest') {
+    return `${conflict.assignee} is already assigned to ${conflict.title} at ${when} on this date.`;
+  }
+  return `${conflict.location} is already in use for ${conflict.title} at ${when} on this date.`;
 }
 
 module.exports = {
@@ -83,4 +110,5 @@ module.exports = {
   daysInMonth,
   toTimestamp,
   findConflict,
+  conflictMessage,
 };

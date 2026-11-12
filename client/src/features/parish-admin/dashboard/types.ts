@@ -21,14 +21,6 @@ export interface AttentionItem {
     delta: string;
   }
   
-  export type QuickActionIcon = "plus" | "file" | "chart" | "scan";
-  
-  export interface QuickAction {
-    id: string;
-    icon: QuickActionIcon;
-    label: string;
-    href: string;
-  }
   
   export interface TodayMass {
     id: string;

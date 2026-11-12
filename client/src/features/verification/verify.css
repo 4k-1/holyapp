@@ -1,0 +1,10 @@
+/* Public certificate check: a plain official page. "Technical details" opens in place; the chevron turns with it. */
+.verify-page details > summary {
+  list-style: none;
+}
+.verify-page details > summary::-webkit-details-marker {
+  display: none;
+}
+.verify-page details[open] .verify-chevron {
+  transform: rotate(180deg);
+}

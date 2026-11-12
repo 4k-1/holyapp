@@ -30,6 +30,8 @@ interface EventTypeStyle {
     tag: string;
     card: string;
     dot: string;
+    /** The solid type label on day-panel cards; defaults to the dot colour with white text. */
+    pill?: string;
   }
   
   export const EVENT_TYPE_STYLES: Record<EventType, EventTypeStyle> = {
@@ -69,9 +71,10 @@ interface EventTypeStyle {
       dot: "bg-[#3B4E8A]",
     },
     wedding: {
-      tag: "bg-[#F5E3EA] text-[#B4577A]",
-      card: "bg-[#F5E3EA] border-l-[3px] border-l-[#B4577A]",
-      dot: "bg-[#B4577A]",
+      tag: "bg-[#FCE7EF] text-[#A2486B]",
+      card: "bg-[#FDF0F4] border-l-[3px] border-l-[#F0A6C0]",
+      dot: "bg-[#F0A6C0]",
+      pill: "bg-[#F7C9D9] text-[#7A2E4C]",
     },
     funeral: {
       tag: "bg-admin-surface-alt text-[#5B5750]",

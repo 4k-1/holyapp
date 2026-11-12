@@ -21,7 +21,12 @@ export interface RecurringCommitment {
   days: DayAbbrev[];
   /** One or more start–end windows on each active day */
   slots: { start: string; end: string }[];
+  /** The person's current name, or a guest's typed name. */
   assignee: string;
+  /** Their staff record (C2); null for a guest or nobody. */
+  assigneeId?: string | null;
+  /** A typed name for someone not on the staff list. */
+  guest?: boolean;
   /** Hide from the month-view dots / week overview (still shows in day agenda) */
   showOnOverview?: boolean;
 }
@@ -36,10 +41,80 @@ export interface ScheduleBlock {
   type: ScheduleEventType;
   /** "manual" | "recurring" | or the originating module, e.g. "Sacrament", "Marriage Process" */
   source: string;
+  /** The person's current name, or a guest's typed name. */
   assignee: string;
+  /** Their staff record (C2); null for a guest or nobody. */
+  assigneeId?: string | null;
+  /** A typed name for someone not on the staff list. */
+  guest?: boolean;
+  /** Where it happens; regular Masses are in the main church. Blank on older entries. */
+  location?: string;
   recordStatus?: "Pending" | "Recorded";
+  /** Register entries made from this event (C11); a baptism session can have several. */
+  recorded?: { id: string; register: "baptismal" | "confirmation" | "marriage" | "death"; name: string }[];
+  /** A wedding booked through a marriage application. */
+  marriageApplicationId?: string | null;
   showOnOverview?: boolean;
 }
+
+/** Someone from the parish staff directory who can be assigned to events. */
+export interface AssignableStaff {
+  id: string;
+  name: string;
+  role: string;
+  clergy: boolean;
+}
+
+/** Who is chosen in a staff picker: a staff record id, or (with no id) a guest's typed name. */
+export interface AssigneeValue {
+  assigneeId: string | null;
+  assignee: string;
+}
+
+export const NOBODY: AssigneeValue = { assigneeId: null, assignee: "" };
+
+export function assigneeValueOf(item?: { assigneeId?: string | null; assignee?: string } | null): AssigneeValue {
+  if (!item) return NOBODY;
+  return { assigneeId: item.assigneeId ?? null, assignee: item.assignee ?? "" };
+}
+
+/** Same choice? Staff by id, guests by name. */
+export function sameAssignee(a: AssigneeValue, b: AssigneeValue) {
+  if (a.assigneeId || b.assigneeId) return a.assigneeId === b.assigneeId;
+  return a.assignee.trim().toLowerCase() === b.assignee.trim().toLowerCase();
+}
+
+/** A clash found when scheduling: same priest or same place at an overlapping time. */
+export interface ScheduleConflict {
+  occurrence: ScheduleOccurrence;
+  message: string;
+}
+
+/** One day in the Church calendar (B5 + C5), worked out by the server. */
+export interface LiturgicalDay {
+  date: string;
+  season: "advent" | "christmas" | "lent" | "triduum" | "easter" | "ordinary";
+  seasonLabel: string;
+  /** The Sunday or celebration, e.g. "3rd Sunday of Lent"; empty on an ordinary weekday. */
+  title: string;
+  rank: "solemnity" | "feast" | "sunday" | "weekday";
+  sunday: boolean;
+  /** A holy day of obligation (every Sunday too). */
+  obligation: boolean;
+  /** e.g. "Holy day of obligation", "Simbang Gabi, day 3 of 9". */
+  notes: string[];
+  /** The parish's own dates: the fiesta and local feasts. */
+  local: string[];
+}
+
+/** Why a booking may not be allowed: a 'rule' needs "Book anyway"; a 'note' is just shown. */
+export interface BookingWarning {
+  level: "rule" | "note";
+  message: string;
+}
+
+/** Places offered when adding an event; any other place can be typed. */
+export const COMMON_LOCATIONS = ["Main church", "Adoration chapel", "Parish hall", "Parish office"];
 
 /** A ScheduleBlock, OR a materialized occurrence of a RecurringCommitment for one date. */
 export interface ScheduleOccurrence extends ScheduleBlock {

@@ -1,7 +1,6 @@
 // src/features/parish-admin/settings/components/AccountSecuritySection.tsx
 import { useCallback, useEffect, useState } from "react";
 import { AdminBadge } from "@/components/ui/AdminBadge";
-import { AdminCard } from "@/features/parish-admin/components/AdminCard";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { sendPasswordResetEmail } from "@/features/auth/api/authApi";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
@@ -14,6 +13,8 @@ import {
 import { Disable2FAModal } from "./Disable2FAModal";
 import { SignOutAllSessionsModal } from "./SignOutAllSessionsModal";
 import type { LoginActivityEntry, LoginSession } from "../types";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import { SettingsPanel, SettingsPillButton } from "./SettingsUI";
 
 export function AccountSecuritySection() {
   const user = useCurrentUser();
@@ -34,9 +35,7 @@ export function AccountSecuritySection() {
   const [endingSessionId, setEndingSessionId] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState("");
 
-  const loadOverview = useCallback(() => {
-    setLoading(true);
-    setLoadError("");
+  const fetchOverview = useCallback(() => {
     getSecurityOverview()
       .then((data) => {
         setTwoFactorEnabledState(data.twoFactorEnabled);
@@ -51,9 +50,15 @@ export function AccountSecuritySection() {
       });
   }, []);
 
+  const loadOverview = useCallback(() => {
+    setLoading(true);
+    setLoadError("");
+    fetchOverview();
+  }, [fetchOverview]);
+
   useEffect(() => {
-    loadOverview();
-  }, [loadOverview]);
+    fetchOverview();
+  }, [fetchOverview]);
 
   async function handleSendReset() {
     setSendingReset(true);
@@ -128,46 +133,36 @@ export function AccountSecuritySection() {
   }
 
   if (loading || !user) {
-    return <p className="text-admin-body text-admin-ink-muted">Loading…</p>;
+    return <SkeletonList rows={4} className="px-0" />;
   }
 
   if (loadError) {
     return (
-      <AdminCard className="p-5 px-[22px]">
+      <SettingsPanel>
         <p className="text-admin-body text-admin-ink">{loadError}</p>
         <AdminButton variant="secondary" size="sm" className="mt-3" onClick={loadOverview}>
           Try again
         </AdminButton>
-      </AdminCard>
+      </SettingsPanel>
     );
   }
 
   const otherSessionsCount = sessions.filter((s) => !s.current).length;
 
   return (
-    <div className="space-y-5">
-      <AdminCard className="p-5 px-[22px]">
-        <h2 className="mb-1 font-serif text-admin-section font-semibold text-admin-ink">Sign-in &amp; Password</h2>
-        <p className="mb-4 text-admin-support text-admin-ink-muted">
-          Passwords are changed by email verification rather than in-portal, so a stolen session alone
-          can't be used to change your credentials.
-        </p>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-admin-border bg-admin-surface-alt px-4 py-3">
+    <div className="space-y-4">
+      <SettingsPanel
+        title="Sign-in & password"
+        description="Passwords are changed through a link sent to your email, so a stolen session alone can't change them."
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-admin-surface-alt px-4 py-3">
           <div className="min-w-0">
-            <p className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-              Account email
-            </p>
-            <p className="break-all text-admin-body font-semibold text-admin-ink">{user.email}</p>
+            <p className="text-admin-support text-admin-ink-muted">Account email</p>
+            <p className="mt-0.5 break-all text-admin-body font-medium text-admin-ink">{user.email}</p>
           </div>
-          <AdminButton
-            variant="secondary"
-            size="sm"
-            onClick={handleSendReset}
-            disabled={sendingReset || resetSent}
-          >
+          <SettingsPillButton icon={null} onClick={handleSendReset} disabled={sendingReset || resetSent}>
             {sendingReset ? "Sending…" : resetSent ? "Email sent" : "Send password reset email"}
-          </AdminButton>
+          </SettingsPillButton>
         </div>
         {resetSent && (
           <p className="mt-2.5 text-admin-support text-admin-green-700" role="status">
@@ -179,15 +174,15 @@ export function AccountSecuritySection() {
             {resetError}
           </p>
         )}
-      </AdminCard>
+      </SettingsPanel>
 
-      <AdminCard className="p-5 px-[22px]">
+      <SettingsPanel>
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 id="two-factor-heading" className="font-serif text-admin-section font-semibold text-admin-ink">
-                Two-Factor Authentication
-              </h2>
+              <h3 id="two-factor-heading" className="font-sans text-[0.9375rem] font-semibold text-admin-ink">
+                Two-factor authentication
+              </h3>
               <AdminBadge tone={twoFactorEnabled ? "green" : "muted"}>
                 {twoFactorEnabled ? "On" : "Off"}
               </AdminBadge>
@@ -219,43 +214,40 @@ export function AccountSecuritySection() {
             {twoFactorError}
           </p>
         )}
-      </AdminCard>
+      </SettingsPanel>
 
-      <AdminCard className="overflow-hidden p-0">
-        <div className="flex flex-wrap items-start justify-between gap-3 px-[22px] py-5">
-          <div>
-            <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Active Sessions</h2>
-            <p className="mt-1 text-admin-support text-admin-ink-muted">
-              Devices currently signed in to this account.
-            </p>
-          </div>
-          {otherSessionsCount > 0 && (
-            <button
-              type="button"
+      <SettingsPanel
+        title="Active sessions"
+        description="Devices currently signed in to this account."
+        action={
+          otherSessionsCount > 0 && (
+            <SettingsPillButton
+              icon={null}
               onClick={() => setConfirmSignOutAll(true)}
-              className="shrink-0 rounded-md text-admin-support font-semibold text-admin-red-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/25"
+              className="!text-admin-red-700 hover:!border-admin-red-700"
             >
               Sign out of all other sessions
-            </button>
-          )}
-        </div>
-
+            </SettingsPillButton>
+          )
+        }
+        flush
+      >
         {sessionError && (
-          <p className="px-[22px] pb-3 text-admin-support font-semibold text-admin-red-700" role="alert">
+          <p className="px-5 pt-3 text-admin-support font-semibold text-admin-red-700" role="alert">
             {sessionError}
           </p>
         )}
 
-        <div className="divide-y divide-admin-border border-t border-admin-border">
+        <div className="divide-y divide-admin-border">
           {sessions.length === 0 ? (
-            <p className="px-[22px] py-8 text-center text-admin-body text-admin-ink-muted">
+            <p className="px-5 py-8 text-center text-admin-body text-admin-ink-muted">
               No active sessions on this account.
             </p>
           ) : (
             sessions.map((s) => (
-              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-[22px] py-3.5">
+              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-admin-surface-alt text-admin-ink-muted">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-admin-green-100 text-admin-green-700">
                     {isMobileDevice(s.device) ? <PhoneIcon /> : <MonitorIcon />}
                   </span>
                   <div>
@@ -286,40 +278,37 @@ export function AccountSecuritySection() {
             ))
           )}
         </div>
-      </AdminCard>
+      </SettingsPanel>
 
-      <AdminCard className="overflow-hidden p-0">
-        <div className="px-[22px] py-5">
-          <h2 className="font-serif text-admin-section font-semibold text-admin-ink">Recent Login Activity</h2>
-          <p className="mt-1 text-admin-support text-admin-ink-muted">
-            The last several sign-in attempts on this account. Don't recognize one? Send a password
-            reset above.
-          </p>
-        </div>
+      <SettingsPanel
+        title="Recent login activity"
+        description="The last few sign-in attempts. Don't recognize one? Send yourself a password reset."
+        flush
+      >
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] border-t border-admin-border text-left text-admin-body">
+          <table className="w-full min-w-[520px] text-left text-admin-body">
             <thead>
-              <tr className="border-b border-admin-border text-admin-label font-semibold uppercase tracking-wide text-admin-ink-muted">
-                <th className="px-[22px] py-2.5">When</th>
-                <th className="px-3 py-2.5">Device</th>
-                <th className="px-3 py-2.5">Location</th>
-                <th className="py-2.5 pr-[22px] text-right">Result</th>
+              <tr className="border-b border-admin-border bg-admin-surface-alt text-[0.75rem] font-medium text-admin-ink-muted">
+                <th className="px-5 py-3">When</th>
+                <th className="px-5 py-3">Device</th>
+                <th className="px-5 py-3">Location</th>
+                <th className="px-5 py-3 text-right">Result</th>
               </tr>
             </thead>
             <tbody>
               {activity.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-[22px] py-8 text-center text-admin-ink-muted">
+                  <td colSpan={4} className="px-5 py-8 text-center text-admin-ink-muted">
                     No login attempts recorded yet.
                   </td>
                 </tr>
               ) : (
                 activity.map((a) => (
                   <tr key={a.id} className="border-b border-admin-border last:border-b-0">
-                    <td className="px-[22px] py-3 tabular-nums text-admin-ink">{a.timestamp}</td>
-                    <td className="px-3 py-3 text-admin-ink">{a.device}</td>
-                    <td className="px-3 py-3 text-admin-ink-muted">{a.location}</td>
-                    <td className="py-3 pr-[22px] text-right">
+                    <td className="px-5 py-3 tabular-nums text-admin-ink">{a.timestamp}</td>
+                    <td className="px-5 py-3 text-admin-ink">{a.device}</td>
+                    <td className="px-5 py-3 text-admin-ink-muted">{a.location}</td>
+                    <td className="px-5 py-3 text-right">
                       <AdminBadge tone={a.status === "success" ? "green" : "red"}>
                         {a.status === "success" ? "Success" : "Failed"}
                       </AdminBadge>
@@ -330,7 +319,7 @@ export function AccountSecuritySection() {
             </tbody>
           </table>
         </div>
-      </AdminCard>
+      </SettingsPanel>
 
       {confirmDisable2FA && (
         <Disable2FAModal

@@ -42,7 +42,7 @@ export function AdminSettingsPage() {
           {activeSection.id === "profile" ? (
             <ParishProfileSection />
           ) : (
-            <div className="rounded-[10px] border border-dashed border-admin-border-strong px-5 py-10 text-center">
+            <div className="rounded-md border border-dashed border-admin-border-strong px-5 py-10 text-center">
               <p className="text-admin-body font-semibold text-admin-ink">{activeSection.label} isn't wired up yet</p>
               <p className="mt-1 text-admin-support text-admin-ink-muted">Say the word when you're ready to build this one.</p>
             </div>

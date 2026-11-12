@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { ParishBrandingPanel } from "@/features/auth/components/ParishBrandingPanel";
+import { AuthShell } from "@/features/auth/components/AuthShell";
 import { AuthPasswordField } from "@/features/auth/components/AuthPasswordField";
 import { resetPassword } from "@/features/auth/api/authApi";
 import "@/features/auth/styles/authDesk.css";
@@ -40,11 +40,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div data-portal="admin" className="auth-desk grid min-h-dvh grid-cols-1 md:grid-cols-2">
-      <ParishBrandingPanel parish={null} />
-      <div className="relative flex min-h-dvh flex-col bg-[var(--auth-bg)]">
-        <div className="flex flex-1 items-center justify-center px-6 py-16 sm:px-10">
-          <div className="w-full max-w-[28rem]">
+    <AuthShell parish={null}>
             {done ? (
               <div className="flex flex-col gap-4 text-left">
                 <h1 className="auth-desk__title">Password updated</h1>
@@ -56,7 +52,7 @@ export function ResetPasswordPage() {
                 </Link>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6 text-left">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-8 text-left">
                 <div>
                   <h1 className="auth-desk__title">Set a new password</h1>
                   <p className="auth-desk__subtitle">Choose a password with at least 8 characters.</p>
@@ -102,9 +98,6 @@ export function ResetPasswordPage() {
                 </p>
               </form>
             )}
-          </div>
-        </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 }
