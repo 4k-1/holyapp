@@ -1,15 +1,18 @@
 // src/features/parish-admin/dashboard/types.ts
 
-export interface AttentionItem {
-    id: string;
-    boldText: string;
-    restText: string;
-    ctaLabel: string;
-    ctaHref: string;
-    ctaVariant: "primary" | "secondary";
-  }
-  
-  export type StatIcon = "inbox" | "wallet" | "check" | "calendar";
+/** The counts behind "Today's tasks", all from the dashboard's one request. */
+export interface TaskCounts {
+  /** Today, YYYY-MM-DD in the parish's time. */
+  date: string;
+  toReview: number;
+  ready: number;
+  intentionsToSchedule: number;
+  pendingRecords: number;
+  unassigned: number;
+  massesToday: { time: string; intentions: number }[];
+}
+
+export type StatIcon = "inbox" | "wallet" | "check" | "calendar";
   export type ChipTone = "amber" | "gold" | "green";
   
   export interface DashboardStat {

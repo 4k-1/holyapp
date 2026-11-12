@@ -2,9 +2,9 @@
 import { apiFetch, ApiError } from "@/lib/api";
 import type {
   ActivityItem,
-  AttentionItem,
   DashboardStat,
   DotTone,
+  TaskCounts,
   TodayMass,
   UpcomingEvent,
 } from "../types";
@@ -18,8 +18,10 @@ interface DashboardResponse {
     releasedThisMonth: number;
     releasedLastMonth: number;
     pendingRecords: number;
+    intentionsUnconfirmed: number;
+    /** Masses and events in the next 7 days with no priest or staff assigned. */
+    unassigned: number;
   };
-  attention: { id: string; bold: string; rest: string; href: string; cta: string }[];
   /** Today first, then the next six days. */
   week: {
     date: string;
@@ -30,13 +32,15 @@ interface DashboardResponse {
       type: string;
       assignee: string;
       recordStatus?: "Pending" | "Recorded";
+      /** Masses only: intentions offered at it. */
+      intentions?: number;
     }[];
   }[];
   activity: { id: string; text: string; detail: string; at: string }[];
 }
 
 export interface DashboardView {
-  attention: AttentionItem[];
+  tasks: TaskCounts;
   stats: DashboardStat[];
   todayMasses: TodayMass[];
   activity: ActivityItem[];
@@ -89,14 +93,17 @@ export async function getDashboardView(): Promise<DashboardView> {
   );
 
   return {
-    attention: data.attention.map((item, index) => ({
-      id: item.id,
-      boldText: item.bold,
-      restText: item.rest.startsWith(" ") ? item.rest : ` ${item.rest}`,
-      ctaLabel: item.cta,
-      ctaHref: item.href,
-      ctaVariant: index === 0 ? "primary" : "secondary",
-    })),
+    tasks: {
+      date: today?.date ?? "",
+      toReview: stats.toReview,
+      ready: stats.ready,
+      intentionsToSchedule: stats.intentionsUnconfirmed,
+      pendingRecords: stats.pendingRecords,
+      unassigned: stats.unassigned,
+      massesToday: (today?.items ?? [])
+        .filter((item) => item.type === "mass")
+        .map((item) => ({ time: item.start, intentions: item.intentions ?? 0 })),
+    },
     stats: [
       {
         id: "pending",

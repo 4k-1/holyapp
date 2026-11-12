@@ -12,6 +12,7 @@ import {
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { BookIntentionModal } from "@/features/parish-admin/intentions/components/BookIntentionModal";
 import { IntentionsPrintSheet } from "@/features/parish-admin/intentions/components/IntentionsPrintSheet";
+import { markIntentionsPrinted } from "@/features/parish-admin/intentions/printedLists";
 import { MassCapacitySetting } from "@/features/parish-admin/intentions/components/MassCapacitySetting";
 import { MassIntentionsMiniCalendar } from "@/features/parish-admin/intentions/components/MassIntentionsMiniCalendar";
 import { MassSlotTable } from "@/features/parish-admin/intentions/components/MassSlotTable";
@@ -42,6 +43,12 @@ export function AdminMassIntentionsPage() {
   const [markingId, setMarkingId] = useState<string | null>(null);
   /** The Masses being printed; the sheet renders, the browser prints, then this clears. */
   const [printing, setPrinting] = usePrintJob<MassSlotView[]>();
+
+  /** Print these Masses' lists, and remember it so the dashboard can tick the task off. */
+  function printSlots(list: MassSlotView[]) {
+    markIntentionsPrinted(list.filter((slot) => slot.intentions.length > 0));
+    setPrinting(list);
+  }
 
   const monthFrom = toISO(cursor);
   const monthTo = toISO(new Date(cursor.getFullYear(), cursor.getMonth(), daysInMonth(cursor.getFullYear(), cursor.getMonth())));
@@ -165,7 +172,7 @@ export function AdminMassIntentionsPage() {
                   type="button"
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPrinting(daySlots)}
+                  onClick={() => printSlots(daySlots)}
                   disabled={daySlots.every((slot) => slot.intentions.length === 0)}
                 >
                   Print all Masses
@@ -187,7 +194,7 @@ export function AdminMassIntentionsPage() {
                 markingId={markingId}
                 isPast={selectedIsPast}
                 onAddRequest={() => setBookingSlot(slot)}
-                onPrint={() => setPrinting([slot])}
+                onPrint={() => printSlots([slot])}
                 onConfirm={handleConfirm}
                 onMarkSaid={handleMarkSaid}
               />

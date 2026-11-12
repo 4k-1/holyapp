@@ -5,8 +5,8 @@ import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
 import { getDashboardView } from "./api/dashboardApi";
 import { QuickActionsCard } from "./QuickActionsCard";
-import { UnconfirmedPrintsCard } from "./UnconfirmedPrintsCard";
-import type { ActivityItem, AttentionItem, DashboardStat, DotTone, TodayMass, UpcomingEvent } from "./types";
+import { TodayTasksCard } from "./TodayTasksCard";
+import type { ActivityItem, DashboardStat, DotTone, TaskCounts, TodayMass, UpcomingEvent } from "./types";
 import "./AdminDashboardPage.css";
 
 const PILL_TONE: Record<DotTone, string> = {
@@ -24,7 +24,7 @@ function greeting() {
 
 export function AdminDashboardPage() {
   const user = useCurrentUser();
-  const [attention, setAttention] = useState<AttentionItem[]>([]);
+  const [tasks, setTasks] = useState<TaskCounts | null>(null);
   const [stats, setStats] = useState<DashboardStat[]>([]);
   const [todayMasses, setTodayMasses] = useState<TodayMass[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
@@ -35,7 +35,7 @@ export function AdminDashboardPage() {
   useEffect(() => {
     getDashboardView()
       .then((view) => {
-        setAttention(view.attention);
+        setTasks(view.tasks);
         setStats(view.stats);
         setTodayMasses(view.todayMasses);
         setActivity(view.activity);
@@ -78,8 +78,6 @@ export function AdminDashboardPage() {
         </div>
       </header>
 
-      <QuickActionsCard />
-
       <section className="mb-5 grid grid-cols-2 gap-3 lg:mb-6 lg:grid-cols-4 lg:gap-4" aria-label="Overview counts">
         {stats.map((s) => (
           <AdminStatCard
@@ -92,40 +90,9 @@ export function AdminDashboardPage() {
         ))}
       </section>
 
-      {attention.length > 0 && (
-        <section className="admin-dash__card admin-dash__attention mb-5 p-4 sm:mb-6 sm:p-5" aria-label="Needs attention">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span className="admin-dash__attention-icon">
-                <AlertIcon className="h-4 w-4" />
-              </span>
-              <h2 className="admin-dash__attention-title">Needs attention</h2>
-            </div>
-            <span className="admin-dash__pill admin-dash__pill--amber">{attention.length} open</span>
-          </div>
-          <ul className="space-y-3">
-            {attention.map((item) => (
-              <li key={item.id} className="admin-dash__row">
-                <p className="admin-dash__muted min-w-0 flex-1 text-admin-body leading-relaxed">
-                  <strong className="font-semibold text-[var(--dash-ink)]">{item.boldText}</strong>
-                  {item.restText}
-                </p>
-                <Link
-                  to={item.ctaHref}
-                  className={
-                    item.ctaVariant === "primary" ? "admin-dash__cta-primary" : "admin-dash__cta-ghost"
-                  }
-                >
-                  {item.ctaLabel}
-                  <ArrowRightIcon className="h-3.5 w-3.5" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {tasks && <TodayTasksCard counts={tasks} scope={user?.id ?? "office"} />}
 
-      <UnconfirmedPrintsCard />
+      <QuickActionsCard />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-5">
         <section className="admin-dash__card p-4 sm:p-5">
@@ -213,25 +180,6 @@ function StatIconGlyph({ icon, className }: { icon: DashboardStat["icon"]; class
     case "calendar":
       return <CalendarIcon className={className} />;
   }
-}
-
-function AlertIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" strokeLinejoin="round" />
-      <line x1="12" y1="9" x2="12" y2="13" strokeLinecap="round" />
-      <line x1="12" y1="17" x2="12.01" y2="17" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ArrowRightIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className={className} aria-hidden>
-      <line x1="5" y1="12" x2="19" y2="12" strokeLinecap="round" />
-      <polyline points="12 5 19 12 12 19" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
 }
 
 function InboxIcon({ className }: { className?: string }) {

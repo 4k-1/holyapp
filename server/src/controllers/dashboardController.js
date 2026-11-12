@@ -239,7 +239,8 @@ async function getDashboard(req, res) {
     for (let i = 0; i < WEEK_DAYS; i += 1) {
       const date = localISO(addDays(now, i));
       const occurrences = schedule.getOccurrencesForDate(date, recurring, blocks, overrides);
-      unassigned += occurrences.filter((o) => !o.assignee).length;
+      // Events only: the parish priest settles who says the regular Masses, so the office doesn't assign them.
+      unassigned += occurrences.filter((o) => o.type !== 'mass' && !o.assignee).length;
       week.push({ date, items: occurrences.map(toItem) });
     }
 
@@ -284,7 +285,7 @@ async function getDashboard(req, res) {
     if (unassigned > 0) {
       attention.push({
         id: 'unassigned',
-        bold: plural(unassigned, 'Mass or event', 'Masses and events'),
+        bold: plural(unassigned, 'event'),
         rest: unassigned === 1 ? ' in the next 7 days has no priest or staff assigned.' : ' in the next 7 days have no priest or staff assigned.',
         href: 'schedule',
         cta: 'Assign',
@@ -300,6 +301,7 @@ async function getDashboard(req, res) {
         releasedLastMonth: r.released_last_month,
         intentionsThisWeek: intentions.rows.length,
         intentionsUnconfirmed,
+        unassigned,
         pendingRecords: pendingRecords.rows[0].n,
         donationsThisMonth,
         donationsLastMonth,
