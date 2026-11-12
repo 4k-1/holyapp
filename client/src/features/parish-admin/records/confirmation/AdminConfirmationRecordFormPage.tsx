@@ -32,8 +32,10 @@ interface FormState {
   address: string;
   fatherLastName: string;
   fatherFirstName: string;
+  fatherMiddleName: string;
   motherLastName: string;
   motherFirstName: string;
+  motherMiddleName: string;
   dateOfConfirmation: string;
   placeOfConfirmation: string;
   minister: string;
@@ -57,8 +59,10 @@ const emptyForm = (): FormState => ({
   address: "",
   fatherLastName: "",
   fatherFirstName: "",
+  fatherMiddleName: "",
   motherLastName: "",
   motherFirstName: "",
+  motherMiddleName: "",
   dateOfConfirmation: "",
   placeOfConfirmation: "",
   minister: "",
@@ -108,8 +112,10 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
       address: existing.address ?? "",
       fatherLastName: existing.fatherLastName ?? "",
       fatherFirstName: existing.fatherFirstName ?? "",
+      fatherMiddleName: existing.fatherMiddleName ?? "",
       motherLastName: existing.motherLastName ?? "",
       motherFirstName: existing.motherFirstName ?? "",
+      motherMiddleName: existing.motherMiddleName ?? "",
       dateOfConfirmation: existing.dateOfConfirmation,
       placeOfConfirmation: existing.placeOfConfirmation,
       minister: existing.minister,
@@ -161,8 +167,10 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
       dateOfBirth: prev.dateOfBirth || rec?.dateOfBirth || "",
       address: prev.address || rec?.address || "",
       fatherFirstName: prev.fatherFirstName || rec?.fatherFirstName || "",
+      fatherMiddleName: prev.fatherMiddleName || rec?.fatherMiddleName || "",
       fatherLastName: prev.fatherLastName || rec?.fatherLastName || "",
       motherFirstName: prev.motherFirstName || rec?.motherFirstName || "",
+      motherMiddleName: prev.motherMiddleName || rec?.motherMiddleName || "",
       motherLastName: prev.motherLastName || rec?.motherLastName || "",
     }));
   }
@@ -179,8 +187,10 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
       address: form.address || undefined,
       fatherLastName: form.fatherLastName || undefined,
       fatherFirstName: form.fatherFirstName || undefined,
+      fatherMiddleName: form.fatherMiddleName || undefined,
       motherLastName: form.motherLastName || undefined,
       motherFirstName: form.motherFirstName || undefined,
+      motherMiddleName: form.motherMiddleName || undefined,
       dateOfConfirmation: form.dateOfConfirmation,
       placeOfConfirmation: form.placeOfConfirmation,
       minister: form.minister,
@@ -262,17 +272,29 @@ export function AdminConfirmationRecordFormPage({ mode }: { mode: "create" | "ed
       </RecordSection>
 
       <RecordSection title="Parents">
-        <AdminField label="Father's first name" className={`mb-0 ${span.half}`}>
+        <AdminField label="Father's first name" className={`mb-0 ${span.third}`}>
           <AdminInput value={form.fatherFirstName} onChange={(e) => setField("fatherFirstName", e.target.value)} />
         </AdminField>
-        <AdminField label="Father's last name" className={`mb-0 ${span.half}`}>
-          <AdminInput value={form.fatherLastName} onChange={(e) => setField("fatherLastName", e.target.value)} />
+        <AdminField label="Father's middle name" className={`mb-0 ${span.third}`}>
+          <AdminInput value={form.fatherMiddleName} onChange={(e) => setField("fatherMiddleName", e.target.value)} />
         </AdminField>
-        <AdminField label="Mother's first name" className={`mb-0 ${span.half}`}>
+        <AdminField label="Father's last name" className={`mb-0 ${span.third}`}>
+          <AdminInput
+            value={form.fatherLastName}
+            onChange={(e) => setField("fatherLastName", e.target.value)}
+          />
+        </AdminField>
+        <AdminField label="Mother's first name" className={`mb-0 ${span.third}`}>
           <AdminInput value={form.motherFirstName} onChange={(e) => setField("motherFirstName", e.target.value)} />
         </AdminField>
-        <AdminField label="Mother's last name" className={`mb-0 ${span.half}`}>
-          <AdminInput value={form.motherLastName} onChange={(e) => setField("motherLastName", e.target.value)} />
+        <AdminField label="Mother's middle name" className={`mb-0 ${span.third}`}>
+          <AdminInput value={form.motherMiddleName} onChange={(e) => setField("motherMiddleName", e.target.value)} />
+        </AdminField>
+        <AdminField label="Mother's last name" className={`mb-0 ${span.third}`}>
+          <AdminInput
+            value={form.motherLastName}
+            onChange={(e) => setField("motherLastName", e.target.value)}
+          />
         </AdminField>
       </RecordSection>
 

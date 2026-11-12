@@ -18,6 +18,7 @@ import {
   annotationTagClass,
   baptismCertificateNotationLine,
   formatRecordDate,
+  middleInitial,
   todayIsoDate,
 } from "@/features/parish-admin/records/baptismalHelpers";
 import {
@@ -80,8 +81,10 @@ export type BaptismalLinkContext = Pick<
   | "dateOfBirth"
   | "address"
   | "fatherFirstName"
+  | "fatherMiddleName"
   | "fatherLastName"
   | "motherFirstName"
+  | "motherMiddleName"
   | "motherLastName"
   | "dateOfBaptism"
   | "placeOfBaptism"
@@ -293,8 +296,10 @@ export function AdminAddAnnotationModal({
         dateOfBirth: baptismal.dateOfBirth,
         address: baptismal.address,
         fatherFirstName: baptismal.fatherFirstName,
+        fatherMiddleName: baptismal.fatherMiddleName,
         fatherLastName: baptismal.fatherLastName,
         motherFirstName: baptismal.motherFirstName,
+        motherMiddleName: baptismal.motherMiddleName,
         motherLastName: baptismal.motherLastName,
         dateOfConfirmation: date,
         placeOfConfirmation: createPlace.trim(),
@@ -346,8 +351,10 @@ export function AdminAddAnnotationModal({
       civilStatus: "Single" as const,
       baptismalRecordId: baptismal.id,
       fatherFirstName: baptismal.fatherFirstName,
+      fatherMiddleInitial: middleInitial(baptismal.fatherMiddleName),
       fatherLastName: baptismal.fatherLastName,
       motherFirstName: baptismal.motherFirstName,
+      motherMiddleInitial: middleInitial(baptismal.motherMiddleName),
       motherLastName: baptismal.motherLastName,
       consentPersons: [],
     };

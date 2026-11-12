@@ -43,8 +43,10 @@ interface FormState {
   minister: string;
   fatherLastName: string;
   fatherFirstName: string;
+  fatherMiddleName: string;
   motherLastName: string;
   motherFirstName: string;
+  motherMiddleName: string;
   paternalGrandfather: string;
   paternalGrandmother: string;
   maternalGrandfather: string;
@@ -79,8 +81,10 @@ const emptyForm = (placeOfBaptism = ""): FormState => ({
   minister: "",
   fatherLastName: "",
   fatherFirstName: "",
+  fatherMiddleName: "",
   motherLastName: "",
   motherFirstName: "",
+  motherMiddleName: "",
   paternalGrandfather: "",
   paternalGrandmother: "",
   maternalGrandfather: "",
@@ -170,8 +174,10 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       minister: existing.minister,
       fatherLastName: existing.fatherLastName,
       fatherFirstName: existing.fatherFirstName,
+      fatherMiddleName: existing.fatherMiddleName ?? "",
       motherLastName: existing.motherLastName,
       motherFirstName: existing.motherFirstName,
+      motherMiddleName: existing.motherMiddleName ?? "",
       paternalGrandfather: existing.paternalGrandfather,
       paternalGrandmother: existing.paternalGrandmother,
       maternalGrandfather: existing.maternalGrandfather,
@@ -232,8 +238,10 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
       minister: form.minister,
       fatherLastName: form.fatherLastName,
       fatherFirstName: form.fatherFirstName,
+      fatherMiddleName: form.fatherMiddleName,
       motherLastName: form.motherLastName,
       motherFirstName: form.motherFirstName,
+      motherMiddleName: form.motherMiddleName,
       paternalGrandfather: form.paternalGrandfather,
       paternalGrandmother: form.paternalGrandmother,
       maternalGrandfather: form.maternalGrandfather,
@@ -363,24 +371,30 @@ export function AdminBaptismalRecordFormPage({ mode }: { mode: "create" | "edit"
         title="Parents"
         note="Only as the register names them. A child of an unmarried mother may have no father recorded, and a foundling no parents."
       >
-        <AdminField label="Father's first name" className={`mb-0 ${span.half}`}>
+        <AdminField label="Father's first name" className={`mb-0 ${span.third}`}>
           <AdminInput value={form.fatherFirstName} onChange={(e) => setField("fatherFirstName", e.target.value)} />
         </AdminField>
-        <AdminField label="Father's last name" className={`mb-0 ${span.half}`}>
+        <AdminField label="Father's middle name" className={`mb-0 ${span.third}`}>
+          <AdminInput value={form.fatherMiddleName} onChange={(e) => setField("fatherMiddleName", e.target.value)} />
+        </AdminField>
+        <AdminField label="Father's last name" className={`mb-0 ${span.third}`}>
           <AdminInput
             value={form.fatherLastName}
             onChange={(e) => setField("fatherLastName", e.target.value)}
-            required={Boolean(form.fatherFirstName.trim())}
+            required={Boolean(form.fatherFirstName.trim() || form.fatherMiddleName.trim())}
           />
         </AdminField>
-        <AdminField label="Mother's first name" className={`mb-0 ${span.half}`}>
+        <AdminField label="Mother's first name" className={`mb-0 ${span.third}`}>
           <AdminInput value={form.motherFirstName} onChange={(e) => setField("motherFirstName", e.target.value)} />
         </AdminField>
-        <AdminField label="Mother's last name" className={`mb-0 ${span.half}`}>
+        <AdminField label="Mother's middle name" className={`mb-0 ${span.third}`}>
+          <AdminInput value={form.motherMiddleName} onChange={(e) => setField("motherMiddleName", e.target.value)} />
+        </AdminField>
+        <AdminField label="Mother's last name" className={`mb-0 ${span.third}`}>
           <AdminInput
             value={form.motherLastName}
             onChange={(e) => setField("motherLastName", e.target.value)}
-            required={Boolean(form.motherFirstName.trim())}
+            required={Boolean(form.motherFirstName.trim() || form.motherMiddleName.trim())}
           />
         </AdminField>
       </RecordSection>

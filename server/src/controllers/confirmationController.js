@@ -29,8 +29,10 @@ function toConfirmationRecord(row) {
     address: row.address || undefined,
     fatherLastName: row.father_last_name || undefined,
     fatherFirstName: row.father_first_name || undefined,
+    fatherMiddleName: row.father_middle_name || undefined,
     motherLastName: row.mother_last_name || undefined,
     motherFirstName: row.mother_first_name || undefined,
+    motherMiddleName: row.mother_middle_name || undefined,
     dateOfConfirmation: dateOnly(row.date_of_confirmation),
     placeOfConfirmation: row.place_of_confirmation,
     minister: row.minister,
@@ -75,8 +77,10 @@ async function parseConfirmationBody(parishId, body) {
     address: optionalText(body.address),
     fatherLastName: optionalText(body.fatherLastName),
     fatherFirstName: optionalText(body.fatherFirstName),
+    fatherMiddleName: optionalText(body.fatherMiddleName),
     motherLastName: optionalText(body.motherLastName),
     motherFirstName: optionalText(body.motherFirstName),
+    motherMiddleName: optionalText(body.motherMiddleName),
     dateOfConfirmation: dateValue(body.dateOfConfirmation, 'Date of confirmation'),
     placeOfConfirmation: requiredText(body.placeOfConfirmation, 'Place of confirmation'),
     minister: requiredText(body.minister, 'Minister'),
@@ -107,7 +111,8 @@ async function createConfirmation(req, res) {
          date_of_confirmation, place_of_confirmation, minister,
          baptismal_record_id, baptism_date, baptism_place,
          is_prior_marriage, is_adult,
-         book_number, page_number, entry_number, remarks, encoded_by
+         book_number, page_number, entry_number, remarks, encoded_by,
+         father_middle_name, mother_middle_name
        )
        VALUES (
          $1, $2, $3, $4, $5,
@@ -116,7 +121,8 @@ async function createConfirmation(req, res) {
          $12, $13, $14,
          $15, $16, $17,
          $18, $19,
-         $20, $21, $22, $23, $24
+         $20, $21, $22, $23, $24,
+         $25, $26
        )
        RETURNING *`,
       [
@@ -144,6 +150,8 @@ async function createConfirmation(req, res) {
         fields.entryNumber,
         fields.remarks,
         req.user.id,
+        fields.fatherMiddleName,
+        fields.motherMiddleName,
       ]
     );
 
@@ -236,6 +244,8 @@ async function updateConfirmation(req, res) {
            page_number = $20,
            entry_number = $21,
            remarks = $22,
+           father_middle_name = $25,
+           mother_middle_name = $26,
            updated_at = NOW()
        WHERE id = $23 AND parish_id = $24
        RETURNING *`,
@@ -264,6 +274,8 @@ async function updateConfirmation(req, res) {
         fields.remarks,
         current.id,
         req.parishId,
+        fields.fatherMiddleName,
+        fields.motherMiddleName,
       ]
     );
     const record = toConfirmationRecord(updated.rows[0]);

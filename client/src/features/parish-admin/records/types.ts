@@ -92,8 +92,10 @@ export interface BaptismalRecord {
   minister: string;
   fatherLastName: string;
   fatherFirstName: string;
+  fatherMiddleName?: string;
   motherLastName: string;
   motherFirstName: string;
+  motherMiddleName?: string;
   paternalGrandfather: string;
   paternalGrandmother: string;
   maternalGrandfather: string;
@@ -150,8 +152,10 @@ export interface ConfirmationRecord {
   address?: string;
   fatherLastName?: string;
   fatherFirstName?: string;
+  fatherMiddleName?: string;
   motherLastName?: string;
   motherFirstName?: string;
+  motherMiddleName?: string;
   dateOfConfirmation: string;
   placeOfConfirmation: string;
   minister: string;

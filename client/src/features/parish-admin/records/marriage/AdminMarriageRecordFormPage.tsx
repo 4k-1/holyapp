@@ -26,6 +26,7 @@ import type { BaptismalRecord, CivilStatus, MarriagePartyRole } from "@/features
 import type { Parish } from "@/types";
 import { PAGE_TITLE_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
+import { middleInitial } from "@/features/parish-admin/records/baptismalHelpers";
 
 interface ConsentFormState {
   lastName: string;
@@ -315,8 +316,10 @@ export function AdminMarriageRecordFormPage({ mode }: { mode: "create" | "edit" 
           sex: party.sex || rec?.sex || "",
           address: party.address || rec?.address || "",
           fatherFirstName: party.fatherFirstName || rec?.fatherFirstName || "",
+          fatherMiddleInitial: party.fatherMiddleInitial || middleInitial(rec?.fatherMiddleName) || "",
           fatherLastName: party.fatherLastName || rec?.fatherLastName || "",
           motherFirstName: party.motherFirstName || rec?.motherFirstName || "",
+          motherMiddleInitial: party.motherMiddleInitial || middleInitial(rec?.motherMiddleName) || "",
           motherLastName: party.motherLastName || rec?.motherLastName || "",
         },
       };

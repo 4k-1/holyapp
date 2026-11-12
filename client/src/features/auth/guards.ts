@@ -11,6 +11,12 @@ function parishLoginPath(request: Request) {
   return "/login";
 }
 
+/** The no-access page, told which page was refused so it can say who that page is for. */
+function unauthorizedRedirect(request: Request) {
+  const url = new URL(request.url);
+  return redirect(`/unauthorized?from=${encodeURIComponent(url.pathname)}`);
+}
+
 function loginRedirect(path: string, request: Request) {
   const url = new URL(request.url);
   const from = encodeURIComponent(url.pathname + url.search);
@@ -26,7 +32,7 @@ export function requireRole(allowedRoles: Role[]) {
     }
 
     if (!allowedRoles.includes(user.role)) {
-      throw redirect("/unauthorized");
+      throw unauthorizedRedirect(request);
     }
 
     return { user };
@@ -41,7 +47,7 @@ export function requireSuperAdmin({ request }: LoaderFunctionArgs) {
   }
 
   if (user.role !== "super_admin") {
-    throw redirect("/unauthorized");
+    throw unauthorizedRedirect(request);
   }
 
   return { user };

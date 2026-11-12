@@ -17,6 +17,7 @@ export function recordFullName(rec: ConfirmationRecord) {
 export function recordMotherName(rec: ConfirmationRecord) {
   return parentName({
     firstName: rec.motherFirstName ?? "",
+    middleName: rec.motherMiddleName,
     lastName: rec.motherLastName ?? "",
   });
 }
@@ -24,6 +25,7 @@ export function recordMotherName(rec: ConfirmationRecord) {
 export function recordFatherName(rec: ConfirmationRecord) {
   return parentName({
     firstName: rec.fatherFirstName ?? "",
+    middleName: rec.fatherMiddleName,
     lastName: rec.fatherLastName ?? "",
   });
 }

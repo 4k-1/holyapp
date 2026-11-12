@@ -23,8 +23,11 @@ export function fullName(parts: { firstName: string; middleName?: string; lastNa
   return [parts.firstName, parts.middleName, parts.lastName].filter(Boolean).join(" ");
 }
 
-export function parentName(parts: { firstName: string; lastName: string }) {
-  return [parts.firstName, parts.lastName].filter(Boolean).join(" ");
+export function parentName(parts: { firstName: string; middleName?: string; lastName: string }) {
+  return [parts.firstName, parts.middleName, parts.lastName]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function recordFullName(rec: Pick<BaptismalRecord, "firstName" | "middleName" | "lastName">) {
@@ -32,11 +35,16 @@ export function recordFullName(rec: Pick<BaptismalRecord, "firstName" | "middleN
 }
 
 export function recordMotherName(rec: BaptismalRecord) {
-  return parentName({ firstName: rec.motherFirstName, lastName: rec.motherLastName });
+  return parentName({ firstName: rec.motherFirstName, middleName: rec.motherMiddleName, lastName: rec.motherLastName });
 }
 
 export function recordFatherName(rec: BaptismalRecord) {
-  return parentName({ firstName: rec.fatherFirstName, lastName: rec.fatherLastName });
+  return parentName({ firstName: rec.fatherFirstName, middleName: rec.fatherMiddleName, lastName: rec.fatherLastName });
+}
+
+/** "Cruz" → "C", for forms that keep only a middle initial (the marriage register). */
+export function middleInitial(middleName: string | undefined) {
+  return middleName?.trim().charAt(0).toUpperCase() ?? "";
 }
 
 export function initials(name: string) {

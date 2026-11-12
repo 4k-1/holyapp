@@ -66,8 +66,10 @@ function toBaptismalRecord(row) {
     minister: row.minister,
     fatherLastName: row.father_last_name || '',
     fatherFirstName: row.father_first_name || '',
+    fatherMiddleName: row.father_middle_name || '',
     motherLastName: row.mother_last_name || '',
     motherFirstName: row.mother_first_name || '',
+    motherMiddleName: row.mother_middle_name || '',
     paternalGrandfather: row.paternal_grandfather || '',
     paternalGrandmother: row.paternal_grandmother || '',
     maternalGrandfather: row.maternal_grandfather || '',
@@ -115,9 +117,10 @@ async function parseLedgerSource(db, parishId, body) {
 // parents), grandparents aren't asked for, and old registers often give only a middle initial.
 function parent(body, who) {
   const first = optionalText(body[`${who.toLowerCase()}FirstName`]);
+  const middle = optionalText(body[`${who.toLowerCase()}MiddleName`]);
   const last = optionalText(body[`${who.toLowerCase()}LastName`]);
-  if (first && !last) throw httpError(400, `${who}'s last name is required when a first name is given.`);
-  return { first, last };
+  if ((first || middle) && !last) throw httpError(400, `${who}'s last name is required when a first or middle name is given.`);
+  return { first, middle, last };
 }
 
 function parseBaptismBody(body) {
@@ -144,8 +147,10 @@ function parseBaptismBody(body) {
     minister: requiredText(body.minister, 'Minister'),
     fatherLastName: father.last,
     fatherFirstName: father.first,
+    fatherMiddleName: father.middle,
     motherLastName: mother.last,
     motherFirstName: mother.first,
+    motherMiddleName: mother.middle,
     paternalGrandfather: optionalText(body.paternalGrandfather),
     paternalGrandmother: optionalText(body.paternalGrandmother),
     maternalGrandfather: optionalText(body.maternalGrandfather),
@@ -175,7 +180,8 @@ async function createBaptism(req, res) {
          father_last_name, father_first_name, mother_last_name, mother_first_name,
          paternal_grandfather, paternal_grandmother, maternal_grandfather, maternal_grandmother,
          with_marriage_certificate, with_birth_certificate,
-         book_number, page_number, entry_number, remarks, encoded_by
+         book_number, page_number, entry_number, remarks, encoded_by,
+         father_middle_name, mother_middle_name
        )
        VALUES (
          $1, $2, $3, $4, $5,
@@ -184,7 +190,8 @@ async function createBaptism(req, res) {
          $13, $14, $15, $16,
          $17, $18, $19, $20,
          $21, $22,
-         $23, $24, $25, $26, $27
+         $23, $24, $25, $26, $27,
+         $28, $29
        )
        RETURNING *`,
         [
@@ -215,6 +222,8 @@ async function createBaptism(req, res) {
           fields.entryNumber,
           fields.remarks,
           req.user.id,
+          fields.fatherMiddleName,
+          fields.motherMiddleName,
         ],
       );
       if (source) {
@@ -349,6 +358,8 @@ async function updateBaptism(req, res) {
            page_number = $23,
            entry_number = $24,
            remarks = $25,
+           father_middle_name = $28,
+           mother_middle_name = $29,
            updated_at = NOW()
        WHERE id = $26 AND parish_id = $27
        RETURNING *`,
@@ -380,6 +391,8 @@ async function updateBaptism(req, res) {
           fields.remarks,
           current.id,
           req.parishId,
+          fields.fatherMiddleName,
+          fields.motherMiddleName,
         ],
       );
       // Godparents are left as they are when the request doesn't send them.
