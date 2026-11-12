@@ -1,8 +1,9 @@
 import { formatTableDate } from "@/lib/dates";
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
-import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { SearchCriteriaCard } from "@/features/parish-admin/records/SearchCriteriaCard";
+import { hasCriteria } from "@/features/parish-admin/records/searchCriteria";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { RecordRegisterActions } from "@/features/parish-admin/records/RecordRegisterActions";
 import { listBaptismalRecords } from "@/features/parish-admin/records/api/baptismalRecordsApi";
@@ -86,7 +87,14 @@ export function AdminBaptismalRecordsPage() {
         />
       </header>
 
-      <SearchCriteriaCard>
+      <SearchCriteriaCard
+        onSearch={() => setApplied({ ...draft })}
+        onClear={() => {
+          setDraft(emptySearchCriteria());
+          setApplied(emptySearchCriteria());
+        }}
+        canClear={hasCriteria(draft) || hasCriteria(applied)}
+      >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <AdminField label="Name of baptized" className="mb-0">
             <AdminInput
@@ -131,12 +139,6 @@ export function AdminBaptismalRecordsPage() {
             />
           </AdminField>
         </div>
-        <div className="mt-3.5 flex justify-end">
-          <AdminButton onClick={() => setApplied({ ...draft })} className="!rounded-full">
-            <SearchIcon />
-            Search
-          </AdminButton>
-        </div>
       </SearchCriteriaCard>
 
       <AdminTable
@@ -157,14 +159,5 @@ export function AdminBaptismalRecordsPage() {
         }
       />
     </div>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-      <circle cx="11" cy="11" r="7" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" strokeLinecap="round" />
-    </svg>
   );
 }

@@ -11,7 +11,7 @@ import {
 import {
   DELIVERY_OPTIONS,
   formatDay,
-  PURPOSES,
+  purposesFor,
   RECORD_GROUPS,
   recordValues,
   RELATIONSHIPS,
@@ -286,7 +286,7 @@ export function PurposeStep({
       <section>
         <GroupHeading title="What is it for?" />
         <div id="req-purpose" role="radiogroup" aria-label="What is it for?" className="flex flex-wrap gap-2">
-          {PURPOSES.map((purpose) => (
+          {purposesFor(draft.sacramentType).map((purpose) => (
             <PillChoice key={purpose} selected={draft.purposeChoice === purpose} onSelect={() => onPurpose(purpose)}>
               {purpose}
             </PillChoice>

@@ -1,10 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { useAsync } from "@/hooks/useAsync";
 import { PrintSheet } from "@/components/print/PrintSheet";
 import { usePrintJob } from "@/components/print/usePrintJob";
-import { AdminDialog, AdminDialogFooter, AdminDialogHeader } from "@/features/parish-admin/components/AdminDialog";
-import { buildReportPdf, type BuiltReportPdf } from "@/features/parish-admin/reports/reportPdf";
+import { ReportPdfDialog } from "@/features/parish-admin/reports/ReportPdfDialog";
 import "@/features/parish-admin/reports/reportPrint.css";
 import { getPlatformReport, type PlatformReport, type ReportRange } from "@/features/super-admin/api/superAdminApi";
 import { saBtnPrimary, saBtnSecondary } from "@/features/super-admin/components/SuperAdminModal";
@@ -16,9 +14,6 @@ import {
   rangePresets,
   reportFilename,
 } from "@/features/super-admin/reports/platformReport";
-
-/** CSS width the landscape PDF is laid out at, the same as the parish reports, so every download looks alike. */
-const PDF_WIDTH = 1280;
 
 const dateInputClass =
   "h-9 w-[160px] rounded-md border border-admin-border bg-white px-2.5 text-[13.5px] text-admin-ink outline-none focus-visible:border-admin-green-700";
@@ -85,7 +80,16 @@ export function SuperAdminReportsPage() {
       )}
 
       {previewing && ready ? (
-        <PdfPreview report={ready} range={range} onClose={() => setPreviewing(false)} onPrint={() => setPrintJob(ready)} />
+        <ReportPdfDialog
+          subtitle={rangeLabel(range)}
+          filename={reportFilename(range)}
+          surface="platform"
+          renderSheet={(orientation) => (
+            <PlatformReportSheet report={ready} range={range} flat portrait={orientation === "portrait"} />
+          )}
+          onPrint={() => setPrintJob(ready)}
+          onClose={() => setPreviewing(false)}
+        />
       ) : null}
 
       {printJob ? (
@@ -153,102 +157,5 @@ function DateFilter({ range, onApply }: { range: ReportRange; onApply: (range: R
         {active ? `Showing ${rangeLabel(range)}.` : "Showing every date on file."}
       </p>
     </form>
-  );
-}
-
-/**
- * Draws the PDF and shows its pages before saving, so what you see is exactly what downloads, page breaks
- * included. The sheet is drawn from an off-screen copy at a fixed width, like the parish reports.
- */
-function PdfPreview({
-  report,
-  range,
-  onClose,
-  onPrint,
-}: {
-  report: PlatformReport;
-  range: ReportRange;
-  onClose: () => void;
-  onPrint: () => void;
-}) {
-  const captureRef = useRef<HTMLDivElement>(null);
-  const [built, setBuilt] = useState<BuiltReportPdf | null>(null);
-  const [failed, setFailed] = useState(false);
-  const filename = reportFilename(range);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function draw() {
-      // Wait for the fonts and a painted frame, or the capture can come out in fallback fonts.
-      await document.fonts.ready;
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      if (!captureRef.current) return;
-      const pdf = await buildReportPdf(captureRef.current);
-      if (!cancelled) setBuilt(pdf);
-    }
-    draw().catch(() => {
-      if (!cancelled) setFailed(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const pageCount = built?.pages.length ?? 0;
-
-  return (
-    <AdminDialog onClose={onClose} panelClassName="max-w-[900px]">
-      <AdminDialogHeader title="Download PDF" subtitle={`${rangeLabel(range)} · landscape A4`} onClose={onClose} />
-      <div className="max-h-[66vh] overflow-y-auto bg-admin-surface-alt px-4 py-4">
-        {failed ? (
-          <p className="py-16 text-center text-[13.5px] text-admin-red-700">Couldn't draw the PDF. Try again.</p>
-        ) : !built ? (
-          <p className="py-16 text-center text-[13.5px] text-admin-ink-muted">Preparing the preview…</p>
-        ) : (
-          <ol className="space-y-4">
-            {built.pages.map((src, i) => (
-              <li key={i}>
-                <img
-                  src={src}
-                  alt={`Page ${i + 1} of ${pageCount}`}
-                  className="mx-auto block w-full border border-admin-border bg-white"
-                  style={{ aspectRatio: "297 / 210", objectFit: "contain", objectPosition: "top" }}
-                />
-                <p className="mt-1.5 text-center text-[12.5px] text-admin-ink-faint">
-                  Page {i + 1} of {pageCount}
-                </p>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
-      <AdminDialogFooter className="flex-wrap items-center">
-        <p className="mr-auto text-[13px] text-admin-ink-faint">{filename}.pdf</p>
-        <button type="button" className={saBtnSecondary} onClick={onClose}>
-          Close
-        </button>
-        <button type="button" className={saBtnSecondary} onClick={onPrint}>
-          Print
-        </button>
-        <button type="button" className={saBtnPrimary} disabled={!built} onClick={() => built?.save(filename)}>
-          Save PDF
-        </button>
-      </AdminDialogFooter>
-
-      {createPortal(
-        <div
-          aria-hidden="true"
-          data-portal="admin"
-          data-surface="platform"
-          className="pointer-events-none fixed left-[-10000px] top-0"
-          style={{ width: PDF_WIDTH }}
-        >
-          <div ref={captureRef}>
-            <PlatformReportSheet report={report} range={range} flat />
-          </div>
-        </div>,
-        document.body
-      )}
-    </AdminDialog>
   );
 }

@@ -5,13 +5,16 @@ const path = require('path');
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { pool, api, createParish, createBaptism } = require('./helpers');
-const { normalizePurpose, addMonths, manilaToday, PURPOSES } = require('../src/constants/purposes');
+const { normalizePurpose, addMonths, manilaToday, PURPOSES_BY_SACRAMENT } = require('../src/constants/purposes');
 
-/** The list in client/src/lib/purposes.ts. */
-function clientList() {
+/** The lists in client/src/lib/purposes.ts, by certificate. */
+function clientLists() {
   const source = fs.readFileSync(path.join(__dirname, '../../client/src/lib/purposes.ts'), 'utf8');
-  const match = source.match(/export const PURPOSES = \[([^\]]*)\]/);
-  return [...match[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  const lists = {};
+  for (const [, sacrament, body] of source.matchAll(/^\s+(baptism|confirmation|marriage|death): \[([^\]]*)\]/gm)) {
+    lists[sacrament] = [...body.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  }
+  return lists;
 }
 
 after(() => pool.end());
@@ -45,7 +48,9 @@ describe('Certificate purposes', () => {
     assert.equal(normalizePurpose('Walk-in issuance'), null);
     assert.equal(normalizePurpose('Scholarship grant'), 'Scholarship grant');
     assert.equal(normalizePurpose('  '), null);
-    assert.deepEqual([...PURPOSES], clientList(), 'the app and the server list the same purposes');
+    assert.equal(normalizePurpose('Travel / passport'), 'Passport or government ID');
+    const server = Object.fromEntries(Object.entries(PURPOSES_BY_SACRAMENT).map(([k, v]) => [k, [...v]]));
+    assert.deepEqual(server, clientLists(), 'the app and the server list the same purposes for each certificate');
   });
 
   it('counts months to the same day, or the last day of a short month', () => {

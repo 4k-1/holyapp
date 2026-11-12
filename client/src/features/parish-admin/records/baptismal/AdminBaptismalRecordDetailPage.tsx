@@ -36,6 +36,7 @@ import {
 import type { IssuedRecordCertificate, RecordAnnotation } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 import { PAGE_TITLE_CLASS, RECORD_DETAIL_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
+import { askText } from "@/lib/notify";
 
 export function AdminBaptismalRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -83,9 +84,16 @@ export function AdminBaptismalRecordDetailPage() {
 
   async function handleRevoke(cert: IssuedRecordCertificate) {
     if (!cert.id) return;
-    const reason = window.prompt("Why is this certificate being revoked?");
-    if (!reason?.trim()) return;
-    await revokeIssuedCertificate(cert.id, reason.trim());
+    const reason = await askText({
+      title: "Revoke this certificate?",
+      message: "Anyone who checks it will see it's no longer valid. This can't be undone.",
+      label: "Reason for revoking",
+      placeholder: "For example: issued with a wrong date",
+      confirmLabel: "Revoke certificate",
+      danger: true,
+    });
+    if (!reason) return;
+    await revokeIssuedCertificate(cert.id, reason);
     refetch();
   }
 

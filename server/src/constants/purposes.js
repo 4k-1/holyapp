@@ -1,8 +1,28 @@
 /**
- * What a certificate is for (B2). Mirrored by client/src/lib/purposes.ts. Anything else is typed in
- * ("Other…") and kept as written.
+ * What a certificate is usually for (B2), by certificate. Mirrored by client/src/lib/purposes.ts. Anything else
+ * is typed in ("Other…") and kept as written.
  */
-const PURPOSES = Object.freeze(['School enrollment', 'Employment', 'Marriage', 'Travel / passport', 'Personal records']);
+const PURPOSES_BY_SACRAMENT = Object.freeze({
+  baptism: Object.freeze([
+    'Marriage',
+    'First Communion or Confirmation',
+    'Being a godparent or sponsor',
+    'School enrollment',
+    'Passport or government ID',
+    'Personal records',
+  ]),
+  confirmation: Object.freeze(['Marriage', 'Being a godparent or sponsor', 'Personal records']),
+  marriage: Object.freeze(['Baptism of a child', 'Visa or immigration', 'Church tribunal case', 'Personal records']),
+  death: Object.freeze([
+    'Death benefit or insurance claim',
+    'Late registration of death',
+    'Estate settlement',
+    'Personal records',
+  ]),
+});
+
+/** Every listed purpose once, for matching what was typed or saved to its usual spelling. */
+const PURPOSES = Object.freeze([...new Set(Object.values(PURPOSES_BY_SACRAMENT).flat())]);
 
 const MARRIAGE = 'Marriage';
 
@@ -10,7 +30,11 @@ const MARRIAGE = 'Marriage';
 const MARRIAGE_VALID_MONTHS = 6;
 
 /** Older names still in saved requests. */
-const ALIASES = Object.freeze({ 'marriage preparation': MARRIAGE, 'walk-in issuance': null });
+const ALIASES = Object.freeze({
+  'marriage preparation': MARRIAGE,
+  'walk-in issuance': null,
+  'travel / passport': 'Passport or government ID',
+});
 
 /** "school enrollment" → "School enrollment"; a typed purpose is trimmed; blank → null. */
 function normalizePurpose(value) {
@@ -46,6 +70,7 @@ function validUntilFor(purpose, issuedOn) {
 
 module.exports = {
   PURPOSES,
+  PURPOSES_BY_SACRAMENT,
   MARRIAGE,
   MARRIAGE_VALID_MONTHS,
   normalizePurpose,

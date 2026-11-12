@@ -1,5 +1,23 @@
-/** What a certificate is for (B2). Mirrors server/src/constants/purposes.js. */
-export const PURPOSES = ["School enrollment", "Employment", "Marriage", "Travel / passport", "Personal records"];
+import type { SacramentType } from "@/types";
+
+/**
+ * What each certificate is usually asked for (B2), most common first. Baptism and confirmation copies are mostly
+ * for a church wedding; a parish death certificate mostly backs up a benefit or insurance claim. Mirrors
+ * server/src/constants/purposes.js. Anything else is typed in with "Other".
+ */
+export const PURPOSES_BY_SACRAMENT: Record<SacramentType, string[]> = {
+  baptism: [
+    "Marriage",
+    "First Communion or Confirmation",
+    "Being a godparent or sponsor",
+    "School enrollment",
+    "Passport or government ID",
+    "Personal records",
+  ],
+  confirmation: ["Marriage", "Being a godparent or sponsor", "Personal records"],
+  marriage: ["Baptism of a child", "Visa or immigration", "Church tribunal case", "Personal records"],
+  death: ["Death benefit or insurance claim", "Late registration of death", "Estate settlement", "Personal records"],
+};
 
 export const MARRIAGE_PURPOSE = "Marriage";
 

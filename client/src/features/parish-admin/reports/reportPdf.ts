@@ -26,22 +26,31 @@ const PAGE_BG = "#f2f7f8";
 /** Space above the content on every page after the first, in points. */
 const CONTINUED_TOP = 28;
 
+export type PdfOrientation = "landscape" | "portrait";
+
+/**
+ * CSS width each orientation's sheet is laid out at. Both come to about 1.5 px per point on A4, so text is
+ * the same size either way; portrait is simply narrower, and the sheet reflows to fit.
+ */
+export const PDF_LAYOUT_WIDTH: Record<PdfOrientation, number> = { landscape: 1280, portrait: 900 };
+
 /** A PDF drawn but not yet saved: each page as an image, for a preview, and a way to save it. */
 export interface BuiltReportPdf {
   pages: string[];
   save: (filename: string) => void;
 }
 
-/** Save the report sheet as a landscape A4 PDF; see buildReportPdf. */
-export async function saveReportPdf(element: HTMLElement, filename: string): Promise<void> {
-  (await buildReportPdf(element)).save(filename);
+/** Save the report sheet as an A4 PDF; see buildReportPdf. */
+export async function saveReportPdf(element: HTMLElement, filename: string, orientation: PdfOrientation = "landscape"): Promise<void> {
+  (await buildReportPdf(element, orientation)).save(filename);
 }
 
 /**
- * Draw the report sheet as a landscape A4 PDF, the shape of the on-screen dashboard. Pages break at the bottom of a card or table row
+ * Draw the report sheet as an A4 PDF, landscape (the shape of the on-screen dashboard) or portrait. Lay the
+ * sheet out at PDF_LAYOUT_WIDTH for the orientation first. Pages break at the bottom of a card or table row
  * (anything marked `data-pdf-break`) so nothing is cut through the middle of a line.
  */
-export async function buildReportPdf(element: HTMLElement): Promise<BuiltReportPdf> {
+export async function buildReportPdf(element: HTMLElement, orientation: PdfOrientation = "landscape"): Promise<BuiltReportPdf> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
   const scale = 2;
   const canvas = await html2canvas(element, {
@@ -58,7 +67,7 @@ export async function buildReportPdf(element: HTMLElement): Promise<BuiltReportP
     },
   });
 
-  const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  const pdf = new jsPDF({ orientation, unit: "pt", format: "a4" });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const ptPerPx = pageWidth / element.offsetWidth;

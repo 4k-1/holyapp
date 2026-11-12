@@ -1,7 +1,7 @@
 import { CandleIcon, DoveIcon, DropletIcon, HeartIcon } from "@/components/ui/icons/SacramentIcons";
 import type { CurrentUser, DeliveryMethod, SacramentType } from "@/types";
 import type { RequestFormState } from "@/features/parishioner/requests/types";
-import { PURPOSES as SHARED_PURPOSES } from "@/lib/purposes";
+import { PURPOSES_BY_SACRAMENT } from "@/lib/purposes";
 
 /** The request as the parishioner fills it in; nothing is chosen for them up front. */
 export interface RequestDraft {
@@ -73,8 +73,10 @@ export const SACRAMENT_OPTIONS: { type: SacramentType; label: string; descriptio
 
 export const RELATIONSHIPS = ["Parent", "Child", "Spouse", "Sibling", "Grandchild", "Legal guardian", "Other relative", "Other"];
 
-/** The shared list (lib/purposes.ts) plus "Other", which asks for a typed purpose. */
-export const PURPOSES = [...SHARED_PURPOSES, "Other"];
+/** What this certificate is usually for (lib/purposes.ts), plus "Other", which asks for a typed purpose. */
+export function purposesFor(type: SacramentType | null | undefined): string[] {
+  return [...(type ? PURPOSES_BY_SACRAMENT[type] : []), "Other"];
+}
 
 export const DELIVERY_OPTIONS: { key: DeliveryMethod; label: string; description: string }[] = [
   { key: "digital", label: "Digital copy", description: "Sent to your Certificate Wallet once the parish releases it" },
@@ -269,7 +271,9 @@ export function stepErrors(step: StepId, draft: RequestDraft): Record<string, st
     }
   }
   if (step === 4) {
-    if (!draft.purposeChoice) errors.purpose = "Choose why you need the certificate.";
+    if (!draft.purposeChoice || !purposesFor(draft.sacramentType).includes(draft.purposeChoice)) {
+      errors.purpose = "Choose why you need the certificate.";
+    }
     else if (draft.purposeChoice === "Other" && !draft.purposeOther.trim()) errors.purposeOther = "Tell us what the certificate is for.";
     if (!draft.deliveryMethod) errors.deliveryMethod = "Choose how you'd like to receive it.";
   }

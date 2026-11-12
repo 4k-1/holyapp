@@ -23,6 +23,7 @@ import { AdminIssueCertificateModal } from "@/features/parish-admin/requests/Adm
 import { AdminReleaseCertificateModal } from "@/features/parish-admin/requests/AdminReleaseCertificateModal";
 import { confirmRequestPayment, revokeIssuedCertificate } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import type { CertificateRequest, Parish, SacramentType } from "@/types";
+import { askText } from "@/lib/notify";
 
 const sacramentLabels: Record<SacramentType, string> = {
   baptism: "Baptismal",
@@ -89,11 +90,18 @@ export function AdminRequestDetailModal({
 
   async function revokeIssued() {
     if (!request.issuedCertificate || request.issuedCertificate.state !== "valid") return;
-    const reason = window.prompt("Why is this certificate being revoked?");
-    if (!reason?.trim()) return;
+    const reason = await askText({
+      title: "Revoke this certificate?",
+      message: "Anyone who checks it will see it's no longer valid. This can't be undone.",
+      label: "Reason for revoking",
+      placeholder: "For example: issued with a wrong date",
+      confirmLabel: "Revoke certificate",
+      danger: true,
+    });
+    if (!reason) return;
     setPayError(null);
     try {
-      await revokeIssuedCertificate(request.issuedCertificate.id, reason.trim());
+      await revokeIssuedCertificate(request.issuedCertificate.id, reason);
       onIssueComplete?.();
       onClose();
     } catch (err) {

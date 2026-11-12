@@ -81,7 +81,7 @@ export function MassIntentionsMiniCalendar({
               aria-pressed={isSelected}
               aria-label={`${label}: ${detail}`}
               title={`${label} · ${detail}`}
-              className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full text-admin-body transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/50 ${
+              className={`relative mx-auto flex h-10 w-10 items-center justify-center rounded-full text-admin-body transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-green-600/50 ${
                 isSelected
                   ? "bg-admin-green-700 font-semibold text-white"
                   : isToday
@@ -92,12 +92,24 @@ export function MassIntentionsMiniCalendar({
               }`}
             >
               {day}
+              {booked > 0 && (
+                <span
+                  aria-hidden="true"
+                  className={`absolute bottom-[5px] left-1/2 h-[5px] w-[5px] -translate-x-1/2 rounded-full ${
+                    isSelected ? "bg-white" : isPast ? "bg-admin-green-600/45" : "bg-admin-green-600"
+                  }`}
+                />
+              )}
             </button>
           );
         })}
       </div>
 
-      <div className="mt-3 flex justify-end border-t border-admin-border pt-3">
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-admin-border pt-3">
+        <p className="flex items-center gap-1.5 text-admin-label text-admin-ink-muted">
+          <span aria-hidden="true" className="h-[5px] w-[5px] rounded-full bg-admin-green-600" />
+          Has intentions
+        </p>
         <button
           type="button"
           onClick={onToday}

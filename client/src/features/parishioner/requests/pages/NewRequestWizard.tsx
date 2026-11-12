@@ -130,6 +130,9 @@ export function NewRequestWizard() {
         // The record's fields differ by sacrament, so a new choice starts them over.
         fields: forWhom === "me" ? prefillFromAccount(type, user) : {},
         sacramentDate: "",
+        // Purposes differ by certificate too.
+        purposeChoice: "",
+        purposeOther: "",
       };
     });
   }

@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { PrintSheet } from "@/components/print/PrintSheet";
 import { usePrintJob } from "@/components/print/usePrintJob";
@@ -9,10 +8,8 @@ import {
   buildReportDocument,
   type ReportDocument,
 } from "@/features/parish-admin/reports/reportDocument";
-import {
-  downloadReportCsv,
-  saveReportPdf,
-} from "@/features/parish-admin/reports/reportPdf";
+import { downloadReportCsv } from "@/features/parish-admin/reports/reportPdf";
+import { ReportPdfDialog } from "@/features/parish-admin/reports/ReportPdfDialog";
 import { ReportSheet } from "@/features/parish-admin/reports/ReportSheet";
 import {
   emptyReportDateRange,
@@ -28,9 +25,6 @@ import {
   AdminPage,
   AdminPageHeader,
 } from "@/features/parish-admin/components/AdminPageHeader";
-
-/** CSS width the landscape PDF is laid out at, so every download looks the same whatever the screen. */
-const PDF_WIDTH = 1280;
 
 const dateInputClass =
   "h-9 w-[150px] rounded-md border border-admin-border bg-admin-surface px-2.5 text-admin-support text-admin-ink outline-none focus-visible:border-admin-green-700 focus-visible:ring-[3px] focus-visible:ring-admin-green-100";
@@ -114,9 +108,8 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
   const period = reportPeriodLabel(range);
   const [doc, setDoc] = useState<ReportDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [printJob, setPrintJob] = usePrintJob<ReportDocument>();
-  const captureRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,19 +140,6 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
   const loaded = doc?.kind === kind ? doc : null;
   const shown = useMemo(() => (loaded ? withCopyFilter(loaded, copyFilter) : null), [loaded, copyFilter]);
 
-  async function handleDownload() {
-    if (!shown || !captureRef.current) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await saveReportPdf(captureRef.current, shown.filename);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save the PDF.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
     <AdminPage>
       <AdminPageHeader
@@ -182,12 +162,12 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
             <AdminButton
               variant="secondary"
               onClick={() => shown && setPrintJob(shown)}
-              disabled={!shown || saving}
+              disabled={!shown}
             >
               Print
             </AdminButton>
-            <AdminButton onClick={handleDownload} disabled={!shown || saving}>
-              {saving ? "Saving…" : "Download PDF"}
+            <AdminButton onClick={() => setPreviewing(true)} disabled={!shown}>
+              Download PDF
             </AdminButton>
           </div>
         }
@@ -208,21 +188,15 @@ export function AdminReportPage({ kind }: { kind: ReportKind }) {
         </p>
       )}
 
-      {/* Off-screen copy at a fixed width, outside the page so nothing clips it; the PDF is drawn from this. */}
-      {shown &&
-        createPortal(
-          <div
-            aria-hidden="true"
-            data-portal="admin"
-            className="pointer-events-none fixed top-0 left-[-10000px]"
-            style={{ width: PDF_WIDTH }}
-          >
-            <div ref={captureRef}>
-              <ReportSheet doc={shown} flat />
-            </div>
-          </div>,
-          document.body,
-        )}
+      {previewing && shown && (
+        <ReportPdfDialog
+          subtitle={period}
+          filename={shown.filename}
+          renderSheet={(orientation) => <ReportSheet doc={shown} flat portrait={orientation === "portrait"} />}
+          onPrint={() => setPrintJob(shown)}
+          onClose={() => setPreviewing(false)}
+        />
+      )}
 
       {printJob && (
         <PrintSheet className="report-print-sheet">

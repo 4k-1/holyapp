@@ -263,6 +263,7 @@ function FundsTable({ funds }: { funds: NonNullable<ReportDocument["funds"]> }) 
 export function ReportSheet({
   doc,
   flat = false,
+  portrait = false,
   bare = false,
   interactive = false,
   copyFilter,
@@ -274,6 +275,8 @@ export function ReportSheet({
   onCopyFilterChange?: (filter: CopyFilter) => void;
   /** Square edges and fixed padding, for the PDF and the printout. */
   flat?: boolean;
+  /** A portrait PDF: the chart and the breakdown stack instead of sitting side by side. */
+  portrait?: boolean;
   /** Just the cards, for the Reports page, which has its own heading. */
   bare?: boolean;
   interactive?: boolean;
@@ -330,7 +333,11 @@ export function ReportSheet({
           </SheetCard>
 
           {!doc.empty && (
-            <div className="grid flex-1 grid-cols-[minmax(0,1fr)] gap-3.5 @3xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+            <div
+              className={`grid flex-1 grid-cols-[minmax(0,1fr)] gap-3.5 ${
+                portrait ? "" : "@3xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]"
+              }`}
+            >
               <SheetCard
                 title={trend.title}
                 aside={trend.series.length > 1 ? <Legend items={trend.series} /> : null}

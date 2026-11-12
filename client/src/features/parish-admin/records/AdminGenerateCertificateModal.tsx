@@ -19,7 +19,7 @@ import { getCertificateAppearance } from "@/features/parish-admin/settings/api/c
 import { useAsync } from "@/hooks/useAsync";
 import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
 import type { IssuedCertificate, Parish, SacramentType } from "@/types";
-import { OTHER_PURPOSE, PURPOSES, validUntilFor } from "@/lib/purposes";
+import { OTHER_PURPOSE, PURPOSES_BY_SACRAMENT, validUntilFor } from "@/lib/purposes";
 
 interface AdminGenerateCertificateModalProps {
   parish: Parish;
@@ -265,7 +265,7 @@ export function AdminGenerateCertificateModal({
               <option value="" disabled>
                 What is it for?
               </option>
-              {PURPOSES.map((p) => (
+              {PURPOSES_BY_SACRAMENT[sacramentType].map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>

@@ -14,7 +14,7 @@ import {
 
 /*
  * The report, laid out once for the page, the PDF and the printout. `flat` is the PDF and print version:
- * a fixed four-column layout (it is drawn off-screen, so screen-width breakpoints don't apply), a header
+ * a fixed four-column layout (`portrait` stacks the chart above the outcomes) (it is drawn off-screen, so screen-width breakpoints don't apply), a header
  * naming the dates, and no hover or sorting. Avoid Tailwind opacity modifiers and shadows here:
  * html2canvas can't read the color-mix() they compile to.
  */
@@ -22,10 +22,12 @@ export function PlatformReportSheet({
   report,
   range,
   flat = false,
+  portrait = false,
 }: {
   report: PlatformReport;
   range: ReportRange;
   flat?: boolean;
+  portrait?: boolean;
 }) {
   const compareWith = comparisonLabel(report);
   return (
@@ -61,7 +63,9 @@ export function PlatformReportSheet({
 
       <div
         data-pdf-break
-        className={`mb-[18px] grid gap-[18px] ${flat ? "grid-cols-[3fr_2fr]" : "grid-cols-1 xl:grid-cols-[3fr_2fr]"}`}
+        className={`mb-[18px] grid gap-[18px] ${
+          flat ? (portrait ? "grid-cols-1" : "grid-cols-[3fr_2fr]") : "grid-cols-1 xl:grid-cols-[3fr_2fr]"
+        }`}
       >
         <TrendCard report={report} flat={flat} />
         <OutcomesCard report={report} />

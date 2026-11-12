@@ -1,6 +1,7 @@
-// Short messages in the corner of the screen, and a confirm question in a proper dialog,
-// in place of the browser's alert() and confirm() pop-ups, which block the page and look
-// out of place. Shown by <Notices> and <ConfirmHost> in App.tsx.
+// Short messages in the corner of the screen, and confirm questions in a proper dialog,
+// in place of the browser's alert(), confirm() and prompt() pop-ups, which block the page and
+// look out of place. Never use those browser pop-ups.
+// Shown by <Notices> and <ConfirmHost> in App.tsx.
 
 export const NOTICE_EVENT = "holyapp-notice";
 export const CONFIRM_EVENT = "holyapp-confirm";
@@ -25,12 +26,27 @@ export interface ConfirmOptions {
 }
 
 export interface ConfirmRequest extends ConfirmOptions {
-  resolve: (ok: boolean) => void;
+  /** When set, the dialog also asks for a line of text, and won't confirm until it's filled in. */
+  input?: { label: string; placeholder?: string };
+  resolve: (ok: boolean, text?: string) => void;
 }
 
 /** Asks a yes/no question in a dialog; resolves true only when the person confirms. */
 export function askConfirm(options: ConfirmOptions): Promise<boolean> {
   return new Promise((resolve) => {
     window.dispatchEvent(new CustomEvent<ConfirmRequest>(CONFIRM_EVENT, { detail: { ...options, resolve } }));
+  });
+}
+
+/** Asks for a short piece of text, such as a reason, in a dialog; resolves the trimmed text, or null if cancelled. */
+export function askText(options: ConfirmOptions & { label: string; placeholder?: string }): Promise<string | null> {
+  const { label, placeholder, ...rest } = options;
+  return new Promise((resolve) => {
+    const detail: ConfirmRequest = {
+      ...rest,
+      input: { label, placeholder },
+      resolve: (ok, text) => resolve(ok && text?.trim() ? text.trim() : null),
+    };
+    window.dispatchEvent(new CustomEvent<ConfirmRequest>(CONFIRM_EVENT, { detail }));
   });
 }
