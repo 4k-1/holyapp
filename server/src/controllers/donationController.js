@@ -5,6 +5,7 @@ const { createNotification } = require('../utils/notify');
 const { requiredText, optionalText, dateValue, dateOnly, sendRecordError } = require('../utils/recordFields');
 const { frontendUrl } = require('../utils/frontendUrl');
 const { findFund, normalizePurpose } = require('../constants/funds');
+const { encrypt, decryptRow } = require('../utils/fieldCrypto');
 const {
   configured: gcashConfigured,
   createGcashCheckout,
@@ -85,6 +86,7 @@ async function listParishDonations(req, res) {
 }
 
 function toParishDonation(row) {
+  row = decryptRow(row, ['donor_name', 'remarks']);
   return {
     id: row.id,
     parishId: row.parish_id,
@@ -152,12 +154,12 @@ async function insertOfficeGift(db, { parishId, userId, fields, replacesId = nul
      RETURNING *`,
     [
       parishId,
-      fields.donorName,
+      encrypt(fields.donorName),
       fields.type,
       fields.amount,
       fields.date,
       fields.purpose,
-      fields.remarks,
+      encrypt(fields.remarks),
       userId,
       replacesId,
       fields.reference,
@@ -303,6 +305,7 @@ async function correctDonation(req, res) {
 }
 
 function toMyDonation(row) {
+  row = decryptRow(row, ['donor_name']);
   return {
     id: row.id,
     amount: Number(row.amount),
@@ -355,7 +358,7 @@ async function giveDonation(req, res) {
       `INSERT INTO donation (parish_id, donor_name, donation_type, amount, donation_date, purpose, remarks, recorded_by)
        VALUES ($1, $2, 'GCash', $3, CURRENT_DATE, $4, $5, $6)
        RETURNING *`,
-      [req.parishId, donorName, amount, purpose, message, req.user?.id || null]
+      [req.parishId, encrypt(donorName), amount, purpose, encrypt(message), req.user?.id || null]
     );
     const donation = inserted.rows[0];
     const payment = await client.query(

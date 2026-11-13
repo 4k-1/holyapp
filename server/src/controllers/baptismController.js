@@ -14,6 +14,9 @@ const { scheduleEventFor, linkScheduleEvent } = require('../utils/scheduleRecord
 const { listRecordCertificates } = require('./certificateController');
 const { listBaptismAnnotations } = require('../utils/baptismAnnotation');
 const { parseGodparents, saveGodparents, listGodparents } = require('../utils/baptismGodparents');
+const { encrypt, decryptRow } = require('../utils/fieldCrypto');
+
+const BAPTISM_SECRET = ['address', 'remarks', 'place_of_birth', 'place_of_baptism'];
 
 // Runs fn with one connection inside a transaction, so a baptism and its godparents are
 // saved together or not at all.
@@ -48,6 +51,7 @@ function legitimacyToDb(value) {
 }
 
 function toBaptismalRecord(row) {
+  row = decryptRow(row, BAPTISM_SECRET);
   return {
     // The schedule event it was recorded from (C11), if any.
     scheduleEventId: row.schedule_event_id || null,
@@ -136,11 +140,11 @@ function parseBaptismBody(body) {
     lastName: requiredText(body.lastName, 'Last name'),
     sex: optionalText(body.sex),
     dateOfBirth: dateValue(body.dateOfBirth, 'Date of birth'),
-    placeOfBirth: optionalText(body.placeOfBirth),
+    placeOfBirth: encrypt(optionalText(body.placeOfBirth)),
     dateOfBaptism: dateValue(body.dateOfBaptism, 'Date of baptism'),
-    placeOfBaptism: requiredText(body.placeOfBaptism, 'Place of baptism'),
+    placeOfBaptism: encrypt(requiredText(body.placeOfBaptism, 'Place of baptism')),
     legitimacyStatus: legitimacyToDb(body.legitimacyStatus),
-    address: optionalText(body.address),
+    address: encrypt(optionalText(body.address)),
     minister: requiredText(body.minister, 'Minister'),
     fatherLastName: father.last,
     fatherFirstName: father.first,
@@ -155,7 +159,7 @@ function parseBaptismBody(body) {
     bookNumber: requiredText(body.bookNumber, 'Book number'),
     pageNumber: requiredText(body.pageNumber, 'Page number'),
     entryNumber: requiredText(body.entryNumber, 'Entry number'),
-    remarks,
+    remarks: encrypt(remarks),
   };
 }
 

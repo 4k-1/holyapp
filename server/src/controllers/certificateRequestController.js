@@ -3,6 +3,7 @@ const { writeAudit } = require('../utils/audit');
 const { optionalUuid } = require('../utils/recordFields');
 const { feeAmount } = require('../utils/serviceFee');
 const { normalizePurpose } = require('../constants/purposes');
+const { encryptJson, decryptJson } = require('../utils/fieldCrypto');
 
 const SACRAMENTS = ['baptism', 'confirmation', 'marriage', 'death'];
 const DELIVERIES = ['pickup', 'digital'];
@@ -140,7 +141,7 @@ function validateIntake(body) {
 }
 
 function toDetails(sacrament, raw) {
-  const fields = raw && typeof raw === 'object' ? raw : {};
+  const fields = decryptJson(raw && typeof raw === 'object' ? raw : {}) || {};
   const details = { subjectName: fields.subjectName || 'Certificate subject' };
   const birthdate = fields.birthdate || fields.dateOfBirth;
   if (birthdate) details.birthdate = birthdate;
@@ -244,7 +245,7 @@ async function createRequest(req, res) {
         parsed.purpose,
         req.user.id,
         parsed.delivery,
-        JSON.stringify(details),
+        JSON.stringify(encryptJson(details)),
       ]
     );
 

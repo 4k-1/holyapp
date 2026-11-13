@@ -2,6 +2,7 @@ import type { CurrentUser, Role, UserStatus } from "@/types";
 
 const ACCESS_TOKEN_KEY = "holyapp-access-token";
 const REFRESH_TOKEN_KEY = "holyapp-refresh-token";
+const DEVICE_ID_KEY = "holyapp-device-id";
 export const USER_STORAGE_KEY = "holyapp-mock-user";
 
 /** Backend login/refresh/verify user payload (snake_case). */
@@ -73,4 +74,13 @@ export function setSession(accessToken: string, refreshToken: string) {
 export function clearSession() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+export function getDeviceId(): string {
+  let id = localStorage.getItem(DEVICE_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(DEVICE_ID_KEY, id);
+  }
+  return id;
 }

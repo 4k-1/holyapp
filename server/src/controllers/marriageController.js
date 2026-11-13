@@ -16,6 +16,11 @@ const {
 const { findParishRecord, archivedListClause } = require('../utils/recordQuery');
 const { scheduleEventFor, linkScheduleEvent } = require('../utils/scheduleRecordLink');
 const { listRecordCertificates } = require('./certificateController');
+const { encrypt, decryptRow } = require('../utils/fieldCrypto');
+
+const MARRIAGE_SECRET = ['place_of_marriage', 'marriage_address', 'remarks'];
+const PARTY_SECRET = ['address', 'birthplace'];
+const CONSENT_SECRET = ['residence'];
 
 const ROLE_TO_DB = {
   Groom: 'husband',
@@ -72,6 +77,7 @@ function partyLabel(role) {
 }
 
 function toConsentPerson(row) {
+  row = decryptRow(row, CONSENT_SECRET);
   return {
     id: row.id,
     lastName: row.last_name || undefined,
@@ -83,6 +89,7 @@ function toConsentPerson(row) {
 }
 
 function toMarriageParty(row, consentPersons = []) {
+  row = decryptRow(row, PARTY_SECRET);
   return {
     id: row.id,
     role: ROLE_FROM_DB[row.role],
@@ -110,6 +117,7 @@ function toMarriageParty(row, consentPersons = []) {
 }
 
 function toMarriageRecord(row, partyRows = []) {
+  row = decryptRow(row, MARRIAGE_SECRET);
   return {
     // The schedule event it was recorded from (C11), if any.
     scheduleEventId: row.schedule_event_id || null,
@@ -264,10 +272,10 @@ async function insertMarriageParties(client, marriageId, parsedParties) {
         party.firstName,
         party.middleName,
         party.dateOfBirth,
-        party.birthplace,
+        encrypt(party.birthplace),
         party.sex,
         party.citizenship,
-        party.address,
+        encrypt(party.address),
         party.religion,
         party.civilStatus,
         party.baptismalRecordId,
@@ -296,7 +304,7 @@ async function insertMarriageParties(client, marriageId, parsedParties) {
           optionalText(consent.firstName),
           optionalText(consent.middleInitial),
           optionalText(consent.relation),
-          optionalText(consent.residence),
+          encrypt(optionalText(consent.residence)),
         ]
       );
       consents.push(insertedConsent.rows[0]);
@@ -324,8 +332,8 @@ async function createMarriage(req, res) {
        RETURNING *`,
       [
         req.parishId,
-        fields.placeOfMarriage,
-        fields.marriageAddress,
+        encrypt(fields.placeOfMarriage),
+        encrypt(fields.marriageAddress),
         fields.dateOfMarriage,
         fields.timeOfMarriage,
         fields.minister,
@@ -334,7 +342,7 @@ async function createMarriage(req, res) {
         fields.bookNumber,
         fields.pageNumber,
         fields.entryNumber,
-        fields.remarks,
+        encrypt(fields.remarks),
         req.user.id,
       ]
     );
@@ -452,8 +460,8 @@ async function updateMarriage(req, res) {
        WHERE id = $12 AND parish_id = $13
        RETURNING *`,
       [
-        fields.placeOfMarriage,
-        fields.marriageAddress,
+        encrypt(fields.placeOfMarriage),
+        encrypt(fields.marriageAddress),
         fields.dateOfMarriage,
         fields.timeOfMarriage,
         fields.minister,
@@ -462,7 +470,7 @@ async function updateMarriage(req, res) {
         fields.bookNumber,
         fields.pageNumber,
         fields.entryNumber,
-        fields.remarks,
+        encrypt(fields.remarks),
         current.id,
         req.parishId,
       ]

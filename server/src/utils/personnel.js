@@ -1,6 +1,7 @@
 // Shared by the Staff list and Staff accounts: how a person reads, and the one-Parish-Priest rule (item 4).
 
 const { PARISH_PRIEST, formatPersonName, isClergyRank, rankForHonorific } = require('../constants/personnelRoles');
+const { decrypt } = require('./fieldCrypto');
 
 function httpError(status, message) {
   const err = new Error(message);
@@ -32,7 +33,7 @@ function toPerson(row) {
     clergy: isClergyRank(row.clergy_rank),
     role: row.role_title,
     titles: titlesOf(row),
-    contact: row.contact_info || '',
+    contact: decrypt(row.contact_info) || '',
     status: row.status,
     hasAccount: Boolean(row.user_id),
   };

@@ -18,6 +18,7 @@ const {
   insertOfficeIntention,
 } = require('../services/intentionBooking');
 const { frontendUrl } = require('../utils/frontendUrl');
+const { encrypt, decrypt, decryptRow } = require('../utils/fieldCrypto');
 const { parishSetupActor } = require('../utils/parishActor');
 const {
   configured: gcashConfigured,
@@ -80,6 +81,7 @@ function localISO(date) {
 }
 
 function toIntention(row) {
+  row = decryptRow(row, ['requester_name', 'intention_for', 'contact']);
   return {
     id: row.id,
     referenceNo: row.reference_no,
@@ -284,9 +286,9 @@ async function insertIntention({
      RETURNING *`,
     [
       parishId,
-      requesterName,
+      encrypt(requesterName),
       intentionType,
-      intentionFor,
+      encrypt(intentionFor),
       date,
       requesterId,
       time,
@@ -294,7 +296,7 @@ async function insertIntention({
       status,
       offering,
       payment,
-      contact,
+      encrypt(contact),
     ]
   );
   return inserted.rows[0];
@@ -344,16 +346,16 @@ async function submitIntention(req, res) {
        RETURNING *`,
       [
         req.parishId,
-        requestedBy,
+        encrypt(requestedBy),
         type,
-        intentionFor,
+        encrypt(intentionFor),
         date,
         req.user?.id || null,
         time,
         label,
         donation,
         donation > 0 ? 'pending' : 'none',
-        contact,
+        encrypt(contact),
       ]
     );
     const row = inserted.rows[0];
@@ -443,7 +445,7 @@ async function announceDonation(row, amount, actorId, source) {
   await notifyOffice(
     row.parish_id,
     'Mass intention donation received',
-    `${row.requester_name} donated ₱${amount.toLocaleString('en-PH')} through GCash for the Mass on ${dateOnly(row.schedule_date)} at ${row.schedule_time}.`
+    `${decrypt(row.requester_name)} donated ₱${amount.toLocaleString('en-PH')} through GCash for the Mass on ${dateOnly(row.schedule_date)} at ${row.schedule_time}.`
   );
   await writeAudit({
     parishId: row.parish_id,
@@ -574,7 +576,7 @@ async function confirmIntention(req, res) {
         recipientId: row.requester_id,
         kind: 'parishioner',
         title: 'Mass intention confirmed',
-        body: `Your Mass intention for ${row.intention_for} on ${String(row.schedule_date).slice(0, 10)} at ${row.schedule_time} has been confirmed.`,
+        body: `Your Mass intention for ${decrypt(row.intention_for)} on ${String(row.schedule_date).slice(0, 10)} at ${row.schedule_time} has been confirmed.`,
         href: 'intentions',
       });
     }
@@ -609,7 +611,7 @@ async function markSaid(req, res) {
         recipientId: row.requester_id,
         kind: 'parishioner',
         title: 'Mass intention said',
-        body: `The Mass intention for ${row.intention_for} was offered on ${String(row.schedule_date).slice(0, 10)}.`,
+        body: `The Mass intention for ${decrypt(row.intention_for)} was offered on ${String(row.schedule_date).slice(0, 10)}.`,
         href: 'intentions',
       });
     }

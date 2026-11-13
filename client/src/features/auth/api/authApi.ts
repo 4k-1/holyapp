@@ -3,6 +3,7 @@ import { apiFetch, ApiError, refreshAccessToken } from "@/lib/api";
 import {
   clearSession,
   getAccessToken,
+  getDeviceId,
   getRefreshToken,
   mapBackendUser,
   setSession,
@@ -37,12 +38,41 @@ export function setCurrentUser(user: CurrentUser | null) {
   window.dispatchEvent(new Event("holyapp-user-updated"));
 }
 
+export class TwoFactorChallenge extends Error {
+  challengeId: string;
+  email: string;
+
+  constructor(challengeId: string, email: string) {
+    super("Enter the code sent to your email.");
+    this.name = "TwoFactorChallenge";
+    this.challengeId = challengeId;
+    this.email = email;
+  }
+}
+
+type LoginResponse = BackendAuthResponse & {
+  two_factor_required?: boolean;
+  challenge_id?: string;
+  email?: string;
+};
+
+function applySession(data: BackendAuthResponse): CurrentUser {
+  const user = mapBackendUser(data.user);
+  setSession(data.token, data.refresh_token);
+  setCurrentUser(user);
+  return user;
+}
+
+function loginBody(email: string, password: string) {
+  return { email, password, device_id: getDeviceId() };
+}
+
 export async function login(email: string, password: string): Promise<CurrentUser> {
-  let data: BackendAuthResponse;
+  let data: LoginResponse;
   try {
-    data = await apiFetch<BackendAuthResponse>("/auth/login", {
+    data = await apiFetch<LoginResponse>("/auth/login", {
       method: "POST",
-      body: { email, password },
+      body: loginBody(email, password),
       auth: false,
     });
   } catch (err) {
@@ -56,22 +86,23 @@ export async function login(email: string, password: string): Promise<CurrentUse
     throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
 
+  if (data.two_factor_required && data.challenge_id) {
+    throw new TwoFactorChallenge(data.challenge_id, data.email || email);
+  }
+
   if (data.user.role === "super_admin") {
     throw new Error("This account uses the platform sign-in, not the parish portal.");
   }
 
-  const user = mapBackendUser(data.user);
-  setSession(data.token, data.refresh_token);
-  setCurrentUser(user);
-  return user;
+  return applySession(data);
 }
 
 export async function loginSuperAdmin(email: string, password: string): Promise<CurrentUser> {
-  let data: BackendAuthResponse;
+  let data: LoginResponse;
   try {
-    data = await apiFetch<BackendAuthResponse>("/auth/login/super-admin", {
+    data = await apiFetch<LoginResponse>("/auth/login/super-admin", {
       method: "POST",
-      body: { email, password },
+      body: loginBody(email, password),
       auth: false,
     });
   } catch (err) {
@@ -82,14 +113,43 @@ export async function loginSuperAdmin(email: string, password: string): Promise<
     throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
   }
 
+  if (data.two_factor_required && data.challenge_id) {
+    throw new TwoFactorChallenge(data.challenge_id, data.email || email);
+  }
+
   if (data.user.role !== "super_admin") {
     throw new Error("This account belongs to a parish. Sign in through your parish portal.");
   }
 
-  const user = mapBackendUser(data.user);
-  setSession(data.token, data.refresh_token);
-  setCurrentUser(user);
-  return user;
+  return applySession(data);
+}
+
+export async function verifyLoginTwoFactor(challengeId: string, code: string): Promise<CurrentUser> {
+  try {
+    const data = await apiFetch<BackendAuthResponse>("/auth/login/2fa", {
+      method: "POST",
+      body: { challenge_id: challengeId, code, device_id: getDeviceId() },
+      auth: false,
+    });
+    return applySession(data);
+  } catch (err) {
+    if (err instanceof ApiError) throw new Error(err.message, { cause: err });
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
+  }
+}
+
+export async function resendLoginTwoFactor(challengeId: string): Promise<string> {
+  try {
+    const data = await apiFetch<{ challenge_id?: string }>("/auth/login/2fa/resend", {
+      method: "POST",
+      body: { challenge_id: challengeId, device_id: getDeviceId() },
+      auth: false,
+    });
+    return data.challenge_id || challengeId;
+  } catch (err) {
+    if (err instanceof ApiError) throw new Error(err.message, { cause: err });
+    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
+  }
 }
 
 export interface RegisterInput {

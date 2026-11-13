@@ -1,13 +1,6 @@
-// src/features/parish-admin/settings/api/securityApi.ts
-import { delay } from "@/services/delay";
-import { LOGIN_ACTIVITY } from "@/services/mocks/loginActivity.mock";
-import { LOGIN_SESSIONS } from "@/services/mocks/loginSessions.mock";
+import { apiFetch, ApiError } from "@/lib/api";
+import { getRefreshToken } from "@/features/auth/session";
 import type { LoginActivityEntry, LoginSession } from "../types";
-
-// NOTE: not scoped by parishId/userId yet since the mock is single-tenant —
-// thread the signed-in user's id through here once this talks to a real backend.
-
-let twoFactorEnabled = false;
 
 export interface SecurityOverview {
   twoFactorEnabled: boolean;
@@ -15,30 +8,55 @@ export interface SecurityOverview {
   activity: LoginActivityEntry[];
 }
 
+function sessionHeaders(): HeadersInit {
+  const refresh = getRefreshToken();
+  return refresh ? { "X-Refresh-Token": refresh } : {};
+}
+
+function fail(err: unknown): never {
+  if (err instanceof ApiError) throw new Error(err.message);
+  throw new Error("Unable to reach the server.");
+}
+
 export async function getSecurityOverview(): Promise<SecurityOverview> {
-  await delay();
-  return {
-    twoFactorEnabled,
-    sessions: [...LOGIN_SESSIONS],
-    activity: [...LOGIN_ACTIVITY],
-  };
+  try {
+    return await apiFetch<SecurityOverview>("/auth/security", { headers: sessionHeaders() });
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function setTwoFactorEnabled(enabled: boolean): Promise<boolean> {
-  await delay();
-  twoFactorEnabled = enabled;
-  return twoFactorEnabled;
+  try {
+    const data = await apiFetch<{ twoFactorEnabled: boolean }>("/auth/security/two-factor", {
+      method: "PATCH",
+      body: { enabled },
+    });
+    return data.twoFactorEnabled;
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function endSession(id: string): Promise<void> {
-  await delay();
-  const idx = LOGIN_SESSIONS.findIndex((s) => s.id === id);
-  if (idx !== -1) LOGIN_SESSIONS.splice(idx, 1);
+  try {
+    await apiFetch(`/auth/security/sessions/${id}`, {
+      method: "DELETE",
+      headers: sessionHeaders(),
+    });
+  } catch (err) {
+    fail(err);
+  }
 }
 
 export async function endAllOtherSessions(): Promise<LoginSession[]> {
-  await delay();
-  const kept = LOGIN_SESSIONS.filter((s) => s.current);
-  LOGIN_SESSIONS.splice(0, LOGIN_SESSIONS.length, ...kept);
-  return [...LOGIN_SESSIONS];
+  try {
+    const data = await apiFetch<{ sessions: LoginSession[] }>("/auth/security/sessions/others", {
+      method: "DELETE",
+      headers: sessionHeaders(),
+    });
+    return data.sessions ?? [];
+  } catch (err) {
+    fail(err);
+  }
 }

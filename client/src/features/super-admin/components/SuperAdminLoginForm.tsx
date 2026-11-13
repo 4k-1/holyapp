@@ -2,7 +2,14 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { EyeIcon, EyeOffIcon } from "@/components/ui/icons/AdminIcons";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
-import { getCurrentUser, loginSuperAdmin } from "@/features/auth/api/authApi";
+import {
+  getCurrentUser,
+  loginSuperAdmin,
+  resendLoginTwoFactor,
+  TwoFactorChallenge,
+  verifyLoginTwoFactor,
+} from "@/features/auth/api/authApi";
+import { OtpStep } from "@/features/auth/components/OtpStep";
 
 export function SuperAdminLoginForm() {
   const [email, setEmail] = useState("");
@@ -10,6 +17,7 @@ export function SuperAdminLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [challenge, setChallenge] = useState<{ id: string; email: string } | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -28,10 +36,34 @@ export function SuperAdminLoginForm() {
       const from = searchParams.get("from");
       navigate(from && from.startsWith("/super-admin") ? from : "/super-admin", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign in failed.");
+      if (err instanceof TwoFactorChallenge) {
+        setChallenge({ id: err.challengeId, email: err.email });
+        setError(null);
+      } else {
+        setError(err instanceof Error ? err.message : "Sign in failed.");
+      }
     } finally {
       setLoading(false);
     }
+  }
+
+  if (challenge) {
+    return (
+      <div className="mt-8">
+        <OtpStep
+          email={challenge.email}
+          onVerify={async (code) => {
+            await verifyLoginTwoFactor(challenge.id, code);
+            const from = searchParams.get("from");
+            navigate(from && from.startsWith("/super-admin") ? from : "/super-admin", { replace: true });
+          }}
+          onResend={async () => {
+            const nextId = await resendLoginTwoFactor(challenge.id);
+            setChallenge({ ...challenge, id: nextId });
+          }}
+        />
+      </div>
+    );
   }
 
   return (

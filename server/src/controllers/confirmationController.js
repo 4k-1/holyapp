@@ -14,8 +14,12 @@ const {
 const { findParishRecord, archivedListClause } = require('../utils/recordQuery');
 const { scheduleEventFor, linkScheduleEvent } = require('../utils/scheduleRecordLink');
 const { listRecordCertificates } = require('./certificateController');
+const { encrypt, decryptRow } = require('../utils/fieldCrypto');
+
+const CONFIRMATION_SECRET = ['address', 'remarks', 'place_of_confirmation', 'baptism_place'];
 
 function toConfirmationRecord(row) {
+  row = decryptRow(row, CONFIRMATION_SECRET);
   return {
     // The schedule event it was recorded from (C11), if any.
     scheduleEventId: row.schedule_event_id || null,
@@ -72,23 +76,23 @@ async function parseConfirmationBody(parishId, body) {
     lastName: requiredText(body.lastName, 'Last name'),
     sex: optionalText(body.sex),
     dateOfBirth: dateValue(body.dateOfBirth, 'Date of birth', { required: false }),
-    address: optionalText(body.address),
+    address: encrypt(optionalText(body.address)),
     fatherLastName: optionalText(body.fatherLastName),
     fatherFirstName: optionalText(body.fatherFirstName),
     motherLastName: optionalText(body.motherLastName),
     motherFirstName: optionalText(body.motherFirstName),
     dateOfConfirmation: dateValue(body.dateOfConfirmation, 'Date of confirmation'),
-    placeOfConfirmation: requiredText(body.placeOfConfirmation, 'Place of confirmation'),
+    placeOfConfirmation: encrypt(requiredText(body.placeOfConfirmation, 'Place of confirmation')),
     minister: requiredText(body.minister, 'Minister'),
     baptismalRecordId: await resolveBaptismalRecordId(parishId, body.baptismalRecordId),
     baptismDate: dateValue(body.baptismDate, 'Baptismal date', { required: false }),
-    baptismPlace: optionalText(body.baptismPlace),
+    baptismPlace: encrypt(optionalText(body.baptismPlace)),
     isPriorMarriage: Boolean(body.isPriorMarriage),
     isAdult: Boolean(body.isAdult),
     bookNumber: requiredText(body.bookNumber, 'Book number'),
     pageNumber: requiredText(body.pageNumber, 'Page number'),
     entryNumber: requiredText(body.entryNumber, 'Entry number'),
-    remarks: optionalText(body.remarks),
+    remarks: encrypt(optionalText(body.remarks)),
   };
 }
 

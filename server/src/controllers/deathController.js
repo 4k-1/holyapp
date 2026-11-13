@@ -15,6 +15,9 @@ const { annotateFromSacrament } = require('../utils/baptismAnnotation');
 const { findParishRecord, archivedListClause } = require('../utils/recordQuery');
 const { scheduleEventFor, linkScheduleEvent } = require('../utils/scheduleRecordLink');
 const { listRecordCertificates } = require('./certificateController');
+const { encrypt, decryptRow } = require('../utils/fieldCrypto');
+
+const DEATH_SECRET = ['residence', 'place_of_burial', 'cause_of_death', 'remarks'];
 
 const SACRAMENTS = new Set(['last_rites', 'burial_mass', 'confession', 'communion']);
 
@@ -35,6 +38,7 @@ function toSacrament(row) {
 }
 
 function toDeathRecord(row, kin = [], sacramentsReceived = []) {
+  row = decryptRow(row, DEATH_SECRET);
   return {
     // The schedule event it was recorded from (C11), if any.
     scheduleEventId: row.schedule_event_id || null,
@@ -174,22 +178,22 @@ async function createDeath(req, res) {
         firstName,
         optionalText(body.middleName),
         lastName,
-        optionalText(body.residence),
+        encrypt(optionalText(body.residence)),
         optionalInt(body.age, 'Age in years'),
         optionalInt(body.ageMonths, 'Age in months', { max: 11 }),
         optionalInt(body.ageDays, 'Age in days', { max: 30 }),
         optionalText(body.deceasedStatus),
         dateOfDeath,
         dateOfBurial,
-        placeOfBurial,
+        encrypt(placeOfBurial),
         optionalText(body.nicheNumber),
         optionalText(body.nicheType),
         minister,
-        optionalText(body.causeOfDeath),
+        encrypt(optionalText(body.causeOfDeath)),
         bookNumber,
         pageNumber,
         entryNumber,
-        optionalText(body.remarks),
+        encrypt(optionalText(body.remarks)),
         req.user.id,
       ]
     );
@@ -348,22 +352,22 @@ async function updateDeath(req, res) {
         firstName,
         optionalText(body.middleName),
         lastName,
-        optionalText(body.residence),
+        encrypt(optionalText(body.residence)),
         optionalInt(body.age, 'Age in years'),
         optionalInt(body.ageMonths, 'Age in months', { max: 11 }),
         optionalInt(body.ageDays, 'Age in days', { max: 30 }),
         optionalText(body.deceasedStatus),
         dateOfDeath,
         dateOfBurial,
-        placeOfBurial,
+        encrypt(placeOfBurial),
         optionalText(body.nicheNumber),
         optionalText(body.nicheType),
         minister,
-        optionalText(body.causeOfDeath),
+        encrypt(optionalText(body.causeOfDeath)),
         bookNumber,
         pageNumber,
         entryNumber,
-        optionalText(body.remarks),
+        encrypt(optionalText(body.remarks)),
         current.id,
         req.parishId,
       ]
