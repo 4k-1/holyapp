@@ -6,6 +6,7 @@ const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { pool, api, createParish, createBaptism } = require('./helpers');
 const { normalizePurpose, addMonths, manilaToday, PURPOSES_BY_SACRAMENT } = require('../src/constants/purposes');
+const { encryptJson, decryptJson } = require('../src/utils/fieldCrypto');
 
 /** The lists in client/src/lib/purposes.ts, by certificate. */
 function clientLists() {
@@ -39,7 +40,9 @@ describe('Certificate purposes', () => {
        WHERE c.record_id = $1 ORDER BY c.issued_at DESC, c.version DESC LIMIT 1`,
       [record.id]
     );
-    return result.rows[0];
+    const row = result.rows[0];
+    // Snapshots are stored sealed for encryption at rest; read them the way the app does.
+    return { ...row, snapshot: decryptJson(row.snapshot) };
   }
 
   it('tidies purposes and keeps typed ones', () => {
@@ -86,9 +89,8 @@ describe('Certificate purposes', () => {
 
   it('marks a marriage copy expired after its date, while it stays valid', async () => {
     const copy = await newest();
-    await pool.query(`UPDATE certificate SET snapshot = snapshot || '{"validUntil": "2020-01-31"}'::jsonb WHERE hash = $1`, [
-      copy.hash,
-    ]);
+    const expired = encryptJson({ ...copy.snapshot, validUntil: '2020-01-31' });
+    await pool.query(`UPDATE certificate SET snapshot = $1::jsonb WHERE hash = $2`, [JSON.stringify(expired), copy.hash]);
     const scanned = await api(null).get(`/certificates/verify/${copy.hash}`);
     assert.equal(scanned.body.status, 'valid');
     assert.equal(scanned.body.expiredForMarriage, true);

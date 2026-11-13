@@ -3,6 +3,7 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { pool, api, createParish, createBaptism } = require('./helpers');
+const { decryptJson } = require('../src/utils/fieldCrypto');
 
 after(() => pool.end());
 
@@ -21,7 +22,8 @@ describe('Parent middle names', () => {
       `SELECT snapshot FROM certificate WHERE record_id = $1 ORDER BY issued_at DESC, version DESC LIMIT 1`,
       [recordId]
     );
-    const printed = result.rows[0].snapshot.printed;
+    // Snapshots are stored sealed for encryption at rest; read them the way the app does.
+    const printed = decryptJson(result.rows[0].snapshot).printed;
     return { father: printed.fatherName, mother: printed.motherName };
   }
 
