@@ -3,6 +3,7 @@ const { writeAudit } = require('../utils/audit');
 const { createNotification } = require('../utils/notify');
 const { feeCentavos, feeLabel } = require('../utils/serviceFee');
 const { frontendUrl } = require('../utils/frontendUrl');
+const { decryptJson } = require('../utils/fieldCrypto');
 const {
   configured,
   createGcashCheckout,
@@ -162,7 +163,7 @@ async function startGcashCheckout(req, res) {
           });
           await client.query('COMMIT');
           if (!marked.alreadyPaid) {
-            const details = request.subject_details || {};
+            const details = decryptJson(request.subject_details) || {};
             await notifyOfficePaid(req.parishId, request.id, details.subjectName, marked.amount);
             await writeAudit({
               parishId: req.parishId,
@@ -295,7 +296,7 @@ async function syncGcashPayment(req, res) {
     }
 
     if (!marked.alreadyPaid) {
-      const details = row.subject_details || {};
+      const details = decryptJson(row.subject_details) || {};
       await notifyOfficePaid(req.parishId, req.params.id, details.subjectName, marked.amount);
       await writeAudit({
         parishId: req.parishId,
@@ -325,7 +326,7 @@ async function getReceipt(req, res) {
       return res.status(400).json({ error: 'This request has not been paid yet.' });
     }
     const parish = await parishSlug(req.parishId);
-    const details = row.subject_details || {};
+    const details = decryptJson(row.subject_details) || {};
     return res.json({
       receipt: {
         number: row.receipt_number || receiptNumberFor(row.id),
@@ -481,7 +482,7 @@ async function handlePaymongoWebhook(req, res) {
   }
 
   if (!marked.alreadyPaid) {
-    const details = found.subject_details || {};
+    const details = decryptJson(found.subject_details) || {};
     await notifyOfficePaid(found.parish_id, found.id, details.subjectName, marked.amount);
     await writeAudit({
       parishId: found.parish_id,

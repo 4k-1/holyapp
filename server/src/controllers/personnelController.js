@@ -3,6 +3,7 @@ const { writeAudit } = require('../utils/audit');
 const { requiredText, optionalText, sendRecordError } = require('../utils/recordFields');
 const { PERSONNEL_ROLES, rankForHonorific, splitHonorific } = require('../constants/personnelRoles');
 const { toPerson, displayNameOf, assertCanBeParishPriest, holdsParishPriest, httpError } = require('../utils/personnel');
+const { encrypt } = require('../utils/fieldCrypto');
 
 const MAX_TITLES = 6;
 
@@ -73,7 +74,7 @@ async function createPerson(req, res) {
         titles[0].title,
         titles[0].scope,
         JSON.stringify(titles.slice(1)),
-        optionalText(req.body?.contact),
+        encrypt(optionalText(req.body?.contact)),
         honorific,
         postNominals,
         rank,
@@ -107,7 +108,8 @@ async function updatePerson(req, res) {
     if (!row) return res.status(404).json({ error: 'Person not found.' });
 
     const titles = parseTitles(req.body, [{ title: row.role_title, scope: row.role_scope }, ...(row.other_titles || [])]);
-    const contact = req.body?.contact !== undefined ? optionalText(req.body.contact) : row.contact_info;
+    const contact =
+      req.body?.contact !== undefined ? encrypt(optionalText(req.body.contact)) : row.contact_info;
     let honorific = req.body?.honorific !== undefined ? shortText(req.body.honorific, 'honorific', 30) : row.honorific;
     const postNominals =
       req.body?.postNominals !== undefined

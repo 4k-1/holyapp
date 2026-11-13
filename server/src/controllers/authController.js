@@ -1,8 +1,10 @@
 const pool = require('../config/db');
 const { ROLES } = require('../constants/roles');
 const { hashPassword, comparePassword } = require('../utils/password');
-const { sendMail, verificationEmail, passwordResetEmail } = require('../utils/mailer');
+const { sendMail, verificationEmail, passwordResetEmail, twoFactorEmail } = require('../utils/mailer');
 const { writeAudit } = require('../utils/audit');
+const { encrypt, decrypt } = require('../utils/fieldCrypto');
+const { requestMeta } = require('../utils/sessionMeta');
 const {
   signAccessToken,
   accessTokenExpiresInSeconds,
@@ -17,7 +19,7 @@ const {
 const USER_COLUMNS = `
   id, parish_id, role, first_name, middle_name, last_name, email,
   password_hash, status, contact_number, email_verified_at, created_at,
-  birthday, address
+  birthday, address, two_factor_enabled
 `;
 
 function dateOnly(value) {
@@ -42,28 +44,48 @@ function publicUser(user) {
     first_name: user.first_name,
     last_name: user.last_name,
     middle_name: user.middle_name || null,
-    contact_number: user.contact_number || null,
+    contact_number: decrypt(user.contact_number) || null,
     email_verified_at: user.email_verified_at
       ? new Date(user.email_verified_at).toISOString()
       : null,
     created_at: user.created_at ? new Date(user.created_at).toISOString() : null,
     birthday: dateOnly(user.birthday),
-    address: user.address || null,
+    address: decrypt(user.address) || null,
   };
 }
 
-async function persistRefreshToken(userId, tokenHash) {
-  await pool.query(
-    `INSERT INTO refresh_token (user_id, token_hash, expires_at)
-     VALUES ($1, $2, $3)`,
-    [userId, tokenHash, refreshTokenExpiryDate()]
-  );
+async function persistRefreshToken(userId, tokenHash, meta = {}) {
+  try {
+    await pool.query(
+      `INSERT INTO refresh_token (
+         user_id, token_hash, expires_at, user_agent, device_label, ip, location, device_fingerprint, last_active_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+      [
+        userId,
+        tokenHash,
+        refreshTokenExpiryDate(),
+        meta.userAgent || null,
+        meta.deviceLabel || null,
+        meta.ip || null,
+        meta.location || null,
+        meta.fingerprint || null,
+      ]
+    );
+  } catch (err) {
+    if (err.code !== '42703') throw err;
+    await pool.query(
+      `INSERT INTO refresh_token (user_id, token_hash, expires_at)
+       VALUES ($1, $2, $3)`,
+      [userId, tokenHash, refreshTokenExpiryDate()]
+    );
+  }
 }
 
-async function issueSession(user) {
+async function issueSession(user, req) {
   const accessToken = signAccessToken(user);
   const refresh = generateRefreshToken();
-  await persistRefreshToken(user.id, refresh.tokenHash);
+  await persistRefreshToken(user.id, refresh.tokenHash, req ? requestMeta(req) : {});
   return {
     token: accessToken,
     refresh_token: refresh.token,
@@ -73,20 +95,107 @@ async function issueSession(user) {
   };
 }
 
-async function findUserByEmail(email) {
+async function recordLoginActivity(user, req, status, portal) {
+  if (!user?.id) return;
+  const meta = requestMeta(req);
+  try {
+    await pool.query(
+      `INSERT INTO login_activity (user_id, device_label, location, ip, status, portal)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [user.id, meta.deviceLabel, meta.location, meta.ip, status, portal || null]
+    );
+  } catch (err) {
+    console.error('recordLoginActivity failed:', err.message);
+  }
+}
+
+async function deviceIsTrusted(userId, fingerprint) {
+  if (!fingerprint) return false;
   const result = await pool.query(
-    `SELECT ${USER_COLUMNS} FROM app_user WHERE lower(email) = lower($1)`,
-    [email]
+    `SELECT id FROM trusted_device WHERE user_id = $1 AND fingerprint_hash = $2`,
+    [userId, fingerprint]
   );
-  return result.rows[0] || null;
+  if (!result.rows[0]) return false;
+  await pool.query(`UPDATE trusted_device SET last_used_at = NOW() WHERE id = $1`, [
+    result.rows[0].id,
+  ]);
+  return true;
+}
+
+async function trustDevice(userId, meta) {
+  if (!meta.fingerprint) return;
+  await pool.query(
+    `INSERT INTO trusted_device (user_id, fingerprint_hash, device_label)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (user_id, fingerprint_hash)
+     DO UPDATE SET last_used_at = NOW(), device_label = EXCLUDED.device_label`,
+    [userId, meta.fingerprint, meta.deviceLabel]
+  );
+}
+
+async function startTwoFactorChallenge(user, req, portal) {
+  const meta = requestMeta(req);
+  const otp = generateOtpCode();
+  await pool.query(
+    `UPDATE login_challenge SET consumed_at = NOW()
+     WHERE user_id = $1 AND consumed_at IS NULL`,
+    [user.id]
+  );
+  const inserted = await pool.query(
+    `INSERT INTO login_challenge (
+       user_id, code_hash, device_fingerprint, user_agent, ip, location, portal, expires_at
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id`,
+    [
+      user.id,
+      otp.codeHash,
+      meta.fingerprint,
+      meta.userAgent,
+      meta.ip,
+      meta.location,
+      portal,
+      minutesFromNow(10),
+    ]
+  );
+  const message = twoFactorEmail(otp.code);
+  await sendMail({
+    to: user.email,
+    subject: 'Your HolyApp sign-in code',
+    text: message.text,
+    html: message.html,
+  });
+  return {
+    two_factor_required: true,
+    challenge_id: inserted.rows[0].id,
+    email: user.email,
+  };
+}
+
+async function selectUser(whereSql, params) {
+  try {
+    const result = await pool.query(`SELECT ${USER_COLUMNS} FROM app_user ${whereSql}`, params);
+    return result.rows[0] || null;
+  } catch (err) {
+    if (err.code !== '42703') throw err;
+    const result = await pool.query(
+      `SELECT id, parish_id, role, first_name, middle_name, last_name, email,
+              password_hash, status, contact_number, email_verified_at, created_at,
+              birthday, address
+       FROM app_user ${whereSql}`,
+      params
+    );
+    const row = result.rows[0];
+    return row ? { ...row, two_factor_enabled: false } : null;
+  }
+}
+
+async function findUserByEmail(email) {
+  return selectUser('WHERE lower(email) = lower($1)', [email]);
 }
 
 async function findUserById(id) {
-  const result = await pool.query(
-    `SELECT ${USER_COLUMNS} FROM app_user WHERE id = $1`,
-    [id]
-  );
-  return result.rows[0] || null;
+  return selectUser('WHERE id = $1', [id]);
 }
 
 async function issueEmailVerification(user) {
@@ -159,6 +268,7 @@ async function loginWithPortal(req, res, portal) {
 
     const passwordMatches = await comparePassword(password, user.password_hash);
     if (!passwordMatches) {
+      await recordLoginActivity(user, req, 'failed', portal);
       await writeAudit({
         parishId: user.parish_id,
         actorId: user.id,
@@ -174,7 +284,17 @@ async function loginWithPortal(req, res, portal) {
       return res.status(403).json({ error: 'Please verify your email first.' });
     }
 
-    const session = await issueSession(user);
+    const meta = requestMeta(req);
+    if (user.two_factor_enabled) {
+      const trusted = await deviceIsTrusted(user.id, meta.fingerprint);
+      if (!trusted) {
+        const challenge = await startTwoFactorChallenge(user, req, portal);
+        return res.json(challenge);
+      }
+    }
+
+    const session = await issueSession(user, req);
+    await recordLoginActivity(user, req, 'success', portal);
     await writeAudit({
       parishId: user.parish_id,
       actorId: user.id,
@@ -185,7 +305,7 @@ async function loginWithPortal(req, res, portal) {
     });
     res.json(session);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(mailStatus(err)).json({ error: err.message });
   }
 }
 
@@ -246,7 +366,7 @@ async function register(req, res) {
         middleName || null,
         lastName,
         birthday,
-        address,
+        encrypt(address),
       ]
     );
     const user = inserted.rows[0];
@@ -274,7 +394,7 @@ async function verifyEmail(req, res) {
       return res.status(400).json({ error: 'No pending registration found. Please register again.' });
     }
     if (user.email_verified_at) {
-      return res.json(await issueSession(user));
+      return res.json(await issueSession(user, req));
     }
 
     const codeHash = hashRefreshToken(code);
@@ -303,7 +423,7 @@ async function verifyEmail(req, res) {
       [user.id]
     );
 
-    res.json(await issueSession(updated.rows[0]));
+    res.json(await issueSession(updated.rows[0], req));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -375,12 +495,33 @@ async function refresh(req, res) {
       return res.status(403).json({ error: 'Account is not active' });
     }
 
-    await pool.query(
-      'UPDATE refresh_token SET revoked_at = NOW() WHERE id = $1',
-      [row.refresh_id]
-    );
+    const refresh = generateRefreshToken();
+    const meta = requestMeta(req);
+    try {
+      await pool.query(
+        `UPDATE refresh_token
+         SET token_hash = $1,
+             last_active_at = NOW(),
+             user_agent = COALESCE($3, user_agent),
+             device_label = COALESCE($4, device_label),
+             ip = COALESCE($5, ip),
+             location = COALESCE($6, location)
+         WHERE id = $2`,
+        [refresh.tokenHash, row.refresh_id, meta.userAgent, meta.deviceLabel, meta.ip, meta.location]
+      );
+    } catch (err) {
+      if (err.code !== '42703') throw err;
+      await pool.query('UPDATE refresh_token SET revoked_at = NOW() WHERE id = $1', [row.refresh_id]);
+      await persistRefreshToken(row.id, refresh.tokenHash, meta);
+    }
 
-    res.json(await issueSession(row));
+    res.json({
+      token: signAccessToken(row),
+      refresh_token: refresh.token,
+      token_type: 'Bearer',
+      expires_in: accessTokenExpiresInSeconds(),
+      user: publicUser(row),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -566,8 +707,8 @@ async function updateMe(req, res) {
       first_name: firstName !== undefined ? firstName : current.first_name,
       last_name: lastName !== undefined ? lastName : current.last_name,
       middle_name: middleName !== undefined ? middleName : current.middle_name,
-      address: address !== undefined ? address : current.address,
-      contact_number: contactNumber !== undefined ? contactNumber : current.contact_number,
+      address: address !== undefined ? encrypt(address) : current.address,
+      contact_number: contactNumber !== undefined ? encrypt(contactNumber) : current.contact_number,
       birthday,
       email,
     };
@@ -611,6 +752,83 @@ async function updateMe(req, res) {
   }
 }
 
+async function verifyLoginTwoFactor(req, res) {
+  const challengeId = req.body?.challenge_id || req.body?.challengeId;
+  const code = req.body?.code ? String(req.body.code).trim() : '';
+  if (!challengeId || !code) {
+    return res.status(400).json({ error: 'Verification code is required.' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT c.*, u.id AS user_id
+       FROM login_challenge c
+       JOIN app_user u ON u.id = c.user_id
+       WHERE c.id = $1`,
+      [challengeId]
+    );
+    const challenge = result.rows[0];
+    if (!challenge || challenge.consumed_at || new Date(challenge.expires_at) <= new Date()) {
+      return res.status(400).json({ error: 'Invalid verification code.' });
+    }
+
+    const user = await findUserById(challenge.user_id);
+    if (!user || user.status !== 'active') {
+      return res.status(403).json({ error: 'Account is not active' });
+    }
+
+    if (challenge.code_hash !== hashRefreshToken(code)) {
+      await recordLoginActivity(user, req, 'failed', challenge.portal);
+      return res.status(400).json({ error: 'Invalid verification code.' });
+    }
+
+    await pool.query(`UPDATE login_challenge SET consumed_at = NOW() WHERE id = $1`, [challenge.id]);
+    const meta = requestMeta(req);
+    await trustDevice(user.id, {
+      fingerprint: meta.fingerprint || challenge.device_fingerprint,
+      deviceLabel: meta.deviceLabel,
+    });
+    const session = await issueSession(user, req);
+    await recordLoginActivity(user, req, 'success', challenge.portal);
+    await writeAudit({
+      parishId: user.parish_id,
+      actorId: user.id,
+      action: 'auth.login',
+      entityType: 'app_user',
+      entityId: user.id,
+      metadata: { portal: challenge.portal, two_factor: true },
+    });
+    res.json(session);
+  } catch (err) {
+    res.status(mailStatus(err)).json({ error: err.message });
+  }
+}
+
+async function resendLoginTwoFactor(req, res) {
+  const challengeId = req.body?.challenge_id || req.body?.challengeId;
+  if (!challengeId) {
+    return res.status(400).json({ error: 'Challenge is required.' });
+  }
+  try {
+    const result = await pool.query(
+      `SELECT c.*, u.email, u.status
+       FROM login_challenge c
+       JOIN app_user u ON u.id = c.user_id
+       WHERE c.id = $1`,
+      [challengeId]
+    );
+    const row = result.rows[0];
+    if (!row || row.consumed_at || row.status !== 'active') {
+      return res.json({ ok: true });
+    }
+    const user = await findUserById(row.user_id);
+    const challenge = await startTwoFactorChallenge(user, req, row.portal);
+    res.json(challenge);
+  } catch (err) {
+    res.status(mailStatus(err)).json({ error: err.message });
+  }
+}
+
 module.exports = {
   login,
   loginSuperAdmin,
@@ -623,4 +841,6 @@ module.exports = {
   resetPassword,
   me,
   updateMe,
+  verifyLoginTwoFactor,
+  resendLoginTwoFactor,
 };

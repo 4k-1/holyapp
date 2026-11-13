@@ -13,6 +13,7 @@ const schedule = require('../services/scheduleService');
 const { TEMPLATES, normalizeCircumstances, applies } = require('../constants/marriageRequirements');
 const { manilaToday } = require('../constants/purposes');
 const banns = require('../services/banns');
+const { encrypt, decryptRow } = require('../utils/fieldCrypto');
 
 /** "2026-11-09" + 180 → "2027-05-08". */
 function addDays(isoDate, days) {
@@ -61,6 +62,7 @@ function toRequirement(row, weddingDate) {
 }
 
 function toApplication(row, requirements = [], event = null) {
+  row = decryptRow(row, ['remarks', 'dispensation_notes']);
   const bannsPlan = banns.normalizeBanns(row.banns);
   const weddingDate = (event && event.date) || dateOnly(row.preferred_wedding_date) || null;
   return {
@@ -341,12 +343,12 @@ async function createApplication(req, res) {
         brideFirst,
         optionalText(body.brideMiddleName),
         brideLast,
-        optionalText(body.remarks),
+        encrypt(optionalText(body.remarks)),
         req.user.id,
         parishionerId,
         body.dispensationNeeded === true,
         body.dispensationNeeded === true ? 'pending' : 'none',
-        optionalText(body.dispensationNotes),
+        encrypt(optionalText(body.dispensationNotes)),
         JSON.stringify(normalizeCircumstances(body.circumstances)),
       ]
     );
@@ -724,7 +726,7 @@ async function updateDispensation(req, res) {
            updated_at = NOW()
        WHERE id = $4 AND parish_id = $5
        RETURNING *`,
-      [needed, status, optionalText(req.body?.dispensationNotes), row.id, req.parishId]
+      [needed, status, encrypt(optionalText(req.body?.dispensationNotes)), row.id, req.parishId]
     );
     await writeAudit({
       parishId: req.parishId,

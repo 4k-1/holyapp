@@ -9,6 +9,7 @@ const { feeAmount } = require('../utils/serviceFee');
 const { listBaptismAnnotations } = require('../utils/baptismAnnotation');
 const { certificateRemarks } = require('../utils/certificateRemarks');
 const { normalizePurpose, validUntilFor, manilaToday } = require('../constants/purposes');
+const { encryptJson, decryptJson, decryptRow } = require('../utils/fieldCrypto');
 
 const RECORD_TABLES = {
   baptism: 'baptism',
@@ -75,9 +76,22 @@ function registerRef(record) {
 }
 
 function snapshotFrom(request, record, code, verifyUrl, config) {
-  const details = request.subject_details && typeof request.subject_details === 'object'
-    ? request.subject_details
-    : {};
+  const details = decryptJson(
+    request.subject_details && typeof request.subject_details === 'object' ? request.subject_details : {}
+  ) || {};
+  record = decryptRow(record || {}, [
+    'address',
+    'remarks',
+    'place_of_birth',
+    'place_of_baptism',
+    'place_of_confirmation',
+    'baptism_place',
+    'place_of_marriage',
+    'marriage_address',
+    'residence',
+    'place_of_burial',
+    'cause_of_death',
+  ]);
   const fields = {
     requestId: request.id,
     registerRef: registerRef(record),
@@ -249,7 +263,7 @@ async function printedRecord(client, recordType, record) {
 }
 
 function toIssuedCertificate(row) {
-  const snapshot = row.snapshot && typeof row.snapshot === 'object' ? row.snapshot : {};
+  const snapshot = decryptJson(row.snapshot && typeof row.snapshot === 'object' ? row.snapshot : {}) || {};
   return {
     id: row.id,
     requestId: row.request_id,
@@ -357,7 +371,8 @@ async function issueCertificateRow(client, request, actorId, parishId, { printed
   const hash = crypto.randomBytes(16).toString('hex');
   const verifyUrl = `${frontendUrl()}/verify/${hash}`;
   const id = crypto.randomUUID();
-  const holder = (request.subject_details && request.subject_details.subjectName) || 'Certificate subject';
+  const requestDetails = decryptJson(request.subject_details) || {};
+  const holder = requestDetails.subjectName || 'Certificate subject';
   const snapshot = snapshotFrom(request, record, code, verifyUrl, config);
   snapshot.printed = await printedRecord(client, request.record_type, record);
 
@@ -386,7 +401,7 @@ async function issueCertificateRow(client, request, actorId, parishId, { printed
       actorId,
       code,
       holder.slice(0, 255),
-      JSON.stringify(snapshot),
+      JSON.stringify(encryptJson(snapshot)),
       printed,
     ]
   );
@@ -593,7 +608,7 @@ async function verifyCertificate(req, res) {
     if (!VERIFY_STATES.has(row.status)) {
       return res.status(503).json({ error: 'This certificate could not be checked.' });
     }
-    const snapshot = row.snapshot && typeof row.snapshot === 'object' ? row.snapshot : {};
+    const snapshot = decryptJson(row.snapshot && typeof row.snapshot === 'object' ? row.snapshot : {}) || {};
     return res.json({
       status: row.status,
       code: row.certificate_code,
@@ -653,7 +668,7 @@ async function downloadPdf(req, res) {
   try {
     const row = await loadOwnedCertificate(req);
     if (!row) return res.status(404).json({ error: 'Certificate not found.' });
-    const snapshot = row.snapshot && typeof row.snapshot === 'object' ? row.snapshot : {};
+    const snapshot = decryptJson(row.snapshot && typeof row.snapshot === 'object' ? row.snapshot : {}) || {};
     const png = await QRCode.toBuffer(row.qr_code, { width: 180, margin: 1 });
     const doc = new PDFDocument({ size: 'A4', margin: 64 });
     const safeName = String(row.certificate_code || 'certificate').replace(/[^\w.-]+/g, '_');

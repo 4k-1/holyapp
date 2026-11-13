@@ -3,6 +3,7 @@ const { ROLES } = require('../constants/roles');
 const { hashPassword } = require('../utils/password');
 const { writeAudit } = require('../utils/audit');
 const { notifyStaffRoleChange } = require('../utils/notify');
+const { revokeUserSessions } = require('../utils/sessions');
 
 const { PERSONNEL_ROLES, rankForHonorific, splitHonorific, formatPersonName } = require('../constants/personnelRoles');
 const { assertCanBeParishPriest } = require('../utils/personnel');
@@ -258,6 +259,9 @@ async function updateStaff(req, res) {
     });
 
     const accessChanged = current.role !== nextRole;
+    if (accessChanged) {
+      await revokeUserSessions(current.id);
+    }
     const titleChanged = jobTitle(current) !== roleTitle;
     if (accessChanged || titleChanged) {
       const actor = await pool.query(

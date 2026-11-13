@@ -3,6 +3,7 @@
 
 const pool = require('../config/db');
 const schedule = require('./scheduleService');
+const { encrypt } = require('../utils/fieldCrypto');
 
 /** Upper bound for a single donation, to catch typos like an extra zero. */
 const MAX_DONATION = 100000;
@@ -83,14 +84,14 @@ async function insertOfficeIntention(
      RETURNING *`,
     [
       parishId,
-      requesterName,
+      encrypt(requesterName),
       type,
-      intentionFor,
+      encrypt(intentionFor),
       date,
       time,
       label,
       offering,
-      contact || null,
+      encrypt(contact || null),
       actorId,
       offering > 0 ? 'paid' : 'none',
     ]

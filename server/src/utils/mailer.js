@@ -81,6 +81,20 @@ function verificationEmail(code) {
   return { text, html };
 }
 
+function twoFactorEmail(code) {
+  const text = `Your HolyApp sign-in code is ${code}.\n\nIt expires in 10 minutes. If you didn't try to sign in, reset your password.`;
+  const html = `
+    <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+      <p style="font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #5c6b63;">HolyApp</p>
+      <h1 style="font-size: 22px; font-weight: 600;">Your sign-in code</h1>
+      <p>Use this code to finish signing in from a new device. It expires in 10 minutes.</p>
+      <p style="font-size: 32px; letter-spacing: 0.35em; font-weight: 700; text-align: center; background: #f4f1ea; padding: 16px 0; border-radius: 8px;">${code}</p>
+      <p style="font-size: 13px; color: #5c6b63;">If you didn't try to sign in, reset your password.</p>
+    </div>
+  `;
+  return { text, html };
+}
+
 function passwordResetEmail(resetUrl) {
   const text = `Reset your HolyApp password (expires in 30 minutes).\n\nStay on the same Wi-Fi as the computer running HolyApp, then open:\n${resetUrl}\n\nIf the button in the email does not work, copy the address above and paste it into your browser.\n\nIf you didn't ask for this, you can ignore this email.`;
   const html = `
@@ -100,5 +114,6 @@ module.exports = {
   debugEnabled,
   smtpConfigured,
   verificationEmail,
+  twoFactorEmail,
   passwordResetEmail,
 };

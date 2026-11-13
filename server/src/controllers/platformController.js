@@ -3,6 +3,8 @@ const { ROLES } = require('../constants/roles');
 const { hashPassword } = require('../utils/password');
 const { writeAudit } = require('../utils/audit');
 const { fetchAuditEntries } = require('./auditController');
+const { encrypt, decrypt } = require('../utils/fieldCrypto');
+const { revokeUserSessions } = require('../utils/sessions');
 
 const OFFICE = new Set([ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF]);
 const ACCOUNT_ROLES = new Set([ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF, ROLES.PARISHIONER]);
@@ -71,11 +73,11 @@ function toUser(row) {
     firstName,
     middleName,
     lastName,
-    contactNumber: row.contact_number || undefined,
+    contactNumber: decrypt(row.contact_number) || undefined,
     emailVerifiedAt: row.email_verified_at ? new Date(row.email_verified_at).toISOString() : undefined,
     createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
     birthday: dateOnly(row.birthday),
-    address: row.address || undefined,
+    address: decrypt(row.address) || undefined,
     canEditRecords: row.role === ROLES.PARISH_ADMIN,
   };
 }
@@ -480,9 +482,13 @@ async function updateAccount(req, res) {
     }
 
     const contactNumber =
-      req.body.contactNumber !== undefined ? String(req.body.contactNumber || '').trim() || null : current.contact_number;
+      req.body.contactNumber !== undefined
+        ? encrypt(String(req.body.contactNumber || '').trim() || null)
+        : current.contact_number;
     const address =
-      req.body.address !== undefined ? String(req.body.address || '').trim() || null : current.address;
+      req.body.address !== undefined
+        ? encrypt(String(req.body.address || '').trim() || null)
+        : current.address;
     const birthday =
       req.body.birthday !== undefined
         ? String(req.body.birthday || '').trim().slice(0, 10) || null
@@ -531,6 +537,9 @@ async function setStatus(req, res) {
     }
 
     const nextStatus = req.body.status === 'suspended' ? 'suspended' : 'active';
+    if (nextStatus === 'suspended') {
+      await revokeUserSessions(current.id);
+    }
     const updated = await pool.query(
       `UPDATE app_user SET status = $1, updated_at = NOW()
        WHERE id = $2

@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { login } from "@/features/auth/api/authApi";
+import { login, resendLoginTwoFactor, TwoFactorChallenge, verifyLoginTwoFactor } from "@/features/auth/api/authApi";
 import { AuthPasswordField } from "@/features/auth/components/AuthPasswordField";
+import { OtpStep } from "@/features/auth/components/OtpStep";
 import type { Parish } from "@/types";
 import "@/features/auth/styles/authDesk.css";
 
@@ -14,8 +15,22 @@ export function LoginForm({ parish }: LoginFormProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [challenge, setChallenge] = useState<{ id: string; email: string } | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  function goAfterLogin(user: { role: string }) {
+    const from = searchParams.get("from");
+    if (from) {
+      navigate(from);
+      return;
+    }
+    if (user.role === "parish_admin" || user.role === "parish_staff") {
+      navigate(`/${parish.slug}/admin`);
+    } else {
+      navigate(`/${parish.slug}/portal`);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -23,21 +38,33 @@ export function LoginForm({ parish }: LoginFormProps) {
     setLoading(true);
     try {
       const user = await login(email.trim(), password);
-      const from = searchParams.get("from");
-      if (from) {
-        navigate(from);
-        return;
-      }
-      if (user.role === "parish_admin" || user.role === "parish_staff") {
-        navigate(`/${parish.slug}/admin`);
-      } else {
-        navigate(`/${parish.slug}/portal`);
-      }
+      goAfterLogin(user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed.");
+      if (err instanceof TwoFactorChallenge) {
+        setChallenge({ id: err.challengeId, email: err.email });
+        setError(null);
+      } else {
+        setError(err instanceof Error ? err.message : "Login failed.");
+      }
     } finally {
       setLoading(false);
     }
+  }
+
+  if (challenge) {
+    return (
+      <OtpStep
+        email={challenge.email}
+        onVerify={async (code) => {
+          const user = await verifyLoginTwoFactor(challenge.id, code);
+          goAfterLogin(user);
+        }}
+        onResend={async () => {
+          const nextId = await resendLoginTwoFactor(challenge.id);
+          setChallenge({ ...challenge, id: nextId });
+        }}
+      />
+    );
   }
 
   return (

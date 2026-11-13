@@ -2,6 +2,7 @@
 // figure is worked out from the records each time, so nothing here is saved.
 
 const pool = require('../config/db');
+const { decrypt } = require('../utils/fieldCrypto');
 const { sendRecordError } = require('../utils/recordFields');
 
 const RECORD_PATHS = { baptism: 'baptismal', confirmation: 'confirmation', marriage: 'marriage', death: 'death' };
@@ -134,7 +135,7 @@ async function getDaySummary(req, res) {
         kind: row.kind,
         receipt: row.receipt,
         certificateCode: row.certificate_code,
-        name: row.name || null,
+        name: decrypt(row.name) || null,
         method: methodBucket(row.method),
         amount: amountOf(row.amount_due),
         by: row.by_name || (row.method === 'gcash' ? 'Paid online' : 'Parish office'),
@@ -147,7 +148,7 @@ async function getDaySummary(req, res) {
         kind: 'donation',
         receipt: row.receipt_no,
         certificateCode: null,
-        name: row.donor_name || 'Anonymous',
+        name: decrypt(row.donor_name) || 'Anonymous',
         method: methodBucket(row.method),
         amount: amountOf(row.amount),
         by: row.by_name || 'Parish office',
