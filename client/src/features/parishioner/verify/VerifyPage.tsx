@@ -30,6 +30,7 @@ export function VerifyPage() {
     <PortalFormPage
       title="Verify a certificate"
       description="Check whether a certificate is real and whether the issuing parish still stands behind it."
+      back={{ to: "../wallet", label: "Certificate wallet" }}
     >
       <PortalFormCard>
         <section className="px-5 py-5 sm:px-6">

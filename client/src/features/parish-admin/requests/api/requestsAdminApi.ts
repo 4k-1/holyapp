@@ -21,7 +21,7 @@ export async function getAdminRequest(
 
 export async function rejectAdminRequest(
   requestId: string,
-  reason = "Rejected by staff."
+  reason: string
 ): Promise<CertificateRequest> {
   return apiFetch<CertificateRequest>(`/requests/${requestId}/reject`, {
     method: "POST",

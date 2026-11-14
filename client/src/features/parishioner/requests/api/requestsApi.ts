@@ -38,3 +38,16 @@ export async function getRequestReceipt(requestId: string): Promise<PaymentRecei
   const data = await apiFetch<{ receipt: PaymentReceipt }>(`/requests/${requestId}/receipt`, { auth: true });
   return data.receipt;
 }
+
+/** What the parishioner typed into the request form. */
+export interface SubmittedRequestDetails {
+  relationship: string | null;
+  sacramentDate: string | null;
+  fields: Record<string, string>;
+}
+
+export async function getMyRequest(
+  requestId: string
+): Promise<{ request: CertificateRequest; submitted: SubmittedRequestDetails }> {
+  return apiFetch(`/requests/mine/${encodeURIComponent(requestId)}`, { auth: true });
+}

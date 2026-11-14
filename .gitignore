@@ -7,3 +7,6 @@ build/
 *.log
 .pgdata/
 .pgpassfile
+
+# UAT seed settings (real inboxes and the test password)
+server/scripts/uat-config.json

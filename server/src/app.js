@@ -1,15 +1,27 @@
 require('dotenv').config();
 
 const express = require('express');
-
-console.log("APP STARTED");
-
-
 const cors = require('cors');
-const pool = require('./config/db');
+const {
+  corsOptions,
+  securityHeaders,
+  hideServerErrors,
+  errorHandler,
+  limits,
+} = require('./middleware/security');
 
 const app = express();
-app.use(cors());
+app.disable('x-powered-by');
+// Behind a host's proxy (Render, Railway, nginx), so req.ip is the visitor's address, not the proxy's.
+if (process.env.TRUST_PROXY) {
+  const hops = Number(process.env.TRUST_PROXY);
+  app.set('trust proxy', Number.isInteger(hops) ? hops : process.env.TRUST_PROXY);
+} else if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+app.use(securityHeaders);
+app.use(cors(corsOptions()));
+app.use(hideServerErrors);
 const { handlePaymongoWebhook } = require('./controllers/paymongoController');
 app.post(
   '/payments/paymongo/webhook',
@@ -22,14 +34,15 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.get('/db-test', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM test_ping');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Attempt limits. Each path also covers what's under it (/auth/login covers /auth/login/2fa).
+app.use('/auth/login/2fa', limits.codeByChallenge, limits.codeByIp);
+app.use('/auth/login', limits.loginByIp, limits.loginByEmail);
+app.use('/auth/verify-email', limits.codeByEmail, limits.codeByIp);
+app.use('/auth/register', limits.emailsByIp);
+app.use('/auth/resend-verification', limits.emailsByIp, limits.emailsByEmail);
+app.use('/auth/forgot-password', limits.emailsByIp, limits.emailsByEmail);
+app.use('/auth/reset-password', limits.codeByIp);
+app.use('/contact', limits.contactByIp);
 
 const authRoutes = require('./routes/authRoutes');
 const rbacRoutes = require('./routes/rbacRoutes');
@@ -75,6 +88,11 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/reports', reportRoutes);
 app.use('/ledgers', ledgerRoutes);
 app.use('/contact', contactRoutes);
+
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found.' });
+});
+app.use(errorHandler);
 
 // Start listening only when run directly (npm run dev / npm start). Tests load the app without a port.
 if (require.main === module) {

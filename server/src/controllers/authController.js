@@ -167,6 +167,16 @@ async function startTwoFactorChallenge(user, req, portal) {
       minutesFromNow(10),
     ]
   );
+  const challenge = {
+    two_factor_required: true,
+    challenge_id: inserted.rows[0].id,
+    email: user.email,
+  };
+  // Mocked delivery for platform accounts: the code is checked exactly as a real one, but handed back to the
+  // sign-in page instead of being emailed.
+  if (user.role === ROLES.SUPER_ADMIN && superAdminTwoFactorMocked()) {
+    return { ...challenge, mock_code: otp.code };
+  }
   const message = twoFactorEmail(otp.code);
   await sendMail({
     to: user.email,
@@ -174,11 +184,15 @@ async function startTwoFactorChallenge(user, req, portal) {
     text: message.text,
     html: message.html,
   });
-  return {
-    two_factor_required: true,
-    challenge_id: inserted.rows[0].id,
-    email: user.email,
-  };
+  return challenge;
+}
+
+/**
+ * Super admins always sign in in two steps. Until the real delivery is chosen, the code is shown on the sign-in
+ * page instead of emailed. Never in production; SUPER_ADMIN_2FA_MOCK=false turns it off anywhere.
+ */
+function superAdminTwoFactorMocked() {
+  return process.env.NODE_ENV !== 'production' && process.env.SUPER_ADMIN_2FA_MOCK !== 'false';
 }
 
 async function selectUser(whereSql, params) {
@@ -294,8 +308,10 @@ async function loginWithPortal(req, res, portal) {
     }
 
     const meta = requestMeta(req);
-    if (user.two_factor_enabled) {
-      const trusted = await deviceIsTrusted(user.id, meta.fingerprint);
+    // Platform accounts can open every parish, so they always take the second step, on every device.
+    const alwaysTwoStep = user.role === ROLES.SUPER_ADMIN;
+    if (alwaysTwoStep || user.two_factor_enabled) {
+      const trusted = !alwaysTwoStep && (await deviceIsTrusted(user.id, meta.fingerprint));
       if (!trusted) {
         const challenge = await startTwoFactorChallenge(user, req, portal);
         return res.json(challenge);
@@ -794,10 +810,13 @@ async function verifyLoginTwoFactor(req, res) {
 
     await pool.query(`UPDATE login_challenge SET consumed_at = NOW() WHERE id = $1`, [challenge.id]);
     const meta = requestMeta(req);
-    await trustDevice(user.id, {
-      fingerprint: meta.fingerprint || challenge.device_fingerprint,
-      deviceLabel: meta.deviceLabel,
-    });
+    // Super admins are asked every time, so there's no device to remember for them.
+    if (user.role !== ROLES.SUPER_ADMIN) {
+      await trustDevice(user.id, {
+        fingerprint: meta.fingerprint || challenge.device_fingerprint,
+        deviceLabel: meta.deviceLabel,
+      });
+    }
     const session = await issueSession(user, req);
     await recordLoginActivity(user, req, 'success', challenge.portal);
     await writeAudit({

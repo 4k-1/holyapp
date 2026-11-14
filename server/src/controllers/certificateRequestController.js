@@ -280,6 +280,27 @@ async function listMyRequests(req, res) {
   }
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** What the parishioner typed into the request form, as they typed it (the office sees a matched record instead). */
+function toSubmitted(raw) {
+  const all = decryptJson(raw && typeof raw === 'object' ? raw : {}) || {};
+  const { subjectName: _name, relationship, sacramentDate, ...fields } = all;
+  return { relationship: relationship || null, sacramentDate: sacramentDate || null, fields };
+}
+
+/** One of the signed-in parishioner's own requests, with everything they sent. */
+async function getMyRequest(req, res) {
+  if (!UUID.test(req.params.id || '')) return res.status(404).json({ error: 'Request not found.' });
+  try {
+    const row = await loadRequest(req.params.id, req.parishId, req.user.id);
+    if (!row) return res.status(404).json({ error: 'Request not found.' });
+    return res.json({ request: toCertificateRequest(row), submitted: toSubmitted(row.subject_details) });
+  } catch (err) {
+    return sendError(res, err);
+  }
+}
+
 function receiptNumberFor(requestId) {
   const compact = String(requestId).replace(/-/g, '').slice(0, 10).toUpperCase();
   return `HA-${compact}`;
@@ -393,7 +414,10 @@ async function linkRequest(req, res) {
 }
 
 async function rejectRequest(req, res) {
-  const reason = text(req.body && req.body.reason, 1000) || 'Rejected by staff.';
+  const reason = text(req.body && req.body.reason, 1000);
+  if (!reason) {
+    return res.status(400).json({ error: 'Give the parishioner a reason for rejecting this request.' });
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -532,6 +556,7 @@ async function confirmPayment(req, res) {
 module.exports = {
   createRequest,
   listMyRequests,
+  getMyRequest,
   listParishRequests,
   getRequest,
   linkRequest,

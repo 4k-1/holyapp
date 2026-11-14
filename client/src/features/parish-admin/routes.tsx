@@ -36,6 +36,7 @@ import { ParishProfileSection } from "@/features/parish-admin/settings/component
 import { ServiceFeesSection } from "@/features/parish-admin/settings/components/ServiceFeesSection";
 import { StaffAccountsSection } from "@/features/parish-admin/settings/components/StaffAccountsSection";
 import { AdminStaffPage } from "@/features/parish-admin/staff/AdminStaffPage";
+import { AdminActivityPage } from "@/features/parish-admin/activity/AdminActivityPage";
 import { CertificateConfigSection } from "@/features/parish-admin/settings/components/CertificateConfigSection";
 import { MassScheduleSection } from "@/features/parish-admin/settings/components/MassScheduleSection";
 import { MarriageRequirementsSection } from "@/features/parish-admin/settings/components/MarriageRequirementsSection";
@@ -142,6 +143,7 @@ export const parishAdminRoutes: RouteObject[] = [
         ],
       },
       { path: "staff", element: <AdminStaffPage /> },
+      { path: "activity", element: <RequireParishAdmin><AdminActivityPage /></RequireParishAdmin> },
       {
         path: "reports",
         element: <AdminReportsLayout />,

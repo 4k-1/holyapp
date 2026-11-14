@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUser, sendPasswordResetEmail } from "@/features/auth/api/authApi";
 import { AccountSection } from "@/features/parishioner/account/components/AccountSection";
@@ -8,28 +8,13 @@ import type { Parish } from "@/types";
 
 /** Password and closing the account. Personal details live on the Account page. */
 export function SettingsPage() {
-  const navigate = useNavigate();
   const { parish } = useOutletContext<{ parish: Parish }>();
   const user = getCurrentUser();
 
   if (!user) return null;
 
-  /** Back to the previous page, or the dashboard when this page was opened directly. */
-  function handleBack() {
-    if ((window.history.state as { idx?: number } | null)?.idx) navigate(-1);
-    else navigate("..");
-  }
-
   return (
     <div className="mx-auto max-w-xl px-4 py-8 sm:px-6">
-      <button
-        type="button"
-        onClick={handleBack}
-        className="mb-6 flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink"
-      >
-        ← Back
-      </button>
-
       <h1 className="mb-6 font-serif text-2xl font-bold text-ink">Settings</h1>
 
       <div className="flex flex-col gap-4">

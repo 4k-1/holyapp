@@ -6,6 +6,7 @@ const { requireArea } = require('../middleware/areaAccess');
 const {
   createRequest,
   listMyRequests,
+  getMyRequest,
   listParishRequests,
   getRequest,
   linkRequest,
@@ -31,6 +32,7 @@ const office = [
 
 router.post('/', ...parishioner, createRequest);
 router.get('/mine', ...parishioner, listMyRequests);
+router.get('/mine/:id', ...parishioner, getMyRequest);
 router.get('/', ...office, listParishRequests);
 router.get('/:id/receipt', authenticate, scopeParish, requireParish, getReceipt);
 router.post('/:id/gcash', ...parishioner, startGcashCheckout);

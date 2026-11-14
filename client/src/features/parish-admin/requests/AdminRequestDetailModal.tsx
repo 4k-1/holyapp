@@ -36,7 +36,7 @@ interface AdminRequestDetailModalProps {
   request: CertificateRequest;
   parish: Parish;
   onClose: () => void;
-  onReject?: (request: CertificateRequest) => void;
+  onReject?: (request: CertificateRequest, reason: string) => void;
   onPaymentRecorded?: (request: CertificateRequest) => void;
   onIssueComplete?: () => void;
   onReleaseComplete?: () => void;
@@ -83,8 +83,17 @@ export function AdminRequestDetailModal({
     year: "numeric",
   });
 
-  function reject() {
-    onReject?.(request);
+  async function reject() {
+    const reason = await askText({
+      title: "Reject this request?",
+      message: "The parishioner sees your reason in their portal.",
+      label: "Reason for the parishioner",
+      placeholder: "For example: no baptism record under this name and birth date",
+      confirmLabel: "Reject request",
+      danger: true,
+    });
+    if (!reason) return;
+    onReject?.(request, reason);
     onClose();
   }
 

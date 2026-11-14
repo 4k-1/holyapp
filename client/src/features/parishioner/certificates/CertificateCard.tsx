@@ -1,13 +1,10 @@
 import { DropletIcon, DoveIcon, HeartIcon, CandleIcon } from "@/components/ui/icons/SacramentIcons";
 import type { IssuedCertificate, SacramentType } from "@/types";
 import { Button } from "@/components/ui/Button";
+import { SACRAMENT_TITLES } from "@/features/parishioner/requests/requestDisplay";
 
-const sacramentLabels: Record<SacramentType, string> = {
-  baptism: "Certificate of Baptism",
-  confirmation: "Certificate of Confirmation",
-  marriage: "Certificate of Marriage",
-  death: "Certificate of Death",
-};
+// Named as on My requests, so one certificate has one name everywhere in the portal.
+const sacramentLabels: Record<SacramentType, string> = SACRAMENT_TITLES;
 
 const sacramentIcons: Record<SacramentType, typeof DropletIcon> = {
   baptism: DropletIcon,

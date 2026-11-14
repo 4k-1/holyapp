@@ -149,6 +149,8 @@ function isVerification(payload: Partial<Verification>): payload is Verification
 
 function apiBases() {
   const configured = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+  // A built site knows exactly where its API is; the guesses below are for phones on the dev Wi-Fi.
+  if (import.meta.env.PROD) return [configured];
   const host = window.location.hostname;
   const bases = [""];
   if (host && host !== "localhost" && host !== "127.0.0.1") {

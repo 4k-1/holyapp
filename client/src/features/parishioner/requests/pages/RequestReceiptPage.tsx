@@ -1,17 +1,10 @@
-import { Link, useOutletContext, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { PortalBackLink } from "@/features/parishioner/components/PortalBackLink";
 import { getRequestReceipt } from "@/features/parishioner/requests/api/requestsApi";
 import { useAsync } from "@/hooks/useAsync";
-import type { Parish, SacramentType } from "@/types";
-
-const sacramentLabels: Record<SacramentType, string> = {
-  baptism: "Baptismal certificate",
-  confirmation: "Confirmation certificate",
-  marriage: "Marriage certificate",
-  death: "Death certificate",
-};
+import { SACRAMENT_TITLES as sacramentLabels } from "@/features/parishioner/requests/requestDisplay";
 
 export function RequestReceiptPage() {
-  const { parish } = useOutletContext<{ parish: Parish }>();
   const { requestId = "" } = useParams();
   const { data: receipt, loading, error } = useAsync(
     () => getRequestReceipt(decodeURIComponent(requestId)),
@@ -20,12 +13,7 @@ export function RequestReceiptPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8 sm:px-6">
-      <Link
-        to={`/${parish.slug}/portal/requests`}
-        className="mb-6 inline-flex text-sm font-medium text-ink-muted hover:text-ink"
-      >
-        ← Back to My Requests
-      </Link>
+      <PortalBackLink to=".." label="This request" />
       <h1 className="font-serif text-[26px] font-bold text-ink">Payment receipt</h1>
       {loading ? (
         <p className="mt-4 text-sm text-ink-muted">Loading receipt…</p>

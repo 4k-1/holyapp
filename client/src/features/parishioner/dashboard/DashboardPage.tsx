@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { listRequests } from "@/features/parishioner/requests/api/requestsApi";
 import { listMyMarriageApplications } from "@/features/parish-admin/marriage-applications/api/marriageApplicationsApi";
@@ -113,8 +113,8 @@ export function DashboardPage({ parish, userName }: DashboardPageProps) {
         />
         <QuickAction
           to={`${base}/wallet`}
-          label="My certificates"
-          hint="Open your certificate wallet"
+          label="Certificate wallet"
+          hint="Certificates released to you"
           icon={<WalletIcon />}
         />
       </nav>
@@ -211,6 +211,8 @@ function QuickAction({
 
 /** One line on the parishioner's certificate requests: what needs doing, or how many are moving. */
 function RequestsSummary({ requests, base }: { requests: CertificateRequest[]; base: string }) {
+  // Read once, so "recent" doesn't shift while the page is open.
+  const [now] = useState(() => Date.now());
   if (requests.length === 0) return null;
   const attention = requests.filter((r) => requestGroup(r) === "attention");
   const active = requests.filter((r) => requestGroup(r) === "active");
@@ -238,7 +240,23 @@ function RequestsSummary({ requests, base }: { requests: CertificateRequest[]; b
       </span>
     );
   } else {
-    message = <span className="text-ink">Your certificate requests are all complete.</span>;
+    // Nothing open. A recent request the parish turned down is worth a line; finished ones are not news.
+    const turnedDown = requests.find(
+      // Requests turned down in the last month still get a line on the home page.
+      (r) => deriveStatusKey(r) === "rejected" && now - new Date(r.createdAt).getTime() < 30 * 86_400_000
+    );
+    if (!turnedDown) return null;
+    return (
+      <Link
+        to={`${base}/requests/${turnedDown.id}`}
+        className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3.5 text-[0.9375rem] shadow-[var(--shadow-card)] hover:bg-surface-alt sm:px-5"
+      >
+        <span className="min-w-0 text-ink">
+          Your {SACRAMENT_TITLES[turnedDown.sacramentType].toLowerCase()} request wasn&apos;t issued.
+        </span>
+        <span className="shrink-0 font-semibold text-primary">See why →</span>
+      </Link>
+    );
   }
 
   return (

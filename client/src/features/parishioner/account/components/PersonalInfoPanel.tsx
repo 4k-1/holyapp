@@ -58,6 +58,11 @@ export function PersonalInfoPanel({ user, onUpdated }: PersonalInfoPanelProps) {
   }
 
   if (!editing) {
+    const missing = [
+      !user.birthday && "birthday",
+      !user.contactNumber && "contact number",
+      !user.address && "address",
+    ].filter((item): item is string => Boolean(item));
     return (
       <AccountSection
         title="Personal details"
@@ -67,6 +72,21 @@ export function PersonalInfoPanel({ user, onUpdated }: PersonalInfoPanelProps) {
           </Button>
         }
       >
+        {missing.length > 0 && (
+          <div className="mb-3 rounded-xl bg-[#fbf3e1] px-4 py-3 text-[0.875rem] leading-relaxed text-[#5c3f0c]">
+            <p>
+              Add your {listWords(missing)}. Your birthday fills in certificate requests for you, and the office can reach
+              you if a request needs more details.
+            </p>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="mt-1.5 min-h-[40px] font-semibold text-primary hover:underline"
+            >
+              Add {missing.length === 1 ? "it" : "them"} now
+            </button>
+          </div>
+        )}
         <dl className="divide-y divide-border">
           <DetailRow label="Full name" value={user.fullName} />
           <DetailRow label="Birthday" value={formatBirthday(user.birthday)} />
@@ -124,4 +144,10 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       <dd className="min-w-0 break-words text-sm text-ink sm:text-right">{value}</dd>
     </div>
   );
+}
+
+/** "birthday, contact number and address" */
+function listWords(items: string[]) {
+  if (items.length < 2) return items.join("");
+  return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
 }

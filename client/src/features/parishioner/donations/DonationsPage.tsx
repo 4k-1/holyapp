@@ -65,7 +65,7 @@ export function DonationsPage() {
 
   if (phase === "checking") {
     return (
-      <PortalFormPage title="Support the parish" description={`Give to ${parish.name} securely through GCash.`}>
+      <PortalFormPage title="Support the parish" description="Give securely through GCash.">
         <PortalPending>Confirming your gift with GCash…</PortalPending>
       </PortalFormPage>
     );
@@ -73,7 +73,7 @@ export function DonationsPage() {
 
   if (phase === "received") {
     return (
-      <PortalFormPage title="Support the parish" description={`Give to ${parish.name} securely through GCash.`}>
+      <PortalFormPage title="Support the parish" description="Give securely through GCash.">
         <PortalSuccess title="Thank you for your gift" to={`/${parish.slug}/portal`}>
           {receivedAmount !== null ? `${parish.name} received your gift of ${peso(receivedAmount)}.` : "Your gift was received by the parish."}{" "}
           May God bless your generosity.
@@ -85,7 +85,7 @@ export function DonationsPage() {
   const donations = data?.donations ?? [];
 
   return (
-    <PortalFormPage title="Support the parish" description={`Give to ${parish.name} securely through GCash.`}>
+    <PortalFormPage title="Support the parish" description="Give securely through GCash.">
       {notice && (
         <div className="mb-5">
           <PortalNotice tone="info">{notice}</PortalNotice>

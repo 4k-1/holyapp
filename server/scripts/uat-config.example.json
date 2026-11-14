@@ -1,0 +1,10 @@
+{
+  "santuarioSlug": "santuario",
+  "password": "change-me-to-a-long-test-password",
+  "superAdminEmail": "you+uat-super@gmail.com",
+  "parishAdminEmail": "you+uat-admin@gmail.com",
+  "parishAdminFirstName": "Parish",
+  "parishAdminLastName": "Admin",
+  "parishionerAEmail": "you+uat-ana@gmail.com",
+  "parishionerBEmail": "you+uat-pedro@gmail.com"
+}

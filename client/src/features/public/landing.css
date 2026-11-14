@@ -303,3 +303,11 @@
   .landing-art-body,
   .landing-art [class*="landing-art-"] { animation: none; }
 }
+
+/* Links to a section of the page (How it works, Contact, Verify...) glide there instead of jumping. Only while the
+   landing page is showing, and not for visitors whose device asks for less motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.landing) {
+    scroll-behavior: smooth;
+  }
+}

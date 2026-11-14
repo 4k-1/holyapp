@@ -1,30 +1,24 @@
 import { useEffect, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { PortalBackLink } from "./PortalBackLink";
 
 /** Shared building blocks for parishioner portal forms (giving, Mass intentions), so they read as one system. */
 
 export function PortalFormPage({
   title,
   description,
+  back,
   children,
 }: {
   title: string;
   description: ReactNode;
+  /** Only for pages under a menu page, e.g. Offer a Mass under My Mass intentions. */
+  back?: { to: string; label: string };
   children: ReactNode;
 }) {
-  const navigate = useNavigate();
   return (
     <div className="mx-auto max-w-xl px-4 py-8 sm:px-6">
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="mb-5 inline-flex min-h-[40px] items-center gap-1.5 rounded-lg text-sm font-medium text-ink-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden="true">
-          <polyline points="15 18 9 12 15 6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        Back
-      </button>
+      {back && <PortalBackLink to={back.to} label={back.label} />}
       <h1 className="font-serif text-[1.75rem] font-bold leading-tight text-ink">{title}</h1>
       <p className="mb-6 mt-2 text-[0.9375rem] leading-relaxed text-ink-muted">{description}</p>
       {children}

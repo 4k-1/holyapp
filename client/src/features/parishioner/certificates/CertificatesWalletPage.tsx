@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { listCertificates } from "@/features/parishioner/certificates/api/certificatesApi";
 import { CertificatePdfCapture } from "@/features/parishioner/certificates/CertificatePdfCapture";
 import { saveCertificatePdf } from "@/features/parishioner/certificates/saveCertificatePdf";
@@ -43,9 +43,9 @@ export function CertificatesWalletPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <h1 className="font-serif text-[26px] font-bold text-ink">My Certificate Wallet</h1>
+      <h1 className="font-serif text-[26px] font-bold text-ink">Certificate wallet</h1>
       <p className="mb-6 mt-1.5 text-sm text-ink-muted">
-        Every certificate released to you lives here. Download or view anytime — no need to request again.
+        Every certificate released to you. View or download one any time, with no need to request it again.
       </p>
       {downloadError && <p className="mb-4 text-sm font-medium text-red-700">{downloadError}</p>}
 
@@ -68,6 +68,13 @@ export function CertificatesWalletPage() {
           ))}
         </div>
       )}
+
+      <p className="mt-8 border-t border-border pt-5 text-[0.875rem] text-ink-muted">
+        Someone gave you a HolyApp certificate?{" "}
+        <Link to="../verify" relative="path" className="font-semibold text-primary hover:underline">
+          Check that it&apos;s real
+        </Link>
+      </p>
 
       {viewing && (
         <CertificateViewerModal certificate={viewing} parish={parish} onClose={() => setViewing(null)} />

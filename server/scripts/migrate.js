@@ -158,7 +158,10 @@ async function main() {
   const [command = 'up', arg] = process.argv.slice(2);
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set.');
 
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+  });
   await client.connect();
   try {
     await client.query('SELECT pg_advisory_lock($1)', [LOCK_KEY]);

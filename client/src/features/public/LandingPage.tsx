@@ -1054,7 +1054,8 @@ function SiteFooter() {
         <nav aria-label="Footer" className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
           <a href="#verify" className="hover:text-[var(--l-teal-deep)]">Verify a certificate</a>
           <Link to="/privacy" className="hover:text-[var(--l-teal-deep)]">Privacy notice</Link>
-          <a href={`mailto:${HOLYAPP_CONTACT_EMAIL}`} className="hover:text-[var(--l-teal-deep)]">Contact</a>
+          {/* To the contact section (Book a demo, and the email address shown): a mail link alone does nothing without an email app. */}
+          <a href="#for-parishes" className="hover:text-[var(--l-teal-deep)]">Contact</a>
         </nav>
       </div>
     </footer>

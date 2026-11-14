@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useState, type FocusEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GearIcon, UserIcon } from "@/components/ui/icons/AdminIcons";
 import { ProfileMenu } from "@/components/layout/ProfileMenu";
 import { logout } from "@/features/auth/api/authApi";
@@ -13,17 +13,53 @@ interface NavbarProps {
   userEmail: string;
 }
 
-const navItems = [
-  { to: "", label: "Dashboard", end: true },
-  { to: "requests/new", label: "Request Certificate", end: true },
-  { to: "requests", label: "My Requests", end: true },
-  { to: "wallet", label: "Wallet", end: true },
-  { to: "timeline", label: "Timeline", end: true },
+type NavLinkItem = { to: string; label: string };
+type NavEntry = { label: string; to?: string; links?: NavLinkItem[] };
+
+// Grouped by what parishioners come to do. Paths are relative to /:parishSlug/portal.
+const NAV: NavEntry[] = [
+  { label: "Home", to: "" },
+  {
+    label: "Certificates",
+    links: [
+      { to: "requests/new", label: "Request a certificate" },
+      { to: "requests", label: "My requests" },
+      { to: "wallet", label: "Certificate wallet" },
+    ],
+  },
+  {
+    label: "Masses",
+    links: [
+      { to: "intention", label: "Offer a Mass" },
+      { to: "intentions", label: "My Mass intentions" },
+    ],
+  },
+  { label: "Give", to: "donate" },
+  {
+    label: "My records",
+    links: [
+      { to: "timeline", label: "Sacramental timeline" },
+      { to: "marriage", label: "Marriage application" },
+    ],
+  },
 ];
+
+/** Whether the page at `pathname` belongs to `to`: requests/123 belongs to "requests", but requests/new does not. */
+function isUnder(pathname: string, portalRoot: string, to: string) {
+  const here = pathname.replace(/\/+$/, "");
+  if (!to) return here === portalRoot;
+  const target = `${portalRoot}/${to}`;
+  if (here === target) return true;
+  if (to === "requests") return here.startsWith(`${target}/`) && !here.startsWith(`${target}/new`);
+  return here.startsWith(`${target}/`);
+}
 
 export function Navbar({ parish, userInitials, userName, userEmail }: NavbarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const portalRoot = `/${parish.slug}/portal`;
+  const here = (to: string) => isUnder(location.pathname, portalRoot, to);
 
   async function handleLogout() {
     const ok = await askConfirm({
@@ -49,7 +85,7 @@ export function Navbar({ parish, userInitials, userName, userEmail }: NavbarProp
           <span className="h-7 w-px shrink-0 bg-white/25" aria-hidden="true" />
           <Link
             to="."
-            aria-label={`${parish.name}, back to your dashboard`}
+            aria-label={`${parish.name}, back to your home page`}
             className="group flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
             {parish.sealUrl ? (
@@ -65,7 +101,7 @@ export function Navbar({ parish, userInitials, userName, userEmail }: NavbarProp
             )}
             <div className="min-w-0 leading-tight">
               <div
-                className="truncate font-serif text-[14px] font-semibold leading-tight sm:line-clamp-2 sm:max-w-[280px] sm:text-[13.5px] sm:whitespace-normal lg:max-w-[420px]"
+                className="line-clamp-2 font-serif text-[13px] font-semibold leading-[1.2] sm:max-w-[280px] sm:text-[13.5px] lg:max-w-[260px]"
                 title={parish.name}
               >
                 {parish.name}
@@ -79,33 +115,23 @@ export function Navbar({ parish, userInitials, userName, userEmail }: NavbarProp
 
         {/* Desktop nav */}
         <div className="hidden shrink-0 items-center gap-1 lg:flex">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.label}
-              to={item.to || "."}
-              end={item.end}
-              className={({ isActive }) =>
-                `shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors ${
-                  isActive ? "bg-white/15 font-semibold text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
-                }`
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {NAV.map((entry) =>
+            entry.links ? (
+              <NavGroup key={entry.label} entry={entry} isHere={here} />
+            ) : (
+              <Link
+                key={entry.label}
+                to={entry.to || "."}
+                aria-current={here(entry.to ?? "") ? "page" : undefined}
+                className={`${topItem} ${here(entry.to ?? "") ? topActive : topIdle}`}
+              >
+                {entry.label}
+              </Link>
+            )
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <NavLink
-            to="verify"
-            className={({ isActive }) =>
-              `hidden items-center rounded-full border px-3 py-1.5 text-xs font-medium text-white transition-colors sm:flex ${
-                isActive ? "border-white/60 bg-white/15" : "border-white/30 hover:border-white/60 hover:bg-white/10"
-              }`
-            }
-          >
-            Verify
-          </NavLink>
           <ProfileMenu
             tone="portal"
             initials={userInitials}
@@ -133,24 +159,99 @@ export function Navbar({ parish, userInitials, userName, userEmail }: NavbarProp
 
       {/* Mobile menu panel */}
       {menuOpen && (
-        <div className="absolute w-full flex flex-col gap-1 border-t border-white/10 bg-primary px-4 pb-4 pt-2 shadow-lg lg:hidden">
-          {[...navItems, { to: "verify", label: "Verify a Certificate", end: true }].map((item) => (
-            <NavLink
-              key={item.label}
-              to={item.to || "."}
-              end={item.end}
-              onClick={() => setMenuOpen(false)}
-              className={({ isActive }) =>
-                `rounded-lg px-4 py-2.5 text-sm ${
-                  isActive ? "bg-white/15 font-semibold text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
-                }`
-              }
-            >
-              {item.label}
-            </NavLink>
+        <div className="absolute max-h-[calc(100dvh-64px)] w-full overflow-y-auto border-t border-white/10 bg-primary px-4 pb-4 pt-2 shadow-lg lg:hidden">
+          {/* A thin rule between sections, so a single page like Give doesn't read as part of the group above it. */}
+          {NAV.map((entry, index) => (
+            <div key={entry.label} className={index > 0 ? "mt-2 border-t border-white/10 pt-2" : ""}>
+              {entry.links ? (
+                <>
+                  <p className="px-4 pb-1 pt-1 text-[0.8125rem] font-semibold text-white/60">{entry.label}</p>
+                  {entry.links.map((item) => (
+                    <MobileLink key={item.to} item={item} active={here(item.to)} onPick={() => setMenuOpen(false)} />
+                  ))}
+                </>
+              ) : (
+                <MobileLink
+                  item={{ to: entry.to ?? "", label: entry.label }}
+                  active={here(entry.to ?? "")}
+                  onPick={() => setMenuOpen(false)}
+                />
+              )}
+            </div>
           ))}
         </div>
       )}
     </nav>
+  );
+}
+
+const topItem = "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm transition-colors";
+const topActive = "bg-white/15 font-semibold text-white";
+const topIdle = "text-white/80 hover:bg-white/10 hover:text-white";
+
+/** A top-level menu item with its pages underneath. Opens on click; closes on picking a page, Escape or clicking away. */
+function NavGroup({ entry, isHere }: { entry: NavEntry; isHere: (to: string) => boolean }) {
+  const [open, setOpen] = useState(false);
+  const links = entry.links ?? [];
+  const active = links.some((item) => isHere(item.to));
+
+  function closeIfLeaving(e: FocusEvent<HTMLDivElement>) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
+  }
+
+  return (
+    <div className="relative" onBlur={closeIfLeaving} onKeyDown={(e) => e.key === "Escape" && setOpen(false)}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={`${topItem} inline-flex items-center gap-1.5 ${active ? topActive : topIdle}`}
+      >
+        {entry.label}
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        >
+          <path d="m5 7.5 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1.5 min-w-[220px] overflow-hidden rounded-xl border border-border bg-surface py-1.5 text-ink shadow-[0_12px_32px_rgba(14,59,70,0.18)]">
+          {links.map((item) => {
+            const current = isHere(item.to);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setOpen(false)}
+                aria-current={current ? "page" : undefined}
+                className={`block px-4 py-2.5 text-sm hover:bg-surface-alt ${current ? "font-semibold text-primary" : "text-ink"}`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileLink({ item, active, onPick }: { item: NavLinkItem; active: boolean; onPick: () => void }) {
+  return (
+    <Link
+      to={item.to || "."}
+      onClick={onPick}
+      aria-current={active ? "page" : undefined}
+      className={`block rounded-lg px-4 py-2.5 text-sm ${
+        active ? "bg-white/15 font-semibold text-white" : "text-white/85 hover:bg-white/10 hover:text-white"
+      }`}
+    >
+      {item.label}
+    </Link>
   );
 }

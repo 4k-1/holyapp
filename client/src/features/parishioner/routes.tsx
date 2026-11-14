@@ -4,6 +4,7 @@ import { DashboardRoute } from "@/features/parishioner/dashboard/DashboardRoute"
 import { NewRequestWizard } from "@/features/parishioner/requests/pages/NewRequestWizard";
 import { RequestsListPage } from "@/features/parishioner/requests/pages/RequestsListPage";
 import { RequestReceiptPage } from "@/features/parishioner/requests/pages/RequestReceiptPage";
+import { RequestDetailsPage } from "@/features/parishioner/requests/pages/RequestDetailsPage";
 import { CertificatesWalletPage } from "@/features/parishioner/certificates/CertificatesWalletPage";
 import { AccountPage } from "@/features/parishioner/account/AccountPage";
 import { SettingsPage } from "@/features/parishioner/account/SettingsPage";
@@ -20,6 +21,7 @@ export const parishionerRoutes: RouteObject[] = [
       { index: true, element: <DashboardRoute /> },
       { path: "requests", element: <RequestsListPage /> },
       { path: "requests/new", element: <NewRequestWizard /> },
+      { path: "requests/:requestId", element: <RequestDetailsPage /> },
       { path: "requests/:requestId/receipt", element: <RequestReceiptPage /> },
       { path: "wallet", element: <CertificatesWalletPage /> },
       { path: "account", element: <AccountPage /> },

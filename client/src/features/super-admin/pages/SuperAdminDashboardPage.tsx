@@ -9,7 +9,7 @@ import {
   UserIcon,
   UsersIcon,
 } from "@/components/ui/icons/AdminIcons";
-import { auditCopy, auditTone, formatAuditWhen } from "@/features/super-admin/auditCopy";
+import { auditCopy, auditTone, formatAuditWhen } from "@/lib/auditCopy";
 
 const HONORIFICS = new Set(["fr.", "fr", "rev.", "rec.", "staff", "dr.", "dr", "sr.", "sr"]);
 

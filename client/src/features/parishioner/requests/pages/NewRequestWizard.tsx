@@ -1,9 +1,8 @@
 import { useRef, useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useNavigate, useOutletContext, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUser } from "@/features/auth/api/authApi";
 import { submitRequest } from "@/features/parishioner/requests/api/requestsApi";
-import { ConfirmationStep } from "@/features/parishioner/requests/components/ConfirmationStep";
 import {
   CertificateStep,
   PurposeStep,
@@ -25,6 +24,21 @@ import {
 import type { Parish, SacramentType } from "@/types";
 
 const FORM_STEPS: StepId[] = [1, 2, 3, 4];
+const SACRAMENTS: SacramentType[] = ["baptism", "confirmation", "marriage", "death"];
+
+/** A request started from the sacramental timeline: that certificate, for the parishioner, with the date filled in. */
+function draftFromLink(params: URLSearchParams, user: ReturnType<typeof getCurrentUser>): RequestDraft | null {
+  const type = params.get("type") as SacramentType | null;
+  if (!type || !SACRAMENTS.includes(type) || type === "death") return null;
+  const date = params.get("date") ?? "";
+  return {
+    ...EMPTY_DRAFT,
+    sacramentType: type,
+    forWhom: "me",
+    fields: prefillFromAccount(type, user),
+    sacramentDate: /^d{4}-d{2}-d{2}$/.test(date) ? date : "",
+  };
+}
 
 /** Fill only the fields the parishioner hasn't typed in yet. */
 function fillEmpty(fields: Record<string, string>, extra: Record<string, string>) {
@@ -41,13 +55,15 @@ export function NewRequestWizard() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const navigate = useNavigate();
   const [user] = useState(() => getCurrentUser());
-  const [step, setStep] = useState<StepId>(1);
-  const [draft, setDraft] = useState<RequestDraft>(EMPTY_DRAFT);
+  const [params] = useSearchParams();
+  const [linked] = useState(() => draftFromLink(params, user));
+  // From the timeline the first two answers are known, so the form opens on the record's details.
+  const [step, setStep] = useState<StepId>(linked ? 3 : 1);
+  const [draft, setDraft] = useState<RequestDraft>(linked ?? EMPTY_DRAFT);
   const [attempted, setAttempted] = useState<Set<StepId>>(() => new Set());
   const [touched, setTouched] = useState<Set<string>>(() => new Set());
   const [returnToReview, setReturnToReview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -108,8 +124,9 @@ export function NewRequestWizard() {
     setSubmitting(true);
     setError(null);
     try {
-      await submitRequest(toRequestForm(draft), parish.id, requesterId);
-      setSubmitted(true);
+      const sent = await submitRequest(toRequestForm(draft), parish.id, requesterId);
+      // Straight to the new request, so the parishioner sees what they sent and where it stands.
+      navigate(`/${parish.slug}/portal/requests/${sent.id}?sent=1`, { replace: true });
       window.scrollTo({ top: 0 });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send this request. Try again.");
@@ -158,28 +175,14 @@ export function NewRequestWizard() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <h1 className="font-serif text-[1.75rem] leading-tight text-ink sm:text-[2rem]">Request a Certificate</h1>
+      <h1 className="font-serif text-[1.75rem] leading-tight text-ink sm:text-[2rem]">Request a certificate</h1>
       <p className="mb-6 mt-1.5 text-[0.9375rem] text-ink-muted">
-        From {parish.name}. It takes about three minutes, and there's nothing to pay until staff find your record.
+        It takes about three minutes, and there's nothing to pay until staff find your record.
       </p>
 
-      {!submitted && <WizardStepTrack current={step} onJump={(target) => { setReturnToReview(false); goTo(target); }} />}
+      <WizardStepTrack current={step} onJump={(target) => { setReturnToReview(false); goTo(target); }} />
 
       <div className="rounded-[20px] border border-border bg-surface shadow-[var(--shadow-card)]">
-        {submitted ? (
-          <div className="px-5 py-8 sm:px-8">
-            <ConfirmationStep />
-            <div className="mt-8 flex flex-col-reverse justify-center gap-3 sm:flex-row">
-              <Button variant="ghost" size="lg" onClick={() => navigate(`/${parish.slug}/portal`)}>
-                Back to dashboard
-              </Button>
-              <Button size="lg" onClick={() => navigate(`/${parish.slug}/portal/requests`)}>
-                View my requests
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
             <div className="px-5 pt-6 sm:px-8 sm:pt-8">
               <h2 ref={headingRef} tabIndex={-1} className="font-serif text-[1.5rem] font-bold leading-tight text-ink outline-none sm:text-[1.75rem]">
                 {meta.title}
@@ -261,8 +264,6 @@ export function NewRequestWizard() {
                 </Button>
               )}
             </div>
-          </>
-        )}
       </div>
     </div>
   );

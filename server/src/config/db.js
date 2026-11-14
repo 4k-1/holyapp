@@ -8,6 +8,8 @@ types.setTypeParser(1083, (value) => value);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  // Most hosted Postgres services require SSL. Set DATABASE_SSL=true there.
+  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
 });
 
 module.exports = pool;

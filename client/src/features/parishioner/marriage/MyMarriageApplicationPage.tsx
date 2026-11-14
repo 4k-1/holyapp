@@ -16,7 +16,6 @@ import type { MarriageApplication } from "@/features/parish-admin/marriage-appli
 import { useAsync } from "@/hooks/useAsync";
 import type { Parish } from "@/types";
 import { SkeletonList } from "@/components/ui/Skeleton";
-import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
 
 export function MyMarriageApplicationPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -24,22 +23,59 @@ export function MyMarriageApplicationPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <AdminBackLink />
-      <h1 className="font-serif text-[26px] font-bold text-ink">Marriage application</h1>
-      <p className="mb-6 mt-1 text-sm text-ink-muted">Where your application stands with {parish.name}.</p>
+      <h1 className="font-serif text-[1.75rem] font-bold leading-tight text-ink">Marriage application</h1>
+      <p className="mb-6 mt-1 text-sm text-ink-muted">Where your marriage application stands, step by step.</p>
 
       {loading ? (
         <SkeletonList rows={3} className="px-0" />
       ) : applications.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center text-sm text-ink-muted">
-          No marriage application is linked to your account yet. If you have applied at the parish office, ask them to
-          link it to this account so you can follow it here.
-        </div>
+        <NoApplication parish={parish} />
       ) : (
         <div className="flex flex-col gap-4">
           {applications.map((app) => (
             <ApplicationCard key={app.id} app={app} />
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** No application linked yet: how to start one, and who to call to link one already started. */
+function NoApplication({ parish }: { parish: Parish }) {
+  const phone = parish.contact?.trim();
+  const email = parish.email?.trim();
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+      <h2 className="font-sans text-[1.0625rem] font-semibold text-ink">No application linked to your account</h2>
+      <div className="mt-3 space-y-3 text-[0.9375rem] leading-relaxed text-ink">
+        <p>
+          <span className="font-semibold">Planning to marry?</span> Visit the parish office together well before
+          the date you have in mind. Staff will open your application and go through what you need to bring.
+        </p>
+        <p>
+          <span className="font-semibold">Already applied?</span> Ask the office to link the application to this account,
+          and you can follow every step here.
+        </p>
+      </div>
+      {(phone || email) && (
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+          {phone && (
+            <a
+              href={`tel:${phone.replace(/[^d+]/g, "")}`}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-primary px-5 text-[0.9375rem] font-semibold text-white shadow-[var(--shadow-button)] hover:opacity-90"
+            >
+              Call {phone}
+            </a>
+          )}
+          {email && (
+            <a
+              href={`mailto:${email}`}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-border bg-surface px-5 text-[0.9375rem] font-semibold text-ink hover:bg-surface-alt"
+            >
+              Email the office
+            </a>
+          )}
         </div>
       )}
     </div>

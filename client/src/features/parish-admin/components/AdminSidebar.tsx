@@ -10,6 +10,7 @@ import {
   GearIcon,
   BellIcon,
   UsersIcon,
+  ClipboardIcon,
   ChevronDownIcon,
 } from "@/components/ui/icons/AdminIcons";
 import type { Role } from "@/types";
@@ -114,6 +115,9 @@ export function AdminSidebar({ role, collapsed, unreadCount = 0 }: AdminSidebarP
           <SidebarLink to="donations" icon={<HeartIcon />} label="Donations" collapsed={collapsed} />
         )}
         <SidebarLink to="staff" icon={<UsersIcon />} label="Staff" collapsed={collapsed} />
+        {role === "parish_admin" && (
+          <SidebarLink to="activity" icon={<ClipboardIcon />} label="Activity" collapsed={collapsed} />
+        )}
         <SidebarGroup
           icon={<ChartIcon />}
           label="Reports"

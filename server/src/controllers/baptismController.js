@@ -137,7 +137,7 @@ function parseBaptismBody(body) {
       'Both parents are blank. Add a remark saying why (for a foundling: when, where and by whom the child was found).',
     );
   }
-  return {
+  const fields = {
     firstName: requiredText(body.firstName, 'First name'),
     middleName: optionalText(body.middleName),
     lastName: requiredText(body.lastName, 'Last name'),
@@ -166,6 +166,10 @@ function parseBaptismBody(body) {
     entryNumber: requiredText(body.entryNumber, 'Entry number'),
     remarks: encrypt(remarks),
   };
+  if (fields.dateOfBaptism < fields.dateOfBirth) {
+    throw httpError(400, 'The date of baptism is before the date of birth. Check both dates against the register.');
+  }
+  return fields;
 }
 
 async function createBaptism(req, res) {

@@ -56,10 +56,15 @@ interface RequestDetailCardProps {
   parishSlug: string;
   /** Something the parishioner needs to do: the card is edged in gold. */
   highlight?: boolean;
+  /**
+   * "list": the title links to the request's page. "page": the request's own page, where the title is the page
+   * heading and the reference, purpose and delivery are left to the labelled details below.
+   */
+  variant?: "list" | "page";
 }
 
 /** One request in progress: what it is, whose it is, where it stands, and the next thing to do. */
-export function RequestDetailCard({ request, parishSlug, highlight = false }: RequestDetailCardProps) {
+export function RequestDetailCard({ request, parishSlug, highlight = false, variant = "list" }: RequestDetailCardProps) {
   const key = deriveStatusKey(request);
   const subject = subjectOf(request);
   const fee = feeOf(request);
@@ -86,6 +91,15 @@ export function RequestDetailCard({ request, parishSlug, highlight = false }: Re
   }
 
   const actions: ReactNode[] = [];
+  const onPage = variant === "page";
+  const detailsPath = `/${parishSlug}/portal/requests/${request.id}`;
+  if (key === "rejected") {
+    actions.push(
+      <Link key="again" to={`/${parishSlug}/portal/requests/new`} className={`${primaryAction} w-full sm:w-auto`}>
+        Request again with more details
+      </Link>
+    );
+  }
   if (key === "awaiting_payment") {
     actions.push(
       <button key="pay" type="button" onClick={payWithGcash} disabled={paying} className={`${primaryAction} w-full sm:w-auto`}>
@@ -114,26 +128,36 @@ export function RequestDetailCard({ request, parishSlug, highlight = false }: Re
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
               <div className="min-w-0">
-                <h3 className="font-serif text-[1.125rem] font-bold leading-snug text-ink sm:text-[1.25rem]">
-                  {SACRAMENT_TITLES[request.sacramentType]}
-                </h3>
+                {onPage ? (
+                  <h1 className="font-serif text-[1.5rem] font-bold leading-tight text-ink sm:text-[1.75rem]">
+                    {SACRAMENT_TITLES[request.sacramentType]}
+                  </h1>
+                ) : (
+                  <h3 className="font-serif text-[1.125rem] font-bold leading-snug text-ink sm:text-[1.25rem]">
+                    <TitleLink to={detailsPath}>{SACRAMENT_TITLES[request.sacramentType]}</TitleLink>
+                  </h3>
+                )}
                 {subject && <p className="text-[0.9375rem] text-ink">for {subject}</p>}
               </div>
               <StatusPill request={request} />
             </div>
-            <p className="mt-1.5 text-[0.8125rem] text-ink-muted">
-              <span className="font-mono">Ref. {requestRef(request)}</span>
-              <span aria-hidden="true"> · </span>
-              Submitted {submittedLabel(request.createdAt)}
-              <span aria-hidden="true"> · </span>
-              {request.deliveryMethod === "pickup" ? "Pick up at the office" : "Digital copy"}
-              {request.purpose && (
-                <>
-                  <span aria-hidden="true"> · </span>
-                  {request.purpose}
-                </>
-              )}
-            </p>
+            {onPage ? (
+              <p className="mt-1.5 text-[0.8125rem] text-ink-muted">Submitted {submittedLabel(request.createdAt)}</p>
+            ) : (
+              <p className="mt-1.5 text-[0.8125rem] text-ink-muted">
+                <span className="font-mono">Ref. {requestRef(request)}</span>
+                <span aria-hidden="true"> · </span>
+                Submitted {submittedLabel(request.createdAt)}
+                <span aria-hidden="true"> · </span>
+                {request.deliveryMethod === "pickup" ? "Pick up at the office" : "Digital copy"}
+                {request.purpose && (
+                  <>
+                    <span aria-hidden="true"> · </span>
+                    Purpose: {request.purpose}
+                  </>
+                )}
+              </p>
+            )}
           </div>
         </div>
 
@@ -177,8 +201,12 @@ export function CompletedRequestRow({ request, parishSlug }: { request: Certific
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <p className="min-w-0 text-[0.9375rem] font-semibold text-ink">
-            {SACRAMENT_TITLES[request.sacramentType]}
-            {subject && <span className="font-normal text-ink"> · for {subject}</span>}
+            <TitleLink to={`/${parishSlug}/portal/requests/${request.id}`}>
+              <span>
+                {SACRAMENT_TITLES[request.sacramentType]}
+                {subject && <span className="font-normal"> · for {subject}</span>}
+              </span>
+            </TitleLink>
           </p>
           <StatusPill request={request} />
         </div>
@@ -198,12 +226,14 @@ export function CompletedRequestRow({ request, parishSlug }: { request: Certific
                 "The parish couldn't match a record with the details given."
               )}
             </p>
-            <Link
-              to={`/${parishSlug}/portal/requests/new`}
-              className="mt-1.5 inline-flex font-semibold text-primary hover:underline"
-            >
-              Request again with more details →
-            </Link>
+            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+              <Link
+                to={`/${parishSlug}/portal/requests/new`}
+                className="inline-flex font-semibold text-primary hover:underline"
+              >
+                Request again with more details →
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[0.875rem]">
@@ -219,6 +249,18 @@ export function CompletedRequestRow({ request, parishSlug }: { request: Certific
         )}
       </div>
     </li>
+  );
+}
+
+/** A request's name, linking to its own page. The chevron says it opens; the underline comes on hover. */
+function TitleLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link to={to} className="group/title inline-flex items-baseline gap-1 rounded-sm text-ink hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25">
+      {children}
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" className="h-3.5 w-3.5 shrink-0 self-center text-ink-muted transition-transform group-hover/title:translate-x-0.5" aria-hidden="true">
+        <path d="m8 5 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </Link>
   );
 }
 

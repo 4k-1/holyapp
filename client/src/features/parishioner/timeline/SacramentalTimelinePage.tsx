@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { CandleIcon, DoveIcon, DropletIcon, HeartIcon } from "@/components/ui/icons/SacramentIcons";
 import { listMyTimeline, type TimelineEvent } from "@/features/parishioner/timeline/api/timelineApi";
-import type { SacramentType } from "@/types";
+import type { Parish, SacramentType } from "@/types";
 import { SkeletonList } from "@/components/ui/Skeleton";
 
 const ICONS: Record<SacramentType, typeof DropletIcon> = {
@@ -22,7 +22,7 @@ function formatDate(value: string | null) {
 }
 
 export function SacramentalTimelinePage() {
-  const navigate = useNavigate();
+  const { parish } = useOutletContext<{ parish: Parish }>();
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -38,15 +38,7 @@ export function SacramentalTimelinePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8 sm:px-6">
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        className="mb-6 flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink"
-      >
-        ← Back
-      </button>
-
-      <h1 className="font-serif text-2xl font-bold text-ink">Sacramental timeline</h1>
+      <h1 className="font-serif text-[1.75rem] font-bold leading-tight text-ink">Sacramental timeline</h1>
       <p className="mt-1.5 mb-6 text-sm text-ink-muted">
         Entries the parish has on file that match your name. This is not a certificate.
       </p>
@@ -78,6 +70,14 @@ export function SacramentalTimelinePage() {
                     <p className="mt-1 font-mono text-xs text-ink-muted">
                       Book {event.bookNumber ?? "—"}, page {event.pageNumber ?? "—"}, line {event.entryNumber ?? "—"}
                     </p>
+                  )}
+                  {event.sacramentType !== "death" && (
+                    <Link
+                      to={`/${parish.slug}/portal/requests/new?type=${event.sacramentType}${event.date ? `&date=${event.date}` : ""}`}
+                      className="mt-2.5 inline-flex min-h-[40px] items-center text-sm font-semibold text-primary hover:underline"
+                    >
+                      Request this certificate →
+                    </Link>
                   )}
                 </div>
               </div>

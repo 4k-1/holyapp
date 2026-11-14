@@ -41,12 +41,15 @@ export function setCurrentUser(user: CurrentUser | null) {
 export class TwoFactorChallenge extends Error {
   challengeId: string;
   email: string;
+  /** Test mode only (super admin, mocked delivery): the code, since no email is sent. */
+  mockCode?: string;
 
-  constructor(challengeId: string, email: string) {
+  constructor(challengeId: string, email: string, mockCode?: string) {
     super("Enter the code sent to your email.");
     this.name = "TwoFactorChallenge";
     this.challengeId = challengeId;
     this.email = email;
+    this.mockCode = mockCode;
   }
 }
 
@@ -54,6 +57,7 @@ type LoginResponse = BackendAuthResponse & {
   two_factor_required?: boolean;
   challenge_id?: string;
   email?: string;
+  mock_code?: string;
 };
 
 function applySession(data: BackendAuthResponse): CurrentUser {
@@ -114,7 +118,7 @@ export async function loginSuperAdmin(email: string, password: string): Promise<
   }
 
   if (data.two_factor_required && data.challenge_id) {
-    throw new TwoFactorChallenge(data.challenge_id, data.email || email);
+    throw new TwoFactorChallenge(data.challenge_id, data.email || email, data.mock_code);
   }
 
   if (data.user.role !== "super_admin") {
@@ -139,13 +143,20 @@ export async function verifyLoginTwoFactor(challengeId: string, code: string): P
 }
 
 export async function resendLoginTwoFactor(challengeId: string): Promise<string> {
+  return (await resendLoginTwoFactorCode(challengeId)).challengeId;
+}
+
+/** Like resendLoginTwoFactor, plus the new test-mode code when delivery is mocked (super admin). */
+export async function resendLoginTwoFactorCode(
+  challengeId: string
+): Promise<{ challengeId: string; mockCode?: string }> {
   try {
-    const data = await apiFetch<{ challenge_id?: string }>("/auth/login/2fa/resend", {
+    const data = await apiFetch<{ challenge_id?: string; mock_code?: string }>("/auth/login/2fa/resend", {
       method: "POST",
       body: { challenge_id: challengeId, device_id: getDeviceId() },
       auth: false,
     });
-    return data.challenge_id || challengeId;
+    return { challengeId: data.challenge_id || challengeId, mockCode: data.mock_code };
   } catch (err) {
     if (err instanceof ApiError) throw new Error(err.message, { cause: err });
     throw new Error("Unable to reach the server. Is the backend running?", { cause: err });

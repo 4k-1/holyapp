@@ -5,7 +5,7 @@ import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/com
 import {
   getCurrentUser,
   loginSuperAdmin,
-  resendLoginTwoFactor,
+  resendLoginTwoFactorCode,
   TwoFactorChallenge,
   verifyLoginTwoFactor,
 } from "@/features/auth/api/authApi";
@@ -17,7 +17,7 @@ export function SuperAdminLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [challenge, setChallenge] = useState<{ id: string; email: string } | null>(null);
+  const [challenge, setChallenge] = useState<{ id: string; email: string; mockCode?: string } | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -37,7 +37,7 @@ export function SuperAdminLoginForm() {
       navigate(from && from.startsWith("/super-admin") ? from : "/super-admin", { replace: true });
     } catch (err) {
       if (err instanceof TwoFactorChallenge) {
-        setChallenge({ id: err.challengeId, email: err.email });
+        setChallenge({ id: err.challengeId, email: err.email, mockCode: err.mockCode });
         setError(null);
       } else {
         setError(err instanceof Error ? err.message : "Sign in failed.");
@@ -52,14 +52,16 @@ export function SuperAdminLoginForm() {
       <div className="mt-8">
         <OtpStep
           email={challenge.email}
+          testCode={challenge.mockCode}
+          intro="Platform accounts sign in in two steps, every time."
           onVerify={async (code) => {
             await verifyLoginTwoFactor(challenge.id, code);
             const from = searchParams.get("from");
             navigate(from && from.startsWith("/super-admin") ? from : "/super-admin", { replace: true });
           }}
           onResend={async () => {
-            const nextId = await resendLoginTwoFactor(challenge.id);
-            setChallenge({ ...challenge, id: nextId });
+            const next = await resendLoginTwoFactorCode(challenge.id);
+            setChallenge({ ...challenge, id: next.challengeId, mockCode: next.mockCode });
           }}
         />
       </div>

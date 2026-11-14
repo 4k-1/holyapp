@@ -79,7 +79,7 @@ export function purposesFor(type: SacramentType | null | undefined): string[] {
 }
 
 export const DELIVERY_OPTIONS: { key: DeliveryMethod; label: string; description: string }[] = [
-  { key: "digital", label: "Digital copy", description: "Sent to your Certificate Wallet once the parish releases it" },
+  { key: "digital", label: "Digital copy", description: "Sent to your certificate wallet once the parish releases it" },
   { key: "pickup", label: "Pick up at the office", description: "Printed and sealed by the parish. Bring a valid ID." },
 ];
 

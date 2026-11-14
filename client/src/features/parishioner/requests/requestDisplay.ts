@@ -71,9 +71,11 @@ export function statusSentence(request: CertificateRequest): string {
       return "Your printed certificate is ready at the parish office. Bring a valid ID to claim it.";
     case "released":
       return request.deliveryMethod === "pickup"
-        ? "Claimed at the parish office. A copy is also in your Certificate Wallet."
-        : "Released. Your certificate is in your Certificate Wallet.";
+        ? "Claimed at the parish office. A copy is also in your certificate wallet."
+        : "Released. Your certificate is in your certificate wallet.";
     case "rejected":
-      return "The parish couldn't issue this certificate.";
+      return request.rejectionReason?.trim()
+        ? `The parish couldn't issue this certificate. The office says: “${request.rejectionReason.trim()}”`
+        : "The parish couldn't match a record with the details given.";
   }
 }

@@ -5,7 +5,7 @@ import {
   listPlatformParishes,
   type AuditKind,
 } from "@/features/super-admin/api/superAdminApi";
-import { auditCopy, auditTone, formatAuditWhen } from "@/features/super-admin/auditCopy";
+import { auditCopy, auditTone, formatAuditWhen } from "@/lib/auditCopy";
 import { ChevronDownIcon } from "@/components/ui/icons/AdminIcons";
 import type { AuditLogEntry } from "@/types";
 

@@ -270,8 +270,8 @@ export function AdminRequestsPage() {
           request={detailRequest}
           parish={parish}
           onClose={() => setDetailRequestId(null)}
-          onReject={async (r) => {
-            await rejectAdminRequest(r.id);
+          onReject={async (r, reason) => {
+            await rejectAdminRequest(r.id, reason);
             refetch();
           }}
           onPaymentRecorded={() => refetch()}

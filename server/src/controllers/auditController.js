@@ -26,7 +26,7 @@ function mapAuditRow(row) {
 }
 
 // How an entry is flagged: "red" for failed sign-ins, "yellow" for anything taken away, "green" for the rest.
-// The super admin audit page keeps the same lists, in client/src/features/super-admin/auditCopy.ts.
+// The super admin audit page keeps the same lists, in client/src/lib/auditCopy.ts.
 const RED_WORDS = ['failed'];
 const YELLOW_WORDS = ['suspended', 'removed', 'revoked', 'voided', 'archived', 'rejected', 'spoiled'];
 const KINDS = new Set(['green', 'yellow', 'red']);
@@ -46,7 +46,19 @@ function anyWord(words, params) {
  * it (compared on its stored time, to the microsecond). `parishId` and `kind` narrow the whole log, not only what has
  * been loaded.
  */
-async function fetchAuditEntries(limit = 300, { beforeId, parishId, kind } = {}) {
+// Which part of the app an action belongs to, by the word before the dot ("donation.voided" → donations).
+// The parish Activity page filters on these; the area names match staff access (E1) plus "accounts".
+const AREA_ENTITIES = {
+  registers: ['baptism', 'confirmation', 'marriage', 'death', 'annotation', 'ledger_book', 'ledger_page', 'ledger_scan'],
+  certificates: ['certificate', 'certificate_request'],
+  donations: ['donation'],
+  intentions: ['mass_intention'],
+  schedule: ['schedule'],
+  marriage: ['marriage_application', 'marriage_requirement'],
+  accounts: ['app_user', 'auth', 'profile', 'personnel', 'parish', 'rbac'],
+};
+
+async function fetchAuditEntries(limit = 300, { beforeId, parishId, kind, actorId, area } = {}) {
   const params = [];
   const where = [];
   if (beforeId) {
@@ -58,6 +70,14 @@ async function fetchAuditEntries(limit = 300, { beforeId, parishId, kind } = {})
   if (parishId) {
     params.push(parishId);
     where.push(`a.parish_id = $${params.length}`);
+  }
+  if (actorId) {
+    params.push(actorId);
+    where.push(`a.actor_id = $${params.length}`);
+  }
+  if (area) {
+    params.push(AREA_ENTITIES[area]);
+    where.push(`split_part(a.action, '.', 1) = ANY($${params.length})`);
   }
   if (kind === 'red') {
     where.push(`(${anyWord(RED_WORDS, params)})`);
@@ -98,32 +118,46 @@ function queryText(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-async function listAuditLog(req, res) {
-  const beforeId = queryText(req.query.beforeId);
-  const parishId = queryText(req.query.parishId);
-  const kind = queryText(req.query.kind);
+/** Reads and checks the filters shared by both logs. Returns { error } when one is not valid. */
+function readFilters(query) {
+  const filters = {
+    beforeId: queryText(query.beforeId),
+    parishId: queryText(query.parishId),
+    kind: queryText(query.kind),
+    actorId: queryText(query.actorId),
+    area: queryText(query.area),
+  };
+  if (filters.beforeId && !UUID.test(filters.beforeId)) return { error: 'That is not a valid place in the log.' };
+  if (filters.parishId && !UUID.test(filters.parishId)) return { error: 'That parish was not found.' };
+  if (filters.kind && !KINDS.has(filters.kind)) return { error: 'Unknown kind of activity.' };
+  if (filters.actorId && !UUID.test(filters.actorId)) return { error: 'That person was not found.' };
+  if (filters.area && !AREA_ENTITIES[filters.area]) return { error: 'Unknown area.' };
+  for (const key of Object.keys(filters)) if (!filters[key]) filters[key] = undefined;
+  return { filters };
+}
 
-  if (beforeId && !UUID.test(beforeId)) {
-    return res.status(400).json({ error: 'That is not a valid place in the log.' });
-  }
-  if (parishId && !UUID.test(parishId)) {
-    return res.status(400).json({ error: 'That parish was not found.' });
-  }
-  if (kind && !KINDS.has(kind)) {
-    return res.status(400).json({ error: 'Unknown kind of activity.' });
-  }
-
+async function sendPage(res, filters) {
   try {
     // One extra row tells us whether there is anything older to load.
-    const rows = await fetchAuditEntries(PAGE_SIZE + 1, {
-      beforeId: beforeId || undefined,
-      parishId: parishId || undefined,
-      kind: kind || undefined,
-    });
+    const rows = await fetchAuditEntries(PAGE_SIZE + 1, filters);
     res.json({ entries: rows.slice(0, PAGE_SIZE), hasMore: rows.length > PAGE_SIZE });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }
 
-module.exports = { listAuditLog, fetchAuditEntries };
+/** The super admin's log: every parish, or one picked with ?parishId=. */
+async function listAuditLog(req, res) {
+  const { filters, error } = readFilters(req.query);
+  if (error) return res.status(400).json({ error });
+  return sendPage(res, filters);
+}
+
+/** A parish admin's Activity page: always their own parish, whatever ?parishId= says. */
+async function listParishActivity(req, res) {
+  const { filters, error } = readFilters(req.query);
+  if (error) return res.status(400).json({ error });
+  return sendPage(res, { ...filters, parishId: req.parishId });
+}
+
+module.exports = { listAuditLog, listParishActivity, fetchAuditEntries };

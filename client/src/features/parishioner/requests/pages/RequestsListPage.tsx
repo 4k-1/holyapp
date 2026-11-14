@@ -52,8 +52,8 @@ export function RequestsListPage() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="font-serif text-[1.75rem] leading-tight text-ink sm:text-[2rem]">My Requests</h1>
-          <p className="mt-1 text-[0.9375rem] text-ink-muted">Certificates you've asked {parish.name} for, and where each one stands.</p>
+          <h1 className="font-serif text-[1.75rem] leading-tight text-ink sm:text-[2rem]">My requests</h1>
+          <p className="mt-1 text-[0.9375rem] text-ink-muted">Certificates you've asked the parish for, and where each one stands.</p>
         </div>
         {requests.length > 0 && (
           <Link

@@ -61,7 +61,7 @@ export function MassIntentionPage() {
   const dashboard = `/${parish.slug}/portal`;
 
   return (
-    <PortalFormPage title="Request a Mass intention" description={DESCRIPTION}>
+    <PortalFormPage title="Offer a Mass" description={DESCRIPTION} back={{ to: "../intentions", label: "My Mass intentions" }}>
       {phase === "checking" ? (
         <PortalPending>Confirming your donation with GCash…</PortalPending>
       ) : phase === "donated" ? (

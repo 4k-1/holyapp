@@ -284,11 +284,12 @@ export function AdminFindRecordPage() {
   async function handleReject() {
     const note = rejectReason.trim();
     setRejectError(null);
+    if (!note) {
+      setRejectError("Tell the parishioner why, so they know what to do next.");
+      return;
+    }
     try {
-      await rejectAdminRequest(
-        currentRequest.id,
-        note || "No matching baptismal record found in parish register."
-      );
+      await rejectAdminRequest(currentRequest.id, note);
       setRejectedNote(note);
       setRejectOpen(false);
       setStatus("rejected");
@@ -746,16 +747,16 @@ function RejectModal({
       </div>
       <div className="px-6 py-4">
         <p className="mb-3 text-admin-body text-admin-ink-muted">
-          Use this when no matching entry can be found in the baptismal ledger. The requester will be
-          notified that their certificate could not be issued.
+          Use this when no matching entry can be found in the baptismal ledger. The parishioner sees
+          your reason in their portal.
         </p>
         <label className="mb-1.5 block text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-          Note for the record (optional)
+          Reason for the parishioner
         </label>
         <textarea
           value={reason}
           onChange={(e) => onReasonChange(e.target.value)}
-          placeholder="e.g. Searched Books 09, 14 and 21 for 1993–1995; no entry matches the details submitted."
+          placeholder="e.g. We found no entry with these details in Books 09–21 (1993–1995). Please bring your PSA birth certificate to the office."
           className="min-h-[80px] w-full resize-y rounded-[var(--radius)] border border-admin-border bg-admin-surface-alt px-2.5 py-2 text-admin-body text-admin-ink"
         />
       </div>
