@@ -33,12 +33,14 @@ import type { Parish } from "@/types";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
+import { userCan } from "@/features/parish-admin/access";
 
 export function AdminDonationsPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const user = useCurrentUser();
   // Voiding and correcting money is for the admin only, as a check on the office.
   const canVoid = isParishAdminRole(user?.role);
+  const canRecord = userCan(user, "donations", "manage");
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -275,7 +277,7 @@ export function AdminDonationsPage() {
       <AdminPageHeader
         title="Donations"
         description="Gifts recorded at the office and given online through GCash."
-        actions={<AdminButton onClick={() => setModalOpen(true)}>+ Record donation</AdminButton>}
+        actions={canRecord && <AdminButton onClick={() => setModalOpen(true)}>+ Record donation</AdminButton>}
       />
 
       <AdminCard className="mb-4 p-5 px-[22px]">

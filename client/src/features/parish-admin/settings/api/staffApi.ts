@@ -1,4 +1,5 @@
 import { apiFetch, ApiError } from "@/lib/api";
+import { normalizeAccess } from "@/features/parish-admin/access";
 import type { NewStaffInput, StaffAccount, StaffRole, StaffStatus } from "../types";
 
 function fail(err: unknown): never {
@@ -19,6 +20,7 @@ function asStaff(row: StaffAccount): StaffAccount {
     status: row.status === "Inactive" ? "Inactive" : "Active",
     accessRole: row.accessRole === "admin" ? "admin" : "staff",
     personnelId: row.personnelId ?? null,
+    areaAccess: normalizeAccess(row.areaAccess),
   };
 }
 

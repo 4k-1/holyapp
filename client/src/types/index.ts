@@ -48,6 +48,8 @@ export interface CurrentUser {
   gender?: string;
   birthday?: string; // ISO date string, e.g. "1998-04-12"
   address?: string;
+  /** E1: Off / View / Manage per office area. Missing means Manage everywhere (see parish-admin/access.ts). */
+  areaAccess?: Record<string, "off" | "view" | "manage"> | null;
 }
 
 /** Mirrors `audit_log`. `parishId` is null for platform-level actions. */

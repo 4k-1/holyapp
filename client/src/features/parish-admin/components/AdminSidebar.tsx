@@ -13,6 +13,10 @@ import {
   ChevronDownIcon,
 } from "@/components/ui/icons/AdminIcons";
 import type { Role } from "@/types";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { userCan, type AccessArea } from "@/features/parish-admin/access";
+
+type NavItem = { to: string; label: string; area?: AccessArea };
 
 interface AdminSidebarProps {
   role: Role;
@@ -20,34 +24,40 @@ interface AdminSidebarProps {
   unreadCount?: number;
 }
 
-const recordLinks = [
-  { to: "records/baptismal", label: "Baptismal" },
-  { to: "records/confirmation", label: "Confirmation" },
-  { to: "records/marriage", label: "Marriage" },
-  { to: "records/death", label: "Death" },
-  { to: "records/ledgers", label: "Digitized Ledgers" },
+const recordLinks: NavItem[] = [
+  { to: "records/baptismal", label: "Baptismal", area: "registers" },
+  { to: "records/confirmation", label: "Confirmation", area: "registers" },
+  { to: "records/marriage", label: "Marriage", area: "registers" },
+  { to: "records/death", label: "Death", area: "registers" },
+  { to: "records/ledgers", label: "Digitized Ledgers", area: "registers" },
 ];
 
-const requestLinks = [
-  { to: "requests", label: "Certificate Requests" },
-  { to: "marriage-applications", label: "Marriage Applications" },
-  { to: "mass-intentions", label: "Mass Intentions" },
+const requestLinks: NavItem[] = [
+  { to: "requests", label: "Certificate Requests", area: "certificates" },
+  { to: "marriage-applications", label: "Marriage Applications", area: "marriage" },
+  { to: "mass-intentions", label: "Mass Intentions", area: "intentions" },
 ];
 
-const reportLinks = [
+const reportLinks: NavItem[] = [
   { to: "reports/day", label: "Day Summary" },
-  { to: "reports/sacraments", label: "Sacraments" },
-  { to: "reports/certificates", label: "Certificates" },
-  { to: "reports/donations", label: "Donations" },
-  { to: "reports/intentions", label: "Mass Intentions" },
+  { to: "reports/sacraments", label: "Sacraments", area: "registers" },
+  { to: "reports/certificates", label: "Certificates", area: "certificates" },
+  { to: "reports/donations", label: "Donations", area: "donations" },
+  { to: "reports/intentions", label: "Mass Intentions", area: "intentions" },
 ];
 
 export function AdminSidebar({ role, collapsed, unreadCount = 0 }: AdminSidebarProps) {
   const location = useLocation();
+  const user = useCurrentUser();
+  // E1: staff only see the areas they have at least View on.
+  const allowed = (l: NavItem) => !l.area || userCan(user, l.area);
+  const requestItems = requestLinks.filter(allowed);
+  const recordItems = recordLinks.filter(allowed);
+  const reportItems = reportLinks.filter(allowed);
 
-  const requestsActive = requestLinks.some((l) => pathMatches(location.pathname, l.to));
-  const recordsActive = recordLinks.some((l) => pathMatches(location.pathname, l.to));
-  const reportsActive = reportLinks.some((l) => pathMatches(location.pathname, l.to));
+  const requestsActive = requestItems.some((l) => pathMatches(location.pathname, l.to));
+  const recordsActive = recordItems.some((l) => pathMatches(location.pathname, l.to));
+  const reportsActive = reportItems.some((l) => pathMatches(location.pathname, l.to));
 
   return (
     <aside
@@ -69,41 +79,49 @@ export function AdminSidebar({ role, collapsed, unreadCount = 0 }: AdminSidebarP
           badge={unreadCount}
         />
 
-        <SidebarGroup
-          icon={<InboxIcon />}
-          label="Requests"
-          active={requestsActive}
-          collapsed={collapsed}
-          links={requestLinks}
-        >
-          {requestLinks.map((l) => (
-            <SidebarSubLink key={l.to} to={l.to} label={l.label} />
-          ))}
-        </SidebarGroup>
+        {requestItems.length > 0 && (
+          <SidebarGroup
+            icon={<InboxIcon />}
+            label="Requests"
+            active={requestsActive}
+            collapsed={collapsed}
+            links={requestItems}
+          >
+            {requestItems.map((l) => (
+              <SidebarSubLink key={l.to} to={l.to} label={l.label} />
+            ))}
+          </SidebarGroup>
+        )}
 
-        <SidebarGroup
-          icon={<FolderIcon />}
-          label="Records"
-          active={recordsActive}
-          collapsed={collapsed}
-          links={recordLinks}
-        >
-          {recordLinks.map((l) => (
-            <SidebarSubLink key={l.to} to={l.to} label={l.label} />
-          ))}
-        </SidebarGroup>
+        {recordItems.length > 0 && (
+          <SidebarGroup
+            icon={<FolderIcon />}
+            label="Records"
+            active={recordsActive}
+            collapsed={collapsed}
+            links={recordItems}
+          >
+            {recordItems.map((l) => (
+              <SidebarSubLink key={l.to} to={l.to} label={l.label} />
+            ))}
+          </SidebarGroup>
+        )}
 
-        <SidebarLink to="schedule" icon={<CalendarIcon />} label="Schedule" collapsed={collapsed} />
-        <SidebarLink to="donations" icon={<HeartIcon />} label="Donations" collapsed={collapsed} />
+        {userCan(user, "schedule") && (
+          <SidebarLink to="schedule" icon={<CalendarIcon />} label="Schedule" collapsed={collapsed} />
+        )}
+        {userCan(user, "donations") && (
+          <SidebarLink to="donations" icon={<HeartIcon />} label="Donations" collapsed={collapsed} />
+        )}
         <SidebarLink to="staff" icon={<UsersIcon />} label="Staff" collapsed={collapsed} />
         <SidebarGroup
           icon={<ChartIcon />}
           label="Reports"
           active={reportsActive}
           collapsed={collapsed}
-          links={reportLinks}
+          links={reportItems}
         >
-          {reportLinks.map((l) => (
+          {reportItems.map((l) => (
             <SidebarSubLink key={l.to} to={l.to} label={l.label} />
           ))}
         </SidebarGroup>

@@ -23,6 +23,8 @@ import { useAsync } from "@/hooks/useAsync";
 import "@/features/parish-admin/styles/adminDesk.css";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { userCan } from "@/features/parish-admin/access";
 
 const PREPARATION: ApplicationStage[] = ["documents", "interview", "precana", "banns"];
 
@@ -87,6 +89,7 @@ function WarningIcon() {
 }
 
 export function AdminMarriageApplicationsPage() {
+  const canCreate = userCan(useCurrentUser(), "marriage", "manage");
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   // The dashboard's "New marriage application" opens the walk-in form straight away.
@@ -184,9 +187,11 @@ export function AdminMarriageApplicationsPage() {
             >
               Banns
             </Link>
-            <AdminButton type="button" onClick={() => setCreateOpen(true)}>
-              + New application
-            </AdminButton>
+            {canCreate && (
+              <AdminButton type="button" onClick={() => setCreateOpen(true)}>
+                + New application
+              </AdminButton>
+            )}
           </div>
         }
       />

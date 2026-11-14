@@ -4,6 +4,7 @@ const { hashPassword } = require('../utils/password');
 const { writeAudit } = require('../utils/audit');
 const { notifyStaffRoleChange } = require('../utils/notify');
 const { revokeUserSessions } = require('../utils/sessions');
+const { FULL_ACCESS, normalizeAccess, parseAccessInput } = require('../constants/staffAccess');
 
 const { PERSONNEL_ROLES, rankForHonorific, splitHonorific, formatPersonName } = require('../constants/personnelRoles');
 const { assertCanBeParishPriest } = require('../utils/personnel');
@@ -32,7 +33,19 @@ function toStaff(row) {
     status: row.status === 'active' ? 'Active' : 'Inactive',
     accessRole: row.role === ROLES.PARISH_ADMIN ? 'admin' : 'staff',
     personnelId: row.personnel_id || null,
+    // E1: what this sign-in can open. Admins always have every area.
+    areaAccess: row.role === ROLES.PARISH_STAFF ? normalizeAccess(row.staff_access) : { ...FULL_ACCESS },
   };
+}
+
+/**
+ * The area access sent with a create or update. Admins don't keep one (they have every area), so it's null.
+ * Returns undefined when it was sent but isn't a complete, valid map; null when nothing was sent.
+ */
+function readAreaAccess(body, accessRole) {
+  if (accessRole === 'admin') return null;
+  if (body.areaAccess == null) return null;
+  return parseAccessInput(body.areaAccess) || undefined;
 }
 
 function splitName(name) {
@@ -51,7 +64,7 @@ function accessToRole(accessRole) {
 
 async function loadOfficeUser(parishId, userId) {
   const result = await pool.query(
-    `SELECT u.id, u.email, u.role, u.status, u.first_name, u.middle_name, u.last_name,
+    `SELECT u.id, u.email, u.role, u.status, u.first_name, u.middle_name, u.last_name, u.staff_access,
             p.full_name AS personnel_name, p.role_title, p.id AS personnel_id, p.honorific, p.post_nominals
      FROM app_user u
      LEFT JOIN parish_personnel p ON p.user_id = u.id
@@ -82,8 +95,8 @@ async function upsertPersonnel({ parishId, userId, fullName, roleTitle, status }
   if (person) {
     await pool.query(
       `UPDATE parish_personnel
-       SET full_name = $1, role_title = $2, status = $3, honorific = $5, clergy_rank = $6,
-           role_scope = CASE WHEN role_title = $2 THEN role_scope END, updated_at = NOW()
+       SET full_name = $1, role_title = $2::varchar, status = $3, honorific = $5, clergy_rank = $6,
+           role_scope = CASE WHEN role_title = $2::varchar THEN role_scope END, updated_at = NOW()
        WHERE user_id = $4`,
       [typed.name, roleTitle, personnelStatus, userId, honorific, rankForHonorific(honorific)]
     );
@@ -99,7 +112,7 @@ async function upsertPersonnel({ parishId, userId, fullName, roleTitle, status }
 async function listStaff(req, res) {
   try {
     const result = await pool.query(
-      `SELECT u.id, u.email, u.role, u.status, u.first_name, u.middle_name, u.last_name,
+      `SELECT u.id, u.email, u.role, u.status, u.first_name, u.middle_name, u.last_name, u.staff_access,
               p.full_name AS personnel_name, p.role_title, p.honorific, p.post_nominals, p.id AS personnel_id
        FROM app_user u
        LEFT JOIN parish_personnel p ON p.user_id = u.id
@@ -124,6 +137,10 @@ async function createStaff(req, res) {
   let roleTitle = JOB_TITLES.has(req.body.role) ? req.body.role : 'Admin Staff';
   const accessRole = req.body.accessRole === 'admin' ? 'admin' : 'staff';
   const personnelId = req.body.personnelId ? String(req.body.personnelId) : null;
+  const areaAccess = readAreaAccess(req.body, accessRole);
+  if (areaAccess === undefined) {
+    return res.status(400).json({ error: 'Choose Off, View or Manage for every area.' });
+  }
 
   try {
     let person = null;
@@ -161,11 +178,11 @@ async function createStaff(req, res) {
     const userRole = accessToRole(accessRole);
     const inserted = await pool.query(
       `INSERT INTO app_user (
-         parish_id, role, first_name, last_name, email, password_hash, status, email_verified_at
+         parish_id, role, first_name, last_name, email, password_hash, status, email_verified_at, staff_access
        )
-       VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), $7)
        RETURNING id, email, role, status, first_name, last_name`,
-      [req.parishId, userRole, firstName, lastName, email, passwordHash]
+      [req.parishId, userRole, firstName, lastName, email, passwordHash, areaAccess]
     );
     const user = inserted.rows[0];
     if (person) {
@@ -188,7 +205,7 @@ async function createStaff(req, res) {
       action: 'app_user.created',
       entityType: 'app_user',
       entityId: user.id,
-      metadata: { role: userRole, email, linkedPersonnelId: person ? person.id : null },
+      metadata: { role: userRole, email, linkedPersonnelId: person ? person.id : null, areaAccess },
     });
 
     const loaded = await loadOfficeUser(req.parishId, user.id);
@@ -203,9 +220,13 @@ async function updateStaff(req, res) {
   const email = String(req.body.email || '').trim().toLowerCase();
   const roleTitle = JOB_TITLES.has(req.body.role) ? req.body.role : 'Admin Staff';
   const accessRole = req.body.accessRole === 'admin' ? 'admin' : 'staff';
+  const sentAccess = readAreaAccess(req.body, accessRole);
 
   if (!name || !email) {
     return res.status(400).json({ error: 'Name and email are required.' });
+  }
+  if (sentAccess === undefined) {
+    return res.status(400).json({ error: 'Choose Off, View or Manage for every area.' });
   }
 
   try {
@@ -213,6 +234,12 @@ async function updateStaff(req, res) {
     if (!current) {
       return res.status(404).json({ error: 'Staff account not found.' });
     }
+    // Leaving areaAccess out keeps what they have; becoming an admin clears it (admins have every area).
+    const nextAccess =
+      accessRole === 'admin' ? null : req.body.areaAccess == null ? current.staff_access : sentAccess;
+    const areasChanged =
+      accessRole === 'staff' &&
+      JSON.stringify(normalizeAccess(current.staff_access)) !== JSON.stringify(normalizeAccess(nextAccess));
 
     if (current.id === req.user.id && current.role === ROLES.PARISH_ADMIN && accessRole !== 'admin') {
       return res.status(400).json({ error: "You can't remove your own admin access." });
@@ -238,9 +265,9 @@ async function updateStaff(req, res) {
     const nextRole = accessToRole(accessRole);
     await pool.query(
       `UPDATE app_user
-       SET first_name = $1, last_name = $2, email = $3, role = $4, updated_at = NOW()
+       SET first_name = $1, last_name = $2, email = $3, role = $4, staff_access = $6, updated_at = NOW()
        WHERE id = $5`,
-      [firstName, lastName, email, nextRole, current.id]
+      [firstName, lastName, email, nextRole, current.id, nextAccess]
     );
     await upsertPersonnel({
       parishId: req.parishId,
@@ -255,7 +282,9 @@ async function updateStaff(req, res) {
       action: 'app_user.updated',
       entityType: 'app_user',
       entityId: current.id,
-      metadata: { role: nextRole, email },
+      metadata: areasChanged
+        ? { role: nextRole, email, areaAccess: { from: normalizeAccess(current.staff_access), to: normalizeAccess(nextAccess) } }
+        : { role: nextRole, email },
     });
 
     const accessChanged = current.role !== nextRole;

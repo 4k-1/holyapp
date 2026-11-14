@@ -1,6 +1,7 @@
 // src/features/parish-admin/settings/types.ts
 import { PERSONNEL_ROLES } from "@/features/parish-admin/staff/staffRoles";
 import type { SacramentType } from "@/types";
+import type { AreaAccess } from "@/features/parish-admin/access";
 
 export interface ParishProfile {
   name: string;
@@ -59,11 +60,15 @@ export interface StaffAccount {
   accessRole: StaffAccessRole;
   /** Their row on the Staff list, used for the handover when they leave. */
   personnelId?: string | null;
+  /** E1: Off / View / Manage per area. Admins always have Manage everywhere. */
+  areaAccess: AreaAccess;
 }
 
 export type NewStaffInput = Pick<StaffAccount, "name" | "email" | "role" | "accessRole"> & {
   /** Someone already on the Staff list to attach the sign-in to; their name and role are kept. */
   personnelId?: string;
+  /** Sent for staff access only; admins have every area. */
+  areaAccess?: AreaAccess;
 };
 
 export interface LoginSession {

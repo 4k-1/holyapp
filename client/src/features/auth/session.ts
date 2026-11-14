@@ -21,6 +21,7 @@ export interface BackendAuthUser {
   created_at?: string | null;
   birthday?: string | null;
   address?: string | null;
+  area_access?: Record<string, "off" | "view" | "manage"> | null;
 }
 
 export interface BackendAuthResponse {
@@ -55,6 +56,7 @@ export function mapBackendUser(user: BackendAuthUser, status: UserStatus = "acti
     createdAt: user.created_at ?? undefined,
     birthday: user.birthday ?? undefined,
     address: user.address ?? undefined,
+    areaAccess: user.area_access ?? null,
   };
 }
 

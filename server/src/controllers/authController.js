@@ -5,6 +5,7 @@ const { sendMail, verificationEmail, passwordResetEmail, twoFactorEmail } = requ
 const { writeAudit } = require('../utils/audit');
 const { encrypt, decrypt } = require('../utils/fieldCrypto');
 const { requestMeta } = require('../utils/sessionMeta');
+const { FULL_ACCESS, normalizeAccess } = require('../constants/staffAccess');
 const {
   signAccessToken,
   accessTokenExpiresInSeconds,
@@ -19,7 +20,7 @@ const {
 const USER_COLUMNS = `
   id, parish_id, role, first_name, middle_name, last_name, email,
   password_hash, status, contact_number, email_verified_at, created_at,
-  birthday, address, two_factor_enabled
+  birthday, address, two_factor_enabled, staff_access
 `;
 
 function dateOnly(value) {
@@ -51,7 +52,15 @@ function publicUser(user) {
     created_at: user.created_at ? new Date(user.created_at).toISOString() : null,
     birthday: dateOnly(user.birthday),
     address: decrypt(user.address) || null,
+    // E1: which office areas this sign-in can open (null for parishioners and super admins).
+    area_access: officeAreaAccess(user),
   };
+}
+
+function officeAreaAccess(user) {
+  if (user.role === ROLES.PARISH_STAFF) return normalizeAccess(user.staff_access);
+  if (user.role === ROLES.PARISH_ADMIN) return { ...FULL_ACCESS };
+  return null;
 }
 
 async function persistRefreshToken(userId, tokenHash, meta = {}) {
@@ -473,7 +482,8 @@ async function refresh(req, res) {
          u.email_verified_at,
          u.created_at,
          u.birthday,
-         u.address
+         u.address,
+         u.staff_access
        FROM refresh_token rt
        JOIN app_user u ON u.id = rt.user_id
        WHERE rt.token_hash = $1`,

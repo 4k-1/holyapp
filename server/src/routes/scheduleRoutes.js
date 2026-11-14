@@ -2,6 +2,7 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/rbac');
 const { scopeParish, requireParish } = require('../middleware/scopeParish');
 const { ROLES } = require('../constants/roles');
+const { requireArea } = require('../middleware/areaAccess');
 const {
   listMonth,
   listBlocks,
@@ -28,13 +29,15 @@ const office = [
   scopeParish,
   requireParish,
   requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  requireArea('schedule'),
 ];
 
 router.get('/mass-times', ...signedIn, listMassTimes);
 router.get('/month', ...office, listMonth);
 router.get('/blocks', ...office, listBlocks);
-router.get('/staff', ...office, listStaffNames);
-router.post('/conflicts', ...office, checkConflict);
+// Names for assigning a minister; marriage applications use it too, so any office sign-in may read it.
+router.get('/staff', ...signedIn, requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF), listStaffNames);
+router.post('/conflicts', ...office.slice(0, -1), requireArea('schedule', 'view'), checkConflict);
 router.get('/calendar-day', ...office, calendarDay);
 router.get('/funeral-slots', ...office, funeralSlots);
 router.post('/funerals', ...office, bookFuneral);

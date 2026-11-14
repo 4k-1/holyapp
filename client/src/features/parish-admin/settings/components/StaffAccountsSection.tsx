@@ -13,6 +13,7 @@ import type { NewStaffInput, StaffAccount, StaffRole } from "../types";
 import { notifyError } from "@/lib/notify";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { SettingsPanel } from "./SettingsUI";
+import { describeAccess } from "@/features/parish-admin/access";
 
 const ROLE_AVATAR_STYLES: Record<StaffRole, string> = {
   Priest: "bg-admin-gold-100 text-admin-gold-700",
@@ -132,11 +133,15 @@ export function StaffAccountsSection() {
       key: "access",
       header: "Access",
       sortValue: (s) => s.accessRole,
-      render: (s) => (
-        <AdminBadge tone={s.accessRole === "admin" ? "gold" : "muted"}>
-          {s.accessRole === "admin" ? "Admin access" : "Staff access"}
-        </AdminBadge>
-      ),
+      render: (s) =>
+        s.accessRole === "admin" ? (
+          <AdminBadge tone="gold">Admin access</AdminBadge>
+        ) : (
+          <div className="min-w-0">
+            <AdminBadge tone="muted">Staff access</AdminBadge>
+            <p className="mt-0.5 truncate text-admin-support text-admin-ink-faint">{describeAccess(s.areaAccess)}</p>
+          </div>
+        ),
     },
     {
       key: "actions",

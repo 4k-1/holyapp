@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { listPersonnel, type ParishPerson } from "@/features/parish-admin/staff/api/personnelApi";
 import { AccessOption } from "@/features/parish-admin/staff/components/AccessOption";
+import { ACCESS_PRESETS, type AreaAccess } from "@/features/parish-admin/access";
+import { AreaAccessEditor } from "./AreaAccessEditor";
 import { STAFF_ROLES } from "../types";
 import type { NewStaffInput, StaffAccessRole, StaffAccount, StaffRole } from "../types";
 import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
@@ -30,6 +32,10 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
     account ? (STAFF_ROLES.includes(account.role) ? account.role : "") : STAFF_ROLES[0]
   );
   const [accessRole, setAccessRole] = useState<StaffAccessRole>(account?.accessRole ?? "staff");
+  /** New sign-ins start as Secretary; an admin being moved to staff starts from Full staff access. */
+  const [areaAccess, setAreaAccess] = useState<AreaAccess>(() =>
+    account?.accessRole === "staff" ? { ...account.areaAccess } : { ...ACCESS_PRESETS[account ? 4 : 0].access }
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   /** New sign-ins usually go to someone already on the Staff list, so nobody ends up listed twice. */
@@ -72,10 +78,11 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
     setSaving(true);
     setError("");
     try {
+      const access = accessRole === "staff" ? { areaAccess } : {};
       await onSave(
         linkedPerson
-          ? { personnelId: linkedPerson.id, name: linkedPerson.name, role: linkedPerson.role, email: email.trim(), accessRole }
-          : { name: name.trim(), email: email.trim(), role, accessRole }
+          ? { personnelId: linkedPerson.id, name: linkedPerson.name, role: linkedPerson.role, email: email.trim(), accessRole, ...access }
+          : { name: name.trim(), email: email.trim(), role, accessRole, ...access }
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -87,7 +94,7 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
     <AdminModalFrame
       onClose={onClose}
       busy={saving}
-      panelClassName="max-w-[500px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
+      panelClassName="max-w-[580px] rounded-[var(--radius)] border border-admin-border bg-admin-surface shadow-[0_12px_40px_-6px_rgba(10,40,30,0.25)]"
     >
       <div className="flex items-center justify-between border-b border-admin-border px-6 py-4">
         <h3 className="font-serif text-admin-section font-semibold text-admin-ink">
@@ -103,7 +110,7 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
         </button>
       </div>
 
-      <div className="space-y-3.5 px-6 py-5">
+      <div className="max-h-[70vh] space-y-3.5 overflow-y-auto px-6 py-5">
         {!isEditing && unlinked.length > 0 && (
           <AdminField label="Who is this sign-in for?" className="mb-0">
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -192,7 +199,7 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
               selected={accessRole === "staff"}
               disabled={lockAdminAccess}
               title="Staff access"
-              description="Records, requests, donations, and schedule."
+              description="Only the areas you choose below."
               onSelect={() => setAccessRole("staff")}
             />
             <AccessOption
@@ -208,6 +215,12 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
             </p>
           )}
         </AdminField>
+
+        {accessRole === "staff" && (
+          <AdminField label="What they can open" className="mb-0">
+            <AreaAccessEditor value={areaAccess} onChange={setAreaAccess} />
+          </AdminField>
+        )}
 
         {accessChanged && (
           <div className="rounded-md border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">

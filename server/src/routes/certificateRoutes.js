@@ -2,6 +2,7 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/rbac');
 const { scopeParish, requireParish } = require('../middleware/scopeParish');
 const { ROLES } = require('../constants/roles');
+const { requireArea } = require('../middleware/areaAccess');
 const {
   verifyCertificate,
   listMyCertificates,
@@ -15,7 +16,7 @@ const {
 } = require('../controllers/certificateController');
 
 const router = express.Router();
-const office = [authenticate, scopeParish, requireParish, requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF)];
+const office = [authenticate, scopeParish, requireParish, requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF), requireArea('certificates')];
 
 router.get('/verify/:hash', verifyCertificate);
 router.get('/unconfirmed', ...office, listUnconfirmed);
@@ -35,6 +36,7 @@ router.post(
   scopeParish,
   requireParish,
   requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  requireArea('certificates'),
   revokeCertificate
 );
 router.get(
@@ -43,6 +45,7 @@ router.get(
   scopeParish,
   requireParish,
   requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  requireArea('certificates'),
   getOfficeCertificate
 );
 router.post(
@@ -51,6 +54,7 @@ router.post(
   scopeParish,
   requireParish,
   requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  requireArea('certificates'),
   reprintCertificate
 );
 router.get(
@@ -59,6 +63,7 @@ router.get(
   scopeParish,
   requireParish,
   requireRole(ROLES.PARISHIONER, ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  requireArea('certificates', 'view'),
   downloadPdf
 );
 

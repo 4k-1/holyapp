@@ -35,6 +35,7 @@ import { baptismRecordRef, recordFullName as baptismFullName } from "@/features/
 import type { IssuedRecordCertificate } from "@/features/parish-admin/records/types";
 import type { Parish } from "@/types";
 import { PAGE_TITLE_CLASS, RECORD_DETAIL_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
+import { userCan } from "@/features/parish-admin/access";
 
 export function AdminDeathRecordDetailPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
@@ -42,6 +43,7 @@ export function AdminDeathRecordDetailPage() {
   const navigate = useNavigate();
   const user = useCurrentUser();
   const canEdit = canEditSacramentalRecords(user?.role);
+  const canIssue = userCan(user, "certificates", "manage");
   const id = decodeURIComponent(recordId);
 
   const { data: record, loading, refetch } = useAsync(() => getDeathRecord(parish.id, id), [parish.id, id]);
@@ -111,10 +113,12 @@ export function AdminDeathRecordDetailPage() {
         </div>
 
         <div className="flex shrink-0 flex-col gap-2">
-          <AdminButton onClick={() => setCertificateModal("new")}>
-            <FileIcon />
-            Generate Certificate
-          </AdminButton>
+          {canIssue && (
+            <AdminButton onClick={() => setCertificateModal("new")}>
+              <FileIcon />
+              Generate Certificate
+              </AdminButton>
+          )}
           {canEdit && (
             <div className="flex gap-2">
               <AdminButton variant="secondary" className="flex-1" onClick={() => navigate("edit")}>

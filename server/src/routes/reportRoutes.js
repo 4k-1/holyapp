@@ -2,6 +2,7 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/rbac');
 const { scopeParish, requireParish } = require('../middleware/scopeParish');
 const { ROLES } = require('../constants/roles');
+const { requireArea } = require('../middleware/areaAccess');
 const {
   getSacramentReport,
   getCertificateReport,
@@ -20,12 +21,12 @@ const office = [
 ];
 
 // Each takes optional ?from=YYYY-MM-DD&to=YYYY-MM-DD.
-router.get('/sacraments', ...office, getSacramentReport);
-router.get('/certificates', ...office, getCertificateReport);
+router.get('/sacraments', ...office, requireArea('registers'), getSacramentReport);
+router.get('/certificates', ...office, requireArea('certificates'), getCertificateReport);
 // Every issued copy, one row each (A7): ?from=&to= by the day it was issued.
-router.get('/certificates/copies', ...office, listIssuedCopies);
-router.get('/donations', ...office, getDonationReport);
-router.get('/intentions', ...office, getIntentionReport);
+router.get('/certificates/copies', ...office, requireArea('certificates'), listIssuedCopies);
+router.get('/donations', ...office, requireArea('donations'), getDonationReport);
+router.get('/intentions', ...office, requireArea('intentions'), getIntentionReport);
 // One day's copies, receipts and money: ?date=YYYY-MM-DD (default today, Philippine time)&staffId=…
 router.get('/day', ...office, getDaySummary);
 

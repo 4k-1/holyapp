@@ -474,6 +474,13 @@ Several titles per person, honorifics and dated assignments are already covered 
 
 ### E1. Access per area (priority: high)
 
+**Done (2026-11-14).** Migration 042 adds `app_user.staff_access` (JSONB; NULL means Manage everywhere, so
+existing staff kept their access). Areas and presets live in `server/src/constants/staffAccess.js` and
+`client/src/features/parish-admin/access.ts`; `requireArea()` in `server/src/middleware/areaAccess.js` checks each
+office route (reads need View, changes need Manage). The grid is in Settings → Staff Accounts → Edit. The
+dashboard leaves out counts, tasks, events and activity from areas a staff member can't view, and only offers the
+quick actions they can do.
+
 - **Today:** a sign-in is either Admin or Staff, and every Staff sign-in can manage both registers and
   certificate requests. The `permission` / `role_permission` tables only switch a few broad rights
   on or off for a whole role, not for each person.

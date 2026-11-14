@@ -5,6 +5,8 @@ import {
   type UnconfirmedCertificate,
 } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import { UnconfirmedPrintsList } from "./UnconfirmedPrintsCard";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { userCan } from "@/features/parish-admin/access";
 import {
   TASK_GROUP_LABEL,
   buildTasks,
@@ -24,14 +26,18 @@ const GROUPS: TaskGroup[] = ["mass", "today", "week"];
  * and finished ones stay greyed until the day ends so the progress shows.
  */
 export function TodayTasksCard({ counts, scope }: { counts: TaskCounts; scope: string }) {
-  const [copies, setCopies] = useState<UnconfirmedCertificate[] | null>(null);
+  const [fetched, setCopies] = useState<UnconfirmedCertificate[] | null>(null);
   const [printsOpen, setPrintsOpen] = useState(false);
+  // E1: unconfirmed prints belong to Certificates; without it there is nothing to ask.
+  const seesCertificates = userCan(useCurrentUser(), "certificates");
+  const copies = seesCertificates ? fetched : [];
 
   useEffect(() => {
+    if (!seesCertificates) return;
     listUnconfirmedCertificates()
       .then(setCopies)
       .catch(() => setCopies([]));
-  }, []);
+  }, [seesCertificates]);
 
   const unconfirmed = copies === null ? null : copies.length;
   const peaks = useMemo(

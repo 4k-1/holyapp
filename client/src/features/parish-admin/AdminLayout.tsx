@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchCurrentProfile } from "@/features/auth/api/authApi";
 import { Outlet, useLocation, useOutletContext } from "react-router-dom";
 import { PageEnter } from "@/components/ui/PageEnter";
 import { AdminSidebar } from "@/features/parish-admin/components/AdminSidebar";
@@ -20,6 +21,11 @@ export function AdminLayout() {
   );
 
   // On phones the open sidebar covers the page, so close it once a link takes you somewhere.
+  // E1: pick up access changes the admin made since this browser last signed in.
+  useEffect(() => {
+    fetchCurrentProfile().catch(() => {});
+  }, []);
+
   const { pathname } = useLocation();
   const [lastPath, setLastPath] = useState(pathname);
   if (pathname !== lastPath) {

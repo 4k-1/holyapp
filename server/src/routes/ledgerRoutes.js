@@ -2,12 +2,13 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/rbac');
 const { scopeParish, requireParish } = require('../middleware/scopeParish');
 const { ROLES } = require('../constants/roles');
+const { requireArea } = require('../middleware/areaAccess');
 const ledger = require('../controllers/ledgerController');
 
 const router = express.Router();
 const base = [authenticate, scopeParish, requireParish];
 // Parish admins and staff look through the registers and make records from them.
-const office = [...base, requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF)];
+const office = [...base, requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF), requireArea('registers')];
 // Only parish admins add books and pages, or remove a page.
 const admin = [...base, requireRole(ROLES.PARISH_ADMIN)];
 
@@ -24,6 +25,6 @@ router.get('/search-text', ...office, ledger.listSearchText);
 router.get('/pages/:pageId/image', ...office, ledger.getPageImage);
 router.delete('/pages/:pageId', ...admin, ledger.deletePage);
 router.get('/pages/:pageId/reading', ...office, ledger.getPageReading);
-router.post('/pages/:pageId/read', ...office, ledger.readPage);
+router.post('/pages/:pageId/read', ...office, requireArea('registers', 'manage'), ledger.readPage);
 
 module.exports = router;

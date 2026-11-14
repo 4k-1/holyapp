@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { userCan } from "@/features/parish-admin/access";
 
 export function RecordRegisterActions({
   showArchived,
@@ -7,12 +9,14 @@ export function RecordRegisterActions({
   showArchived: boolean;
   onToggleArchived: () => void;
 }) {
+  // E1: staff with View on the registers can look but not add.
+  const canAdd = userCan(useCurrentUser(), "registers", "manage");
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
       <button type="button" className="admin-dash__cta-ghost" onClick={onToggleArchived}>
         {showArchived ? "Active records" : "Archived"}
       </button>
-      {!showArchived && (
+      {!showArchived && canAdd && (
         <Link to="new" className="admin-dash__cta-primary">
           <PlusIcon />
           Add record

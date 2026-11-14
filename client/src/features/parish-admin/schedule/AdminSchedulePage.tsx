@@ -13,10 +13,14 @@ import { AssignBlockModal } from "./components/AssignBlockModal";
 import { FuneralBookingModal } from "./components/FuneralBookingModal";
 import type { LiturgicalDay, ScheduleBlock, ScheduleOccurrence } from "./types";
 import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { userCan } from "@/features/parish-admin/access";
 
 const TODAY_ISO = toISO(new Date());
 
 export function AdminSchedulePage() {
+  // E1: staff with View on the schedule can look but not book or add.
+  const canChange = userCan(useCurrentUser(), "schedule", "manage");
   // The dashboard links here with ?needs=record to list sacraments still to be written in the register.
   const [searchParams] = useSearchParams();
   const needsRecording = searchParams.get("needs") === "record";
@@ -94,12 +98,14 @@ export function AdminSchedulePage() {
         title="Parish Schedule & Events"
         description="Baptisms, weddings, funerals, and other events. Regular Masses are in Settings."
         actions={
+          canChange && (
           <div className="flex flex-wrap gap-2">
             <AdminButton variant="secondary" onClick={() => setBookingFuneral(true)}>
               Book a funeral
             </AdminButton>
             <AdminButton onClick={() => setAddModalDate(selectedDate)}>+ Add block</AdminButton>
           </div>
+          )
         }
       />
 

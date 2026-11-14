@@ -2,6 +2,8 @@
 // (the ?new=… link is read by that page), the rest go to the page where the job is done.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { userCan, type AccessArea } from "@/features/parish-admin/access";
 
 const BOOKS = [
   { label: "Baptism", path: "records/baptismal" },
@@ -14,31 +16,40 @@ const TILE =
   "admin-dash__nested flex w-full items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dash-green)]";
 
 export function QuickActionsCard() {
+  // E1: only the jobs this sign-in can actually do. Today's summary is everyone's.
+  const user = useCurrentUser();
+  const can = (area: AccessArea, level: "view" | "manage" = "manage") => userCan(user, area, level);
   return (
     <section className="admin-dash__card mb-5 p-4 sm:mb-6 sm:p-5" aria-label="Quick actions">
       <h2 className="mb-3.5 text-[0.95rem] font-semibold text-[var(--dash-ink)]">Quick actions</h2>
       <ul className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-        <Tile to="donations?new=donation" icon={<CoinIcon />} label="Record a donation" />
-        <Tile to="marriage-applications?new=application" icon={<RingsIcon />} label="New marriage application" />
-        <Tile to="schedule?new=funeral" icon={<CrossIcon />} label="Book a funeral" />
-        <Tile to="mass-intentions" icon={<CandleIcon />} label="Book a Mass intention" />
-        <li>
-          <BookMenuTile
-            icon={<PlusIcon />}
-            label="Add a record"
-            note="Baptism, Confirmation…"
-            items={BOOKS.map((b) => ({ label: b.label, to: `${b.path}/new` }))}
-          />
-        </li>
-        <li>
-          <BookMenuTile
-            icon={<CertificateIcon />}
-            label="Walk-in certificate"
-            note="Find the record, then print"
-            items={BOOKS.map((b) => ({ label: `${b.label} record`, to: b.path }))}
-          />
-        </li>
-        <Tile to="marriage-applications/banns" icon={<BookIcon />} label="Sunday banns list" />
+        {can("donations") && <Tile to="donations?new=donation" icon={<CoinIcon />} label="Record a donation" />}
+        {can("marriage") && (
+          <Tile to="marriage-applications?new=application" icon={<RingsIcon />} label="New marriage application" />
+        )}
+        {can("schedule") && <Tile to="schedule?new=funeral" icon={<CrossIcon />} label="Book a funeral" />}
+        {can("intentions") && <Tile to="mass-intentions" icon={<CandleIcon />} label="Book a Mass intention" />}
+        {can("registers") && (
+          <li>
+            <BookMenuTile
+              icon={<PlusIcon />}
+              label="Add a record"
+              note="Baptism, Confirmation…"
+              items={BOOKS.map((b) => ({ label: b.label, to: `${b.path}/new` }))}
+            />
+          </li>
+        )}
+        {can("registers", "view") && can("certificates") && (
+          <li>
+            <BookMenuTile
+              icon={<CertificateIcon />}
+              label="Walk-in certificate"
+              note="Find the record, then print"
+              items={BOOKS.map((b) => ({ label: `${b.label} record`, to: b.path }))}
+            />
+          </li>
+        )}
+        {can("marriage", "view") && <Tile to="marriage-applications/banns" icon={<BookIcon />} label="Sunday banns list" />}
         <Tile to="reports/day" icon={<SummaryIcon />} label="Today’s summary" />
       </ul>
     </section>

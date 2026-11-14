@@ -2,6 +2,7 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/rbac');
 const { scopeParish, requireParish } = require('../middleware/scopeParish');
 const { ROLES } = require('../constants/roles');
+const { requireArea } = require('../middleware/areaAccess');
 const {
   createRequest,
   listMyRequests,
@@ -25,6 +26,7 @@ const office = [
   scopeParish,
   requireParish,
   requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  requireArea('certificates'),
 ];
 
 router.post('/', ...parishioner, createRequest);

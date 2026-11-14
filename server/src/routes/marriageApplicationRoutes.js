@@ -2,6 +2,7 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/rbac');
 const { scopeParish, requireParish } = require('../middleware/scopeParish');
 const { ROLES } = require('../constants/roles');
+const { requireArea } = require('../middleware/areaAccess');
 const {
   listApplications,
   getApplication,
@@ -31,6 +32,7 @@ const office = [
   scopeParish,
   requireParish,
   requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  requireArea('marriage'),
 ];
 const signedIn = [authenticate, scopeParish, requireParish];
 

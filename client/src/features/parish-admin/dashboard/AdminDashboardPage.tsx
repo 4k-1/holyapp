@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { AdminStatCard } from "@/features/parish-admin/components/AdminStatCard";
+import { userCan, type AccessArea } from "@/features/parish-admin/access";
 import { getDashboardView } from "./api/dashboardApi";
 import { QuickActionsCard } from "./QuickActionsCard";
 import { TodayTasksCard } from "./TodayTasksCard";
@@ -54,6 +55,12 @@ export function AdminDashboardPage() {
 
   const firstName = user?.firstName?.trim() || "there";
 
+  // E1: the request cards belong to Certificates and the events card to the Schedule; staff without them don't
+  // see a misleading zero. The server leaves those counts out too.
+  const seesSchedule = userCan(user, "schedule");
+  const STAT_AREA: Record<string, AccessArea> = { pending: "certificates", topay: "certificates", released: "certificates", events: "schedule" };
+  const visibleStats = stats.filter((s) => !STAT_AREA[s.id] || userCan(user, STAT_AREA[s.id]));
+
   if (loading) {
     return <p className="admin-dash__muted text-admin-body">Loading dashboard…</p>;
   }
@@ -78,8 +85,9 @@ export function AdminDashboardPage() {
         </div>
       </header>
 
+      {visibleStats.length > 0 && (
       <section className="mb-5 grid grid-cols-2 gap-3 lg:mb-6 lg:grid-cols-4 lg:gap-4" aria-label="Overview counts">
-        {stats.map((s) => (
+        {visibleStats.map((s) => (
           <AdminStatCard
             key={s.id}
             label={s.label}
@@ -89,12 +97,13 @@ export function AdminDashboardPage() {
           />
         ))}
       </section>
+      )}
 
       {tasks && <TodayTasksCard counts={tasks} scope={user?.id ?? "office"} />}
 
       <QuickActionsCard />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-5">
+      <div className={`grid grid-cols-1 gap-4 lg:gap-5 ${seesSchedule ? "lg:grid-cols-[1.15fr_0.85fr]" : ""}`}>
         <section className="admin-dash__card p-4 sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-[0.95rem] font-semibold text-[var(--dash-ink)]">Recent activity</h2>
@@ -114,6 +123,7 @@ export function AdminDashboardPage() {
           </ul>
         </section>
 
+        {seesSchedule && (
         <div className="flex flex-col gap-4 lg:gap-5">
           <section className="admin-dash__card p-4 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
@@ -164,6 +174,7 @@ export function AdminDashboardPage() {
             </ul>
           </section>
         </div>
+        )}
       </div>
     </div>
   );

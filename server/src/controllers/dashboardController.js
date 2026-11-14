@@ -1,5 +1,7 @@
 const pool = require('../config/db');
 const { sendRecordError } = require('../utils/recordFields');
+const { ROLES } = require('../constants/roles');
+const { FULL_ACCESS, normalizeAccess } = require('../constants/staffAccess');
 const schedule = require('../services/scheduleService');
 
 const WEEK_DAYS = 7;
@@ -117,7 +119,25 @@ const ACTIVITY_ACTIONS = [
   'personnel.added',
 ];
 
-async function loadActivity(parishId) {
+// E1: which area each activity line belongs to. Lines with no area (a new staff member) show to everyone.
+function activityArea(action) {
+  if (action.startsWith('certificate')) return 'certificates';
+  if (action.startsWith('baptism') || action.startsWith('confirmation') || action.startsWith('annotation')) return 'registers';
+  if (action.startsWith('marriage_application')) return 'marriage';
+  if (action.startsWith('mass_intention')) return 'intentions';
+  if (action.startsWith('donation')) return 'donations';
+  if (action.startsWith('schedule')) return 'schedule';
+  return null;
+}
+
+/** What the signed-in user may see here: staff by their area access, everyone else everything. */
+async function loadViewerAccess(req) {
+  if (req.user.role !== ROLES.PARISH_STAFF) return { ...FULL_ACCESS };
+  const result = await pool.query('SELECT staff_access FROM app_user WHERE id = $1', [req.user.id]);
+  return normalizeAccess(result.rows[0] && result.rows[0].staff_access);
+}
+
+async function loadActivity(parishId, actions = ACTIVITY_ACTIONS) {
   const result = await pool.query(
     `SELECT a.id, a.action, a.metadata, a.created_at,
             NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '') AS actor_name,
@@ -134,7 +154,7 @@ async function loadActivity(parishId) {
      WHERE a.parish_id = $1 AND a.action = ANY($2)
      ORDER BY a.created_at DESC
      LIMIT $3`,
-    [parishId, ACTIVITY_ACTIONS, ACTIVITY_LIMIT * 2]
+    [parishId, actions, ACTIVITY_LIMIT * 2]
   );
   return result.rows
     .map((row) => {
@@ -171,6 +191,11 @@ async function getDashboard(req, res) {
   try {
     const parishId = req.parishId;
     await schedule.ensureDefaultMassSchedule(parishId, req.user.id);
+    // E1: a staff member only sees counts, tasks and activity from areas they can at least view.
+    const access = await loadViewerAccess(req);
+    const can = (area) => access[area] !== 'off';
+    const zero = Promise.resolve(0);
+    const empty = Promise.resolve({ rows: [] });
 
     const now = new Date();
     const today = localISO(now);
@@ -190,23 +215,36 @@ async function getDashboard(req, res) {
          FROM certificate_request WHERE parish_id = $1`,
         [parishId, monthStart, nextMonthStart, lastMonthStart]
       ),
-      pool.query(
-        `SELECT schedule_date::text AS date, schedule_time AS time, status
-         FROM mass_intention
-         WHERE parish_id = $1 AND schedule_date >= $2 AND schedule_date < $3
-           AND status IN ('pending', 'confirmed', 'said')`,
-        [parishId, today, weekEnd]
+      can('intentions')
+        ? pool.query(
+            `SELECT schedule_date::text AS date, schedule_time AS time, status
+             FROM mass_intention
+             WHERE parish_id = $1 AND schedule_date >= $2 AND schedule_date < $3
+               AND status IN ('pending', 'confirmed', 'said')`,
+            [parishId, today, weekEnd]
+          )
+        : empty,
+      can('schedule')
+        ? pool.query(
+            `SELECT COUNT(*)::int AS n FROM event
+             WHERE parish_id = $1 AND record_status = 'Pending' AND status <> 'cancelled'
+               AND start_datetime < (NOW() AT TIME ZONE 'Asia/Manila')`,
+            [parishId]
+          )
+        : Promise.resolve({ rows: [{ n: 0 }] }),
+      can('donations') ? donationTotal(parishId, monthStart, nextMonthStart) : zero,
+      can('donations') ? donationTotal(parishId, lastMonthStart, monthStart) : zero,
+      loadActivity(
+        parishId,
+        ACTIVITY_ACTIONS.filter((action) => {
+          const area = activityArea(action);
+          return !area || can(area);
+        })
       ),
-      pool.query(
-        `SELECT COUNT(*)::int AS n FROM event
-         WHERE parish_id = $1 AND record_status = 'Pending' AND status <> 'cancelled'
-           AND start_datetime < (NOW() AT TIME ZONE 'Asia/Manila')`,
-        [parishId]
-      ),
-      donationTotal(parishId, monthStart, nextMonthStart),
-      donationTotal(parishId, lastMonthStart, monthStart),
-      loadActivity(parishId),
     ]);
+    if (!can('certificates')) {
+      Object.assign(requests.rows[0], { to_review: 0, awaiting_payment: 0, ready: 0, released_this_month: 0, released_last_month: 0 });
+    }
 
     // Intentions per Mass, keyed "date time", for the Mass rows in today's and this week's lists.
     const intentionsByMass = {};
@@ -238,7 +276,8 @@ async function getDashboard(req, res) {
     let unassigned = 0;
     for (let i = 0; i < WEEK_DAYS; i += 1) {
       const date = localISO(addDays(now, i));
-      const occurrences = schedule.getOccurrencesForDate(date, recurring, blocks, overrides);
+      // Without the schedule area the days stay (Today's tasks needs today's date) but carry no events.
+      const occurrences = can('schedule') ? schedule.getOccurrencesForDate(date, recurring, blocks, overrides) : [];
       // Events only: the parish priest settles who says the regular Masses, so the office doesn't assign them.
       unassigned += occurrences.filter((o) => o.type !== 'mass' && !o.assignee).length;
       week.push({ date, items: occurrences.map(toItem) });
@@ -309,6 +348,7 @@ async function getDashboard(req, res) {
       attention,
       week,
       activity,
+      access,
     });
   } catch (err) {
     sendRecordError(res, err);
