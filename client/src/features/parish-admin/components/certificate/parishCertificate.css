@@ -574,6 +574,25 @@
   font-size: 0.9em;
 }
 
+/* Baptism: the reason of issuance under the signatory. Its fixed height (the verse that used
+   to sit here) keeps the signature at the same place with or without a reason. */
+.pcert__sign-note {
+  margin-top: 1.4mm !important;
+  min-height: 10.2mm;
+  font-size: 7.4pt;
+  line-height: 1.3;
+  color: var(--pcert-ink);
+}
+
+.pcert__sign-note > * {
+  display: block;
+}
+
+.pcert__sign-note strong.pcert__purpose {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 /* ---------- Printing ---------- */
 
 @media print {
