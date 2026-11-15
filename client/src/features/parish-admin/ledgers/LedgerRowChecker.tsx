@@ -328,17 +328,22 @@ export function LedgerRowChecker({
   /** The row in the list that briefly lights up as it's saved. */
   const [flashRow, setFlashRow] = useState<number | null>(null);
 
-  // Saving happens at the foot of a long form: bring the next row's top, and the "saved" bar
-  // on it, back into view.
-  // When that was the last row, the "page done" panel above the form is what to see.
+  /** The pop-up that says a row was saved; it fades by itself and never takes the cursor. */
+  const [popup, setPopup] = useState<{ key: number; title: string; detail: string } | null>(null);
+  useEffect(() => {
+    if (!popup) return;
+    const timer = window.setTimeout(() => setPopup(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [popup]);
+
+  // Saving happens at the foot of a long form: go back to the top of the page, where the
+  // "saved" bar (or, after the last row, the "page done" panel) is.
   const formRef = useRef<HTMLFormElement>(null);
-  const doneRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!lastSaved) return;
-    const target = doneRef.current ?? formRef.current;
-    if (target && target.getBoundingClientRect().top < 80) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    const scroller = formRef.current?.closest("main");
+    if (scroller) scroller.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [lastSaved]);
 
   useEffect(() => {
@@ -528,6 +533,20 @@ export function LedgerRowChecker({
         id: record.id,
       });
       setFlashRow(row);
+      const name = [draft.firstName, draft.lastName].map((n) => n.trim()).filter(Boolean).join(" ");
+      const left = entries.filter((x) => !now[x.row] && !duplicateOf(x.row)).length;
+      setPopup({
+        key: row,
+        title: `Row ${row} saved as a record`,
+        detail: [
+          name,
+          left === 0
+            ? "That was the last row on this page."
+            : `${left} ${left === 1 ? "row" : "rows"} left on this page.`,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      });
     } catch (err) {
       setSaveError(
         err instanceof Error ? err.message : "Couldn't save this record.",
@@ -585,6 +604,37 @@ export function LedgerRowChecker({
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[16rem_minmax(0,1fr)]">
+      {popup && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none fixed inset-x-0 top-20 z-[200] flex justify-center px-4 print:hidden"
+        >
+          <button
+            key={popup.key}
+            type="button"
+            onClick={() => setPopup(null)}
+            aria-label={`${popup.title}. Dismiss`}
+            className="notice-in pointer-events-auto flex max-w-[26rem] items-center gap-3.5 rounded-2xl bg-admin-green-900 px-5 py-4 text-left text-white shadow-[0_18px_40px_-10px_rgb(14_59_70/0.55)]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#8ed8d2] text-admin-green-900">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-6 w-6" aria-hidden="true">
+                <path
+                  fillRule="evenodd"
+                  d="M16.7 5.3a1 1 0 0 1 0 1.4l-8 8a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4L8 12.58l7.3-7.3a1 1 0 0 1 1.4 0Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[1rem] font-semibold">{popup.title}</span>
+              {popup.detail && (
+                <span className="mt-0.5 block text-[0.85rem] text-white/80">{popup.detail}</span>
+              )}
+            </span>
+          </button>
+        </div>
+      )}
       {/* The page as a whole: where it is in the register, and every row on it. */}
       <nav
         aria-label="Rows"
@@ -709,9 +759,8 @@ export function LedgerRowChecker({
       <div className="min-w-0 space-y-4">
       {allDone && (
         <section
-          ref={doneRef}
           aria-live="polite"
-          className="admin-dash__card flex scroll-mt-20 flex-wrap items-center justify-between gap-3 border-l-[3px] border-l-[var(--dash-green)] bg-white px-5 py-4 sm:px-6"
+          className="admin-dash__card flex flex-wrap items-center justify-between gap-3 border-l-[3px] border-l-[var(--dash-green)] bg-white px-5 py-4 sm:px-6"
         >
           <div>
             <p className="text-[0.95rem] font-semibold text-[var(--dash-ink)]">
@@ -755,7 +804,7 @@ export function LedgerRowChecker({
           e.preventDefault();
           e.currentTarget.requestSubmit();
         }}
-        className="admin-dash__card scroll-mt-20 overflow-hidden bg-white"
+        className="admin-dash__card overflow-hidden bg-white"
         noValidate
       >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--dash-border)] px-5 py-3 sm:px-6">
