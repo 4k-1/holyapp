@@ -15,6 +15,7 @@ import { deriveStatusKey } from "@/features/parishioner/dashboard/deriveStatusLa
 import { getBaptismalRecord } from "@/features/parish-admin/records/api/baptismalRecordsApi";
 import { useAsync } from "@/hooks/useAsync";
 import {
+  formatRecordDate,
   initials,
   recordFullName,
 } from "@/features/parish-admin/records/baptismalHelpers";
@@ -60,14 +61,34 @@ export function AdminRequestDetailModal({
   const canReject = canRejectRequest(request);
   const subjectName = request.details?.subjectName ?? request.requesterId;
   const copies = getRequestCopyCount(request);
-  const fee = request.payment?.amount ?? 100 * copies;
+  const fee = request.payment?.amount ?? request.fee ?? 0;
   const method =
     request.payment?.method === "gcash"
       ? "GCash"
       : request.payment?.method === "cash"
         ? "Cash"
         : request.payment?.method ?? "—";
+  const paid = request.payment?.status === "paid";
   const details = request.details;
+  const people = companionLabels(request.sacramentType);
+  const requestedBy = !details?.relationship
+    ? null
+    : details.relationship === "Myself"
+      ? "The person themself"
+      : `Their ${details.relationship.toLowerCase()}`;
+  // Only what the form actually says, so a walk-in isn't a column of dashes.
+  const detailRows = (
+    [
+      ["Requested by", requestedBy],
+      ["Birthdate", details?.birthdate && formatRecordDate(details.birthdate)],
+      ["Birthplace", details?.birthplace],
+      ["Baptismal date", details?.baptismDate && formatRecordDate(details.baptismDate)],
+      ["Mother", details?.motherName],
+      ["Father", details?.fatherName],
+      [people?.[0], details?.sponsor1],
+      [people?.[1], details?.sponsor2],
+    ] as [string | undefined, string | null | undefined][]
+  ).filter((row): row is [string, string] => Boolean(row[0] && row[1]));
   const { data: linked } = useAsync(
     () =>
       request.linkedRecordId
@@ -152,46 +173,68 @@ export function AdminRequestDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-admin-ink-muted hover:bg-admin-surface-alt"
             aria-label="Close"
           >
-            ✕
+            <CloseIcon />
           </button>
         </div>
 
         {/* Body */}
         <div className="overflow-y-auto px-6 py-[18px]">
-          <div className="mb-[18px] flex items-center gap-3.5 rounded-md border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
+          {statusKey === "rejected" && (
+            <div className="mb-[18px] flex items-start gap-2.5 rounded-md border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-3">
+              <span className="mt-0.5 text-admin-red-700">
+                <AlertIcon />
+              </span>
+              <div>
+                <p className="mb-0.5 text-admin-body font-semibold text-admin-red-700">Why it was rejected</p>
+                <p className="text-admin-body text-[#7A3C35]">{request.rejectionReason || "Rejected by staff."}</p>
+              </div>
+            </div>
+          )}
+
+          {statusKey === "ready" && (
+            <div className="mb-[18px] flex items-center gap-2 rounded-md border border-admin-green-100 bg-admin-green-050 px-3.5 py-2.5 text-admin-support font-semibold text-admin-green-700">
+              <CheckIcon />
+              Printed and sealed. Ready for the parishioner to pick up at the office.
+            </div>
+          )}
+
+          <div className="mb-[18px] flex items-start gap-3.5 rounded-md border border-admin-green-100 bg-admin-green-050 px-4 py-3.5">
             <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-admin-green-700 font-serif text-admin-group font-semibold text-white">
               {initials(subjectName)}
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-serif text-admin-group font-bold text-admin-green-900">{subjectName}</p>
               <p className="mt-0.5 text-admin-support text-admin-ink-muted">
-                {request.purpose ?? "—"} · {copies} {copies > 1 ? "copies" : "copy"}
+                For {request.purpose ? request.purpose.toLowerCase() : "an unstated purpose"} · {copies}{" "}
+                {copies > 1 ? "copies" : "copy"}
               </p>
+              <div className="mt-1.5">
+                <AdminDeliveryTag method={request.deliveryMethod} />
+              </div>
             </div>
-            <AdminDeliveryTag method={request.deliveryMethod} />
           </div>
 
           <div className="mb-3.5 rounded-md border border-admin-border px-4 py-1">
-            <h4 className="mb-1 mt-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-              Request details
-            </h4>
-            <InfoRow label="Full name" value={details?.subjectName || subjectName} />
-            <InfoRow label="Birthdate" value={details?.birthdate || "—"} />
-            <InfoRow label="Birthplace" value={details?.birthplace || "—"} />
-            <InfoRow label="Mother" value={details?.motherName || "—"} />
-            <InfoRow label="Father" value={details?.fatherName || "—"} />
-            <InfoRow label="Sponsor 1" value={details?.sponsor1 || "—"} />
-            <InfoRow label="Sponsor 2" value={details?.sponsor2 || "—"} last />
+            <h4 className="mb-1 mt-3 font-sans text-admin-label font-semibold text-admin-ink">Request details</h4>
+            {detailRows.length === 0 ? (
+              <p className="pb-3 pt-1 text-admin-support text-admin-ink-muted">
+                {request.origin === "walkin"
+                  ? "Taken at the office, so there's no form. The details come from the linked record."
+                  : "Nothing else was filled in."}
+              </p>
+            ) : (
+              detailRows.map(([label, value], i) => (
+                <InfoRow key={label} label={label} value={value} last={i === detailRows.length - 1} />
+              ))
+            )}
           </div>
 
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="rounded-md border border-admin-border p-4 px-[18px]">
-              <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                Sacramental record
-              </h4>
+              <h4 className="mb-3 font-sans text-admin-label font-semibold text-admin-ink">Sacramental record</h4>
               {linked ? (
                 <Link
                   to={recordDetailPath(parish.slug, "baptismal", linked.id)}
@@ -216,34 +259,32 @@ export function AdminRequestDetailModal({
                     <AlertIcon />
                   </span>
                   <div>
-                    <p className="text-admin-body font-semibold text-admin-ink-muted">Not linked yet</p>
-                    <p className="mt-0.5 text-admin-label text-admin-ink-faint">
-                      Use &quot;Find matching record&quot; to search and link one.
+                    <p className="text-admin-body font-semibold text-admin-ink-muted">
+                      {statusKey === "pending" ? "Not linked yet" : "No record linked"}
                     </p>
+                    {statusKey === "pending" && (
+                      <p className="mt-0.5 text-admin-label text-admin-ink-faint">
+                        Use Find matching record below to search the ledger and link one.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
             <div className="rounded-md border border-admin-border p-4 px-[18px]">
-              <h4 className="mb-3 font-sans text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                Payment
-              </h4>
-              <div className="grid grid-cols-2 gap-x-5 gap-y-3.5">
-                <div>
-                  <div className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                    Certificate fee (×{copies})
-                  </div>
-                  <div className="mt-0.5 text-admin-body text-admin-ink">₱{fee}.00</div>
-                </div>
-                <div>
-                  <div className="text-admin-label font-semibold uppercase tracking-admin-label text-admin-ink-muted">
-                    Payment method
-                  </div>
-                  <div className="mt-0.5 text-admin-body text-admin-ink">{method}</div>
-                </div>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h4 className="font-sans text-admin-label font-semibold text-admin-ink">Payment</h4>
+                <AdminBadge tone={paid ? "green" : statusKey === "rejected" ? "muted" : "gold"}>
+                  {paid ? "Paid" : statusKey === "rejected" ? "Not collected" : "Unpaid"}
+                </AdminBadge>
               </div>
-              {request.payment?.status === "paid" && (
+              <InfoRow
+                label={copies > 1 ? `Fee (${copies} copies)` : "Fee"}
+                value={`₱${fee.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              />
+              <InfoRow label="Method" value={method} last />
+              {paid && request.payment && (
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-admin-support text-admin-green-700">
                     Receipt {request.payment.receiptNumber || "issued"}
@@ -260,30 +301,17 @@ export function AdminRequestDetailModal({
             </div>
           </div>
 
-          {statusKey === "ready" && (
-            <div className="inline-flex items-center gap-1.5 rounded-md border border-admin-green-100 bg-admin-green-050 px-2.5 py-1 text-xs font-semibold text-admin-green-700">
-              <CheckIcon />
-              Certificate printed and sealed — ready for parishioner pickup at the office.
-            </div>
-          )}
-
-          {statusKey === "rejected" && (
-            <div className="flex items-start gap-2.5 rounded-md border border-[#E3C3BC] bg-admin-red-100 px-3.5 py-3">
-              <span className="mt-0.5 text-admin-red-700">
-                <AlertIcon />
-              </span>
-              <div>
-                <p className="mb-0.5 text-admin-body font-semibold text-admin-red-700">Request rejected</p>
-                <p className="text-admin-body text-[#7A3C35]">
-                  {request.rejectionReason || "Rejected by staff."}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
-        <div className="flex flex-wrap justify-end gap-2.5 border-t border-admin-border px-6 py-4">
+        {payError && (
+          <p role="alert" className="border-t border-admin-border px-6 pt-3 text-right text-admin-body text-admin-red-700">
+            {payError}
+          </p>
+        )}
+        <div
+          className={`flex flex-wrap justify-end gap-2.5 px-6 py-4 ${payError ? "" : "border-t border-admin-border"}`}
+        >
           {statusKey === "pending" && (
             <>
               {canReject && (
@@ -313,7 +341,6 @@ export function AdminRequestDetailModal({
               </AdminButton>
             </>
           )}
-          {payError && <p className="mr-auto text-admin-body text-admin-red-700">{payError}</p>}
 
           {statusKey === "processing" && (
             <AdminButton onClick={() => setIssueOpen(true)}>
@@ -399,6 +426,23 @@ export function AdminRequestDetailModal({
         />
       )}
     </>
+  );
+}
+
+/** Who else the form names, by certificate: [first, second], or null when it names no one. */
+function companionLabels(type: SacramentType): [string, string?] | null {
+  if (type === "baptism") return ["Godmother", "Godfather"];
+  if (type === "confirmation") return ["Sponsor"];
+  if (type === "marriage") return ["Witness 1", "Witness 2"];
+  return null;
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+      <line x1="6" y1="6" x2="18" y2="18" strokeLinecap="round" />
+      <line x1="18" y1="6" x2="6" y2="18" strokeLinecap="round" />
+    </svg>
   );
 }
 

@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { optionalUuid } = require('../utils/recordFields');
-const { feeAmount } = require('../utils/serviceFee');
+const { feeAmount, FEE_NAMES, FEE_DEFAULTS } = require('../utils/serviceFee');
 const { normalizePurpose } = require('../constants/purposes');
 const { encryptJson, decryptJson } = require('../utils/fieldCrypto');
 
@@ -26,7 +26,13 @@ const REQUEST_COLUMNS = `
   pay.collected_by_name,
   cert.id AS issued_certificate_id,
   cert.certificate_code AS issued_certificate_code,
-  cert.status AS issued_certificate_status
+  cert.status AS issued_certificate_status,
+  (SELECT sf.amount FROM service_fee sf
+    WHERE sf.parish_id = r.parish_id
+      AND sf.service_name = CASE r.record_type
+        WHEN 'baptism' THEN '${FEE_NAMES.baptism}' WHEN 'confirmation' THEN '${FEE_NAMES.confirmation}'
+        WHEN 'marriage' THEN '${FEE_NAMES.marriage}' WHEN 'death' THEN '${FEE_NAMES.death}' END
+    LIMIT 1) AS fee_each
 `;
 
 const REQUEST_FROM = `
@@ -157,6 +163,8 @@ function toDetails(sacrament, raw) {
   if (sponsor1) details.sponsor1 = sponsor1;
   if (sponsor2) details.sponsor2 = sponsor2;
   if (sacrament === 'baptism' && fields.sacramentDate) details.baptismDate = fields.sacramentDate;
+  // Who asked: "Myself", or how they're related to the person on the certificate.
+  if (fields.relationship) details.relationship = fields.relationship;
   return details;
 }
 
@@ -191,6 +199,10 @@ function toCertificateRequest(row) {
     origin: row.request_type === 'walkin' ? 'walkin' : 'online',
     deliveryMethod: row.delivery_method,
     payment,
+    // What it costs: the amount due once there's a payment, otherwise the parish's fee for this certificate.
+    fee: payment
+      ? payment.amount
+      : Math.round((row.fee_each != null ? Number(row.fee_each) : FEE_DEFAULTS[row.record_type] || 100) * Math.max(1, Number(row.copies) || 1) * 100) / 100,
     purpose: row.purpose,
     createdAt: dateStamp(row.created_at),
     copies: row.copies,

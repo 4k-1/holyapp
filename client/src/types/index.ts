@@ -99,6 +99,8 @@ export interface CertificateRequestDetails {
   sponsor1?: string;
   sponsor2?: string;
   baptismDate?: string;
+  /** Who asked: "Myself", or how they're related to the person on the certificate ("Parent"…). */
+  relationship?: string;
 }
 
 export interface CertificateRequest {
@@ -115,6 +117,8 @@ export interface CertificateRequest {
   purpose?: string;
   createdAt: string;
   copies?: number;
+  /** What it costs in pesos: the amount due once there's a payment, else the parish's fee × copies. */
+  fee?: number;
   details?: CertificateRequestDetails;
   linkedRecordId?: string | null;
   rejectionReason?: string;
