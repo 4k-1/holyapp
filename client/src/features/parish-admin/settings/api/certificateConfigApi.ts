@@ -43,3 +43,40 @@ export async function updateCertificateConfig(
     fail(err);
   }
 }
+
+/** Form 97 (marriage) has no parish signatory, so a signature only prints on these. */
+export const SIGNED_CERTIFICATES: SacramentType[] = ["baptism", "confirmation", "death"];
+
+export const SIGNATURE_MAX_BYTES = 8 * 1024 * 1024;
+export const SIGNATURE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+/** Saves a photo of the signature for these certificates. HolyApp makes the paper see-through. */
+export async function uploadCertificateSignature(
+  types: SacramentType[],
+  file: File
+): Promise<CertificateConfigBySacrament> {
+  try {
+    const data = await apiFetch<{ certificates: CertificateConfigBySacrament }>(
+      `/parish/settings/certificates/signature?types=${types.join(",")}`,
+      { method: "PUT", rawBody: file, headers: { "Content-Type": file.type || "image/jpeg" } }
+    );
+    return cloneConfig(data.certificates);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 413) {
+      throw new Error("That image is over 8 MB. Choose a smaller one.", { cause: err });
+    }
+    fail(err);
+  }
+}
+
+export async function removeCertificateSignature(types: SacramentType[]): Promise<CertificateConfigBySacrament> {
+  try {
+    const data = await apiFetch<{ certificates: CertificateConfigBySacrament }>(
+      `/parish/settings/certificates/signature?types=${types.join(",")}`,
+      { method: "DELETE" }
+    );
+    return cloneConfig(data.certificates);
+  } catch (err) {
+    fail(err);
+  }
+}

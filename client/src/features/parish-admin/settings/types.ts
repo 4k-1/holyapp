@@ -37,6 +37,8 @@ export interface CertificateAppearance {
   signatoryTitle: string;
   numberingPrefix: string;
   footerText: string;
+  /** The signatory's signature (a PNG data URL, paper made see-through), printed on the signature line. */
+  signatureImage?: string | null;
 }
 
 export type CertificateConfigBySacrament = Record<SacramentType, CertificateAppearance>;

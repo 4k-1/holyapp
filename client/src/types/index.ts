@@ -154,6 +154,10 @@ export interface IssuedCertificateFields {
   purpose?: string;
   /** Marriage copies: the last day it is accepted (ISO date). */
   validUntil?: string;
+  /** Issued copies: who signed (from the copy) and their signature, when the parish has one on file. */
+  signatoryName?: string;
+  signatoryTitle?: string;
+  signatureImage?: string;
 }
 
 export interface IssuedCertificate {

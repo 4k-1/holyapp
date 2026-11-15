@@ -143,7 +143,9 @@ function SignatureBlock({
   return (
     <div className="pcert__signature">
       {signOff && <p className="pcert__signoff-in-sig">{signOff}</p>}
-      <div className="pcert__sign-line" />
+      <div className="pcert__sign-line">
+        {signatory.signatureUrl && <img className="pcert__sign-image" src={signatory.signatureUrl} alt="" />}
+      </div>
       <p className="pcert__sign-name">{present(signatory.name) ?? " "}</p>
       <p className="pcert__sign-title">{present(signatory.title) ?? fallbackTitle}</p>
       {verse && <p className="pcert__verse">{verse}</p>}

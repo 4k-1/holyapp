@@ -12,6 +12,7 @@ const {
   updateCertificates,
 } = require('../controllers/parishSettingsController');
 const { uploadLogo, removeLogo } = require('../controllers/parishLogoController');
+const { uploadSignature, removeSignature } = require('../controllers/certificateSignatureController');
 
 const router = express.Router();
 const office = [ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF];
@@ -94,6 +95,27 @@ router.put(
   requireParish,
   requireRole(ROLES.PARISH_ADMIN),
   updateCertificates
+);
+// The signature is a photo in the raw request body; ?types= says which certificates it signs. Both answer with
+// the whole certificate settings, so the page shows the cleaned-up signature straight away.
+router.put(
+  '/settings/certificates/signature',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN),
+  express.raw({ type: 'image/*', limit: '9mb' }),
+  uploadSignature,
+  getCertificates
+);
+router.delete(
+  '/settings/certificates/signature',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN),
+  removeSignature,
+  getCertificates
 );
 // The logo is the raw request body (Content-Type image/*), like a ledger page photo. The 6 MB limit leaves the
 // controller room to say "over 5 MB" itself.

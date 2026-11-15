@@ -550,7 +550,25 @@
 }
 
 .pcert__sign-line {
+  position: relative;
   border-top: 0.3mm solid var(--pcert-ink);
+}
+
+/* The signature sits on the line, its lowest strokes just crossing it, as if signed by hand. */
+.pcert__sign-image {
+  position: absolute;
+  left: 50%;
+  bottom: -2.2mm;
+  transform: translateX(-50%);
+  max-width: 100%;
+  /* Fits under "Yours in Christ," (10 mm above the line on Letter). */
+  height: 11mm;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.pcert--a5 .pcert__sign-image {
+  height: 12mm;
 }
 
 .pcert--a5 .pcert__sign-line {

@@ -250,7 +250,9 @@ async function leave(req, res) {
       if (signedTypes.length) {
         await client.query(
           `UPDATE certificate_configuration
-           SET signatory_name = $1, signatory_title = $2, updated_by = $3, updated_at = NOW()
+           SET signatory_name = $1, signatory_title = $2, updated_by = $3, updated_at = NOW(),
+               -- The outgoing priest's signature must not print above the new priest's name.
+               signature_image = NULL, signature_updated_at = NOW()
            WHERE parish_id = $4 AND certificate_type = ANY($5::text[])`,
           [displayNameOf(newPriest), PARISH_PRIEST, req.user.id, req.parishId, signedTypes]
         );

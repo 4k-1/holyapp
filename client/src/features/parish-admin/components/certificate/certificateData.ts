@@ -35,6 +35,8 @@ export interface CertificateSignatory {
   name?: string;
   /** e.g. "Parish Priest". */
   title?: string;
+  /** Their signature, ink on a see-through background, printed on the line. */
+  signatureUrl?: string;
 }
 
 export interface CertificateVerification {

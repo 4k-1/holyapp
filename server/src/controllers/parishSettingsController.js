@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { toDataUrl } = require('./certificateSignatureController');
 const { writeAudit } = require('../utils/audit');
 const { isMonthDay } = require('../utils/liturgicalCalendar');
 
@@ -115,6 +116,7 @@ function toAppearance(row, type) {
     signatoryTitle: row.signatory_title || fallback.signatoryTitle,
     numberingPrefix: row.numbering_prefix || fallback.numberingPrefix,
     footerText: row.footer_text || fallback.footerText,
+    signatureImage: toDataUrl(row.signature_image),
   };
 }
 
@@ -314,7 +316,7 @@ async function getCertificates(req, res) {
   try {
     await ensureCertificates(req.parishId, req.user.id);
     const result = await pool.query(
-      `SELECT certificate_type, signatory_name, signatory_title, numbering_prefix, footer_text
+      `SELECT certificate_type, signatory_name, signatory_title, numbering_prefix, footer_text, signature_image
        FROM certificate_configuration
        WHERE parish_id = $1`,
       [req.parishId]
@@ -387,7 +389,9 @@ async function updateCertificates(req, res) {
       if (!appearance) continue;
       await pool.query(
         `UPDATE certificate_configuration
-         SET signatory_name = $1,
+         SET -- A signature belongs to the person named under it: a new name drops it until theirs is uploaded.
+             signature_image = CASE WHEN lower(trim(signatory_name)) = lower($1) THEN signature_image ELSE NULL END,
+             signatory_name = $1,
              signatory_title = $2,
              numbering_prefix = $3,
              footer_text = $4,

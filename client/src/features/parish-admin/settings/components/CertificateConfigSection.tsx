@@ -10,12 +10,13 @@ import { CERT_PREVIEW_STAGE_BG } from "@/features/parish-admin/components/certif
 import { SAMPLE_CERTIFICATE } from "@/features/parish-admin/components/certificate/sampleCertificate";
 import { AdminButton, AdminField, AdminInput, AdminTextarea } from "@/features/parish-admin/components/AdminForm";
 import { normalizeNumberingPrefix, previewCertificateCode } from "@/features/parish-admin/certificates/numbering";
-import { getCertificateConfig, updateCertificateConfig } from "../api/certificateConfigApi";
+import { SIGNED_CERTIFICATES, getCertificateConfig, updateCertificateConfig } from "../api/certificateConfigApi";
 import type { CertificateAppearance, CertificateConfigBySacrament } from "../types";
 import type { Parish, SacramentType } from "@/types";
-import { notifyError } from "@/lib/notify";
+import { notify, notifyError } from "@/lib/notify";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { SettingsPanel } from "./SettingsUI";
+import { CertificateSignatureField } from "./CertificateSignatureField";
 
 const SACRAMENTS: {
   type: SacramentType;
@@ -117,6 +118,18 @@ export function CertificateConfigSection() {
     setErrors({});
     setSaveError("");
     setJustSaved(false);
+  }
+
+  /** A signature is saved on its own, at once; keep any unsaved typing on the other fields. */
+  function signatureChanged(result: CertificateConfigBySacrament, message: string) {
+    const withSignatures = (config: CertificateConfigBySacrament) => {
+      const next = cloneConfig(config);
+      for (const type of Object.keys(next) as SacramentType[]) next[type].signatureImage = result[type].signatureImage;
+      return next;
+    };
+    setSaved((prev) => (prev ? withSignatures(prev) : prev));
+    setDraft((prev) => (prev ? withSignatures(prev) : prev));
+    notify(message);
   }
 
   async function handleSave() {
@@ -259,6 +272,16 @@ export function CertificateConfigSection() {
               <p className="mt-1.5 text-admin-label text-admin-ink-faint">The office named on this certificate type.</p>
             )}
           </AdminField>
+
+          {SIGNED_CERTIFICATES.includes(activeType) && (
+            <CertificateSignatureField
+              key={activeType}
+              type={activeType}
+              saved={saved}
+              draftName={appearance.signatoryName}
+              onChanged={signatureChanged}
+            />
+          )}
 
           <AdminField label="Numbering prefix">
             <AdminInput

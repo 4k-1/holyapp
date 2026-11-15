@@ -31,6 +31,10 @@ export interface CertificateFields {
   validUntil?: string;
   /** Not yet issued: prints with a "SPECIMEN – NOT VALID" watermark. */
   specimen?: boolean;
+  /** Issued copies: who signed (from the copy) and their signature, when the parish has one on file. */
+  signatoryName?: string;
+  signatoryTitle?: string;
+  signatureImage?: string;
 }
 
 interface CertificateDocumentProps {

@@ -22,6 +22,10 @@ export interface LegacyCertificateFields {
   purpose?: string;
   validUntil?: string;
   specimen?: boolean;
+  /** Issued copies: who signed (from the copy) and their signature, when the parish has one on file. */
+  signatoryName?: string;
+  signatoryTitle?: string;
+  signatureImage?: string;
 }
 
 const TYPE_FOR: Record<SacramentType, PrintedRecord["type"]> = {
@@ -149,7 +153,10 @@ export function certificateDataFrom({
   return {
     ...record,
     parish: { name: parish.name, address: parish.address, logoUrl: parish.sealUrl },
-    signatory: { name: appearance?.signatoryName, title: appearance?.signatoryTitle },
+    // The office has the parish's current settings; a parishioner's copy carries who signed it.
+    signatory: appearance
+      ? { name: appearance.signatoryName, title: appearance.signatoryTitle, signatureUrl: appearance.signatureImage ?? undefined }
+      : { name: fields.signatoryName, title: fields.signatoryTitle, signatureUrl: fields.signatureImage },
     issuedOn: toIsoDate(fields.issuedOn) ?? todayIso(),
     verification,
     specimen: fields.specimen || undefined,

@@ -10,6 +10,7 @@ const { listBaptismAnnotations } = require('../utils/baptismAnnotation');
 const { certificateRemarks } = require('../utils/certificateRemarks');
 const { normalizePurpose, validUntilFor, manilaToday } = require('../constants/purposes');
 const { encryptJson, decryptJson, decryptRow } = require('../utils/fieldCrypto');
+const { toDataUrl } = require('./certificateSignatureController');
 
 const RECORD_TABLES = {
   baptism: 'baptism',
@@ -292,8 +293,21 @@ function toIssuedCertificate(row) {
       issuedOn: dateStamp(row.issued_at) || undefined,
       purpose: snapshot.purpose || undefined,
       validUntil: snapshot.validUntil || undefined,
+      signatoryName: snapshot.signatoryName || undefined,
+      signatoryTitle: snapshot.signatoryTitle || undefined,
+      signatureImage: signatureFor(row, snapshot),
     },
   };
+}
+
+/**
+ * The parish's current signature for this certificate type, but only while the person who signs now is the
+ * one named on this copy: after a new priest takes over, older copies keep a blank line, not his signature.
+ */
+function signatureFor(row, snapshot) {
+  if (!row.signature_image || !snapshot.signatoryName) return undefined;
+  const same = String(row.config_signatory_name || '').trim().toLowerCase() === String(snapshot.signatoryName).trim().toLowerCase();
+  return same ? toDataUrl(row.signature_image) : undefined;
 }
 
 async function paidRow(client, requestId) {
@@ -572,9 +586,11 @@ async function releasePickup(req, res) {
 async function listMyCertificates(req, res) {
   try {
     const result = await pool.query(
-      `SELECT c.*, r.id AS request_id, r.requested_by
+      `SELECT c.*, r.id AS request_id, r.requested_by,
+              cc.signature_image, cc.signatory_name AS config_signatory_name
        FROM certificate c
        JOIN certificate_request r ON r.certificate_id = c.id
+       LEFT JOIN certificate_configuration cc ON cc.parish_id = c.parish_id AND cc.certificate_type = c.record_type
        WHERE r.requested_by = $1 AND c.parish_id = $2 AND r.status = 'released'
        ORDER BY c.issued_at DESC`,
       [req.user.id, req.parishId]
