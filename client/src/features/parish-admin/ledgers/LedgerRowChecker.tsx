@@ -4,7 +4,8 @@
 // check and then a form. Enter saves the row and moves on.
 //
 // Field states: amber = needs a look (the engine was unsure, an app check caught something,
-// or it's needed to save), teal = corrected by a person, plain = fine.
+// or it's needed to save), teal = corrected or marked correct by a person, plain = fine.
+// A reading that was right needs no retyping: "It's correct" clears the flag as it is.
 // Saving needs both pages (the names are on the left, the baptism on the right); with one
 // page the screen checks rows without saving.
 import { useEffect, useMemo, useState, type FormEvent } from "react";
@@ -303,6 +304,8 @@ export function LedgerRowChecker({
   });
   const [saved, setSaved] = useState<Record<number, string>>(source.savedRows);
   const [confirmed, setConfirmed] = useState<Set<number>>(() => new Set());
+  /** Flagged parts a person looked at and said were read right, per row. */
+  const [accepted, setAccepted] = useState<Record<number, DraftGroup[]>>({});
   const [showProblems, setShowProblems] = useState<Set<number>>(
     () => new Set(),
   );
@@ -352,10 +355,24 @@ export function LedgerRowChecker({
     );
   }
 
-  // Groups that still want a look: flagged, and nobody has corrected them yet.
+  function isAccepted(row: number, group: Group) {
+    return (accepted[row] ?? []).includes(group.key);
+  }
+
+  function setAcceptedFor(row: number, keys: DraftGroup[], on: boolean) {
+    setAccepted((prev) => {
+      const current = prev[row] ?? [];
+      const next = on
+        ? [...new Set([...current, ...keys])]
+        : current.filter((k) => !keys.includes(k));
+      return { ...prev, [row]: next };
+    });
+  }
+
+  // Groups that still want a look: flagged, and nobody has corrected or accepted them yet.
   function openGroups(e: OcrEntry) {
     return flaggedGroups(e, initial[e.row].notes, sides).filter(
-      (g) => !corrected(e.row, g),
+      (g) => !corrected(e.row, g) && !isAccepted(e.row, g),
     );
   }
 
@@ -508,6 +525,7 @@ export function LedgerRowChecker({
     canSave ? Boolean(saved[r] || duplicateOf(r)) : confirmed.has(r);
   const doneCount = entries.filter((e) => isDone(e.row)).length;
   const whole = rowReasons(entry);
+  const openHere = saved[row] ? [] : openGroups(entry);
   const q = query.trim().toLowerCase();
   const listed = entries
     .map((e, i) => ({ e, i }))
@@ -671,6 +689,21 @@ export function LedgerRowChecker({
               </span>
             ) : null}
           </h2>
+          {openHere.length > 1 && (
+            <button
+              type="button"
+              onClick={() =>
+                setAcceptedFor(
+                  row,
+                  openHere.map((g) => g.key),
+                  true,
+                )
+              }
+              className="text-admin-support font-semibold text-[var(--dash-green)] hover:underline"
+            >
+              ✓ All {openHere.length} flagged parts are correct
+            </button>
+          )}
           <RowStatus
             recordsBase={`/${parish.slug}/admin/records/baptismal`}
             savedId={saved[row]}
@@ -744,6 +777,9 @@ export function LedgerRowChecker({
                       )}
                       problem={problems[group.key]}
                       isCorrected={corrected(row, group)}
+                      isAccepted={isAccepted(row, group)}
+                      onAccept={(on) => setAcceptedFor(row, [group.key], on)}
+                      locked={Boolean(saved[row])}
                       active={focusGroup === group.key}
                       onFocus={() => setFocusGroup(group.key)}
                       onChange={setField}
@@ -898,6 +934,9 @@ function GroupEditor({
   notes,
   problem,
   isCorrected,
+  isAccepted,
+  onAccept,
+  locked,
   active,
   onFocus,
   onChange,
@@ -909,12 +948,18 @@ function GroupEditor({
   notes: DraftNote[];
   problem?: string;
   isCorrected: boolean;
+  /** A person said the reading is right as it is. */
+  isAccepted: boolean;
+  onAccept: (on: boolean) => void;
+  /** Already saved as a record: nothing left to mark. */
+  locked: boolean;
   active: boolean;
   onFocus: () => void;
   onChange: (name: DraftKey, value: string) => void;
 }) {
-  const reasons = isCorrected ? [] : ocrReasons(entry, group);
-  const checkNotes = isCorrected ? [] : notes.filter((n) => n.tone === "check");
+  const settled = isCorrected || isAccepted;
+  const reasons = settled ? [] : ocrReasons(entry, group);
+  const checkNotes = settled ? [] : notes.filter((n) => n.tone === "check");
   const infoNotes = notes.filter((n) => n.tone === "info");
   const needsLook = reasons.length > 0 || checkNotes.length > 0;
   const status = problem
@@ -929,9 +974,9 @@ function GroupEditor({
           chip: "bg-[var(--dash-amber-soft)] text-[var(--dash-amber)]",
           edge: "border-l-[#e8b45a]",
         }
-      : isCorrected
+      : isCorrected || isAccepted
         ? {
-            label: "Corrected",
+            label: isCorrected ? "Corrected" : "Checked",
             chip: "bg-[var(--dash-green-soft)] text-[var(--dash-green-deep)]",
             edge: "border-l-[var(--dash-green-mid)]",
           }
@@ -980,7 +1025,8 @@ function GroupEditor({
           reasons.length > 0 ||
           checkNotes.length > 0 ||
           infoNotes.length > 0 ||
-          isCorrected) && (
+          isCorrected ||
+          isAccepted) && (
           <div className="mt-1.5 space-y-0.5 text-[0.72rem] leading-snug">
             {problem && (
               <p className="font-semibold text-admin-red-700">{problem}</p>
@@ -990,6 +1036,27 @@ function GroupEditor({
                 {m}
               </p>
             ))}
+            {needsLook && !problem && !locked && (
+              <button
+                type="button"
+                onClick={() => onAccept(true)}
+                className="mt-1 inline-flex items-center gap-1 rounded-full border border-[var(--dash-green-mid)] bg-white px-2.5 py-0.5 text-[0.72rem] font-semibold text-[var(--dash-green-deep)] hover:bg-[var(--dash-green-soft)]"
+              >
+                ✓ It's correct
+              </button>
+            )}
+            {isAccepted && !isCorrected && (
+              <p className="text-[var(--dash-ink-soft)]">
+                You marked this as read correctly ·{" "}
+                <button
+                  type="button"
+                  onClick={() => onAccept(false)}
+                  className="font-semibold text-[var(--dash-green)] hover:underline"
+                >
+                  Undo
+                </button>
+              </p>
+            )}
             {written && (
               <p className="text-[var(--dash-ink-soft)]">
                 Written as: {written}
