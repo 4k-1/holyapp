@@ -347,12 +347,13 @@ async function register(req, res) {
   const lastName = pick(req.body, 'lastName', 'last_name');
   const middleName = pick(req.body, 'middleName', 'middle_name');
   const birthday = req.body.birthday;
-  const address = req.body.address;
+  // Optional: the parish office can add it later, and a parishioner can add it under My account.
+  const address = req.body.address ? String(req.body.address).trim() : '';
   const email = req.body.email ? String(req.body.email).trim() : '';
   const password = req.body.password;
   const parishId = pick(req.body, 'parishId', 'parish_id');
 
-  if (!firstName || !lastName || !birthday || !address || !email || !password || !parishId) {
+  if (!firstName || !lastName || !birthday || !email || !password || !parishId) {
     return res.status(400).json({ error: 'All required registration fields must be provided' });
   }
   if (String(password).length < 8) {
@@ -391,7 +392,7 @@ async function register(req, res) {
         middleName || null,
         lastName,
         birthday,
-        encrypt(address),
+        address ? encrypt(address) : null,
       ]
     );
     const user = inserted.rows[0];

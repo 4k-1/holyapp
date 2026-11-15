@@ -168,7 +168,8 @@ export interface RegisterInput {
   lastName: string;
   middleName?: string;
   birthday: string;
-  address: string;
+  /** Optional. */
+  address?: string;
   email: string;
   password: string;
   parishId: string;
@@ -186,7 +187,7 @@ export async function startRegistration(input: RegisterInput): Promise<void> {
         lastName: input.lastName,
         middleName: input.middleName,
         birthday: input.birthday,
-        address: input.address,
+        address: input.address?.trim() || undefined,
         email: input.email.trim(),
         password: input.password,
         parishId: input.parishId,

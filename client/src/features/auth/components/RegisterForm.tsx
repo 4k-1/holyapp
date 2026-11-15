@@ -6,7 +6,8 @@ import "@/features/auth/styles/authDesk.css";
 
 interface RegisterFormProps {
   parish: Parish;
-  /** Page 1 asks about the person; page 2 sets up the sign-in. Fields keep their values between pages. */
+  /** Page 1 asks about the person; page 2 sets up the sign-in (email and password, one under the other
+   *  so they're easy to check on a phone). Fields keep their values between pages. */
   part: 1 | 2;
   onNext: () => void;
   onSubmit: (data: RegisterInput) => Promise<void>;
@@ -45,7 +46,7 @@ export function RegisterForm({ parish, part, onNext, onSubmit }: RegisterFormPro
         lastName,
         middleName: middleName || undefined,
         birthday,
-        address,
+        address: address.trim() || undefined,
         email,
         password,
         parishId: parish.id,
@@ -62,11 +63,11 @@ export function RegisterForm({ parish, part, onNext, onSubmit }: RegisterFormPro
 
       <div>
         <p className="auth-desk__step">Step {part} of 2</p>
-        <h1 className="auth-desk__title">{part === 1 ? "Create your account" : "Contact and sign-in"}</h1>
+        <h1 className="auth-desk__title">{part === 1 ? "Create your account" : "Set up your sign-in"}</h1>
         <p className="auth-desk__subtitle">
           {part === 1
             ? "Tell us a little about yourself."
-            : "Where you live, and how you'll sign in."}
+            : "We'll send a code to this email to confirm it's yours."}
         </p>
       </div>
 
@@ -137,14 +138,10 @@ export function RegisterForm({ parish, part, onNext, onSubmit }: RegisterFormPro
           />
         </div>
         </div>
-      </div>
-      )}
 
-      {part === 2 && (
-      <div className="flex flex-col gap-5">
         <div>
           <label htmlFor="reg-address" className="auth-desk__label">
-            Address
+            Address <span className="font-normal text-[var(--auth-ink-faint)]">(optional)</span>
           </label>
           <input
             id="reg-address"
@@ -152,12 +149,15 @@ export function RegisterForm({ parish, part, onNext, onSubmit }: RegisterFormPro
             placeholder="Home address"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            required
             disabled={loading}
             autoComplete="street-address"
           />
         </div>
+      </div>
+      )}
 
+      {part === 2 && (
+      <div className="flex flex-col gap-5">
         <div>
           <label htmlFor="reg-email" className="auth-desk__label">
             Email
@@ -175,7 +175,7 @@ export function RegisterForm({ parish, part, onNext, onSubmit }: RegisterFormPro
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div>
           <AuthPasswordField
             id="reg-password"
             label="Password"
@@ -183,19 +183,36 @@ export function RegisterForm({ parish, part, onNext, onSubmit }: RegisterFormPro
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={8}
             disabled={loading}
             autoComplete="new-password"
           />
+          <p className="mt-1.5 text-[0.8rem] text-[var(--auth-ink-faint)]">At least 8 characters.</p>
+        </div>
+
+        <div>
           <AuthPasswordField
             id="reg-confirm-password"
-            label="Confirm"
-            placeholder="Again"
+            label="Confirm password"
+            placeholder="Type the same password again"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             disabled={loading}
             autoComplete="new-password"
+            aria-describedby="reg-confirm-status"
           />
+          {confirmPassword && (
+            <p
+              id="reg-confirm-status"
+              aria-live="polite"
+              className={`mt-1.5 text-[0.8rem] font-medium ${
+                confirmPassword === password ? "text-[var(--auth-green)]" : "text-[var(--auth-ink-soft)]"
+              }`}
+            >
+              {confirmPassword === password ? "✓ Passwords match" : "Doesn't match yet"}
+            </p>
+          )}
         </div>
       </div>
       )}
