@@ -74,6 +74,14 @@ async function addUser({ parishId, role, email, first, last, password }) {
      RETURNING id, parish_id, role, email`,
     [parishId, role, email.trim().toLowerCase(), await hashPassword(password), first, last]
   );
+  // Office accounts are people at the parish too: put them on the Staff page, as adding them in the app does.
+  if (role === 'parish_admin' || role === 'parish_staff') {
+    await pool.query(
+      `INSERT INTO parish_personnel (parish_id, full_name, role_title, contact_info, user_id, status)
+       VALUES ($1, $2, 'Admin Staff', NULL, $3, 'active')`,
+      [parishId, `${first} ${last}`, rows[0].id]
+    );
+  }
   return { ...rows[0], token: signAccessToken(rows[0]) };
 }
 
