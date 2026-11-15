@@ -13,19 +13,6 @@ function longDate(iso: string) {
   return new Date(y, m - 1, d).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
-/** The reason the copy was issued (B2): "Issued for: …", or a marriage copy's last valid day. */
-export function IssuancePurpose({ purpose, validUntil }: { purpose?: string; validUntil?: string }) {
-  if (validUntil) {
-    return (
-      <>
-        <strong className="pcert__purpose">For marriage purposes</strong>
-        <span>Valid until {longDate(validUntil)}</span>
-      </>
-    );
-  }
-  return present(purpose) ? <span className="pcert__purpose">Issued for: {purpose}</span> : null;
-}
-
 export function VerificationArea({
   verification,
   appUrl,
@@ -54,7 +41,14 @@ export function VerificationArea({
         <span className="pcert__mono">{controlNo ?? "______________"}</span>
         <span>SHA-256</span>
         <span className="pcert__mono">{hash ?? "________________"}</span>
-        <IssuancePurpose purpose={purpose} validUntil={validUntil} />
+        {validUntil ? (
+          <>
+            <strong className="pcert__purpose">For marriage purposes</strong>
+            <span>Valid until {longDate(validUntil)}</span>
+          </>
+        ) : (
+          present(purpose) && <span className="pcert__purpose">Issued for: {purpose}</span>
+        )}
       </div>
     </div>
   );

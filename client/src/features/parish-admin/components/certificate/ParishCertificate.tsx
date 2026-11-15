@@ -10,7 +10,7 @@ import {
   type DeathCertificateData,
 } from "./certificateData";
 import { ageText, dateParts, fullDate, present, townFromAddress } from "./certificateFormat";
-import { IssuancePurpose, VerificationArea } from "./CertificateVerification";
+import { VerificationArea } from "./CertificateVerification";
 import { MarriageCertificate } from "./MarriageCertificate";
 import { SpecimenMark } from "./SpecimenMark";
 import "./parishCertificate.css";
@@ -37,7 +37,6 @@ export const ParishCertificate = forwardRef<HTMLDivElement, ParishCertificatePro
   // Marriage prints on the government's own form.
   if (data.type === "MARRIAGE") return <MarriageCertificate ref={ref} data={data} appUrl={appUrl} />;
   const paper = CERTIFICATE_PAPER[data.type];
-  const isBaptism = data.type === "BAPTISM";
 
   return (
     <div
@@ -56,18 +55,17 @@ export const ParishCertificate = forwardRef<HTMLDivElement, ParishCertificatePro
         {data.type === "DEATH" && <DeathBody data={data} />}
 
         <footer className="pcert__footer">
-          {/* Baptism: the reason of issuance goes under the signatory instead (see SignatureBlock). */}
           <VerificationArea
             verification={data.verification}
             appUrl={appUrl}
-            purpose={isBaptism ? undefined : data.purpose}
-            validUntil={isBaptism ? undefined : data.validUntil}
+            purpose={data.purpose}
+            validUntil={data.validUntil}
           />
           <SignatureBlock
             signatory={data.signatory}
             fallbackTitle="Parish Priest"
             signOff={data.type === "CONFIRMATION" ? "In Christ," : data.type === "DEATH" ? "Yours in Christ," : undefined}
-            note={isBaptism ? <IssuancePurpose purpose={data.purpose} validUntil={data.validUntil} /> : undefined}
+            keepSpaceBelow={data.type === "BAPTISM"}
           />
         </footer>
       </div>
@@ -127,16 +125,13 @@ function SignatureBlock({
   signatory,
   fallbackTitle,
   signOff,
-  note,
+  keepSpaceBelow,
 }: {
   signatory: CertificateSignatory;
   fallbackTitle: string;
   signOff?: string;
-  /**
-   * Baptism: a slot under the signatory for the reason of issuance. It keeps its height when
-   * empty, so the signature sits where it did when a verse filled this space.
-   */
-  note?: ReactNode;
+  /** Baptism: an empty space under the signatory, so the signature sits where it did when a verse filled it. */
+  keepSpaceBelow?: boolean;
 }) {
   return (
     <div className="pcert__signature">
@@ -146,7 +141,7 @@ function SignatureBlock({
       </div>
       <p className="pcert__sign-name">{present(signatory.name) ?? " "}</p>
       <p className="pcert__sign-title">{present(signatory.title) ?? fallbackTitle}</p>
-      {note !== undefined && <p className="pcert__sign-note">{note}</p>}
+      {keepSpaceBelow && <div className="pcert__sign-space" aria-hidden="true" />}
     </div>
   );
 }
