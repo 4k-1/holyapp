@@ -38,6 +38,11 @@ export function AdminLedgerPageRecordsPage() {
     [parish.id, bookId]
   );
   const pageId = pages?.find((p) => p.pageNumber === pageNumber)?.id;
+  // The next stored page of this book, for "Open the next page" once this one is done.
+  const nextPage = pages
+    ?.map((p) => p.pageNumber)
+    .filter((n) => n > pageNumber)
+    .sort((a, b) => a - b)[0];
 
   const { data: loaded, loading: readingLoading } = useAsync(
     () => (pageId ? getLedgerPageReading(parish.id, pageId) : Promise.resolve(null)),
@@ -200,6 +205,12 @@ export function AdminLedgerPageRecordsPage() {
                 savedRows,
               }}
               parish={parish}
+              bookUrl={`/${parish.slug}/admin/records/ledgers/${bookId}`}
+              nextPageUrl={
+                nextPage === undefined
+                  ? undefined
+                  : `/${parish.slug}/admin/records/ledgers/${bookId}/pages/${nextPage}/records`
+              }
             />
           )}
         </>

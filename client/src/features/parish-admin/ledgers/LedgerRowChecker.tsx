@@ -8,7 +8,7 @@
 // A reading that was right needs no retyping: "It's correct" clears the flag as it is.
 // Saving needs both pages (the names are on the left, the baptism on the right); with one
 // page the screen checks rows without saving.
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AdminButton,
@@ -255,6 +255,8 @@ export function LedgerRowChecker({
   imageBlob,
   source,
   parish,
+  nextPageUrl,
+  bookUrl,
 }: {
   result: LedgerScanResult;
   /** The uploaded photo; null when there's no single picture to cut rows from. */
@@ -270,6 +272,9 @@ export function LedgerRowChecker({
     savedRows: Record<number, string>;
   };
   parish: Parish;
+  /** The next page of the book to make records from, when there is one. */
+  nextPageUrl?: string;
+  bookUrl: string;
 }) {
   const navigate = useNavigate();
   const { entries } = result;
@@ -313,6 +318,34 @@ export function LedgerRowChecker({
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  /** The row just saved, shown at the top of the row the screen moved on to. */
+  const [lastSaved, setLastSaved] = useState<{
+    row: number;
+    index: number;
+    name: string;
+    id: string;
+  } | null>(null);
+  /** The row in the list that briefly lights up as it's saved. */
+  const [flashRow, setFlashRow] = useState<number | null>(null);
+
+  // Saving happens at the foot of a long form: bring the next row's top, and the "saved" bar
+  // on it, back into view.
+  // When that was the last row, the "page done" panel above the form is what to see.
+  const formRef = useRef<HTMLFormElement>(null);
+  const doneRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!lastSaved) return;
+    const target = doneRef.current ?? formRef.current;
+    if (target && target.getBoundingClientRect().top < 80) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [lastSaved]);
+
+  useEffect(() => {
+    if (flashRow === null) return;
+    const timer = window.setTimeout(() => setFlashRow(null), 1400);
+    return () => window.clearTimeout(timer);
+  }, [flashRow]);
 
   // Records already in the parish, to stop a second record for the same entry.
   const { data: existing } = useAsync(
@@ -401,6 +434,7 @@ export function LedgerRowChecker({
     setIndex(i);
     setFocusGroup(null);
     setSaveError("");
+    setLastSaved(null);
   }
 
   // Next row not yet done, after this one, wrapping round to the top.
@@ -424,7 +458,7 @@ export function LedgerRowChecker({
       return;
     }
     if (saved[row] || duplicateOf(row)) {
-      goToNextOpen((r) => Boolean(saved[r]));
+      goToNextOpen((r) => Boolean(saved[r] || duplicateOf(r)));
       return;
     }
 
@@ -484,7 +518,16 @@ export function LedgerRowChecker({
       });
       const now = { ...saved, [row]: record.id };
       setSaved(now);
-      goToNextOpen((r) => Boolean(now[r]));
+      // Skip rows already in records, whether saved here or made earlier (e.g. from the full form).
+      goToNextOpen((r) => Boolean(now[r] || duplicateOf(r)));
+      // After the move, so the move doesn't clear it.
+      setLastSaved({
+        row,
+        index,
+        name: [draft.firstName, draft.lastName].map((n) => n.trim()).filter(Boolean).join(" "),
+        id: record.id,
+      });
+      setFlashRow(row);
     } catch (err) {
       setSaveError(
         err instanceof Error ? err.message : "Couldn't save this record.",
@@ -524,6 +567,8 @@ export function LedgerRowChecker({
   const isDone = (r: number) =>
     canSave ? Boolean(saved[r] || duplicateOf(r)) : confirmed.has(r);
   const doneCount = entries.filter((e) => isDone(e.row)).length;
+  const allDone = canSave && entries.length > 0 && doneCount === entries.length;
+  const recordsBase = `/${parish.slug}/admin/records/baptismal`;
   const whole = rowReasons(entry);
   const openHere = saved[row] ? [] : openGroups(entry);
   const q = query.trim().toLowerCase();
@@ -621,9 +666,11 @@ export function LedgerRowChecker({
                   onClick={() => goTo(i)}
                   aria-current={i === index ? "true" : undefined}
                   className={`flex w-full items-center gap-2 px-4 py-2 text-left text-admin-support ${
-                    i === index
-                      ? "bg-[var(--dash-green-soft)]"
-                      : "hover:bg-[var(--dash-cream)]"
+                    e.row === flashRow
+                      ? "bg-[var(--dash-green-mid)]/30 transition-none"
+                      : i === index
+                        ? "bg-[var(--dash-green-soft)] transition-colors duration-700"
+                        : "hover:bg-[var(--dash-cream)] transition-colors duration-700"
                   }`}
                 >
                   <span className="w-6 shrink-0 tabular-nums text-[var(--dash-ink-soft)]">
@@ -659,7 +706,39 @@ export function LedgerRowChecker({
         </ul>
       </nav>
 
+      <div className="min-w-0 space-y-4">
+      {allDone && (
+        <section
+          ref={doneRef}
+          aria-live="polite"
+          className="admin-dash__card flex scroll-mt-20 flex-wrap items-center justify-between gap-3 border-l-[3px] border-l-[var(--dash-green)] bg-white px-5 py-4 sm:px-6"
+        >
+          <div>
+            <p className="text-[0.95rem] font-semibold text-[var(--dash-ink)]">
+              ✓ All {entries.length} {entries.length === 1 ? "row" : "rows"} on page{" "}
+              {source.pageNumber} are in records
+            </p>
+            <p className="admin-dash__muted mt-0.5 text-admin-support">
+              You can still open any row to look at it again.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <AdminButton variant="ghost" size="sm" onClick={() => navigate(bookUrl)}>
+              Back to the book
+            </AdminButton>
+            <AdminButton variant="secondary" size="sm" onClick={() => navigate(recordsBase)}>
+              View the records
+            </AdminButton>
+            {nextPageUrl && (
+              <AdminButton size="sm" onClick={() => navigate(nextPageUrl)}>
+                Open the next page →
+              </AdminButton>
+            )}
+          </div>
+        </section>
+      )}
       <form
+        ref={formRef}
         onSubmit={submit}
         onKeyDown={(e) => {
           // Enter saves from any field. Handled here because some fields keep Enter to
@@ -676,7 +755,7 @@ export function LedgerRowChecker({
           e.preventDefault();
           e.currentTarget.requestSubmit();
         }}
-        className="admin-dash__card overflow-hidden bg-white"
+        className="admin-dash__card scroll-mt-20 overflow-hidden bg-white"
         noValidate
       >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--dash-border)] px-5 py-3 sm:px-6">
@@ -705,7 +784,7 @@ export function LedgerRowChecker({
             </button>
           )}
           <RowStatus
-            recordsBase={`/${parish.slug}/admin/records/baptismal`}
+            recordsBase={recordsBase}
             savedId={saved[row]}
             duplicateId={duplicate?.id}
             confirmed={!canSave && confirmed.has(row)}
@@ -719,6 +798,30 @@ export function LedgerRowChecker({
           />
         </div>
 
+        {lastSaved && lastSaved.row !== row && (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-[var(--dash-border)] bg-[var(--dash-green-soft)] px-5 py-2.5 text-admin-support text-[var(--dash-green-deep)] sm:px-6"
+          >
+            <span className="font-semibold">
+              ✓ Row {lastSaved.row}
+              {lastSaved.name ? `, ${lastSaved.name},` : ""} saved as a record.
+            </span>
+            <Link
+              to={`${recordsBase}/${encodeURIComponent(lastSaved.id)}`}
+              className="font-semibold text-[var(--dash-green)] hover:underline"
+            >
+              Open record
+            </Link>
+            <button
+              type="button"
+              onClick={() => goTo(lastSaved.index)}
+              className="font-semibold text-[var(--dash-green)] hover:underline"
+            >
+              Back to row {lastSaved.row}
+            </button>
+          </div>
+        )}
         {!canSave && (
           <p className="border-b border-[var(--dash-border)] bg-[var(--dash-cream)] px-5 py-2.5 text-admin-support text-[var(--dash-ink-soft)] sm:px-6">
             Saving records needs both pages. Upload one photo of the open book
@@ -841,6 +944,7 @@ export function LedgerRowChecker({
           </div>
         </div>
       </form>
+      </div>
     </div>
   );
 }
