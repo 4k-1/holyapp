@@ -220,8 +220,9 @@ export function AdminFindRecordPage() {
     const details = request.details;
     const initial: MatchFilters = {
       name: details?.subjectName ?? "",
-      baptismDate: details?.baptismDate ?? "",
-      birthdate: details?.birthdate ?? "",
+      // The date boxes are date pickers, so the request's written date starts them on that day.
+      baptismDate: calendarDay(details?.baptismDate) ?? "",
+      birthdate: calendarDay(details?.birthdate) ?? "",
       placeOfBirth: details?.birthplace ?? "",
       mother: details?.motherName ?? "",
       father: details?.fatherName ?? "",
@@ -434,12 +435,14 @@ export function AdminFindRecordPage() {
                 label="Baptismal date"
                 value={filters.baptismDate}
                 placeholder="If known"
+                type="date"
                 onChange={(v) => setFilter("baptismDate", v)}
               />
               <MatchSearchRow
                 label="Birthdate"
                 value={filters.birthdate}
                 placeholder="January 18, 2005"
+                type="date"
                 onChange={(v) => setFilter("birthdate", v)}
               />
               <MatchSearchRow
@@ -849,11 +852,13 @@ function MatchSearchRow({
   label,
   value,
   placeholder,
+  type = "text",
   onChange,
 }: {
   label: string;
   value: string;
   placeholder: string;
+  type?: "text" | "date";
   onChange: (value: string) => void;
 }) {
   const id = `match-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
@@ -865,6 +870,7 @@ function MatchSearchRow({
       <input
         id={id}
         className="match-row__input"
+        type={type}
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}

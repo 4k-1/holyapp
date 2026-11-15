@@ -9,7 +9,7 @@ import {
 } from "@/features/parish-admin/ledgers/api/ledgersApi";
 import { CreateLedgerBookModal } from "@/features/parish-admin/ledgers/CreateLedgerBookModal";
 import { LedgerBookCard, LedgerSearchHitCard, LedgerStateMessage, NewLedgerBookCard } from "@/features/parish-admin/ledgers/LedgerCards";
-import { bookOverlapsYears } from "@/features/parish-admin/ledgers/ledgersHelpers";
+import { bookOverlapsYears, ledgerDateText } from "@/features/parish-admin/ledgers/ledgersHelpers";
 import {
   LEDGER_SACRAMENT_LABELS,
   LEDGER_SACRAMENT_ORDER,
@@ -34,6 +34,7 @@ export function AdminLedgersPage() {
   const [activeTab, setActiveTab] = useState<SacramentType>(LEDGER_SACRAMENT_ORDER[0]);
   const [query, setQuery] = useState("");
   const [field, setField] = useState<LedgerSearchField>("all");
+  const [date, setDate] = useState("");
   const [bookFilter, setBookFilter] = useState("all");
   const [yearFrom, setYearFrom] = useState("");
   const [yearTo, setYearTo] = useState("");
@@ -55,7 +56,8 @@ export function AdminLedgersPage() {
     .filter((b) => bookOverlapsYears(b, parsedYearFrom, parsedYearTo))
     .sort((a, b) => b.yearStart - a.yearStart || a.volumeLabel.localeCompare(b.volumeLabel));
 
-  const trimmedQuery = query.trim();
+  // With Field set to Date, the date is picked rather than typed.
+  const trimmedQuery = field === "date" ? ledgerDateText(date) : query.trim();
   const searching = trimmedQuery.length > 0;
   const { data: searchResult, loading: searchLoading } = useAsync(
     async () => {
@@ -85,6 +87,7 @@ export function AdminLedgersPage() {
   function clearFilters() {
     setQuery("");
     setField("all");
+    setDate("");
     setBookFilter("all");
     setYearFrom("");
     setYearTo("");
@@ -130,16 +133,22 @@ export function AdminLedgersPage() {
           <h2 className="text-[0.78rem] font-semibold text-[var(--dash-ink)]">Search & filters</h2>
         </div>
         <div className="space-y-4 bg-white p-5 sm:p-6 sm:px-6">
-          <div className="relative">
-            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--dash-ink-faint)]" />
-            <AdminInput
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Search ${LEDGER_SACRAMENT_LABELS[activeTab]} Register — name, date, priest, ${activeTab === "baptism" ? "godparent" : activeTab === "marriage" ? "witness" : "sponsor"}…`}
-              aria-label="Search digitized ledgers"
-              className="pl-10"
-            />
-          </div>
+          {field === "date" ? (
+            <AdminField label="Date in the register" className="mb-0 sm:max-w-[16rem]">
+              <AdminInput type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </AdminField>
+          ) : (
+            <div className="relative">
+              <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--dash-ink-faint)]" />
+              <AdminInput
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={`Search ${LEDGER_SACRAMENT_LABELS[activeTab]} Register — name, date, priest, ${activeTab === "baptism" ? "godparent" : activeTab === "marriage" ? "witness" : "sponsor"}…`}
+                aria-label="Search digitized ledgers"
+                className="pl-10"
+              />
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <AdminField label="Book" className="mb-0">
               <AdminSelect value={bookFilter} onChange={(e) => setBookFilter(e.target.value)}>

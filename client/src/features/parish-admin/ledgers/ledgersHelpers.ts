@@ -62,6 +62,14 @@ export function snippetAroundMatch(ocrText: string, query: string) {
   return `${start > 0 ? "…" : ""}${slice}${end < ocrText.length ? "…" : ""}`;
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** A picked date (YYYY-MM-DD) as the read pages write it: "4 Mar 2016" (ledgerController.searchDate). */
+export function ledgerDateText(iso: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return m ? `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}` : "";
+}
+
 const LEDGER_FIELD_PATTERNS: Record<Exclude<LedgerSearchField, "all" | "name">, RegExp> = {
   date: /\b\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s\d{4}\b/i,
   priest: /\b(Minister|Rev\.|Most Rev)\b/i,
@@ -94,9 +102,12 @@ export function searchLedgerPages(
     if (!book) continue;
     if (options.sacrament && options.sacrament !== "all" && book.sacramentType !== options.sacrament) continue;
 
-    const matchLine = page.ocrText
-      .split(" · ")
-      .find((line) => line.toLowerCase().includes(q) && lineMatchesField(line, field));
+    // A date is matched whole, so "4 Mar 2016" doesn't also find 14 Mar 2016.
+    const has = (line: string) => {
+      const i = line.toLowerCase().indexOf(q);
+      return i > -1 && (field !== "date" || !/\d/.test(line[i - 1] ?? ""));
+    };
+    const matchLine = page.ocrText.split(" · ").find((line) => has(line) && lineMatchesField(line, field));
     if (!matchLine) continue;
 
     hits.push({
