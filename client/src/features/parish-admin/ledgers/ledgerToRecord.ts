@@ -114,8 +114,10 @@ export interface RecordDraft {
   address: string;
   minister: string;
   fatherFirstName: string;
+  fatherMiddleName: string;
   fatherLastName: string;
   motherFirstName: string;
+  motherMiddleName: string;
   motherLastName: string;
   bookNumber: string;
   pageNumber: string;
@@ -200,7 +202,6 @@ export function draftFromValues(
     });
   }
 
-  // The record keeps parents as first + last name only, so a middle initial stays with the first name.
   const parent = (full: string | null, who: string, group: DraftGroup) => {
     const s = splitName(full);
     if (!full) {
@@ -219,10 +220,7 @@ export function draftFromValues(
         tone: "check",
       });
     }
-    return {
-      first: [s.first, s.middle].filter(Boolean).join(" "),
-      last: s.last,
-    };
+    return s;
   };
   const father = parent(values.fatherName, "Father", "father");
   const mother = parent(values.motherName, "Mother", "mother");
@@ -275,8 +273,10 @@ export function draftFromValues(
       address: v(values, "residence"),
       minister: v(values, "minister"),
       fatherFirstName: father.first,
+      fatherMiddleName: father.middle,
       fatherLastName: father.last,
       motherFirstName: mother.first,
+      motherMiddleName: mother.middle,
       motherLastName: mother.last,
       bookNumber: "",
       pageNumber: "",
@@ -314,9 +314,9 @@ export function problemsToSave(
   if (blank(d.minister)) p.minister = "The minister is needed to save.";
   if (blank(d.entryNumber))
     p.entryNumber = "The entry number is needed to save.";
-  if (!blank(d.fatherFirstName) && blank(d.fatherLastName))
+  if (!blank(d.fatherFirstName + d.fatherMiddleName) && blank(d.fatherLastName))
     p.father = "Add the father's last name.";
-  if (!blank(d.motherFirstName) && blank(d.motherLastName))
+  if (!blank(d.motherFirstName + d.motherMiddleName) && blank(d.motherLastName))
     p.mother = "Add the mother's last name.";
   if (blank(d.fatherLastName) && blank(d.motherLastName) && blank(d.remarks)) {
     p.remarks =

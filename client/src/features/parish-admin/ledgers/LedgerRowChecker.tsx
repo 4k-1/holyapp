@@ -130,10 +130,16 @@ const GROUPS: Group[] = [
     side: "left",
     source: ["fatherName"],
     fields: [
-      { name: "fatherFirstName", label: "First name" },
+      {
+        name: "fatherFirstName",
+        label: "First name",
+        span: "col-span-2 @min-[22rem]:col-span-1",
+      },
+      { name: "fatherMiddleName", label: "Middle" },
       { name: "fatherLastName", label: "Last name" },
     ],
-    layout: "grid-cols-2",
+    layout:
+      "grid-cols-[4.5rem_minmax(0,1fr)] @min-[22rem]:grid-cols-[minmax(0,1fr)_4.5rem_minmax(0,1fr)]",
   },
   {
     key: "mother",
@@ -141,10 +147,16 @@ const GROUPS: Group[] = [
     side: "left",
     source: ["motherName"],
     fields: [
-      { name: "motherFirstName", label: "First name" },
+      {
+        name: "motherFirstName",
+        label: "First name",
+        span: "col-span-2 @min-[22rem]:col-span-1",
+      },
+      { name: "motherMiddleName", label: "Middle" },
       { name: "motherLastName", label: "Last name" },
     ],
-    layout: "grid-cols-2",
+    layout:
+      "grid-cols-[4.5rem_minmax(0,1fr)] @min-[22rem]:grid-cols-[minmax(0,1fr)_4.5rem_minmax(0,1fr)]",
   },
   {
     key: "address",
@@ -504,8 +516,10 @@ export function LedgerRowChecker({
         address: draft.address.trim() || undefined,
         minister: draft.minister.trim(),
         fatherFirstName: draft.fatherFirstName.trim(),
+        fatherMiddleName: draft.fatherMiddleName.trim() || undefined,
         fatherLastName: draft.fatherLastName.trim(),
         motherFirstName: draft.motherFirstName.trim(),
+        motherMiddleName: draft.motherMiddleName.trim() || undefined,
         motherLastName: draft.motherLastName.trim(),
         paternalGrandfather: "",
         paternalGrandmother: "",
