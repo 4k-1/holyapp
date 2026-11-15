@@ -76,23 +76,27 @@ function registerRef(record) {
   return `${record.book_number}:${record.page_number}:${record.entry_number}`;
 }
 
+// Record columns stored encrypted (see the record controllers). A certificate copies them, so
+// they are decrypted before anything is copied into its snapshot.
+const RECORD_SECRET = [
+  'address',
+  'remarks',
+  'place_of_birth',
+  'place_of_baptism',
+  'place_of_confirmation',
+  'baptism_place',
+  'place_of_marriage',
+  'marriage_address',
+  'residence',
+  'place_of_burial',
+  'cause_of_death',
+];
+
 function snapshotFrom(request, record, code, verifyUrl, config) {
   const details = decryptJson(
     request.subject_details && typeof request.subject_details === 'object' ? request.subject_details : {}
   ) || {};
-  record = decryptRow(record || {}, [
-    'address',
-    'remarks',
-    'place_of_birth',
-    'place_of_baptism',
-    'place_of_confirmation',
-    'baptism_place',
-    'place_of_marriage',
-    'marriage_address',
-    'residence',
-    'place_of_burial',
-    'cause_of_death',
-  ]);
+  record = record || {};
   const fields = {
     requestId: request.id,
     registerRef: registerRef(record),
@@ -387,8 +391,10 @@ async function issueCertificateRow(client, request, actorId, parishId, { printed
   const id = crypto.randomUUID();
   const requestDetails = decryptJson(request.subject_details) || {};
   const holder = requestDetails.subjectName || 'Certificate subject';
-  const snapshot = snapshotFrom(request, record, code, verifyUrl, config);
-  snapshot.printed = await printedRecord(client, request.record_type, record);
+  // Both the summary fields and the printed record read from the decrypted copy.
+  const plainRecord = decryptRow(record || {}, RECORD_SECRET);
+  const snapshot = snapshotFrom(request, plainRecord, code, verifyUrl, config);
+  snapshot.printed = await printedRecord(client, request.record_type, plainRecord);
 
   await client.query(
     `INSERT INTO certificate (

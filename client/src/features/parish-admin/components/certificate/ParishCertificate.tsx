@@ -65,14 +65,6 @@ export const ParishCertificate = forwardRef<HTMLDivElement, ParishCertificatePro
             signatory={data.signatory}
             fallbackTitle="Parish Priest"
             signOff={data.type === "CONFIRMATION" ? "In Christ," : data.type === "DEATH" ? "Yours in Christ," : undefined}
-            verse={
-              data.type === "BAPTISM" ? (
-                <>
-                  &ldquo;Going therefore, teach ye all nations; baptizing them in the name of the Father, and of the
-                  Son, and of the Holy Ghost.&rdquo; <span className="pcert__nowrap">(Matthew 28:19)</span>
-                </>
-              ) : undefined
-            }
           />
         </footer>
       </div>
@@ -132,13 +124,10 @@ function SignatureBlock({
   signatory,
   fallbackTitle,
   signOff,
-  verse,
 }: {
   signatory: CertificateSignatory;
   fallbackTitle: string;
   signOff?: string;
-  /** A short scripture line under the signatory (baptism). */
-  verse?: ReactNode;
 }) {
   return (
     <div className="pcert__signature">
@@ -148,7 +137,6 @@ function SignatureBlock({
       </div>
       <p className="pcert__sign-name">{present(signatory.name) ?? " "}</p>
       <p className="pcert__sign-title">{present(signatory.title) ?? fallbackTitle}</p>
-      {verse && <p className="pcert__verse">{verse}</p>}
     </div>
   );
 }
