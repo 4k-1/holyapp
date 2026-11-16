@@ -2,6 +2,7 @@ import { useState, type FocusEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GearIcon, UserIcon } from "@/components/ui/icons/AdminIcons";
 import { ProfileMenu } from "@/components/layout/ProfileMenu";
+import { PortalNotificationBell } from "@/features/parishioner/notifications/PortalNotificationBell";
 import { logout } from "@/features/auth/api/authApi";
 import { askConfirm } from "@/lib/notify";
 import type { Parish } from "@/types";
@@ -132,6 +133,7 @@ export function Navbar({ parish, userInitials, userName, userEmail }: NavbarProp
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <PortalNotificationBell parish={parish} />
           <ProfileMenu
             tone="portal"
             initials={userInitials}

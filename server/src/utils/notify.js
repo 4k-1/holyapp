@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { allows } = require('../constants/staffAccess');
 
 async function createNotification({ parishId, recipientId, kind, title, body, href }) {
   if (!parishId || !recipientId || !title || !body) return;
@@ -10,6 +11,26 @@ async function createNotification({ parishId, recipientId, kind, title, body, hr
     );
   } catch (err) {
     console.error('createNotification failed:', err.message);
+  }
+}
+
+/**
+ * Notifies the parish office about something in one area (e.g. 'certificates'): every active admin, and every
+ * active staff member allowed at least to view that area. Never throws: a notification must not undo the action.
+ */
+async function notifyOfficeArea(parishId, area, { kind, title, body, href }) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, role, staff_access FROM app_user
+       WHERE parish_id = $1 AND role IN ('parish_admin', 'parish_staff') AND status = 'active'`,
+      [parishId]
+    );
+    for (const user of rows) {
+      if (user.role === 'parish_staff' && !allows(user.staff_access, area, 'view')) continue;
+      await createNotification({ parishId, recipientId: user.id, kind, title, body, href });
+    }
+  } catch (err) {
+    console.error(`notifyOfficeArea(${area}) failed:`, err.message);
   }
 }
 
@@ -87,4 +108,4 @@ async function notifyStaffRoleChange({
   }
 }
 
-module.exports = { createNotification, notifyStaffRoleChange };
+module.exports = { createNotification, notifyOfficeArea, notifyStaffRoleChange };

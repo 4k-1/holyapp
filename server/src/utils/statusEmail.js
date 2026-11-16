@@ -8,6 +8,7 @@
 const pool = require('../config/db');
 const mailer = require('./mailer');
 const { frontendUrl } = require('./frontendUrl');
+const { createNotification } = require('./notify');
 
 const TEAL = '#16798C';
 const DEEP_TEAL = '#0E3B46';
@@ -206,6 +207,18 @@ function emailCertificateStatus(row, change, extra = {}) {
   };
   const content = byChange[change];
   if (!content) return Promise.resolve();
+  // The same update in the portal's notifications, whether or not status emails are on.
+  if (row.requested_by) {
+    const note = createNotification({
+      parishId: row.parish_id,
+      recipientId: row.requested_by,
+      kind: 'request',
+      title: content.headline,
+      body: [content.reason ? `Reason: ${content.reason}` : '', content.nextStep].filter(Boolean).join(' '),
+      href: `requests/${row.id}`,
+    }).finally(() => pending.delete(note));
+    pending.add(note);
+  }
   return emailStatusChange({
     parishId: row.parish_id,
     recipientId: row.requested_by,

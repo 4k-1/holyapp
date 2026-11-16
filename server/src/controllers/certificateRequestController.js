@@ -5,6 +5,7 @@ const { feeAmount, FEE_NAMES, FEE_DEFAULTS } = require('../utils/serviceFee');
 const { normalizePurpose } = require('../constants/purposes');
 const { encryptJson, decryptJson } = require('../utils/fieldCrypto');
 const { emailCertificateStatus } = require('../utils/statusEmail');
+const { notifyOfficeArea } = require('../utils/notify');
 
 const SACRAMENTS = ['baptism', 'confirmation', 'marriage', 'death'];
 const DELIVERIES = ['pickup', 'digital'];
@@ -235,6 +236,26 @@ async function loadRequest(id, parishId, requesterId) {
   return result.rows[0] || null;
 }
 
+const SACRAMENT_WORDS = { baptism: 'baptismal', confirmation: 'confirmation', marriage: 'marriage', death: 'death' };
+
+/**
+ * Tells the office a parishioner asked for a certificate. Names the parishioner, not the person on the
+ * certificate: request details are stored encrypted, notifications are not.
+ */
+async function notifyNewRequest(parishId, requesterId, sacrament, delivery) {
+  const who = await pool.query(
+    "SELECT NULLIF(trim(concat_ws(' ', first_name, last_name)), '') AS name FROM app_user WHERE id = $1",
+    [requesterId]
+  );
+  const name = (who.rows[0] && who.rows[0].name) || 'A parishioner';
+  await notifyOfficeArea(parishId, 'certificates', {
+    kind: 'request',
+    title: 'New certificate request',
+    body: `${name} asked for a ${SACRAMENT_WORDS[sacrament] || sacrament} certificate (${delivery === 'digital' ? 'digital copy' : 'pickup at the office'}).`,
+    href: 'requests',
+  });
+}
+
 async function createRequest(req, res) {
   const parsed = validateIntake(req.body);
   if (typeof parsed === 'string') return res.status(400).json({ error: parsed });
@@ -273,6 +294,7 @@ async function createRequest(req, res) {
       entityId: inserted.rows[0].id,
       metadata: { sacrament: parsed.sacrament, delivery: parsed.delivery },
     });
+    await notifyNewRequest(req.parishId, req.user.id, parsed.sacrament, parsed.delivery);
     return res.status(201).json(toCertificateRequest(row));
   } catch (err) {
     return sendError(res, err);
