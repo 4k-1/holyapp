@@ -15,6 +15,22 @@ const OTHER_ROLES = Object.freeze([
 ]);
 const PERSONNEL_ROLES = Object.freeze([...CLERGY_ROLES, ...OTHER_ROLES]);
 
+const MAX_TITLE_LENGTH = 60;
+
+/**
+ * A title as saved: one from the list, matched without regard to case ("parish priest" → "Parish Priest",
+ * so the one-Parish-Priest rule can't be dodged), or one typed for "Other" (e.g. "Choir Director").
+ * Returns { title } or { error } for an empty or too-long title.
+ */
+function cleanPersonnelTitle(value) {
+  const title = String(value ?? '').trim().replace(/\s+/g, ' ');
+  if (!title) return { error: 'Choose or type a title.' };
+  const listed = PERSONNEL_ROLES.find((role) => role.toLowerCase() === title.toLowerCase());
+  if (listed) return { title: listed };
+  if (title.length > MAX_TITLE_LENGTH) return { error: `Keep the title under ${MAX_TITLE_LENGTH} characters.` };
+  return { title };
+}
+
 /** Only one active person per parish may hold this title. */
 const PARISH_PRIEST = 'Parish Priest';
 
@@ -70,6 +86,8 @@ module.exports = {
   PERSONNEL_ROLES,
   PARISH_PRIEST,
   CLERGY_RANKS,
+  MAX_TITLE_LENGTH,
+  cleanPersonnelTitle,
   isClergy,
   isClergyRank,
   rankForHonorific,

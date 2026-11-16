@@ -8,10 +8,9 @@ const { notifyStaffRoleChange } = require('../utils/notify');
 const { revokeUserSessions } = require('../utils/sessions');
 const { FULL_ACCESS, normalizeAccess, parseAccessInput } = require('../constants/staffAccess');
 
-const { PERSONNEL_ROLES, rankForHonorific, splitHonorific, formatPersonName } = require('../constants/personnelRoles');
+const { rankForHonorific, splitHonorific, formatPersonName, cleanPersonnelTitle } = require('../constants/personnelRoles');
 const { assertCanBeParishPriest } = require('../utils/personnel');
 
-const JOB_TITLES = new Set(PERSONNEL_ROLES);
 
 function displayName(row) {
   if (row.personnel_name) {
@@ -20,9 +19,16 @@ function displayName(row) {
   return [row.first_name, row.middle_name, row.last_name].filter(Boolean).join(' ') || row.email;
 }
 
+/** Their title on the Personnel list, listed or typed; "Admin Staff" / "Staff" only when they have none. */
 function jobTitle(row) {
-  if (JOB_TITLES.has(row.role_title)) return row.role_title;
+  if (row.role_title) return row.role_title;
   return row.role === ROLES.PARISH_ADMIN ? 'Admin Staff' : 'Staff';
+}
+
+/** The title sent with an account: a listed or typed one, or "Admin Staff" when none is sent. */
+function accountTitle(value) {
+  if (value === undefined || value === null || String(value).trim() === '') return { title: 'Admin Staff' };
+  return cleanPersonnelTitle(value);
 }
 
 function toStaff(row) {
@@ -164,7 +170,9 @@ async function listStaff(req, res) {
 async function createStaff(req, res) {
   let name = String(req.body.name || '').trim();
   const email = String(req.body.email || '').trim().toLowerCase();
-  let roleTitle = JOB_TITLES.has(req.body.role) ? req.body.role : 'Admin Staff';
+  const sentTitle = accountTitle(req.body.role);
+  if (sentTitle.error) return res.status(400).json({ error: sentTitle.error });
+  let roleTitle = sentTitle.title;
   const accessRole = req.body.accessRole === 'admin' ? 'admin' : 'staff';
   const personnelId = req.body.personnelId ? String(req.body.personnelId) : null;
   const areaAccess = readAreaAccess(req.body, accessRole);
@@ -257,7 +265,9 @@ async function createStaff(req, res) {
 async function updateStaff(req, res) {
   const name = String(req.body.name || '').trim();
   const email = String(req.body.email || '').trim().toLowerCase();
-  const roleTitle = JOB_TITLES.has(req.body.role) ? req.body.role : 'Admin Staff';
+  const sentTitle = accountTitle(req.body.role);
+  if (sentTitle.error) return res.status(400).json({ error: sentTitle.error });
+  const roleTitle = sentTitle.title;
   const accessRole = req.body.accessRole === 'admin' ? 'admin' : 'staff';
   const sentAccess = readAreaAccess(req.body, accessRole);
 

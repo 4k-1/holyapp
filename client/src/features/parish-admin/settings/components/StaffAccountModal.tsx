@@ -13,6 +13,7 @@ const selectClass =
   "w-full rounded-md border border-admin-border-strong bg-white px-[11px] py-[9px] text-admin-body text-admin-ink focus:border-admin-green-600 focus:outline-none focus:ring-2 focus:ring-admin-green-600/25";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const OTHER = "Other";
 
 interface StaffAccountModalProps {
   /** Existing account when editing; omitted when adding a new one. */
@@ -27,10 +28,14 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
   const isEditing = !!account;
   const [name, setName] = useState(account?.name ?? "");
   const [email, setEmail] = useState(account?.email ?? "");
-  /** Accounts with no recognised title are listed as "Staff", which isn't a choice here; ask for a real one. */
-  const [role, setRole] = useState<StaffRole>(
-    account ? (STAFF_ROLES.includes(account.role) ? account.role : "") : STAFF_ROLES[0]
-  );
+  /**
+   * A listed title, or one typed under "Other". Accounts with no title are listed as "Staff" and an old plain
+   * "Other" says nothing, so both ask for a real one.
+   */
+  const startRole = account?.role ?? STAFF_ROLES[0];
+  const noTitle = !account ? false : account.role === "Staff" || account.role === OTHER;
+  const [role, setRole] = useState<StaffRole>(noTitle ? "" : startRole);
+  const [customRole, setCustomRole] = useState(!noTitle && !STAFF_ROLES.includes(startRole));
   const [accessRole, setAccessRole] = useState<StaffAccessRole>(account?.accessRole ?? "staff");
   /** New sign-ins start as Secretary; an admin being moved to staff starts from Full staff access. */
   const [areaAccess, setAreaAccess] = useState<AreaAccess>(() =>
@@ -71,6 +76,10 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
       setError("Enter a valid email address.");
       return;
     }
+    if (!linkedPerson && customRole && !role.trim()) {
+      setError("Type their title.");
+      return;
+    }
     if (!linkedPerson && !role) {
       setError("Choose a role.");
       return;
@@ -82,7 +91,7 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
       await onSave(
         linkedPerson
           ? { personnelId: linkedPerson.id, name: linkedPerson.name, role: linkedPerson.role, email: email.trim(), accessRole, ...access }
-          : { name: name.trim(), email: email.trim(), role, accessRole, ...access }
+          : { name: name.trim(), email: email.trim(), role: role.trim(), accessRole, ...access }
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -183,8 +192,16 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
 
         {(isEditing || source === "new") && (
           <AdminField label="Role" className="mb-0">
-            <select value={role} onChange={(e) => setRole(e.target.value as StaffRole)} className={selectClass}>
-              {!role && (
+            <select
+              value={customRole ? OTHER : role}
+              onChange={(e) => {
+                const next = e.target.value;
+                setCustomRole(next === OTHER);
+                setRole(next === OTHER ? "" : next);
+              }}
+              className={selectClass}
+            >
+              {!role && !customRole && (
                 <option value="" disabled>
                   Choose a role
                 </option>
@@ -195,6 +212,17 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
                 </option>
               ))}
             </select>
+            {customRole && (
+              <AdminInput
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder="Their title, e.g. Choir Director"
+                aria-label="Role, typed"
+                maxLength={60}
+                autoFocus={!role}
+                className="mt-2"
+              />
+            )}
           </AdminField>
         )}
 

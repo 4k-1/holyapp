@@ -38,4 +38,19 @@ describe('Staff job titles', () => {
     assert.equal(res.body.staff.role, 'Sacristan');
     assert.equal((await listed(parish.staff)).role, 'Sacristan');
   });
+
+  it('keeps a typed title that is not on the list, on the account and the Personnel list', async () => {
+    const res = await api(parish.admin)
+      .patch(`/staff/${parish.staff.id}`)
+      .send({ name: 'Stef Staff', email: parish.staff.email, role: ' Choir  Director', accessRole: 'staff' });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal((await listed(parish.staff)).role, 'Choir Director');
+    const person = await pool.query('SELECT role_title FROM parish_personnel WHERE user_id = $1', [parish.staff.id]);
+    assert.equal(person.rows[0].role_title, 'Choir Director');
+
+    const tooLong = await api(parish.admin)
+      .patch(`/staff/${parish.staff.id}`)
+      .send({ name: 'Stef Staff', email: parish.staff.email, role: 'x'.repeat(61), accessRole: 'staff' });
+    assert.equal(tooLong.status, 400);
+  });
 });

@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { requiredText, optionalText, sendRecordError } = require('../utils/recordFields');
-const { PERSONNEL_ROLES, rankForHonorific, splitHonorific } = require('../constants/personnelRoles');
+const { PERSONNEL_ROLES, rankForHonorific, splitHonorific, cleanPersonnelTitle } = require('../constants/personnelRoles');
 const { toPerson, displayNameOf, assertCanBeParishPriest, holdsParishPriest, httpError } = require('../utils/personnel');
 const { encrypt } = require('../utils/fieldCrypto');
 
@@ -13,18 +13,10 @@ function shortText(value, label, max) {
   return text;
 }
 
-const MAX_TITLE_LENGTH = 60;
-
-/**
- * A title from the list, matched without regard to case ("parish priest" → "Parish Priest", so the
- * one-Parish-Priest rule can't be dodged), or one the admin typed for "Other" (e.g. "Choir Director").
- */
 function cleanTitle(value) {
-  const title = requiredText(value, 'Title').replace(/\s+/g, ' ');
-  const listed = PERSONNEL_ROLES.find((role) => role.toLowerCase() === title.toLowerCase());
-  if (listed) return listed;
-  if (title.length > MAX_TITLE_LENGTH) throw httpError(400, `Keep the title under ${MAX_TITLE_LENGTH} characters.`);
-  return title;
+  const cleaned = cleanPersonnelTitle(value);
+  if (cleaned.error) throw httpError(400, cleaned.error);
+  return cleaned.title;
 }
 
 /**
