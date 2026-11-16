@@ -4,6 +4,9 @@ import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/com
 import type { ServiceFee } from "../types";
 import { AdminModalFrame } from "@/features/parish-admin/components/AdminModalFrame";
 
+/** Same limit as the server. */
+const MAX_FEE = 100000;
+
 interface EditServiceFeeModalProps {
   fee: ServiceFee;
   onClose: () => void;
@@ -16,20 +19,32 @@ export function EditServiceFeeModal({ fee, onClose, onSave }: EditServiceFeeModa
   const [error, setError] = useState("");
 
   const parsed = Number(amount);
-  const isValid = amount.trim() !== "" && !isNaN(parsed) && parsed >= 0;
+  const problem =
+    amount.trim() === "" || isNaN(parsed) || parsed < 0
+      ? "Enter an amount of ₱0 or more."
+      : parsed > MAX_FEE
+        ? `Fees can be at most ₱${MAX_FEE.toLocaleString("en-PH")}.`
+        : !/^\d+(\.\d{1,2})?$/.test(amount.trim())
+          ? "Use at most 2 decimal places (centavos)."
+          : "";
+  const isValid = problem === "";
   const hasChanged = isValid && parsed !== fee.amount;
 
   async function handleSave() {
     if (!isValid) {
-      setError("Enter a valid amount");
+      setError(problem);
+      return;
+    }
+    if (!hasChanged) {
+      onClose();
       return;
     }
     setSaving(true);
     setError("");
     try {
       await onSave(parsed);
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : "Couldn't save the fee. Please try again.");
       setSaving(false);
     }
   }
@@ -63,6 +78,9 @@ export function EditServiceFeeModal({ fee, onClose, onSave }: EditServiceFeeModa
             <AdminInput
               type="number"
               min="0"
+              max={MAX_FEE}
+              step="0.01"
+              inputMode="decimal"
               autoFocus
               value={amount}
               onChange={(e) => {
@@ -74,7 +92,11 @@ export function EditServiceFeeModal({ fee, onClose, onSave }: EditServiceFeeModa
               }}
             />
           </div>
-          {error && <p className="mt-1.5 text-admin-label font-semibold text-red-700">{error}</p>}
+          {(error || problem) && (
+            <p role="alert" className="mt-1.5 text-admin-label font-semibold text-red-700">
+              {error || problem}
+            </p>
+          )}
         </AdminField>
 
         <div className="rounded-md border border-admin-gold-700/30 bg-admin-gold-700/10 px-3.5 py-3 text-admin-support text-admin-gold-700">

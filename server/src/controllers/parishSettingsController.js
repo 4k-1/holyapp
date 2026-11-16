@@ -3,20 +3,22 @@ const { toDataUrl } = require('./certificateSignatureController');
 const { writeAudit } = require('../utils/audit');
 const { PHOTO_URL_SQL } = require('./parishPhotoController');
 const { isMonthDay } = require('../utils/liturgicalCalendar');
+const { FEE_NAMES, FEE_DEFAULTS } = require('../utils/serviceFee');
 
 const SACRAMENTS = ['baptism', 'confirmation', 'marriage', 'death'];
 
+const MAX_FEE = 100000;
+
+// The fixed fees parishioners pay through HolyApp: the certificates, in the order Settings lists them. Mass
+// intentions take a freewill donation, so they have no fee. Other rows a parish may still have (extra copies,
+// blessings, Mass intentions) stay in the table but are not shown or editable: nothing charges them.
 const DEFAULT_FEES = [
-  { label: 'Baptismal Certificate', amount: 100 },
-  { label: 'Confirmation Certificate', amount: 100 },
-  { label: 'Marriage Certificate', amount: 150 },
-  { label: 'Death Certificate', amount: 100 },
-  { label: 'Additional copy (per copy)', amount: 50 },
-  { label: 'Mass Intention (per intention)', amount: 100 },
-  { label: 'House Blessing', amount: 500 },
-  { label: 'Car Blessing', amount: 300 },
-  { label: 'Business Blessing', amount: 500 },
+  { label: FEE_NAMES.baptism, amount: FEE_DEFAULTS.baptism },
+  { label: FEE_NAMES.confirmation, amount: FEE_DEFAULTS.confirmation },
+  { label: FEE_NAMES.marriage, amount: FEE_DEFAULTS.marriage },
+  { label: FEE_NAMES.death, amount: FEE_DEFAULTS.death },
 ];
+const PAID_FEE_NAMES = DEFAULT_FEES.map((fee) => fee.label);
 
 const DEFAULT_CERTS = {
   baptism: {
@@ -140,17 +142,15 @@ async function ensureSettings(parishId, actorId) {
   );
 }
 
+/** Adds any paid fee the parish doesn't have yet, at its default amount; never changes an amount already set. */
 async function ensureFees(parishId, actorId) {
-  const existing = await pool.query('SELECT id FROM service_fee WHERE parish_id = $1', [parishId]);
-  if (existing.rows.length > 0) return;
-  for (const fee of DEFAULT_FEES) {
-    await pool.query(
-      `INSERT INTO service_fee (parish_id, service_name, amount, updated_by)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (parish_id, service_name) DO NOTHING`,
-      [parishId, fee.label, fee.amount, actorId]
-    );
-  }
+  await pool.query(
+    `INSERT INTO service_fee (parish_id, service_name, amount, updated_by)
+     SELECT $1, fee.label, fee.amount, $2
+     FROM unnest($3::text[], $4::numeric[]) AS fee(label, amount)
+     ON CONFLICT (parish_id, service_name) DO NOTHING`,
+    [parishId, actorId, PAID_FEE_NAMES, DEFAULT_FEES.map((fee) => fee.amount)]
+  );
 }
 
 async function ensureCertificates(parishId, actorId) {
@@ -264,9 +264,9 @@ async function listFees(req, res) {
               NULLIF(trim(concat_ws(' ', u.first_name, u.middle_name, u.last_name)), '') AS updated_by_name
        FROM service_fee f
        LEFT JOIN app_user u ON u.id = f.updated_by
-       WHERE f.parish_id = $1
-       ORDER BY f.service_name`,
-      [req.parishId]
+       WHERE f.parish_id = $1 AND f.service_name = ANY($2::text[])
+       ORDER BY array_position($2::text[], f.service_name::text)`,
+      [req.parishId, PAID_FEE_NAMES]
     );
     res.json({ fees: result.rows.map(toFee) });
   } catch (err) {
@@ -277,16 +277,23 @@ async function listFees(req, res) {
 async function updateFee(req, res) {
   const amount = Number(req.body.amount);
   if (!Number.isFinite(amount) || amount < 0) {
-    return res.status(400).json({ error: 'Enter a valid fee amount.' });
+    return res.status(400).json({ error: 'Enter an amount of ₱0 or more.' });
+  }
+  // The column holds up to ₱99,999,999.99; anything near that is a typo, not a fee.
+  if (amount > MAX_FEE) {
+    return res.status(400).json({ error: `Fees can be at most ₱${MAX_FEE.toLocaleString('en-PH')}.` });
+  }
+  if (Math.round(amount * 100) !== Number((amount * 100).toFixed(6))) {
+    return res.status(400).json({ error: 'Use at most 2 decimal places (centavos).' });
   }
 
   try {
     const result = await pool.query(
       `UPDATE service_fee
        SET amount = $1, updated_by = $2, updated_at = NOW()
-       WHERE id = $3 AND parish_id = $4
+       WHERE id = $3 AND parish_id = $4 AND service_name = ANY($5::text[])
        RETURNING id, service_name AS label, amount, updated_at`,
-      [amount, req.user.id, req.params.feeId, req.parishId]
+      [amount, req.user.id, req.params.feeId, req.parishId, PAID_FEE_NAMES]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Fee not found.' });

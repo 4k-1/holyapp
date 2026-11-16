@@ -127,7 +127,7 @@ export const SETTINGS_SECTIONS: SettingsSectionMeta[] = [
     label: "Service Fees",
     path: "fees",
     group: "parish",
-    description: "Default amounts for new requests. Changing one doesn't affect requests already submitted.",
+    description: "What parishioners pay through HolyApp for certificates. Mass intentions take a freewill donation instead. A change applies to new requests only.",
   },
   {
     id: "staff",

@@ -127,16 +127,6 @@ function datesInRange(from, to) {
   return dates;
 }
 
-async function offeringAmount(parishId) {
-  const named = await pool.query(
-    `SELECT amount FROM service_fee
-     WHERE parish_id = $1 AND service_name ILIKE '%mass intention%'
-     LIMIT 1`,
-    [parishId]
-  );
-  return named.rows[0] ? Number(named.rows[0].amount) : 100;
-}
-
 async function notifyOffice(parishId, title, body) {
   const office = await pool.query(
     `SELECT id FROM app_user

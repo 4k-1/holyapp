@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { listServiceFees, updateServiceFeeAmount } from "../api/feesApi";
 import { EditServiceFeeModal } from "./EditServiceFeeModal";
 import type { ServiceFee } from "../types";
-import { notifyError } from "@/lib/notify";
+import { notify, notifyError } from "@/lib/notify";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { SettingsPanel, SettingsPillButton } from "./SettingsUI";
 
@@ -21,15 +21,13 @@ export function ServiceFeesSection() {
       .finally(() => setLoading(false));
   }, []);
 
+  // A failure is thrown back to the dialog, which shows it and lets the admin try again.
   async function handleSave(amount: number) {
     if (!editingFee) return;
-    try {
-      const updated = await updateServiceFeeAmount(editingFee.id, amount);
-      setFees((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
-      setEditingFee(null);
-    } catch (err) {
-      notifyError(err, "Could not update fee.");
-    }
+    const updated = await updateServiceFeeAmount(editingFee.id, amount);
+    setFees((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+    setEditingFee(null);
+    notify(`${updated.label} is now ₱${updated.amount.toLocaleString("en-PH")} for new requests.`);
   }
 
   if (loading) {
@@ -40,7 +38,7 @@ export function ServiceFeesSection() {
     <>
       <SettingsPanel
         title="Default fees"
-        description="Each amount is applied automatically to new requests of that type."
+        description="Certificate fees are per copy: two copies cost twice the amount."
         flush
       >
         <div className="overflow-x-auto">
