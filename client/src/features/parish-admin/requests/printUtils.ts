@@ -19,22 +19,46 @@ function escapeHtml(value: string) {
 }
 
 const CERTIFICATE_SHEETS = ".pcert, .mcert";
+/** Class names used only by the printed certificates, their specimen mark and the preview frame. */
+const CERTIFICATE_SELECTOR = /\.(pcert|mcert|mf-|cert-specimen|cert-fit-sheet)/;
+/** The certificates' named paper sizes (parish-cert-a5, parish-cert-letter, marriage-cert-long). */
+const CERTIFICATE_PAGE = /cert/;
 
 /**
- * The printed certificates (ParishCertificate, and Form 97 for marriage) are styled by class,
- * with their own paper size, so their stylesheets go into the print document with them.
+ * The certificate rules from a list of CSS rules, keeping the @media / @layer / @supports blocks around them.
+ * Everything else is left out: on the built site all the app's CSS is one file, and its print rules for
+ * other sheets ("hide everything that isn't a .print-sheet", A4 page sizes) would blank or resize the
+ * certificate when it prints, so the browser's print preview wouldn't match the screen.
+ */
+function certificateRules(rules: CSSRuleList): string[] {
+  const kept: string[] = [];
+  for (const rule of Array.from(rules)) {
+    if (rule instanceof CSSStyleRule) {
+      if (CERTIFICATE_SELECTOR.test(rule.selectorText)) kept.push(rule.cssText);
+    } else if (rule instanceof CSSPageRule) {
+      if (CERTIFICATE_PAGE.test(rule.selectorText)) kept.push(rule.cssText);
+    } else if ("cssRules" in rule && rule.cssRules instanceof CSSRuleList) {
+      // @media, @supports, @layer, @container: keep the block if anything inside it is kept.
+      const inner = certificateRules(rule.cssRules);
+      if (inner.length) kept.push(`${rule.cssText.slice(0, rule.cssText.indexOf("{"))}{\n${inner.join("\n")}\n}`);
+    }
+  }
+  return kept;
+}
+
+/**
+ * The printed certificates (ParishCertificate, and Form 97 for marriage) are styled by class, with their
+ * own paper size, so their rules go into the print document with them, and nothing else from the app.
  */
 function parishCertificateCss(el: HTMLElement) {
   if (!el.matches(CERTIFICATE_SHEETS) && !el.querySelector(CERTIFICATE_SHEETS)) return "";
   const css: string[] = [];
   for (const sheet of Array.from(document.styleSheets)) {
-    let text: string;
     try {
-      text = Array.from(sheet.cssRules, (rule) => rule.cssText).join("\n");
+      css.push(...certificateRules(sheet.cssRules));
     } catch {
       continue; // a stylesheet from another origin
     }
-    if (text.includes(".pcert") || text.includes(".mcert")) css.push(text);
   }
   return `${css.join("\n")}
   .print-shell { max-width: none; width: max-content; }
@@ -70,6 +94,27 @@ ${parishCertificateCss(el)}
 </html>`;
 }
 
+/**
+ * Resolves once the print document's fonts and images have loaded (the blackletter title, the parish logo,
+ * the signature, the QR code), so the browser's print preview shows the finished certificate. Gives up
+ * after `timeoutMs` rather than never printing.
+ */
+async function whenLoaded(doc: Document, timeoutMs = 4000) {
+  const images = Array.from(doc.images).map((img) =>
+    img.complete
+      ? Promise.resolve()
+      : new Promise<void>((resolve) => {
+          img.addEventListener("load", () => resolve(), { once: true });
+          img.addEventListener("error", () => resolve(), { once: true });
+        })
+  );
+  const fonts = doc.fonts ? doc.fonts.ready.then(() => undefined) : Promise.resolve();
+  await Promise.race([
+    Promise.all([fonts, ...images]),
+    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+}
+
 function printFromIframe(html: string) {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
@@ -86,11 +131,11 @@ function printFromIframe(html: string) {
   doc.open();
   doc.write(html);
   doc.close();
-  win.focus();
-  setTimeout(() => {
+  void whenLoaded(doc).then(() => {
+    win.focus();
     win.print();
     iframe.remove();
-  }, 250);
+  });
 }
 
 export function printElement(el: HTMLElement, docTitle: string) {
@@ -103,11 +148,11 @@ export function printElement(el: HTMLElement, docTitle: string) {
 
   w.document.write(html);
   w.document.close();
-  w.focus();
-  setTimeout(() => {
+  void whenLoaded(w.document).then(() => {
+    w.focus();
     w.print();
     w.close();
-  }, 250);
+  });
 }
 
 /**
