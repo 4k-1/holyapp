@@ -4,6 +4,7 @@ const { optionalUuid } = require('../utils/recordFields');
 const { feeAmount, FEE_NAMES, FEE_DEFAULTS } = require('../utils/serviceFee');
 const { normalizePurpose } = require('../constants/purposes');
 const { encryptJson, decryptJson } = require('../utils/fieldCrypto');
+const { emailCertificateStatus } = require('../utils/statusEmail');
 
 const SACRAMENTS = ['baptism', 'confirmation', 'marriage', 'death'];
 const DELIVERIES = ['pickup', 'digital'];
@@ -416,6 +417,7 @@ async function linkRequest(req, res) {
       entityId: request.id,
       metadata: { recordId, sacrament: request.record_type },
     });
+    emailCertificateStatus(row, 'found');
     return res.json(toCertificateRequest(row));
   } catch (err) {
     await rollback(client);
@@ -484,6 +486,7 @@ async function rejectRequest(req, res) {
       entityId: request.id,
       metadata: { reason },
     });
+    emailCertificateStatus(row, 'rejected', { reason });
     return res.json(toCertificateRequest(row));
   } catch (err) {
     await rollback(client);
@@ -556,6 +559,7 @@ async function confirmPayment(req, res) {
       entityId: request.id,
       metadata: { amount: Number(row.amount_due), method: 'cash' },
     });
+    emailCertificateStatus(updated, 'paid');
     return res.json(toCertificateRequest(updated));
   } catch (err) {
     await rollback(client);

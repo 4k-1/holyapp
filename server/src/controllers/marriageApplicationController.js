@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { createNotification } = require('../utils/notify');
+const { emailMarriageStatus } = require('../utils/statusEmail');
 const {
   requiredText,
   optionalText,
@@ -241,6 +242,7 @@ async function maybeAdvanceRequirements(row) {
        RETURNING *`,
       [row.id]
     );
+    emailMarriageStatus(updated.rows[0], 'requirements_complete');
     return updated.rows[0];
   }
   return row;
@@ -375,6 +377,7 @@ async function createApplication(req, res) {
         body: 'The parish office opened a marriage application for you. You can follow its status in the portal.',
         href: 'marriage',
       });
+      emailMarriageStatus(row, 'filed');
     }
 
     await writeAudit({
@@ -475,6 +478,37 @@ async function updateCircumstances(req, res) {
   }
 }
 
+/** Emails the couple about the one banns step this save moved forward, if any. */
+function emailBannsStep(before, after, plan, complete) {
+  const old = banns.normalizeBanns(before.banns);
+  const wasComplete = banns.bannsComplete(old, { elsewhere: before.wedding_elsewhere });
+  if (complete && !wasComplete) {
+    emailMarriageStatus(after, 'banns_complete', { dispensed: plan.dispensed });
+    return;
+  }
+  const newlyAnnounced = plan.announced.filter((d) => !old.announced.includes(d));
+  if (newlyAnnounced.length) {
+    const total = plan.sundays.length || 3;
+    const count = plan.sundays.length
+      ? plan.sundays.filter((d) => plan.announced.includes(d)).length
+      : plan.announced.length;
+    emailMarriageStatus(after, 'banns_announced', { dates: newlyAnnounced, count, total });
+    return;
+  }
+  const from = [];
+  if (plan.received.groom && !old.received.groom) from.push(plan.groomParish || "the groom's parish");
+  if (plan.received.bride && !old.received.bride) from.push(plan.brideParish || "the bride's parish");
+  if (from.length) {
+    emailMarriageStatus(after, 'banns_received', { from: from.join(' and ') });
+    return;
+  }
+  const sameSundays =
+    plan.sundays.length === old.sundays.length && plan.sundays.every((d) => old.sundays.includes(d));
+  if (plan.sundays.length && !sameSundays) {
+    emailMarriageStatus(after, 'banns_scheduled', { sundays: plan.sundays });
+  }
+}
+
 /** Saves the banns (5b) and ticks the "Banns published" requirement once they are complete. */
 async function updateBanns(req, res) {
   try {
@@ -511,6 +545,7 @@ async function updateBanns(req, res) {
       entityId: row.id,
       metadata: { sundays: plan.sundays, announced: plan.announced, dispensed: plan.dispensed, complete },
     });
+    emailBannsStep(row, next, plan, complete);
     res.json({ application: await hydrate(next) });
   } catch (err) {
     return sendRecordError(res, err);
@@ -736,6 +771,9 @@ async function updateDispensation(req, res) {
       entityId: row.id,
       metadata: { status },
     });
+    if (status !== row.dispensation_status && (status === 'granted' || status === 'denied')) {
+      emailMarriageStatus(updated.rows[0], `dispensation_${status}`);
+    }
     res.json({ application: await hydrate(updated.rows[0]) });
   } catch (err) {
     return sendRecordError(res, err);
@@ -822,6 +860,7 @@ async function reserveWeddingDate(req, res) {
       entityId: row.id,
       metadata: { date, start, end },
     });
+    emailMarriageStatus(updated.rows[0], 'date_reserved');
     res.json({ application: await hydrate(updated.rows[0]) });
   } catch (err) {
     return sendRecordError(res, err);
@@ -874,6 +913,7 @@ async function confirmWeddingDate(req, res) {
       entityId: row.id,
       metadata: {},
     });
+    emailMarriageStatus(updated.rows[0], 'date_confirmed');
     res.json({ application: await hydrate(updated.rows[0]) });
   } catch (err) {
     return sendRecordError(res, err);
@@ -900,6 +940,7 @@ async function rejectApplication(req, res) {
       entityId: row.id,
       metadata: {},
     });
+    emailMarriageStatus(updated.rows[0], 'rejected', { reason: remarks });
     res.json({ application: await hydrate(updated.rows[0]) });
   } catch (err) {
     return sendRecordError(res, err);
@@ -929,6 +970,7 @@ async function linkParishioner(req, res) {
         body: `The parish office linked marriage application ${row.reference_no} to your account. You can follow its status in the portal.`,
         href: 'marriage',
       });
+      emailMarriageStatus(updated.rows[0], 'linked');
     }
     await writeAudit({
       parishId: req.parishId,

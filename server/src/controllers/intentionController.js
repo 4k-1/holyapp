@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { createNotification } = require('../utils/notify');
+const { emailIntentionStatus } = require('../utils/statusEmail');
 const {
   requiredText,
   optionalText,
@@ -588,6 +589,7 @@ async function confirmIntention(req, res) {
       entityId: row.id,
       metadata: {},
     });
+    emailIntentionStatus(updated.rows[0], 'confirmed', { intentionFor: decrypt(row.intention_for) });
     res.json({ intention: toIntention(updated.rows[0]) });
   } catch (err) {
     return sendRecordError(res, err);
@@ -623,6 +625,7 @@ async function markSaid(req, res) {
       entityId: row.id,
       metadata: {},
     });
+    emailIntentionStatus(updated.rows[0], 'said', { intentionFor: decrypt(row.intention_for) });
     res.json({ intention: toIntention(updated.rows[0]) });
   } catch (err) {
     return sendRecordError(res, err);

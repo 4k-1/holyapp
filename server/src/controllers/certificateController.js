@@ -3,6 +3,7 @@ const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
+const { emailCertificateStatus } = require('../utils/statusEmail');
 const { frontendUrl } = require('../utils/frontendUrl');
 const { loadRequest, toCertificateRequest, receiptNumberFor } = require('./certificateRequestController');
 const { feeAmount } = require('../utils/serviceFee');
@@ -516,6 +517,7 @@ async function finishIssue(req, res, mode) {
       entityId: issued.id,
       metadata: { requestId: request.id, code: issued.code },
     });
+    emailCertificateStatus(row, mode === 'digital' ? 'issued' : 'ready');
     return res.json({
       request: toCertificateRequest(row),
       certificateId: issued.id,
@@ -579,6 +581,7 @@ async function releasePickup(req, res) {
       entityId: request.id,
       metadata: { releasedTo, validId: validId || null, certificateId: request.certificate_id },
     });
+    emailCertificateStatus(row, 'released', { releasedTo });
     return res.json(toCertificateRequest(row));
   } catch (err) {
     await rollback(client);
