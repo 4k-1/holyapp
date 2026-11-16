@@ -23,7 +23,7 @@ type Filter = "all" | "clergy" | "staff" | "inactive";
 const STAT_CARDS: { key: Filter; label: string }[] = [
   { key: "all", label: "All personnel" },
   { key: "clergy", label: "Clergy" },
-  { key: "staff", label: "Other staff" },
+  { key: "staff", label: "Lay" },
   { key: "inactive", label: "Inactive" },
 ];
 

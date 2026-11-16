@@ -13,9 +13,23 @@ function shortText(value, label, max) {
   return text;
 }
 
+const MAX_TITLE_LENGTH = 60;
+
+/**
+ * A title from the list, matched without regard to case ("parish priest" → "Parish Priest", so the
+ * one-Parish-Priest rule can't be dodged), or one the admin typed for "Other" (e.g. "Choir Director").
+ */
+function cleanTitle(value) {
+  const title = requiredText(value, 'Title').replace(/\s+/g, ' ');
+  const listed = PERSONNEL_ROLES.find((role) => role.toLowerCase() === title.toLowerCase());
+  if (listed) return listed;
+  if (title.length > MAX_TITLE_LENGTH) throw httpError(400, `Keep the title under ${MAX_TITLE_LENGTH} characters.`);
+  return title;
+}
+
 /**
  * The person's titles, primary first. Takes `titles: [{ title, scope }]`, or the older single `role`.
- * Each title comes from the list; the scope ("St. Jude School") is optional.
+ * A title is one from the list or a typed one; the scope ("St. Jude School") is optional.
  */
 function parseTitles(body, fallback) {
   const raw = Array.isArray(body?.titles) ? body.titles : body?.role !== undefined ? [{ title: body.role }] : fallback;
@@ -23,10 +37,9 @@ function parseTitles(body, fallback) {
   if (raw.length > MAX_TITLES) throw httpError(400, `A person can hold up to ${MAX_TITLES} titles.`);
   const seen = new Set();
   return raw.map((item) => {
-    const title = requiredText(item?.title, 'Title');
-    if (!PERSONNEL_ROLES.includes(title)) throw httpError(400, `${title} is not a title on the list.`);
+    const title = cleanTitle(item?.title);
     const scope = shortText(item?.scope, 'place', 100);
-    const key = `${title}|${(scope || '').toLowerCase()}`;
+    const key = `${title.toLowerCase()}|${(scope || '').toLowerCase()}`;
     if (seen.has(key)) throw httpError(400, `${title} is listed twice.`);
     seen.add(key);
     return { title, scope };

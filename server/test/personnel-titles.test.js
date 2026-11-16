@@ -107,10 +107,24 @@ describe('Staff titles', () => {
     await api(parish.admin).patch(`/personnel/${pastor.id}`).send({ honorific: 'Rev. Fr.' });
   });
 
-  it('refuses unknown or repeated titles, and an empty list', async () => {
-    assert.equal((await add({ name: 'X Y', titles: [{ title: 'Pope' }] })).status, 400);
-    assert.equal((await add({ name: 'X Y', titles: [{ title: 'Sacristan' }, { title: 'Sacristan' }] })).status, 400);
+  it('refuses repeated titles, an empty list, and a typed title that is too long', async () => {
+    assert.equal((await add({ name: 'X Y', titles: [{ title: 'Sacristan' }, { title: 'sacristan' }] })).status, 400);
     assert.equal((await add({ name: 'X Y', titles: [] })).status, 400);
+    assert.equal((await add({ name: 'X Y', titles: [{ title: 'x'.repeat(61) }] })).status, 400);
+  });
+
+  it('keeps a typed title for one that is not on the list', async () => {
+    const res = await add({ name: 'Rosa Cruz', titles: [{ title: '  Choir   Director ' }, { title: 'Lay Minister' }] });
+    assert.equal(res.status, 201, JSON.stringify(res.body));
+    assert.deepEqual(
+      res.body.person.titles.map((t) => t.title),
+      ['Choir Director', 'Lay Minister']
+    );
+  });
+
+  it('matches a typed listed title to the list, so Parish Priest stays one person', async () => {
+    const res = await add({ honorific: 'Fr.', name: 'Pablo Ruiz', titles: [{ title: 'parish priest' }] });
+    assert.equal(res.status, 409, 'there is already a Parish Priest');
   });
 
   it('is for admins only', async () => {

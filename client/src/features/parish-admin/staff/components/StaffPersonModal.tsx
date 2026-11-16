@@ -12,6 +12,11 @@ interface StaffPersonModalProps {
 }
 
 const MAX_TITLES = 6;
+const OTHER = "Other";
+const MAX_TITLE_LENGTH = 60;
+
+/** One title line in the form. `custom` is a title typed after choosing "Other". */
+type TitleRow = PersonTitle & { custom: boolean };
 const selectClass = "w-full rounded-lg border border-admin-border bg-admin-surface px-3 py-2 text-admin-body text-admin-ink";
 
 /** Adds someone to the staff list, or edits their name parts, titles and contact (item 4). The honorific decides clergy status. */
@@ -20,15 +25,19 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
   const [honorific, setHonorific] = useState(person?.honorific ?? "");
   const [name, setName] = useState(person?.plainName ?? person?.name ?? "");
   const [postNominals, setPostNominals] = useState(person?.postNominals ?? "");
-  const [titles, setTitles] = useState<PersonTitle[]>(
-    person?.titles?.length ? person.titles : [{ title: person?.role ?? firstRole, scope: null }]
+  // A title not on the list was typed under "Other". An old plain "Other" asks for the real title.
+  const [titles, setTitles] = useState<TitleRow[]>(() =>
+    (person?.titles?.length ? person.titles : [{ title: person?.role ?? firstRole, scope: null }]).map((t) => {
+      const custom = t.title === OTHER || !roles.includes(t.title);
+      return { ...t, title: t.title === OTHER ? "" : t.title, custom };
+    })
   );
   const [contact, setContact] = useState(person?.contact ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const nameLocked = Boolean(person?.hasAccount);
 
-  function setTitle(index: number, patch: Partial<PersonTitle>) {
+  function setTitle(index: number, patch: Partial<TitleRow>) {
     setTitles((list) => list.map((t, i) => (i === index ? { ...t, ...patch } : t)));
   }
 
@@ -41,7 +50,11 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
       setError("Enter a name.");
       return;
     }
-    if (titles.some((t) => !t.title)) {
+    if (titles.some((t) => t.custom && !t.title.trim())) {
+      setError("Type the title for each line set to Other.");
+      return;
+    }
+    if (titles.some((t) => !t.custom && !t.title)) {
       setError("Choose a title on every line, or remove the empty one.");
       return;
     }
@@ -51,7 +64,7 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
       const input = {
         honorific: honorific.trim(),
         postNominals: postNominals.trim(),
-        titles: titles.map((t) => ({ title: t.title, scope: t.scope?.trim() || null })),
+        titles: titles.map((t) => ({ title: t.title.trim(), scope: t.scope?.trim() || null })),
         contact: contact.trim(),
         ...(nameLocked ? {} : { name: name.trim() }),
       };
@@ -124,12 +137,17 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
               <li key={index} className="rounded-lg border border-admin-border px-3 py-2.5">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                   <select
-                    value={t.title}
-                    onChange={(e) => setTitle(index, { title: e.target.value })}
+                    value={t.custom ? OTHER : t.title}
+                    onChange={(e) =>
+                      setTitle(
+                        index,
+                        e.target.value === OTHER ? { title: "", custom: true } : { title: e.target.value, custom: false }
+                      )
+                    }
                     aria-label={`Title ${index + 1}`}
                     className={selectClass}
                   >
-                    {!t.title && <option value="">Choose a title</option>}
+                    {!t.title && !t.custom && <option value="">Choose a title</option>}
                     {roles.map((r) => (
                       <option key={r} value={r}>
                         {r}
@@ -142,6 +160,17 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
                     placeholder="Where (optional), e.g. St. Jude School"
                     aria-label={`Where, title ${index + 1}`}
                   />
+                  {t.custom && (
+                    <AdminInput
+                      value={t.title}
+                      onChange={(e) => setTitle(index, { title: e.target.value })}
+                      placeholder="Their title, e.g. Choir Director"
+                      aria-label={`Title ${index + 1}, typed`}
+                      maxLength={MAX_TITLE_LENGTH}
+                      autoFocus={!t.title}
+                      className="sm:col-span-2"
+                    />
+                  )}
                 </div>
                 <div className="mt-1.5 flex items-center gap-3 text-admin-support">
                   {index === 0 ? (
@@ -171,7 +200,7 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
           {titles.length < MAX_TITLES && (
             <button
               type="button"
-              onClick={() => setTitles((list) => [...list, { title: "", scope: null }])}
+              onClick={() => setTitles((list) => [...list, { title: "", scope: null, custom: false }])}
               className="mt-2 text-admin-support font-semibold text-admin-green-700 hover:underline"
             >
               + Add another title
