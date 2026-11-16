@@ -409,11 +409,7 @@ export function AdminFindRecordPage() {
               <MatchReadRow label="Sponsor 2" value={details?.sponsor2 || "—"} />
             </div>
             <footer className="match-card__foot">
-              {request.documentCount ? (
-                <AdminRequestDocuments requestId={request.id} count={request.documentCount} bare />
-              ) : (
-                <p className="text-admin-support text-admin-ink-muted">No supporting documents attached.</p>
-              )}
+              <AdminRequestDocuments requestId={request.id} count={request.documentCount ?? 0} bare />
             </footer>
           </article>
 

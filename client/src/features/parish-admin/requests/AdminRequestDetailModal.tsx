@@ -233,7 +233,9 @@ export function AdminRequestDetailModal({
             )}
           </div>
 
-          <AdminRequestDocuments requestId={request.id} count={request.documentCount ?? 0} />
+          {request.origin !== "walkin" && (
+            <AdminRequestDocuments requestId={request.id} count={request.documentCount ?? 0} />
+          )}
 
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="rounded-md border border-admin-border p-4 px-[18px]">

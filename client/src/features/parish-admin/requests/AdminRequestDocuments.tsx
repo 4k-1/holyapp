@@ -34,15 +34,17 @@ export function AdminRequestDocuments({
     };
   }, [requestId, count]);
 
-  if (count === 0) return null;
-
   return (
     <div className={bare ? "w-full" : "mb-3.5 rounded-md border border-admin-border px-4 py-3"}>
       <h4 className="font-sans text-admin-label font-semibold text-admin-ink">Supporting documents</h4>
-      <p className="mt-0.5 text-admin-support text-admin-ink-muted">
-        Photos the parishioner attached to help find the record. Deleted 7 days after the request is finished.
-      </p>
-      {failed ? (
+      {count > 0 && (
+        <p className="mt-0.5 text-admin-support text-admin-ink-muted">
+          Photos the parishioner attached to help find the record. Deleted 7 days after the request is finished.
+        </p>
+      )}
+      {count === 0 ? (
+        <p className="mt-1 text-admin-support text-admin-ink-muted">No supporting documents attached.</p>
+      ) : failed ? (
         <p className="mt-2 text-admin-support text-admin-ink-muted">Couldn't load the photos.</p>
       ) : !documents ? (
         <p className="mt-2 text-admin-support text-admin-ink-muted">Loading…</p>
