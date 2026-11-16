@@ -1,6 +1,8 @@
 const pool = require('../config/db');
 const { ROLES } = require('../constants/roles');
+const crypto = require('crypto');
 const { hashPassword } = require('../utils/password');
+const { sendSetPasswordLink } = require('../utils/setPasswordLink');
 const { writeAudit } = require('../utils/audit');
 const { notifyStaffRoleChange } = require('../utils/notify');
 const { revokeUserSessions } = require('../utils/sessions');
@@ -10,7 +12,6 @@ const { PERSONNEL_ROLES, rankForHonorific, splitHonorific, formatPersonName } = 
 const { assertCanBeParishPriest } = require('../utils/personnel');
 
 const JOB_TITLES = new Set(PERSONNEL_ROLES);
-const DEV_PASSWORD = 'password123';
 
 function displayName(row) {
   if (row.personnel_name) {
@@ -109,6 +110,35 @@ async function upsertPersonnel({ parishId, userId, fullName, roleTitle, status }
   );
 }
 
+async function parishName(parishId) {
+  const { rows } = await pool.query('SELECT name FROM parish WHERE id = $1', [parishId]);
+  return rows[0] ? rows[0].name : 'Your parish';
+}
+
+/** Emails an office account a link to set its own password (POST /staff/:id/sign-in-link). Admins only. */
+async function sendSignInLink(req, res) {
+  try {
+    const account = await loadOfficeUser(req.parishId, req.params.id);
+    if (!account) return res.status(404).json({ error: 'Staff account not found.' });
+    if (account.status !== 'active') {
+      return res.status(400).json({ error: 'Reactivate this account before sending a sign-in link.' });
+    }
+    await sendSetPasswordLink(account, { parishName: await parishName(req.parishId), invited: false });
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'app_user.sign_in_link_sent',
+      entityType: 'app_user',
+      entityId: account.id,
+      metadata: { email: account.email },
+    });
+    res.json({ ok: true, email: account.email });
+  } catch (err) {
+    const mail = err.code === 'MAIL_NOT_CONFIGURED' || err.code === 'MAIL_SEND_FAILED';
+    res.status(mail ? 503 : err.status || 500).json({ error: mail ? "Couldn't send the email. Try again in a moment." : err.message });
+  }
+}
+
 async function listStaff(req, res) {
   try {
     const result = await pool.query(
@@ -174,7 +204,8 @@ async function createStaff(req, res) {
       });
     }
     const { firstName, lastName } = splitName(splitHonorific(name).name);
-    const passwordHash = await hashPassword(DEV_PASSWORD);
+    // No one knows this password: the person sets their own from the emailed link.
+    const passwordHash = await hashPassword(crypto.randomBytes(32).toString('base64url'));
     const userRole = accessToRole(accessRole);
     const inserted = await pool.query(
       `INSERT INTO app_user (
@@ -209,7 +240,15 @@ async function createStaff(req, res) {
     });
 
     const loaded = await loadOfficeUser(req.parishId, user.id);
-    res.status(201).json({ staff: toStaff(loaded) });
+    // The account stays even if the email fails; the admin can send the link again from the account's menu.
+    let inviteSent = true;
+    try {
+      await sendSetPasswordLink(user, { parishName: await parishName(req.parishId), invited: true });
+    } catch (err) {
+      console.error('[staff] invitation email failed:', err.message);
+      inviteSent = false;
+    }
+    res.status(201).json({ staff: toStaff(loaded), inviteSent });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }
@@ -365,4 +404,4 @@ async function setStaffStatus(req, res) {
   }
 }
 
-module.exports = { listStaff, createStaff, updateStaff, setStaffStatus };
+module.exports = { listStaff, createStaff, updateStaff, setStaffStatus, sendSignInLink };

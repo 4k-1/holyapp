@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AdminButton, AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
 import { addStaffAccount } from "@/features/parish-admin/settings/api/staffApi";
+import { notify } from "@/lib/notify";
 import type { StaffAccessRole } from "@/features/parish-admin/settings/types";
 import type { ParishPerson } from "../api/personnelApi";
 import { AccessOption } from "./AccessOption";
@@ -29,13 +30,19 @@ export function GiveSignInModal({ person, onClose, onDone }: GiveSignInModalProp
     setSaving(true);
     setError("");
     try {
-      await addStaffAccount({
+      const { inviteSent } = await addStaffAccount({
         personnelId: person.id,
         name: person.name,
         role: person.role,
         email: email.trim(),
         accessRole,
       });
+      notify(
+        inviteSent
+          ? `Sign-in created. We emailed ${email.trim()} a link to set their password.`
+          : `Sign-in created, but the email didn't go out. Use Send sign-in link under Settings, Staff Accounts.`,
+        inviteSent ? "success" : "error"
+      );
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't create this sign-in.");
@@ -90,7 +97,7 @@ export function GiveSignInModal({ person, onClose, onDone }: GiveSignInModalProp
         </AdminField>
 
         <p className="text-admin-support text-admin-ink-muted">
-          They can choose their own password with "Forgot password?" on the sign-in page.
+          We&apos;ll email them a link to set their own password. It works for 3 days.
         </p>
         {error && <p className="text-admin-support font-semibold text-red-700">{error}</p>}
       </div>

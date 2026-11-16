@@ -5,12 +5,12 @@ import { AdminButton } from "@/features/parish-admin/components/AdminForm";
 import { AdminRowActions } from "@/components/ui/AdminRowActions";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import { addStaffAccount, listStaffAccounts, setStaffAccountStatus, updateStaffAccount } from "../api/staffApi";
+import { addStaffAccount, listStaffAccounts, sendStaffSignInLink, setStaffAccountStatus, updateStaffAccount } from "../api/staffApi";
 import { DeactivateStaffModal } from "./DeactivateStaffModal";
 import { HandoverModal } from "@/features/parish-admin/staff/components/HandoverModal";
 import { StaffAccountModal } from "./StaffAccountModal";
 import type { NewStaffInput, StaffAccount, StaffRole } from "../types";
-import { notifyError } from "@/lib/notify";
+import { notify, notifyError } from "@/lib/notify";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { SettingsPanel } from "./SettingsUI";
 import { describeAccess } from "@/features/parish-admin/access";
@@ -71,12 +71,27 @@ export function StaffAccountsSection() {
         const updated = await updateStaffAccount(activeAccount.id, input);
         setAccounts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
       } else {
-        const created = await addStaffAccount(input);
+        const { account: created, inviteSent } = await addStaffAccount(input);
         setAccounts((prev) => [...prev, created]);
+        notify(
+          inviteSent
+            ? `Account created. We emailed ${created.email} a link to set their password.`
+            : `Account created, but the email to ${created.email} didn't go out. Use Send sign-in link to try again.`,
+          inviteSent ? "success" : "error"
+        );
       }
       closeModal();
     } catch (err) {
       notifyError(err, "Could not save staff account.");
+    }
+  }
+
+  async function handleSendLink(account: StaffAccount) {
+    try {
+      await sendStaffSignInLink(account.id);
+      notify(`We emailed ${account.email} a link to set a new password. It works for 24 hours.`);
+    } catch (err) {
+      notifyError(err, "Couldn't send the sign-in link.");
     }
   }
 
@@ -154,6 +169,7 @@ export function StaffAccountsSection() {
             label={`Actions for ${s.name}`}
             actions={[
               { label: "Edit", onSelect: () => openEdit(s) },
+              { label: "Send sign-in link", onSelect: () => handleSendLink(s), hidden: s.status !== "Active" },
               { label: "Reactivate", onSelect: () => handleReactivate(s), hidden: s.status === "Active" },
               // You can't lock yourself out, so your own row has no Deactivate.
               { label: "Deactivate", onSelect: () => setDeactivateTarget(s), danger: true, hidden: s.status !== "Active" || isSelf },

@@ -173,6 +173,11 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
               }}
               placeholder="name@parish.ph"
             />
+            {!isEditing && (
+              <p className="mt-1.5 text-admin-support text-admin-ink-muted">
+                We&apos;ll email them a link to set their own password. It works for 3 days.
+              </p>
+            )}
           </AdminField>
         </div>
 

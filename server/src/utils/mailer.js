@@ -148,6 +148,29 @@ function verificationEmail(code) {
   return { text, html };
 }
 
+/**
+ * A link for a parish office account to set its own password: on a new account (`invited`), or sent later by an
+ * admin for someone who is locked out. No one else ever knows the password.
+ */
+function setPasswordEmail({ url, parishName, invited, hours }) {
+  const lead = invited
+    ? `${parishName} set up a HolyApp account for you, for the parish office. Set your password to start using it.`
+    : `${parishName}'s parish admin sent you a link to set a new HolyApp password.`;
+  const expiry = `The link works once and expires in ${hours} hours. After that, ask your parish admin for a new one or use "Forgot password?" on the sign-in page.`;
+  const text = `${lead}\n\nSet your password: ${url}\n\n${expiry}\n\nIf you weren't expecting this, you can ignore this email.`;
+  const html = `
+    <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+      <p style="font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #5c6b63;">HolyApp</p>
+      <h1 style="font-size: 22px; font-weight: 600;">${invited ? 'Set up your account' : 'Set a new password'}</h1>
+      <p>${lead}</p>
+      <p><a href="${url}" style="display: inline-block; background: #1a3d2b; color: #fff; text-decoration: none; padding: 12px 18px; border-radius: 6px;">Set your password</a></p>
+      <p style="font-size: 13px; color: #5c6b63;">${expiry}</p>
+      <p style="font-size: 13px; color: #5c6b63; word-break: break-all;">If the button doesn't work, copy this address into your browser:<br>${url}</p>
+    </div>
+  `;
+  return { text, html };
+}
+
 /** Sent instead of a code when a sign-up starts with an email that already has an account. */
 function accountExistsEmail({ signInUrl, resetUrl }) {
   const text = `Someone, probably you, tried to sign up for HolyApp with this email. You already have an account, so no new one was made.\n\nSign in: ${signInUrl}\nForgot your password? Set a new one: ${resetUrl}\n\nIf this wasn't you, you can ignore this email; your account hasn't changed.`;
@@ -222,6 +245,7 @@ module.exports = {
   parseAddress,
   verificationEmail,
   accountExistsEmail,
+  setPasswordEmail,
   twoFactorEmail,
   passwordResetEmail,
 };

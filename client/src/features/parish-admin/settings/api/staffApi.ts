@@ -33,13 +33,17 @@ export async function listStaffAccounts(): Promise<StaffAccount[]> {
   }
 }
 
-export async function addStaffAccount(input: NewStaffInput): Promise<StaffAccount> {
+/**
+ * Creates the account and emails the person a link to set their own password (no one else ever knows it).
+ * inviteSent is false when that email could not go out; send it again with sendStaffSignInLink.
+ */
+export async function addStaffAccount(input: NewStaffInput): Promise<{ account: StaffAccount; inviteSent: boolean }> {
   try {
-    const data = await apiFetch<{ staff: StaffAccount }>("/staff", {
+    const data = await apiFetch<{ staff: StaffAccount; inviteSent?: boolean }>("/staff", {
       method: "POST",
       body: input,
     });
-    return asStaff(data.staff);
+    return { account: asStaff(data.staff), inviteSent: data.inviteSent !== false };
   } catch (err) {
     fail(err);
   }
@@ -52,6 +56,15 @@ export async function updateStaffAccount(id: string, input: NewStaffInput): Prom
       body: input,
     });
     return asStaff(data.staff);
+  } catch (err) {
+    fail(err);
+  }
+}
+
+/** Emails the person a new link to set their password, e.g. when they are locked out. Admins only. */
+export async function sendStaffSignInLink(id: string): Promise<void> {
+  try {
+    await apiFetch(`/staff/${id}/sign-in-link`, { method: "POST" });
   } catch (err) {
     fail(err);
   }
