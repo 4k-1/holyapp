@@ -30,6 +30,7 @@ import "@/features/parish-admin/requests/AdminFindRecordPage.css";
 import { AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 import { PAGE_TITLE_CLASS, PAGE_WIDTH_CLASS } from "@/features/parish-admin/components/adminPageStyles";
 import { AdminBackLink } from "@/features/parish-admin/components/AdminBackLink";
+import { AdminRequestDocuments } from "@/features/parish-admin/requests/AdminRequestDocuments";
 
 interface MatchFilters {
   name: string;
@@ -408,14 +409,11 @@ export function AdminFindRecordPage() {
               <MatchReadRow label="Sponsor 2" value={details?.sponsor2 || "—"} />
             </div>
             <footer className="match-card__foot">
-              <AdminButton
-                variant="secondary"
-                size="sm"
-                onClick={() => console.info("[mock] view supporting docs", request.id)}
-              >
-                <FileIcon />
-                View supporting docs
-              </AdminButton>
+              {request.documentCount ? (
+                <AdminRequestDocuments requestId={request.id} count={request.documentCount} bare />
+              ) : (
+                <p className="text-admin-support text-admin-ink-muted">No supporting documents attached.</p>
+              )}
             </footer>
           </article>
 
@@ -884,15 +882,6 @@ function SearchIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
       <circle cx="11" cy="11" r="7" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function FileIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
-      <polyline points="14 3 14 8 19 8" strokeLinejoin="round" />
     </svg>
   );
 }

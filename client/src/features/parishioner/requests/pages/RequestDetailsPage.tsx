@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useOutletContext, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useOutletContext, useParams, useSearchParams } from "react-router-dom";
 import { useAsync } from "@/hooks/useAsync";
 import { getMyRequest, type SubmittedRequestDetails } from "@/features/parishioner/requests/api/requestsApi";
 import { PortalBackLink } from "@/features/parishioner/components/PortalBackLink";
 import { RequestDetailCard } from "@/features/parishioner/requests/components/RequestDetailCard";
+import { MyRequestDocuments } from "@/features/parishioner/requests/documents/MyRequestDocuments";
 import { requestGroup } from "@/features/parishioner/requests/requestDisplay";
 import {
   DELIVERY_OPTIONS,
@@ -23,6 +24,12 @@ export function RequestDetailsPage() {
   const [params, setParams] = useSearchParams();
   // "Request sent" shows once: the flag leaves the address straight away, so a reload or a bookmark doesn't repeat it.
   const [justSent] = useState(() => params.get("sent") === "1");
+  // Photos the wizard couldn't attach, passed along when it lands here.
+  const location = useLocation();
+  const [failedUploads] = useState<string[]>(() => {
+    const state = location.state as { documentsFailed?: string[] } | null;
+    return Array.isArray(state?.documentsFailed) ? state.documentsFailed : [];
+  });
   useEffect(() => {
     if (params.has("sent")) setParams({}, { replace: true });
   }, [params, setParams]);
@@ -70,6 +77,7 @@ export function RequestDetailsPage() {
             variant="page"
             highlight={requestGroup(data.request) === "attention"}
           />
+          <MyRequestDocuments requestId={data.request.id} failedUploads={failedUploads} />
           <SubmittedDetails request={data.request} submitted={data.submitted} parish={parish} />
         </>
       )}

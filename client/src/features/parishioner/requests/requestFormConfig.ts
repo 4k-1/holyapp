@@ -10,7 +10,8 @@ export interface RequestDraft {
   relationship: string;
   sacramentDate: string;
   fields: Record<string, string>;
-  documents: string[];
+  /** Photos to attach once the request is sent. */
+  documents: File[];
   purposeChoice: string;
   purposeOther: string;
   deliveryMethod: DeliveryMethod | null;
@@ -311,6 +312,5 @@ export function toRequestForm(draft: RequestDraft): RequestFormState {
     relationship: draft.forWhom === "me" ? "Myself" : draft.relationship,
     sacramentDate: draft.sacramentDate,
     fields,
-    documents: draft.documents,
   };
 }

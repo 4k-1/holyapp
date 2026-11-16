@@ -12,6 +12,7 @@ const fs = require('fs');
 const express = require('express');
 const api = require('./app');
 const { frontendUrl } = require('./utils/frontendUrl');
+const { startRequestDocumentCleanup } = require('./utils/requestDocumentRetention');
 
 const PUBLIC_DIR = process.env.PUBLIC_DIR || path.join(__dirname, '..', 'public');
 const INDEX = path.join(PUBLIC_DIR, 'index.html');
@@ -51,4 +52,5 @@ site.listen(PORT, '0.0.0.0', () => {
   if (!process.env.DATA_ENCRYPTION_KEY) {
     console.warn('DATA_ENCRYPTION_KEY is not set: personal data will be stored without encryption.');
   }
+  startRequestDocumentCleanup();
 });

@@ -49,7 +49,8 @@ export function PrivacyPage() {
               </>,
               <>
                 <strong>Certificate requests:</strong> the certificate you ask for, the details needed to find the
-                record, its purpose, and its progress until release.
+                record, its purpose, its progress until release, and any photos you attach to help find the record.
+                Only you and the parish office can see those photos, and they are stored encrypted.
               </>,
               <>
                 <strong>Sacramental records:</strong> the entries in the parish's baptism, confirmation, marriage and
@@ -96,7 +97,8 @@ export function PrivacyPage() {
           <p>
             Sacramental records are permanent records of the Church and are kept for as long as the parish keeps its
             registers. Account details, requests and donation records are kept while your account is open and for as
-            long as the parish needs them for its own records.
+            long as the parish needs them for its own records. Photos attached to a certificate request are deleted
+            7 days after the request is released or not approved.
           </p>
         </Section>
 

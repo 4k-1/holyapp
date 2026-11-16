@@ -29,6 +29,7 @@ const REQUEST_COLUMNS = `
   cert.id AS issued_certificate_id,
   cert.certificate_code AS issued_certificate_code,
   cert.status AS issued_certificate_status,
+  (SELECT COUNT(*)::int FROM certificate_request_document d WHERE d.request_id = r.id) AS document_count,
   (SELECT sf.amount FROM service_fee sf
     WHERE sf.parish_id = r.parish_id
       AND sf.service_name = CASE r.record_type
@@ -212,6 +213,7 @@ function toCertificateRequest(row) {
     linkedRecordId: row.record_id,
     rejectionReason: row.rejection_reason || undefined,
     pickupReady: Boolean(row.pickup_ready) || row.status === 'ready',
+    documentCount: row.document_count || 0,
     issuedCertificate: row.issued_certificate_id
       ? {
           id: row.issued_certificate_id,

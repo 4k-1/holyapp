@@ -124,6 +124,8 @@ export interface CertificateRequest {
   rejectionReason?: string;
   /** Pickup only — set when staff confirms print/seal; unlocks "Ready for Pickup" status. */
   pickupReady?: boolean;
+  /** How many supporting photos the parishioner attached. */
+  documentCount?: number;
   issuedCertificate?: {
     id: string;
     code: string;

@@ -113,6 +113,52 @@ function decryptJson(value) {
   }
 }
 
+// Files (supporting documents) are always encrypted. Without DATA_ENCRYPTION_KEY a production server
+// refuses them; elsewhere a fixed development key is used so local uploads still work.
+const FILE_MAGIC = Buffer.from('HAF1');
+const DEV_FILE_KEY = crypto.createHash('sha256').update('holyapp-development-only-file-key').digest();
+let warnedDevFileKey = false;
+
+function fileKey() {
+  const key = encryptionKey();
+  if (key) return key;
+  if (process.env.NODE_ENV === 'production') return null;
+  if (!warnedDevFileKey && process.env.NODE_ENV !== 'test') {
+    warnedDevFileKey = true;
+    console.warn('[crypto] DATA_ENCRYPTION_KEY is not set: uploaded files use a development-only key.');
+  }
+  return DEV_FILE_KEY;
+}
+
+function canEncryptFiles() {
+  return Boolean(fileKey());
+}
+
+/** The file encrypted: "HAF1", then the 12-byte IV, the 16-byte tag and the ciphertext. */
+function encryptBuffer(buffer) {
+  const key = fileKey();
+  if (!key) throw Object.assign(new Error('DATA_ENCRYPTION_KEY is not set.'), { code: 'NO_FILE_KEY' });
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH });
+  const ciphertext = Buffer.concat([cipher.update(buffer), cipher.final()]);
+  return Buffer.concat([FILE_MAGIC, iv, cipher.getAuthTag(), ciphertext]);
+}
+
+/** The original file, or an error if the key is wrong or the data was changed. */
+function decryptBuffer(blob) {
+  const key = fileKey();
+  if (!key) throw Object.assign(new Error('DATA_ENCRYPTION_KEY is not set.'), { code: 'NO_FILE_KEY' });
+  if (!Buffer.isBuffer(blob) || !blob.subarray(0, FILE_MAGIC.length).equals(FILE_MAGIC)) {
+    throw new Error('Not an encrypted file.');
+  }
+  let at = FILE_MAGIC.length;
+  const iv = blob.subarray(at, (at += IV_LENGTH));
+  const tag = blob.subarray(at, (at += AUTH_TAG_LENGTH));
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH });
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(blob.subarray(at)), decipher.final()]);
+}
+
 function safeParse(text) {
   try {
     return JSON.parse(text);
@@ -131,4 +177,7 @@ module.exports = {
   decryptRow,
   encryptJson,
   decryptJson,
+  canEncryptFiles,
+  encryptBuffer,
+  decryptBuffer,
 };

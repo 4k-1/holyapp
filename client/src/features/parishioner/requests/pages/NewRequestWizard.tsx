@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext, useSearchParams } from "react-router-dom
 import { Button } from "@/components/ui/Button";
 import { getCurrentUser } from "@/features/auth/api/authApi";
 import { submitRequest } from "@/features/parishioner/requests/api/requestsApi";
+import { uploadRequestDocument } from "@/features/parishioner/requests/documents/requestDocumentsApi";
 import {
   CertificateStep,
   PurposeStep,
@@ -125,8 +126,21 @@ export function NewRequestWizard() {
     setError(null);
     try {
       const sent = await submitRequest(toRequestForm(draft), parish.id, requesterId);
+      // The photos go up one by one once the request exists. One that fails doesn't undo the request:
+      // the request page says so, and the photo can be added again there.
+      const failed: string[] = [];
+      for (const file of draft.documents) {
+        try {
+          await uploadRequestDocument(sent.id, file);
+        } catch {
+          failed.push(file.name);
+        }
+      }
       // Straight to the new request, so the parishioner sees what they sent and where it stands.
-      navigate(`/${parish.slug}/portal/requests/${sent.id}?sent=1`, { replace: true });
+      navigate(`/${parish.slug}/portal/requests/${sent.id}?sent=1`, {
+        replace: true,
+        state: failed.length ? { documentsFailed: failed } : undefined,
+      });
       window.scrollTo({ top: 0 });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send this request. Try again.");

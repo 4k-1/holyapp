@@ -60,5 +60,4 @@ export interface RequestFormState {
   relationship: string;
   sacramentDate: string;
   fields: Record<string, string>;
-  documents: string[]; // mock: just file names
 }

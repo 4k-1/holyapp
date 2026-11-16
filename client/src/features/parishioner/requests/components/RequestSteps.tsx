@@ -9,6 +9,12 @@ import {
   TextField,
 } from "@/features/parishioner/requests/components/RequestFormUI";
 import {
+  DOCUMENT_ACCEPT,
+  documentProblem,
+  formatFileSize,
+  MAX_DOCUMENTS,
+} from "@/features/parishioner/requests/documents/requestDocumentsApi";
+import {
   DELIVERY_OPTIONS,
   formatDay,
   purposesFor,
@@ -118,7 +124,7 @@ export function RecordStep({
 }: StepProps & {
   onField: (key: string, value: string) => void;
   onTouch: (key: string) => void;
-  onDocuments: (documents: string[]) => void;
+  onDocuments: (documents: File[]) => void;
 }) {
   if (!draft.sacramentType) return null;
   const values = recordValues(draft);
@@ -218,24 +224,47 @@ function OptionalGroup({ group, startOpen, children }: { group: FieldGroup; star
   );
 }
 
-function Documents({ documents, onChange }: { documents: string[]; onChange: (documents: string[]) => void }) {
+function Documents({ documents, onChange }: { documents: File[]; onChange: (documents: File[]) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const full = documents.length >= MAX_DOCUMENTS;
+
+  function add(chosen: File[]) {
+    const problems: string[] = [];
+    const next = [...documents];
+    for (const file of chosen) {
+      const issue = documentProblem(file);
+      if (issue) problems.push(issue);
+      else if (next.length >= MAX_DOCUMENTS) problems.push(`You can attach up to ${MAX_DOCUMENTS} photos.`);
+      else if (!next.some((doc) => doc.name === file.name && doc.size === file.size)) next.push(file);
+    }
+    setProblem(problems.length ? [...new Set(problems)].join(" ") : null);
+    onChange(next);
+  }
+
   return (
     <section>
       <GroupHeading
         title="Supporting documents"
         optional
-        hint="A photo of an old certificate or a family record can help staff match the entry faster."
+        hint="A photo of an old certificate or a family record can help staff match the entry faster. JPG or PNG, up to 5 photos."
       />
       {documents.length > 0 && (
         <ul className="mb-3 space-y-2">
-          {documents.map((name) => (
-            <li key={name} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[0.875rem] text-ink">
+          {documents.map((file) => (
+            <li
+              key={`${file.name}-${file.size}`}
+              className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[0.875rem] text-ink"
+            >
               <PaperclipIcon />
-              <span className="min-w-0 flex-1 truncate">{name}</span>
+              <span className="min-w-0 flex-1 truncate">{file.name}</span>
+              <span className="shrink-0 text-[0.8125rem] text-ink-muted">{formatFileSize(file.size)}</span>
               <button
                 type="button"
-                onClick={() => onChange(documents.filter((doc) => doc !== name))}
+                onClick={() => {
+                  setProblem(null);
+                  onChange(documents.filter((doc) => doc !== file));
+                }}
                 className="rounded-md px-2 py-1 text-[0.8125rem] font-semibold text-danger hover:bg-danger/[0.08]"
               >
                 Remove
@@ -244,21 +273,27 @@ function Documents({ documents, onChange }: { documents: string[]; onChange: (do
           ))}
         </ul>
       )}
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-dashed border-primary/50 bg-primary/[0.04] px-4 text-[0.875rem] font-semibold text-primary hover:bg-primary/[0.08]"
-      >
-        <span aria-hidden="true">+</span> Add a document
-      </button>
+      {!full && (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-dashed border-primary/50 bg-primary/[0.04] px-4 text-[0.875rem] font-semibold text-primary hover:bg-primary/[0.08]"
+        >
+          <span aria-hidden="true">+</span> Add a photo
+        </button>
+      )}
+      <FieldError id="req-documents-error" message={problem ?? undefined} />
+      <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-muted">
+        Only you and the parish office can see these photos. They are deleted 7 days after your request is finished.
+      </p>
       <input
         ref={inputRef}
         type="file"
+        accept={DOCUMENT_ACCEPT}
         multiple
         className="hidden"
         onChange={(e) => {
-          const names = Array.from(e.target.files ?? []).map((file) => file.name);
-          onChange([...documents, ...names.filter((name) => !documents.includes(name))]);
+          add(Array.from(e.target.files ?? []));
           e.target.value = "";
         }}
       />
@@ -346,7 +381,7 @@ export function ReviewStep({ draft, onChange }: { draft: RequestDraft; onChange:
         field.type === "date" ? formatDay(values[field.key]) : values[field.key].trim(),
       ])
   );
-  if (draft.documents.length) recordRows.push(["Supporting documents", draft.documents.join(", ")]);
+  if (draft.documents.length) recordRows.push(["Supporting documents", draft.documents.map((file) => file.name).join(", ")]);
 
   return (
     <div className="space-y-4">

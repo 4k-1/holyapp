@@ -22,6 +22,7 @@ import {
 import { recordDetailPath } from "@/features/parish-admin/records/recordPaths";
 import { AdminIssueCertificateModal } from "@/features/parish-admin/requests/AdminIssueCertificateModal";
 import { AdminReleaseCertificateModal } from "@/features/parish-admin/requests/AdminReleaseCertificateModal";
+import { AdminRequestDocuments } from "@/features/parish-admin/requests/AdminRequestDocuments";
 import { confirmRequestPayment, revokeIssuedCertificate } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import type { CertificateRequest, Parish, SacramentType } from "@/types";
 import { askText } from "@/lib/notify";
@@ -231,6 +232,8 @@ export function AdminRequestDetailModal({
               ))
             )}
           </div>
+
+          <AdminRequestDocuments requestId={request.id} count={request.documentCount ?? 0} />
 
           <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="rounded-md border border-admin-border p-4 px-[18px]">
