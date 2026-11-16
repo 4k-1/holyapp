@@ -56,6 +56,7 @@ async function main() {
     SMTP_HOST: '',
     SMTP_USER: '',
     SMTP_PASS: '',
+    BREVO_API_KEY: '',
     PAYMONGO_SECRET_KEY: '',
     PAYMONGO_WEBHOOK_SECRET: '',
     GEMINI_API_KEY: '',
