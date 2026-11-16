@@ -79,6 +79,15 @@ describe('Mailer through Brevo', () => {
     assert.deepEqual(mailer.parseAddress('office@holyapp.test'), { name: 'HolyApp', email: 'office@holyapp.test' });
   });
 
+  it('reads the sender when the env value is wrapped in quotes or has no <>', () => {
+    const want = { name: 'HolyApp', email: 'office@holyapp.test' };
+    assert.deepEqual(mailer.parseAddress('"HolyApp <office@holyapp.test>"'), want);
+    assert.deepEqual(mailer.parseAddress("'HolyApp <office@holyapp.test>'"), want);
+    assert.deepEqual(mailer.parseAddress('"office@holyapp.test"'), want);
+    assert.deepEqual(mailer.parseAddress('HolyApp office@holyapp.test'), want);
+    assert.deepEqual(mailer.parseAddress(''), { name: 'HolyApp', email: '' });
+  });
+
   it('asks for the same Wi-Fi only when the reset link is a local address', () => {
     assert.match(mailer.passwordResetEmail('http://192.168.1.5:5173/reset-password/x').text, /same Wi-Fi/);
     assert.doesNotMatch(mailer.passwordResetEmail('https://holyapp-production.up.railway.app/reset-password/x').text, /Wi-Fi/);

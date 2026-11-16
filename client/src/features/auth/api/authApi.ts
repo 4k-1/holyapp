@@ -163,83 +163,62 @@ export async function resendLoginTwoFactorCode(
   }
 }
 
-export interface RegisterInput {
-  firstName: string;
-  lastName: string;
-  middleName?: string;
-  birthday: string;
-  /** Optional. */
-  address?: string;
-  email: string;
-  password: string;
-  parishId: string;
+function toError(err: unknown): Error {
+  if (err instanceof ApiError) return new Error(err.message, { cause: err });
+  return new Error("Unable to reach the server. Check your connection and try again.", { cause: err });
 }
 
-/** Email waiting on OTP verify after startRegistration. */
-let pendingVerificationEmail: string | null = null;
-
-export async function startRegistration(input: RegisterInput): Promise<void> {
+/** Sign-up step 1: emails a 4-digit code (also used to resend it). */
+export async function startSignup(email: string, parishId: string): Promise<void> {
   try {
-    await apiFetch<{ ok: boolean; email: string }>("/auth/register", {
+    await apiFetch<{ ok: boolean }>("/auth/signup/start", {
       method: "POST",
-      body: {
-        firstName: input.firstName,
-        lastName: input.lastName,
-        middleName: input.middleName,
-        birthday: input.birthday,
-        address: input.address?.trim() || undefined,
-        email: input.email.trim(),
-        password: input.password,
-        parishId: input.parishId,
-      },
+      body: { email: email.trim(), parishId },
       auth: false,
     });
-    pendingVerificationEmail = input.email.trim();
   } catch (err) {
-    if (err instanceof ApiError) {
-      throw new Error(err.message, { cause: err });
-    }
-    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
+    throw toError(err);
   }
 }
 
-export async function verifyRegistrationCode(code: string): Promise<CurrentUser> {
-  if (!pendingVerificationEmail) {
-    throw new Error("No pending registration found. Please register again.");
-  }
-
+/** Sign-up step 2: the right code returns a short-lived token for the last step. */
+export async function verifySignupCode(email: string, code: string): Promise<string> {
   try {
-    const data = await apiFetch<BackendAuthResponse>("/auth/verify-email", {
+    const data = await apiFetch<{ signupToken: string }>("/auth/signup/verify", {
       method: "POST",
-      body: { email: pendingVerificationEmail, code: code.trim() },
+      body: { email: email.trim(), code: code.trim() },
+      auth: false,
+    });
+    return data.signupToken;
+  } catch (err) {
+    throw toError(err);
+  }
+}
+
+export interface SignupDetails {
+  email: string;
+  signupToken: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  birthday: string;
+  password: string;
+}
+
+/** Sign-up step 3: creates the account and signs it in. */
+export async function finishSignup(details: SignupDetails): Promise<CurrentUser> {
+  try {
+    const data = await apiFetch<BackendAuthResponse>("/auth/signup/finish", {
+      method: "POST",
+      body: { ...details, email: details.email.trim() },
       auth: false,
     });
     const user = mapBackendUser(data.user);
     setSession(data.token, data.refresh_token);
     setCurrentUser(user);
-    pendingVerificationEmail = null;
     return user;
   } catch (err) {
-    if (err instanceof ApiError) {
-      throw new Error(err.message, { cause: err });
-    }
-    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
-  }
-}
-
-export async function resendVerificationCode(): Promise<void> {
-  if (!pendingVerificationEmail) return;
-  try {
-    await apiFetch("/auth/resend-verification", {
-      method: "POST",
-      body: { email: pendingVerificationEmail },
-      auth: false,
-    });
-  } catch (err) {
-    if (err instanceof ApiError) {
-      throw new Error(err.message, { cause: err });
-    }
-    throw new Error("Unable to reach the server. Is the backend running?", { cause: err });
+    throw toError(err);
   }
 }
 

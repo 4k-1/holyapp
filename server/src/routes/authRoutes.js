@@ -4,9 +4,6 @@ const { authenticate } = require('../middleware/rbac');
 const {
   login,
   loginSuperAdmin,
-  register,
-  verifyEmail,
-  resendVerification,
   refresh,
   logout,
   forgotPassword,
@@ -17,11 +14,12 @@ const {
   resendLoginTwoFactor,
 } = require('../controllers/authController');
 const { getSecurityOverview, setTwoFactor, endSession, endOtherSessions } = require('../controllers/securityController');
+const signup = require('../controllers/signupController');
 const { myTimeline } = require('../controllers/timelineController');
 
-router.post('/register', register);
-router.post('/verify-email', verifyEmail);
-router.post('/resend-verification', resendVerification);
+router.post('/signup/start', signup.start);
+router.post('/signup/verify', signup.verify);
+router.post('/signup/finish', signup.finish);
 router.post('/login', login);
 router.post('/login/super-admin', loginSuperAdmin);
 router.post('/login/2fa', verifyLoginTwoFactor);

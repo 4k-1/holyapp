@@ -37,9 +37,9 @@ app.get('/health', (req, res) => {
 // Attempt limits. Each path also covers what's under it (/auth/login covers /auth/login/2fa).
 app.use('/auth/login/2fa', limits.codeByChallenge, limits.codeByIp);
 app.use('/auth/login', limits.loginByIp, limits.loginByEmail);
-app.use('/auth/verify-email', limits.codeByEmail, limits.codeByIp);
-app.use('/auth/register', limits.emailsByIp);
-app.use('/auth/resend-verification', limits.emailsByIp, limits.emailsByEmail);
+app.use('/auth/signup/start', limits.emailsByIp, limits.emailsByEmail);
+app.use('/auth/signup/verify', limits.codeByIp);
+app.use('/auth/signup/finish', limits.codeByIp);
 app.use('/auth/forgot-password', limits.emailsByIp, limits.emailsByEmail);
 app.use('/auth/reset-password', limits.codeByIp);
 app.use('/contact', limits.contactByIp);

@@ -45,17 +45,26 @@ function fromAddress() {
   return process.env.SMTP_FROM || `HolyApp <${process.env.SMTP_USER}>`;
 }
 
-/** "HolyApp <a@b.com>" → { name: 'HolyApp', email: 'a@b.com' }; "a@b.com" → { name: 'HolyApp', email: 'a@b.com' }. */
+/**
+ * "HolyApp <a@b.com>" → { name: 'HolyApp', email: 'a@b.com' }; "a@b.com" → { name: 'HolyApp', email: 'a@b.com' }.
+ * Tolerates the whole value wrapped in quotes (as env editors often save it) and a name without <>.
+ */
 function parseAddress(value) {
-  const raw = String(value || '').trim();
-  const match = /^(.*?)\s*<\s*([^<>\s]+@[^<>\s]+)\s*>$/.exec(raw);
-  if (match) return { name: match[1].replace(/^"|"$/g, '').trim() || 'HolyApp', email: match[2] };
-  return { name: 'HolyApp', email: raw };
+  const raw = String(value || '')
+    .trim()
+    .replace(/^(["'])([\s\S]*)\1$/, '$2')
+    .trim();
+  const email = (/[^\s<>"',;]+@[^\s<>"',;]+\.[^\s<>"',;]+/.exec(raw) || [''])[0];
+  const name = raw
+    .replace(email, '')
+    .replace(/[<>"']/g, '')
+    .trim();
+  return { name: name || 'HolyApp', email };
 }
 
 async function sendWithBrevo({ to, subject, text, html, replyTo }) {
   const sender = parseAddress(process.env.SMTP_FROM || process.env.SMTP_USER);
-  if (!sender.email || !sender.email.includes('@')) {
+  if (!sender.email) {
     throw new Error('SMTP_FROM must hold the sender address verified in Brevo, e.g. HolyApp <you@gmail.com>');
   }
   const res = await fetch(BREVO_URL, {
@@ -77,7 +86,9 @@ async function sendWithBrevo({ to, subject, text, html, replyTo }) {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(`Brevo answered ${res.status}: ${body.message || body.code || res.statusText}`);
+    throw new Error(
+      `Brevo answered ${res.status}: ${body.message || body.code || res.statusText} (sender: ${sender.email})`
+    );
   }
   return { messageId: body.messageId };
 }
@@ -124,14 +135,30 @@ async function sendMail({ to, subject, text, html, replyTo }) {
 }
 
 function verificationEmail(code) {
-  const text = `Your HolyApp verification code is ${code}.\n\nIt expires in 10 minutes. If you didn't create this account, you can ignore this email.`;
+  const text = `Your HolyApp verification code is ${code}.\n\nEnter it on the sign-up page to confirm this is your email. It expires in 10 minutes. If you didn't start signing up for HolyApp, you can ignore this email.`;
   const html = `
     <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
       <p style="font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #5c6b63;">HolyApp</p>
       <h1 style="font-size: 22px; font-weight: 600;">Your verification code</h1>
-      <p>Use this code to verify your parishioner account. It expires in 10 minutes.</p>
+      <p>Enter this code on the sign-up page to confirm this is your email. It expires in 10 minutes.</p>
       <p style="font-size: 32px; letter-spacing: 0.35em; font-weight: 700; text-align: center; background: #f4f1ea; padding: 16px 0; border-radius: 8px;">${code}</p>
-      <p style="font-size: 13px; color: #5c6b63;">If you didn't create this account, you can ignore this email.</p>
+      <p style="font-size: 13px; color: #5c6b63;">If you didn't start signing up for HolyApp, you can ignore this email.</p>
+    </div>
+  `;
+  return { text, html };
+}
+
+/** Sent instead of a code when a sign-up starts with an email that already has an account. */
+function accountExistsEmail({ signInUrl, resetUrl }) {
+  const text = `Someone, probably you, tried to sign up for HolyApp with this email. You already have an account, so no new one was made.\n\nSign in: ${signInUrl}\nForgot your password? Set a new one: ${resetUrl}\n\nIf this wasn't you, you can ignore this email; your account hasn't changed.`;
+  const html = `
+    <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+      <p style="font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #5c6b63;">HolyApp</p>
+      <h1 style="font-size: 22px; font-weight: 600;">You already have an account</h1>
+      <p>Someone, probably you, tried to sign up for HolyApp with this email. You already have an account, so no new one was made.</p>
+      <p><a href="${signInUrl}" style="display: inline-block; background: #1a3d2b; color: #fff; text-decoration: none; padding: 12px 18px; border-radius: 6px;">Sign in</a></p>
+      <p>Forgot your password? <a href="${resetUrl}">Set a new one</a>.</p>
+      <p style="font-size: 13px; color: #5c6b63;">If this wasn't you, you can ignore this email; your account hasn't changed.</p>
     </div>
   `;
   return { text, html };
@@ -194,6 +221,7 @@ module.exports = {
   brevoConfigured,
   parseAddress,
   verificationEmail,
+  accountExistsEmail,
   twoFactorEmail,
   passwordResetEmail,
 };

@@ -54,21 +54,4 @@ describe('UAT mistake checks', () => {
     assert.equal(ok.status, 200, JSON.stringify(ok.body));
     assert.equal(ok.body.rejectionReason, 'No baptism record under this name and birth date.');
   });
-
-  it('lets a parishioner sign up without an address', async () => {
-    const email = `no.address.${Date.now()}@holyapp.test`;
-    const res = await api()
-      .post('/auth/register')
-      .send({ firstName: 'Lorna', lastName: 'Abellana', birthday: '1990-02-02', email, password: 'a-long-password', parishId: parish.id });
-    // Tests send no email, so the code step answers 503; the account itself is made first.
-    assert.notEqual(res.status, 400, JSON.stringify(res.body));
-    const saved = await pool.query('SELECT address FROM app_user WHERE email = $1', [email]);
-    assert.equal(saved.rowCount, 1, 'the account was created');
-    assert.equal(saved.rows[0].address, null);
-
-    const missingName = await api()
-      .post('/auth/register')
-      .send({ lastName: 'Abellana', birthday: '1990-02-02', email: `x.${email}`, password: 'a-long-password', parishId: parish.id });
-    assert.equal(missingName.status, 400, 'the other fields are still required');
-  });
 });

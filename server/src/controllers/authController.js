@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 const { ROLES } = require('../constants/roles');
 const { hashPassword, comparePassword } = require('../utils/password');
-const { sendMail, verificationEmail, passwordResetEmail, twoFactorEmail } = require('../utils/mailer');
+const { sendMail, passwordResetEmail, twoFactorEmail } = require('../utils/mailer');
 const { writeAudit } = require('../utils/audit');
 const { encrypt, decrypt } = require('../utils/fieldCrypto');
 const { requestMeta } = require('../utils/sessionMeta');
@@ -221,29 +221,6 @@ async function findUserById(id) {
   return selectUser('WHERE id = $1', [id]);
 }
 
-async function issueEmailVerification(user) {
-  const otp = generateOtpCode();
-  await pool.query(
-    `UPDATE email_verification
-     SET consumed_at = NOW()
-     WHERE user_id = $1 AND consumed_at IS NULL`,
-    [user.id]
-  );
-  await pool.query(
-    `INSERT INTO email_verification (user_id, code_hash, expires_at)
-     VALUES ($1, $2, $3)`,
-    [user.id, otp.codeHash, minutesFromNow(10)]
-  );
-  const message = verificationEmail(otp.code);
-  await sendMail({
-    to: user.email,
-    subject: 'Your HolyApp verification code',
-    text: message.text,
-    html: message.html,
-  });
-  return otp.code;
-}
-
 function mailStatus(err) {
   if (err && (err.code === 'MAIL_NOT_CONFIGURED' || err.code === 'MAIL_SEND_FAILED')) {
     return 503;
@@ -340,137 +317,6 @@ async function login(req, res) {
 
 async function loginSuperAdmin(req, res) {
   return loginWithPortal(req, res, 'super_admin');
-}
-
-async function register(req, res) {
-  const firstName = pick(req.body, 'firstName', 'first_name');
-  const lastName = pick(req.body, 'lastName', 'last_name');
-  const middleName = pick(req.body, 'middleName', 'middle_name');
-  const birthday = req.body.birthday;
-  // Optional: the parish office can add it later, and a parishioner can add it under My account.
-  const address = req.body.address ? String(req.body.address).trim() : '';
-  const email = req.body.email ? String(req.body.email).trim() : '';
-  const password = req.body.password;
-  const parishId = pick(req.body, 'parishId', 'parish_id');
-
-  if (!firstName || !lastName || !birthday || !email || !password || !parishId) {
-    return res.status(400).json({ error: 'All required registration fields must be provided' });
-  }
-  if (String(password).length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters' });
-  }
-
-  try {
-    const parish = await pool.query('SELECT id FROM parish WHERE id = $1', [parishId]);
-    if (parish.rows.length === 0) {
-      return res.status(400).json({ error: 'Parish not found' });
-    }
-
-    const existing = await findUserByEmail(email);
-    if (existing) {
-      if (existing.role === ROLES.PARISHIONER && !existing.email_verified_at) {
-        await issueEmailVerification(existing);
-        return res.json({ ok: true, email: existing.email });
-      }
-      return res.status(409).json({ error: 'An account with this email already exists.' });
-    }
-
-    const passwordHash = await hashPassword(password);
-    const inserted = await pool.query(
-      `INSERT INTO app_user (
-         parish_id, role, email, password_hash, status,
-         first_name, middle_name, last_name, birthday, address
-       )
-       VALUES ($1, $2, $3, $4, 'active', $5, $6, $7, $8, $9)
-       RETURNING ${USER_COLUMNS}`,
-      [
-        parishId,
-        ROLES.PARISHIONER,
-        email,
-        passwordHash,
-        firstName,
-        middleName || null,
-        lastName,
-        birthday,
-        address ? encrypt(address) : null,
-      ]
-    );
-    const user = inserted.rows[0];
-    await issueEmailVerification(user);
-    res.status(201).json({ ok: true, email: user.email });
-  } catch (err) {
-    if (err.code === '23505') {
-      return res.status(409).json({ error: 'An account with this email already exists.' });
-    }
-    res.status(mailStatus(err)).json({ error: err.message });
-  }
-}
-
-async function verifyEmail(req, res) {
-  const email = req.body.email ? String(req.body.email).trim() : '';
-  const code = req.body.code ? String(req.body.code).trim() : '';
-
-  if (!email || !code) {
-    return res.status(400).json({ error: 'Email and verification code are required' });
-  }
-
-  try {
-    const user = await findUserByEmail(email);
-    if (!user || user.role !== ROLES.PARISHIONER) {
-      return res.status(400).json({ error: 'No pending registration found. Please register again.' });
-    }
-    if (user.email_verified_at) {
-      return res.json(await issueSession(user, req));
-    }
-
-    const codeHash = hashRefreshToken(code);
-    const result = await pool.query(
-      `SELECT id, expires_at, consumed_at
-       FROM email_verification
-       WHERE user_id = $1 AND code_hash = $2
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [user.id, codeHash]
-    );
-    const row = result.rows[0];
-    if (!row || row.consumed_at || new Date(row.expires_at) <= new Date()) {
-      return res.status(400).json({ error: 'Invalid verification code.' });
-    }
-
-    await pool.query(
-      'UPDATE email_verification SET consumed_at = NOW() WHERE id = $1',
-      [row.id]
-    );
-    const updated = await pool.query(
-      `UPDATE app_user
-       SET email_verified_at = NOW(), updated_at = NOW()
-       WHERE id = $1
-       RETURNING ${USER_COLUMNS}`,
-      [user.id]
-    );
-
-    res.json(await issueSession(updated.rows[0], req));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-}
-
-async function resendVerification(req, res) {
-  const email = req.body.email ? String(req.body.email).trim() : '';
-  if (!email) {
-    return res.status(400).json({ error: 'Email is required' });
-  }
-
-  try {
-    const user = await findUserByEmail(email);
-    if (!user || user.email_verified_at || user.role !== ROLES.PARISHIONER) {
-      return res.json({ ok: true });
-    }
-    await issueEmailVerification(user);
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(mailStatus(err)).json({ error: err.message });
-  }
 }
 
 async function refresh(req, res) {
@@ -860,11 +706,13 @@ async function resendLoginTwoFactor(req, res) {
 }
 
 module.exports = {
+  // Shared with the sign-up steps (signupController).
+  issueSession,
+  findUserById,
+  findUserByEmail,
+  mailStatus,
   login,
   loginSuperAdmin,
-  register,
-  verifyEmail,
-  resendVerification,
   refresh,
   logout,
   forgotPassword,
