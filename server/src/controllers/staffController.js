@@ -8,7 +8,7 @@ const { notifyStaffRoleChange } = require('../utils/notify');
 const { revokeUserSessions } = require('../utils/sessions');
 const { FULL_ACCESS, normalizeAccess, parseAccessInput } = require('../constants/staffAccess');
 
-const { rankForHonorific, splitHonorific, formatPersonName, cleanPersonnelTitle } = require('../constants/personnelRoles');
+const { rankForPerson, splitHonorific, formatPersonName, cleanPersonnelTitle } = require('../constants/personnelRoles');
 const { assertCanBeParishPriest } = require('../utils/personnel');
 
 
@@ -105,14 +105,14 @@ async function upsertPersonnel({ parishId, userId, fullName, roleTitle, status }
        SET full_name = $1, role_title = $2::varchar, status = $3, honorific = $5, clergy_rank = $6,
            role_scope = CASE WHEN role_title = $2::varchar THEN role_scope END, updated_at = NOW()
        WHERE user_id = $4`,
-      [typed.name, roleTitle, personnelStatus, userId, honorific, rankForHonorific(honorific)]
+      [typed.name, roleTitle, personnelStatus, userId, honorific, rankForPerson(honorific, [roleTitle])]
     );
     return;
   }
   await pool.query(
     `INSERT INTO parish_personnel (parish_id, full_name, role_title, contact_info, user_id, status, honorific, clergy_rank)
      VALUES ($1, $2, $3, NULL, $4, $5, $6, $7)`,
-    [parishId, typed.name, roleTitle, userId, personnelStatus, typed.honorific, rankForHonorific(typed.honorific)]
+    [parishId, typed.name, roleTitle, userId, personnelStatus, typed.honorific, rankForPerson(typed.honorific, [roleTitle])]
   );
 }
 

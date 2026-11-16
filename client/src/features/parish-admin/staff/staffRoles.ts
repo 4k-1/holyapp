@@ -9,6 +9,11 @@ export const PERSONNEL_ROLES = [
   "Sacristan",
   "Lay Minister",
   "Catechist",
+  "Religious Sister",
+  "Religious Brother",
+  "Pastoral Worker",
+  "Parish Pastoral Assistant",
+  "School Directress",
   "Other",
 ];
 

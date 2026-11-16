@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 const { writeAudit } = require('../utils/audit');
 const { requiredText, optionalText, sendRecordError } = require('../utils/recordFields');
-const { PERSONNEL_ROLES, rankForHonorific, splitHonorific, cleanPersonnelTitle } = require('../constants/personnelRoles');
+const { PERSONNEL_ROLES, rankForPerson, splitHonorific, cleanPersonnelTitle } = require('../constants/personnelRoles');
 const { toPerson, displayNameOf, assertCanBeParishPriest, holdsParishPriest, httpError } = require('../utils/personnel');
 const { encrypt } = require('../utils/fieldCrypto');
 
@@ -66,7 +66,7 @@ async function createPerson(req, res) {
     const titles = parseTitles(req.body);
     const honorific = shortText(req.body?.honorific, 'honorific', 30) || typed.honorific;
     const postNominals = shortText(req.body?.postNominals, 'letters after the name', 30);
-    const rank = rankForHonorific(honorific);
+    const rank = rankForPerson(honorific, titles.map((t) => t.title));
     await checkTitles(pool, { parishId: req.parishId, personId: null, titles, honorific, status: 'active' });
     const inserted = await pool.query(
       `INSERT INTO parish_personnel (parish_id, full_name, role_title, role_scope, other_titles, contact_info, status,
@@ -135,7 +135,7 @@ async function updatePerson(req, res) {
     } else if (req.body?.status !== undefined && req.body.status !== row.status) {
       throw httpError(400, 'This person has a staff account. Change their status under Staff accounts.');
     }
-    const rank = rankForHonorific(honorific);
+    const rank = rankForPerson(honorific, titles.map((t) => t.title));
     await checkTitles(pool, { parishId: req.parishId, personId: row.id, titles, honorific, status });
 
     const updated = await pool.query(

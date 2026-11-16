@@ -11,8 +11,16 @@ const OTHER_ROLES = Object.freeze([
   'Sacristan',
   'Lay Minister',
   'Catechist',
+  'Religious Sister',
+  'Religious Brother',
+  'Pastoral Worker',
+  'Parish Pastoral Assistant',
+  'School Directress',
   'Other',
 ]);
+
+/** Titles that make someone religious even without "Sr." or "Bro." typed. */
+const RELIGIOUS_TITLES = Object.freeze(['Religious Sister', 'Religious Brother']);
 const PERSONNEL_ROLES = Object.freeze([...CLERGY_ROLES, ...OTHER_ROLES]);
 
 const MAX_TITLE_LENGTH = 60;
@@ -64,6 +72,13 @@ function rankForHonorific(honorific) {
   return 'lay';
 }
 
+/** Clergy status from the honorific, or "religious" for a lay honorific with a sister's or brother's title. */
+function rankForPerson(honorific, titleNames = []) {
+  const rank = rankForHonorific(honorific);
+  if (rank === 'lay' && titleNames.some((t) => RELIGIOUS_TITLES.includes(t))) return 'religious';
+  return rank;
+}
+
 const HONORIFIC_PATTERN = /^((?:Most\s+Rev\.?\s+|Rev\.?\s+)?(?:Fr|Msgr|Sr|Bro|Dcn|Deacon|Rev)\.?)\s+(?=\S)/i;
 
 /** "Fr. Juan Santos" → { honorific: "Fr.", name: "Juan Santos" }; a name without one is left as it is. */
@@ -91,6 +106,8 @@ module.exports = {
   isClergy,
   isClergyRank,
   rankForHonorific,
+  rankForPerson,
+  RELIGIOUS_TITLES,
   splitHonorific,
   formatPersonName,
 };

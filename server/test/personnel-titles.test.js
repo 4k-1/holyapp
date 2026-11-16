@@ -127,6 +127,24 @@ describe('Staff titles', () => {
     assert.equal(res.status, 409, 'there is already a Parish Priest');
   });
 
+  it('counts a sister as religious, by her honorific or by her title', async () => {
+    const bySr = await add({ honorific: 'Sr.', name: 'Maria Lopez', titles: [{ title: 'Catechist' }] });
+    assert.equal(bySr.status, 201, JSON.stringify(bySr.body));
+    assert.equal(bySr.body.person.clergyRank, 'religious');
+    assert.equal(bySr.body.person.clergy, false);
+
+    const byTitle = await add({ name: 'Teresa Gomez', titles: [{ title: 'religious sister' }, { title: 'School Directress' }] });
+    assert.equal(byTitle.status, 201, JSON.stringify(byTitle.body));
+    assert.equal(byTitle.body.person.clergyRank, 'religious');
+    assert.deepEqual(
+      byTitle.body.person.titles.map((t) => t.title),
+      ['Religious Sister', 'School Directress']
+    );
+
+    const list = await api(parish.admin).get('/personnel');
+    for (const title of ['Religious Sister', 'Religious Brother', 'Pastoral Worker']) assert.ok(list.body.roles.includes(title));
+  });
+
   it('is for admins only', async () => {
     const res = await api(parish.staff).post('/personnel').send({ name: 'X Y', titles: [{ title: 'Sacristan' }] });
     assert.equal(res.status, 403);

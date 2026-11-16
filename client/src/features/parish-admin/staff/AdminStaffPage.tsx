@@ -18,12 +18,13 @@ import { SkeletonList } from "@/components/ui/Skeleton";
 import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 import { titleLabel } from "./staffRoles";
 
-type Filter = "all" | "clergy" | "staff" | "inactive";
+type Filter = "all" | "clergy" | "religious" | "lay" | "inactive";
 
 const STAT_CARDS: { key: Filter; label: string }[] = [
   { key: "all", label: "All personnel" },
   { key: "clergy", label: "Clergy" },
-  { key: "staff", label: "Lay" },
+  { key: "religious", label: "Religious" },
+  { key: "lay", label: "Lay" },
   { key: "inactive", label: "Inactive" },
 ];
 
@@ -31,7 +32,9 @@ function matches(person: ParishPerson, filter: Filter) {
   if (filter === "inactive") return person.status === "inactive";
   if (person.status === "inactive") return false;
   if (filter === "clergy") return person.clergy;
-  if (filter === "staff") return !person.clergy;
+  // Sisters and brothers: religious, not ordained. Lay is everyone else.
+  if (filter === "religious") return person.clergyRank === "religious";
+  if (filter === "lay") return !person.clergy && person.clergyRank !== "religious";
   return true;
 }
 
@@ -83,7 +86,7 @@ export function AdminStaffPage() {
   }, [load]);
 
   const counts = useMemo(() => {
-    const next = { all: 0, clergy: 0, staff: 0, inactive: 0 } as Record<Filter, number>;
+    const next = { all: 0, clergy: 0, religious: 0, lay: 0, inactive: 0 } as Record<Filter, number>;
     for (const person of people) for (const card of STAT_CARDS) if (matches(person, card.key)) next[card.key] += 1;
     return next;
   }, [people]);
@@ -169,7 +172,7 @@ export function AdminStaffPage() {
         }
       />
 
-      <div className="mb-[22px] grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+      <div className="mb-[22px] grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
         {STAT_CARDS.map((card) => (
           <AdminStatCard
             key={card.key}
