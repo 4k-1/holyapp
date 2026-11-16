@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../config/db');
 const { getLogo } = require('../controllers/parishLogoController');
+const { getPhoto, PHOTO_URL_SQL } = require('../controllers/parishPhotoController');
 
 const router = express.Router();
 
@@ -23,6 +24,7 @@ function toParish(row) {
     contact: row.contact,
     email: row.email,
     seal_url: row.seal_url || null,
+    photo_url: row.photo_url || null,
     tagline: row.tagline || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -32,7 +34,7 @@ function toParish(row) {
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, slug, name, address, contact, email, seal_url, created_at, updated_at
+      `SELECT id, slug, name, address, contact, email, seal_url, ${PHOTO_URL_SQL} AS photo_url, created_at, updated_at
        FROM parish
        ORDER BY name`
     );
@@ -54,5 +56,6 @@ router.get('/', async (req, res) => {
 
 // Public: the sign-in page, the certificate check page and printed certificates all show it.
 router.get('/:parishId/logo', getLogo);
+router.get('/:parishId/photo', getPhoto);
 
 module.exports = router;

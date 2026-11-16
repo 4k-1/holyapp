@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { listRequests } from "@/features/parishioner/requests/api/requestsApi";
 import { listMyMarriageApplications } from "@/features/parish-admin/marriage-applications/api/marriageApplicationsApi";
@@ -10,16 +10,7 @@ import { feeOf, peso, requestGroup, SACRAMENT_TITLES } from "@/features/parishio
 import { GiveIcon, IntentionIcon } from "@/components/ui/icons/SacramentIcons";
 import type { CertificateRequest, Parish } from "@/types";
 import { Cloud } from "@/features/public/Cloud";
-
-/** Fades the banner photo out on its left, top and bottom edges, so it melts into the panel with no visible border. */
-const photoFade: CSSProperties = {
-  maskImage:
-    "linear-gradient(to right, transparent, #000 60%), linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent)",
-  maskComposite: "intersect",
-  WebkitMaskImage:
-    "linear-gradient(to right, transparent, #000 60%), linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent)",
-  WebkitMaskComposite: "source-in",
-};
+import { churchPhotoFade } from "@/features/parish/churchPhotoFade";
 
 function greeting(now: Date) {
   const hour = now.getHours();
@@ -70,7 +61,7 @@ export function DashboardPage({ parish, userName }: DashboardPageProps) {
             src={parish.photoUrl}
             alt=""
             className="absolute inset-y-0 right-0 -z-10 h-full w-[48%] object-cover object-[46%_40%] opacity-30 sm:w-[50%] sm:object-[40%_42%] lg:opacity-45"
-            style={photoFade}
+            style={churchPhotoFade}
             aria-hidden="true"
           />
         )}

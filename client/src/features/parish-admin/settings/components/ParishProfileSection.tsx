@@ -10,6 +10,7 @@ import { formatMonthDay } from "../monthDay";
 import { MonthDayInput } from "./MonthDayInput";
 import { notify, notifyError } from "@/lib/notify";
 import { ParishLogoField } from "./ParishLogoField";
+import { ChurchPhotoField } from "./ChurchPhotoField";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import {
   SettingsAvatar,
@@ -104,6 +105,15 @@ export function ParishProfileSection() {
     notify(message);
   }
 
+  /** A new or removed church photo: same as the logo, so the parishioner dashboard picks it up. */
+  function handlePhotoChanged(photoUrl: string | undefined, message: string) {
+    setSaved((prev) => ({ ...prev, photoUrl }));
+    setDraft((prev) => ({ ...prev, photoUrl }));
+    forgetParishes();
+    void revalidator.revalidate();
+    notify(message);
+  }
+
   if (loading) {
     return <SkeletonList rows={4} className="px-0" />;
   }
@@ -165,6 +175,12 @@ export function ParishProfileSection() {
           </>
         )}
       </SettingsPanel>
+
+      <ChurchPhotoField
+        uploadedUrl={saved.photoUrl}
+        shownUrl={saved.photoUrl || parish.photoUrl}
+        onChanged={handlePhotoChanged}
+      />
 
       <SettingsPanel title="Contact details" action={editButton("contact")}>
         {editing === "contact" ? (

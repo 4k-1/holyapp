@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const { toDataUrl } = require('./certificateSignatureController');
 const { writeAudit } = require('../utils/audit');
+const { PHOTO_URL_SQL } = require('./parishPhotoController');
 const { isMonthDay } = require('../utils/liturgicalCalendar');
 
 const SACRAMENTS = ['baptism', 'confirmation', 'marriage', 'death'];
@@ -66,6 +67,7 @@ function toProfile(parish, settings) {
     phone: parish.contact,
     email: parish.email || '',
     sealUrl: parish.seal_url || (settings && settings.logo_url) || undefined,
+    photoUrl: parish.photo_url || undefined,
     fiestaDate: (settings && settings.fiesta_date) || '',
     localFeasts: (settings && Array.isArray(settings.local_feasts) && settings.local_feasts) || [],
   };
@@ -178,7 +180,7 @@ async function getProfile(req, res) {
   try {
     await ensureSettings(req.parishId, req.user.id);
     const parish = await pool.query(
-      `SELECT id, name, address, contact, email, seal_url FROM parish WHERE id = $1`,
+      `SELECT id, name, address, contact, email, seal_url, ${PHOTO_URL_SQL} AS photo_url FROM parish WHERE id = $1`,
       [req.parishId]
     );
     if (parish.rows.length === 0) {
@@ -219,7 +221,7 @@ async function updateProfile(req, res) {
       `UPDATE parish
        SET name = $1, address = $2, contact = $3, email = $4, seal_url = COALESCE($5, seal_url), updated_at = NOW()
        WHERE id = $6
-       RETURNING id, name, address, contact, email, seal_url`,
+       RETURNING id, name, address, contact, email, seal_url, ${PHOTO_URL_SQL} AS photo_url`,
       [name, address, phone, email, sealUrl, req.parishId]
     );
     const settings = await pool.query(

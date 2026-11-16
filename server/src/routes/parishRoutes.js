@@ -12,6 +12,7 @@ const {
   updateCertificates,
 } = require('../controllers/parishSettingsController');
 const { uploadLogo, removeLogo } = require('../controllers/parishLogoController');
+const { uploadPhoto, removePhoto } = require('../controllers/parishPhotoController');
 const { uploadSignature, removeSignature } = require('../controllers/certificateSignatureController');
 
 const router = express.Router();
@@ -136,6 +137,17 @@ router.delete(
   requireRole(ROLES.PARISH_ADMIN),
   removeLogo
 );
+// The church photo, the same way as the logo; 10 MB because phone photos are big (the controller shrinks it).
+router.put(
+  '/settings/photo',
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN),
+  express.raw({ type: 'image/*', limit: '11mb' }),
+  uploadPhoto
+);
+router.delete('/settings/photo', authenticate, scopeParish, requireParish, requireRole(ROLES.PARISH_ADMIN), removePhoto);
 router.get('/:parishId/context', authenticate, scopeParish, parishContext);
 
 module.exports = router;

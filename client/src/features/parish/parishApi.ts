@@ -11,6 +11,8 @@ type BackendParish = {
   contact?: string | null;
   email?: string | null;
   seal_url?: string | null;
+  /** The church photo the parish uploaded, if any. */
+  photo_url?: string | null;
   tagline?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
@@ -21,9 +23,10 @@ const LOCAL_SEALS: Record<string, string> = {
   mtcarmel: mtcarmellogo,
 };
 
-/** Local church photos until the API stores them. */
+/** Bundled church photos, used until a parish uploads its own in Parish settings. */
 const LOCAL_PHOTOS: Record<string, string> = {
   mtcarmel: mtcarmelChurch,
+  santuario: mtcarmelChurch,
 };
 
 const LOCAL_TAGLINES: Record<string, string> = {
@@ -48,7 +51,7 @@ function mapParish(row: BackendParish): Parish {
     email: row.email ?? "",
     sealUrl: apiFileUrl(row.seal_url) ?? LOCAL_SEALS[row.slug],
     backgroundImageUrl: apiFileUrl(row.seal_url) ?? LOCAL_SEALS[row.slug],
-    photoUrl: LOCAL_PHOTOS[row.slug],
+    photoUrl: apiFileUrl(row.photo_url) ?? LOCAL_PHOTOS[row.slug],
     tagline: row.tagline ?? LOCAL_TAGLINES[row.slug],
     createdAt: row.created_at ?? "",
     updatedAt: row.updated_at ?? "",
