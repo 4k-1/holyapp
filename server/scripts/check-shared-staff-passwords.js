@@ -25,11 +25,19 @@ const crypto = require('crypto');
 const pool = require('../src/config/db');
 const { comparePassword, hashPassword } = require('../src/utils/password');
 const { sendSetPasswordLink } = require('../src/utils/setPasswordLink');
+const { smtpConfigured } = require('../src/utils/mailer');
 
 const OLD_SHARED_PASSWORD = 'password123';
 const fix = process.argv.includes('--fix');
 
 async function main() {
+  // --fix emails real people, so it needs real mail: not the debug mode that only prints emails (and their links)
+  // to this console, and links to the server's own site rather than localhost.
+  if (fix && (!smtpConfigured() || !process.env.FRONTEND_URL)) {
+    throw new Error(
+      '--fix needs that server\'s mail settings (BREVO_API_KEY and SMTP_FROM) and FRONTEND_URL in the --env file. Nothing was changed.'
+    );
+  }
   const { rows } = await pool.query(
     `SELECT u.id, u.email, u.role, u.status, u.password_hash, p.name AS parish_name
      FROM app_user u JOIN parish p ON p.id = u.parish_id
