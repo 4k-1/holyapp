@@ -114,7 +114,7 @@ export function AdminSidebar({ role, collapsed, unreadCount = 0 }: AdminSidebarP
         {userCan(user, "donations") && (
           <SidebarLink to="donations" icon={<HeartIcon />} label="Donations" collapsed={collapsed} />
         )}
-        <SidebarLink to="staff" icon={<UsersIcon />} label="Staff" collapsed={collapsed} />
+        <SidebarLink to="staff" icon={<UsersIcon />} label="Personnel" collapsed={collapsed} />
         {role === "parish_admin" && (
           <SidebarLink to="activity" icon={<ClipboardIcon />} label="Activity" collapsed={collapsed} />
         )}

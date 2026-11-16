@@ -21,7 +21,7 @@ import { titleLabel } from "./staffRoles";
 type Filter = "all" | "clergy" | "staff" | "inactive";
 
 const STAT_CARDS: { key: Filter; label: string }[] = [
-  { key: "all", label: "All staff" },
+  { key: "all", label: "All personnel" },
   { key: "clergy", label: "Clergy" },
   { key: "staff", label: "Other staff" },
   { key: "inactive", label: "Inactive" },
@@ -73,7 +73,7 @@ export function AdminStaffPage() {
           setRoles(data.roles);
           setLoadError("");
         })
-        .catch((err: unknown) => setLoadError(err instanceof Error ? err.message : "Couldn't load the staff list."))
+        .catch((err: unknown) => setLoadError(err instanceof Error ? err.message : "Couldn't load the personnel list."))
         .finally(() => setLoading(false)),
     []
   );
@@ -158,12 +158,12 @@ export function AdminStaffPage() {
   return (
     <AdminPage>
       <AdminPageHeader
-        title="Staff"
+        title="Personnel"
         description="Priests and staff who serve the parish, with or without a sign-in. Events are assigned from this list."
         actions={
           canManage && (
             <AdminButton type="button" onClick={() => setEditing("new")}>
-              + Add staff
+              + Add person
             </AdminButton>
           )
         }
@@ -183,7 +183,7 @@ export function AdminStaffPage() {
 
       <AdminCard>
         <AdminFilterBar
-          search={{ value: search, onChange: setSearch, placeholder: "Search by name, role, or contact", label: "Search staff" }}
+          search={{ value: search, onChange: setSearch, placeholder: "Search by name, role, or contact", label: "Search personnel" }}
           chips={
             filter === "all"
               ? []
@@ -205,7 +205,7 @@ export function AdminStaffPage() {
             pageKey="staff"
             emptyMessage={
               people.length === 0
-                ? "No staff yet. Add your parish priest first."
+                ? "No one listed yet. Add your parish priest first."
                 : "No one matches. Try another filter or search."
             }
           />

@@ -225,7 +225,7 @@ export function HandoverModal({ personId, personName, onClose, onDone }: Handove
                 </label>
                 {priests.length === 0 && (
                   <p className="mt-1.5 text-admin-support text-admin-ink-muted">
-                    No other priest is on the Staff list. Add them first (with Fr. or Msgr.), or choose later.
+                    No other priest is on the Personnel list. Add them first (with Fr. or Msgr.), or choose later.
                   </p>
                 )}
               </Section>

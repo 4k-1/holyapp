@@ -37,7 +37,7 @@ export function RemoveStaffModal({ person, onClose, onRemoved }: RemoveStaffModa
           Remove {person.name}?
         </h3>
         <p className="mt-2 text-admin-body text-admin-ink-muted">
-          They will no longer appear on the staff list or when assigning events. Events already assigned to them
+          They will no longer appear on the Personnel list or when assigning events. Events already assigned to them
           keep their name. This can't be undone; to keep them on record, set them inactive instead.
         </p>
         {error && <p className="mt-3 text-admin-support font-semibold text-red-700">{error}</p>}

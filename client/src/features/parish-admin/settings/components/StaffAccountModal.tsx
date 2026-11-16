@@ -116,14 +116,14 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               <AccessOption
                 selected={source === "list"}
-                title="Someone on the Staff list"
+                title="Someone on the Personnel list"
                 description="Keeps their name, role, and assigned events."
                 onSelect={() => setSource("list")}
               />
               <AccessOption
                 selected={source === "new"}
                 title="Someone new"
-                description="Adds them to the Staff list too."
+                description="Adds them to the Personnel list too."
                 onSelect={() => setSource("new")}
               />
             </div>
@@ -140,7 +140,7 @@ export function StaffAccountModal({ account, isSelf = false, onClose, onSave }: 
               }}
               className={selectClass}
             >
-              <option value="">Choose from the Staff list</option>
+              <option value="">Choose from the Personnel list</option>
               {unlinked.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name} · {p.role}

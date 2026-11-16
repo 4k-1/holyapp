@@ -72,7 +72,7 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
     >
       <div className="border-b border-admin-border px-6 py-4">
         <h3 id="staff-person-title" className="font-serif text-admin-section font-semibold text-admin-ink">
-          {person ? "Edit staff" : "Add staff"}
+          {person ? "Edit person" : "Add person"}
         </h3>
         <p className="mt-0.5 text-admin-support text-admin-ink-muted">
           {person?.hasAccount
@@ -192,7 +192,7 @@ export function StaffPersonModal({ person, roles, onClose, onSaved }: StaffPerso
           Cancel
         </AdminButton>
         <AdminButton onClick={handleSave} disabled={saving}>
-          {saving ? "Saving…" : person ? "Save" : "Add staff"}
+          {saving ? "Saving…" : person ? "Save" : "Add person"}
         </AdminButton>
       </div>
     </AdminModalFrame>

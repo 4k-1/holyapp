@@ -84,7 +84,7 @@ export function StaffSelect({
             className={className}
           />
           <p className="mt-1 text-admin-label text-admin-ink-faint">
-            Guests aren't on the staff list, so they aren't checked for clashes with staff.
+            Guests aren't on the Personnel list, so they aren't checked for clashes.
           </p>
         </div>
       )}

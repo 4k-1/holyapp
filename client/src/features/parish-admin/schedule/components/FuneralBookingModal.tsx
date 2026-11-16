@@ -249,7 +249,7 @@ export function FuneralBookingModal({ onClose, onSaved }: FuneralBookingModalPro
             <StaffSelect staff={freePriests} value={assignee} onChange={setAssignee} emptyLabel="Not assigned yet" />
             {freePriests.length === 0 && (
               <p className="mt-1 text-admin-support text-admin-ink-muted">
-                No priest on the staff list is free then. Choose a visiting priest, or another time.
+                No priest on the Personnel list is free then. Choose a visiting priest, or another time.
               </p>
             )}
           </AdminField>

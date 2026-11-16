@@ -61,7 +61,7 @@ export function GiveSignInModal({ person, onClose, onDone }: GiveSignInModalProp
           Give {person.name} a sign-in
         </h3>
         <p className="mt-0.5 text-admin-support text-admin-ink-muted">
-          {person.role} · They stay on the Staff list with the same name, role, and assigned events.
+          {person.role} · They stay on the Personnel list with the same name, role, and assigned events.
         </p>
       </div>
 
