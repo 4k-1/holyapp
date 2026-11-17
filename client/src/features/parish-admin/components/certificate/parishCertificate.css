@@ -605,7 +605,8 @@
   position: relative;
 }
 
-.cert-specimen {
+.cert-specimen,
+.cert-testmark {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -652,4 +653,22 @@
 .pcert--letter .cert-specimen__text small,
 .mcert .cert-specimen__text small {
   font-size: 12mm;
+}
+
+/* Test copy (HolyApp is being tested): amber rather than red, a little stronger
+   than the specimen mark so nobody takes it for a real certificate. */
+.cert-testmark .cert-specimen__text {
+  color: rgba(201, 130, 0, 0.16);
+}
+
+/* Its second line is longer than the specimen's, so it's set smaller to stay on the page. */
+.cert-testmark .cert-specimen__text small {
+  font-size: 5.5mm;
+  letter-spacing: 0.8mm;
+}
+
+.pcert--letter .cert-testmark .cert-specimen__text small,
+.mcert .cert-testmark .cert-specimen__text small {
+  font-size: 8mm;
+  letter-spacing: 1mm;
 }

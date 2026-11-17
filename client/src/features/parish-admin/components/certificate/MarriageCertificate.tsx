@@ -3,7 +3,7 @@ import type { FormName, MarriageCertificateData, MarriageCertificateParty } from
 import { dateParts, fullDate, present } from "./certificateFormat";
 import { VerificationArea } from "./CertificateVerification";
 import "./marriageCertificate.css";
-import { SpecimenMark } from "./SpecimenMark";
+import { CertificateMark } from "./SpecimenMark";
 
 /**
  * The Certificate of Marriage on the government's form: Municipal Form No. 97 (Revised
@@ -149,7 +149,7 @@ function FrontPage({ data }: { data: MarriageCertificateData }) {
 
   return (
     <section className="mcert__page">
-      {data.specimen && <SpecimenMark />}
+      <CertificateMark specimen={data.specimen} />
       <div className="mf-frame">
         <header className="mf-head">
           <div className="mf-head__form">
@@ -518,7 +518,7 @@ function BackPage({ data, appUrl }: { data: MarriageCertificateData; appUrl: str
 
   return (
     <section className="mcert__page mcert__page--back">
-      {data.specimen && <SpecimenMark />}
+      <CertificateMark specimen={data.specimen} />
       <div className="mf-frame mf-frame--back">
         <div className="mf-back-witnesses">
           <p>

@@ -1,3 +1,4 @@
+import { TestCertificateNotice } from "@/components/TestCertificateNotice";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
@@ -32,6 +33,7 @@ export function VerifyPage() {
       description="Check whether a certificate is real and whether the issuing parish still stands behind it."
       back={{ to: "../wallet", label: "Certificate wallet" }}
     >
+      <TestCertificateNotice kind="scan" className="mb-4" />
       <PortalFormCard>
         <section className="px-5 py-5 sm:px-6">
           <h2 className="text-[0.9375rem] font-semibold text-ink">Scan the QR code</h2>

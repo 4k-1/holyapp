@@ -39,6 +39,12 @@ app.get('/payments/mode', (req, res) => {
   res.json(require('./utils/paymongo').paymentMode());
 });
 
+// While HolyApp is being tested, certificates and the verification page say
+// plainly that copies are test copies. Set CERTIFICATES_TEST_MODE=false to go live.
+app.get('/certificates/mode', (req, res) => {
+  res.json({ testMode: process.env.CERTIFICATES_TEST_MODE !== 'false' });
+});
+
 // Attempt limits. Each path also covers what's under it (/auth/login covers /auth/login/2fa).
 app.use('/auth/login/2fa', limits.codeByChallenge, limits.codeByIp);
 app.use('/auth/login', limits.loginByIp, limits.loginByEmail);

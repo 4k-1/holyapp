@@ -35,7 +35,9 @@ export function CertificatePdfCapture({ certificate, parish, onReady }: Certific
         const pending = images.some((img) => !img.complete || img.naturalWidth === 0);
         const needsQr = Boolean(certificate.fields.verifyUrl);
         const hasQr = Boolean(sheet!.querySelector('img[alt="Scan to verify this certificate"]'));
-        if (!pending && (!needsQr || hasQr)) return;
+        // The test-copy mark is drawn once the site says whether certificates are test copies.
+        const markPending = Boolean(sheet!.querySelector(".cert-mode-pending"));
+        if (!pending && !markPending && (!needsQr || hasQr)) return;
         await new Promise((resolve) => window.setTimeout(resolve, 40));
       }
     }

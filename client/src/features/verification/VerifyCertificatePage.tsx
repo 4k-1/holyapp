@@ -1,3 +1,4 @@
+import { TestCertificateNotice } from "@/components/TestCertificateNotice";
 import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAsync } from "@/hooks/useAsync";
@@ -218,6 +219,7 @@ export function VerifyCertificatePage() {
   return (
     <div className="verify-page min-h-screen bg-[#f4f6f7] px-4 py-8 sm:py-12 print:bg-white print:p-0">
       <main className="mx-auto w-full max-w-[640px]">
+        <TestCertificateNotice className="mb-4 print:mb-3" />
         <article className="overflow-hidden rounded-md border border-[#d3dde0] bg-white shadow-[0_1px_3px_rgb(19_38_43/0.06)] print:rounded-none print:border-[#999] print:shadow-none">
           <IssuerHeader data={data ?? null} />
           {outcome === null ? (

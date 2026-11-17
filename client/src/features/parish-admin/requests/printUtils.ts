@@ -20,7 +20,7 @@ function escapeHtml(value: string) {
 
 const CERTIFICATE_SHEETS = ".pcert, .mcert";
 /** Class names used only by the printed certificates, their specimen mark and the preview frame. */
-const CERTIFICATE_SELECTOR = /\.(pcert|mcert|mf-|cert-specimen|cert-fit-sheet)/;
+const CERTIFICATE_SELECTOR = /\.(pcert|mcert|mf-|cert-specimen|cert-testmark|cert-fit-sheet)/;
 /** The certificates' named paper sizes (parish-cert-a5, parish-cert-letter, marriage-cert-long). */
 const CERTIFICATE_PAGE = /cert/;
 
@@ -167,6 +167,7 @@ export async function waitForQrCode(getEl: () => HTMLElement | null, timeoutMs =
     const ready =
       el &&
       !el.querySelector(".cert-specimen") &&
+      !el.querySelector(".cert-mode-pending") &&
       box &&
       !box.classList.contains("pcert__qr--placeholder") &&
       (box.querySelector("img") as HTMLImageElement | null)?.complete;
