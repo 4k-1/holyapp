@@ -34,6 +34,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Lets every payment page say plainly when GCash is only in test mode.
+app.get('/payments/mode', (req, res) => {
+  res.json(require('./utils/paymongo').paymentMode());
+});
+
 // Attempt limits. Each path also covers what's under it (/auth/login covers /auth/login/2fa).
 app.use('/auth/login/2fa', limits.codeByChallenge, limits.codeByIp);
 app.use('/auth/login', limits.loginByIp, limits.loginByEmail);

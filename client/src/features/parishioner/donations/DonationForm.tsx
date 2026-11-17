@@ -10,6 +10,8 @@ import {
 } from "@/features/parishioner/components/PortalForm";
 import { giveDonation, type GiveInput } from "@/features/parishioner/donations/donationsApi";
 import { FUNDS } from "@/lib/funds";
+import { TestPaymentNotice } from "@/components/payments/TestPaymentNotice";
+import { usePaymentTestMode } from "@/lib/paymentMode";
 
 const PRESET_AMOUNTS = [100, 300, 500, 1000];
 /** PayMongo's smallest GCash charge. */
@@ -37,6 +39,7 @@ export function DonationForm({ defaultFullName = "", gcashAvailable, onGive = gi
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const testPayments = usePaymentTestMode();
   const [error, setError] = useState("");
 
   const value = Number(amount);
@@ -151,6 +154,7 @@ export function DonationForm({ defaultFullName = "", gcashAvailable, onGive = gi
             </PortalNotice>
           </div>
         )}
+        {gcashAvailable && <TestPaymentNotice className="mb-3" />}
         {error && (
           <div className="mb-3">
             <PortalNotice tone="error">{error}</PortalNotice>
@@ -160,8 +164,8 @@ export function DonationForm({ defaultFullName = "", gcashAvailable, onGive = gi
           {submitting
             ? "Opening GCash…"
             : value >= MIN_AMOUNT
-              ? `Give ₱${value.toLocaleString("en-PH")} through GCash`
-              : "Give through GCash"}
+              ? `Give ₱${value.toLocaleString("en-PH")} through GCash${testPayments ? " (test)" : ""}`
+              : `Give through GCash${testPayments ? " (test)" : ""}`}
         </PrimarySubmit>
         <p className="mt-2.5 text-center text-[0.8125rem] text-ink-muted">
           You&apos;ll finish on GCash&apos;s secure page, then return here.

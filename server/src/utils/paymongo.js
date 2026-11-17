@@ -14,6 +14,18 @@ function configured() {
   return Boolean(secretKey());
 }
 
+/** PayMongo test keys start with sk_test_: payments are pretend and no real money moves. */
+function testMode() {
+  return secretKey().startsWith('sk_test_');
+}
+
+/** What the payment pages need to know: whether GCash works, and whether it is only a test. */
+function paymentMode() {
+  return { gcash: configured(), testMode: configured() && testMode() };
+}
+
+const TEST_LABEL = 'TEST PAYMENT, no real money: ';
+
 const RETRY_DELAYS_MS = [400, 1200];
 
 /**
@@ -119,6 +131,9 @@ async function createGcashCheckout({
     throw err;
   }
 
+  // In test mode the GCash page itself says so, in the item name and description people see there.
+  if (testMode()) description = `${TEST_LABEL}${description}`;
+
   return paymongoFetch('/v2/checkout_sessions', {
     method: 'POST',
     body: {
@@ -217,6 +232,8 @@ function checkoutFromWebhook(payload) {
 }
 
 module.exports = {
+  testMode,
+  paymentMode,
   configured,
   createGcashCheckout,
   retrieveCheckout,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TestPaymentNotice } from "@/components/payments/TestPaymentNotice";
 import { useParams, useSearchParams } from "react-router-dom";
 import { PortalNotice, PortalPending, PortalSuccess } from "@/features/parishioner/components/PortalForm";
 import { IntentionForm } from "@/features/parishioner/intentions/IntentionForm";
@@ -58,9 +59,12 @@ export function PublicIntentionPage() {
         phase === "checking" ? (
           <PortalPending>Confirming your donation with GCash…</PortalPending>
         ) : phase === "donated" ? (
-          <PortalSuccess title="Your intention and donation were received" to="/give" destination="the giving page">
-            {THANKS}
-          </PortalSuccess>
+          <>
+            <PortalSuccess title="Your intention and donation were received" to="/give" destination="the giving page">
+              {THANKS}
+            </PortalSuccess>
+            <TestPaymentNotice kind="receipt" className="mt-4" />
+          </>
         ) : phase === "sent" ? (
           <PortalSuccess title="Your intention was sent" to="/give" destination="the giving page">
             {THANKS}

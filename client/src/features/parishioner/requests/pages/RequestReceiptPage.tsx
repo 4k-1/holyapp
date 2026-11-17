@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { PortalBackLink } from "@/features/parishioner/components/PortalBackLink";
 import { getRequestReceipt } from "@/features/parishioner/requests/api/requestsApi";
 import { useAsync } from "@/hooks/useAsync";
+import { TestPaymentNotice } from "@/components/payments/TestPaymentNotice";
 import { SACRAMENT_TITLES as sacramentLabels } from "@/features/parishioner/requests/requestDisplay";
 
 export function RequestReceiptPage() {
@@ -23,6 +24,7 @@ export function RequestReceiptPage() {
         </p>
       ) : (
         <div className="mt-6 rounded-2xl border border-border bg-surface p-6 shadow-sm">
+          {receipt.method === "gcash" && <TestPaymentNotice kind="receipt" className="mb-5" />}
           <p className="text-[12px] font-bold uppercase tracking-wide text-ink-muted">{receipt.parishName}</p>
           <p className="mt-1 font-serif text-xl font-bold text-ink">{receipt.number}</p>
           <dl className="mt-5 space-y-3 text-sm">

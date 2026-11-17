@@ -16,6 +16,7 @@ import {
   type SubmitIntentionInput,
 } from "@/features/parishioner/intentions/intentionsApi";
 import { useAsync } from "@/hooks/useAsync";
+import { TestPaymentNotice } from "@/components/payments/TestPaymentNotice";
 import { MASS_INTENTION_TYPES, type Parish } from "@/types";
 
 interface IntentionFormProps {
@@ -309,6 +310,7 @@ export function IntentionForm({
                   onChange={setAmount}
                   error={amount && !donationValid ? "Enter at least ₱1." : undefined}
                 />
+                <TestPaymentNotice className="mt-3" />
                 <p className="mt-2 text-[0.8125rem] text-ink-muted">
                   After you submit, you&apos;ll finish the donation on GCash. If you cancel there, your intention stays
                   requested.

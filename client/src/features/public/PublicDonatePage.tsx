@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TestPaymentNotice } from "@/components/payments/TestPaymentNotice";
 import { useParams, useSearchParams } from "react-router-dom";
 import { PortalNotice, PortalPending, PortalSuccess } from "@/features/parishioner/components/PortalForm";
 import { DonationForm } from "@/features/parishioner/donations/DonationForm";
@@ -53,12 +54,15 @@ export function PublicDonatePage() {
         phase === "checking" ? (
           <PortalPending>Confirming your gift with GCash…</PortalPending>
         ) : phase === "received" ? (
-          <PortalSuccess title="Thank you for your gift" to="/give" destination="the giving page">
-            {amount !== null
-              ? `${parish.name} received your gift of ₱${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}.`
-              : "Your gift was received by the parish."}{" "}
-            May God bless your generosity.
-          </PortalSuccess>
+          <>
+            <PortalSuccess title="Thank you for your gift" to="/give" destination="the giving page">
+              {amount !== null
+                ? `${parish.name} received your gift of ₱${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })}.`
+                : "Your gift was received by the parish."}{" "}
+              May God bless your generosity.
+            </PortalSuccess>
+            <TestPaymentNotice kind="receipt" className="mt-4" />
+          </>
         ) : (
           <>
             {notice && (

@@ -4,6 +4,8 @@ import { CandleIcon, DoveIcon, DropletIcon, HeartIcon } from "@/components/ui/ic
 import { deriveStatusKey, deriveStatusLabel } from "@/features/parishioner/dashboard/deriveStatusLabel";
 import { getSacramentIconStyle, getStatusPillClasses } from "@/features/parishioner/dashboard/statusStyles";
 import { startGcashPayment } from "@/features/parishioner/requests/api/requestsApi";
+import { TestPaymentNotice } from "@/components/payments/TestPaymentNotice";
+import { usePaymentTestMode } from "@/lib/paymentMode";
 import { RequestStepTracker } from "@/features/parishioner/requests/components/RequestStepTracker";
 import {
   feeOf,
@@ -71,6 +73,7 @@ export function RequestDetailCard({ request, parishSlug, highlight = false, vari
   const isPaid = request.payment?.status === "paid";
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const testPayments = usePaymentTestMode();
 
   async function payWithGcash() {
     if (paying) return;
@@ -104,7 +107,7 @@ export function RequestDetailCard({ request, parishSlug, highlight = false, vari
     actions.push(
       <button key="pay" type="button" onClick={payWithGcash} disabled={paying} className={`${primaryAction} w-full sm:w-auto`}>
         <CardIcon />
-        {paying ? "Opening GCash…" : fee ? `Pay ${peso(fee)} with GCash` : "Pay with GCash"}
+        {paying ? "Opening GCash…" : `${fee ? `Pay ${peso(fee)} with GCash` : "Pay with GCash"}${testPayments ? " (test)" : ""}`}
       </button>
     );
   }
@@ -172,6 +175,8 @@ export function RequestDetailCard({ request, parishSlug, highlight = false, vari
         <div className="mt-5">
           <RequestStepTracker request={request} />
         </div>
+
+        {key === "awaiting_payment" && <TestPaymentNotice className="mt-4" />}
 
         {payError && (
           <p role="alert" className="mt-4 rounded-xl border border-danger/30 bg-danger/[0.06] px-4 py-3 text-[0.875rem] text-danger">

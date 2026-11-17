@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { TestPaymentNotice } from "@/components/payments/TestPaymentNotice";
 import { useOutletContext, useSearchParams } from "react-router-dom";
 import { getCurrentUser } from "@/features/auth/api/authApi";
 import {
@@ -78,6 +79,7 @@ export function DonationsPage() {
           {receivedAmount !== null ? `${parish.name} received your gift of ${peso(receivedAmount)}.` : "Your gift was received by the parish."}{" "}
           May God bless your generosity.
         </PortalSuccess>
+        <TestPaymentNotice kind="receipt" className="mt-4" />
       </PortalFormPage>
     );
   }
