@@ -198,7 +198,7 @@ export const MASS_INTENTION_TYPES = [
 export type MassIntentionTypeName = (typeof MASS_INTENTION_TYPES)[number];
 
 /** Online origin for now. `said` = already offered at Mass. */
-export type MassIntentionStatus = "pending" | "confirmed" | "said";
+export type MassIntentionStatus = "pending" | "confirmed" | "rejected" | "said";
 
 /** Donations are optional: `none`, a GCash donation still `pending`, or `paid`. */
 export type MassIntentionPayment = "paid" | "pending" | "none";

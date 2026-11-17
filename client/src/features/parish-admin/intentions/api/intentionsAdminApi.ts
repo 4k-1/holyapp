@@ -68,6 +68,18 @@ export async function confirmIntention(intentionId: string): Promise<MassIntenti
   }
 }
 
+export async function rejectIntention(intentionId: string): Promise<MassIntentionRequest> {
+  try {
+    const data = await apiFetch<{ intention: MassIntentionRequest }>(
+      `/intentions/${encodeURIComponent(intentionId)}/reject`,
+      { method: "PATCH" }
+    );
+    return data.intention;
+  } catch (err) {
+    fail(err);
+  }
+}
+
 export async function markIntentionSaid(intentionId: string): Promise<MassIntentionRequest> {
   try {
     const data = await apiFetch<{ intention: MassIntentionRequest }>(

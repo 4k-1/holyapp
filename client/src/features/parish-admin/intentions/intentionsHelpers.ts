@@ -41,6 +41,11 @@ export function intentionLabel(intention: MassIntentionRequest) {
   return `${intention.intentionType} — ${intention.intentionFor}`;
 }
 
+/** Only confirmed intentions (including ones already said) go on the list the priest reads. */
+export function printableIntentions(intentions: MassIntentionRequest[]) {
+  return intentions.filter((intention) => intention.status === "confirmed" || intention.status === "said");
+}
+
 /** Donations actually received; pending GCash donations are not counted yet. */
 export function donationTotal(intentions: MassIntentionRequest[]) {
   return intentions.reduce((sum, intention) => sum + (intention.payment === "paid" ? intention.offering ?? 0 : 0), 0);

@@ -166,7 +166,8 @@ async function computeSlots(parishId, userId, from, to, location) {
     const label = schedule.scheduleLabelForDate(date, scheduleEntries);
     for (const time of massTimes) {
       const booked = mapped.filter((item) => item.scheduleDate === date && item.scheduleTime === time);
-      const bookedCount = booked.length;
+      // Rejected requests stay listed for the office but give their place back.
+      const bookedCount = booked.filter((item) => item.status !== 'rejected').length;
       slots.push({
         id: `${date}__${time}`,
         parishId,
@@ -622,6 +623,42 @@ async function markSaid(req, res) {
   }
 }
 
+async function rejectIntention(req, res) {
+  try {
+    const row = await loadParishIntention(req.parishId, req.params.id);
+    if (!row) return res.status(404).json({ error: 'Intention not found.' });
+    if (row.status !== 'pending') {
+      throw httpError(400, 'Only pending requests can be rejected.');
+    }
+    const updated = await pool.query(
+      `UPDATE mass_intention SET status = 'rejected' WHERE id = $1 RETURNING *`,
+      [row.id]
+    );
+    if (row.requester_id) {
+      await createNotification({
+        parishId: req.parishId,
+        recipientId: row.requester_id,
+        kind: 'parishioner',
+        title: 'Mass intention not accepted',
+        body: `Your Mass intention for ${decrypt(row.intention_for)} on ${String(row.schedule_date).slice(0, 10)} at ${row.schedule_time} could not be accepted. Please contact the parish office.`,
+        href: 'intentions',
+      });
+    }
+    await writeAudit({
+      parishId: req.parishId,
+      actorId: req.user.id,
+      action: 'mass_intention.rejected',
+      entityType: 'mass_intention',
+      entityId: row.id,
+      metadata: {},
+    });
+    emailIntentionStatus(updated.rows[0], 'rejected', { intentionFor: decrypt(row.intention_for) });
+    res.json({ intention: toIntention(updated.rows[0]) });
+  } catch (err) {
+    return sendRecordError(res, err);
+  }
+}
+
 async function getCapacitySetting(req, res) {
   try {
     const capacity = await getCapacity(req.parishId, req.user.id);
@@ -680,6 +717,7 @@ module.exports = {
   submitIntention,
   bookIntention,
   confirmIntention,
+  rejectIntention,
   markSaid,
   getCapacitySetting,
   updateCapacitySetting,

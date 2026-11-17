@@ -1,12 +1,12 @@
 import { PrintSheet } from "@/components/print/PrintSheet";
 import { MASS_INTENTION_TYPES, type MassIntentionRequest, type MassSlotView } from "@/types";
-import { formatMassDate } from "@/features/parish-admin/intentions/intentionsHelpers";
+import { formatMassDate, printableIntentions } from "@/features/parish-admin/intentions/intentionsHelpers";
 import "./intentionsPrint.css";
 
 interface IntentionsPrintSheetProps {
   parishName: string;
   date: string;
-  /** One Mass, or every Mass of the day. */
+  /** One Mass, or every Mass of the day. Only confirmed intentions are printed. */
   slots: MassSlotView[];
 }
 
@@ -31,37 +31,40 @@ function byReason(intentions: MassIntentionRequest[]) {
 export function IntentionsPrintSheet({ parishName, date, slots }: IntentionsPrintSheetProps) {
   return (
     <PrintSheet className="intentions-print-sheet">
-      {slots.map((slot) => (
-        <section key={slot.id} className="intentions-print-sheet__mass">
-          <p className="intentions-print-sheet__parish">{parishName}</p>
-          <h1 className="intentions-print-sheet__title">Mass Intentions</h1>
-          <p className="intentions-print-sheet__when">
-            {formatMassDate(date)} · {slot.time}
-          </p>
+      {slots.map((slot) => {
+        const intentions = printableIntentions(slot.intentions);
+        return (
+          <section key={slot.id} className="intentions-print-sheet__mass">
+            <p className="intentions-print-sheet__parish">{parishName}</p>
+            <h1 className="intentions-print-sheet__title">Mass Intentions</h1>
+            <p className="intentions-print-sheet__when">
+              {formatMassDate(date)} · {slot.time}
+            </p>
 
-          {slot.intentions.length === 0 ? (
-            <p className="intentions-print-sheet__empty">No intentions for this Mass.</p>
-          ) : (
-            byReason(slot.intentions).map(([reason, items]) => (
-              <div key={reason} className="intentions-print-sheet__group">
-                <h2>{reason}</h2>
-                <ol>
-                  {items.map((intention) => (
-                    <li key={intention.id}>
-                      <span className="intentions-print-sheet__for">{intention.intentionFor}</span>
-                      <span className="intentions-print-sheet__by">Requested by {intention.requestedBy}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ))
-          )}
+            {intentions.length === 0 ? (
+              <p className="intentions-print-sheet__empty">No intentions for this Mass.</p>
+            ) : (
+              byReason(intentions).map(([reason, items]) => (
+                <div key={reason} className="intentions-print-sheet__group">
+                  <h2>{reason}</h2>
+                  <ol>
+                    {items.map((intention) => (
+                      <li key={intention.id}>
+                        <span className="intentions-print-sheet__for">{intention.intentionFor}</span>
+                        <span className="intentions-print-sheet__by">Requested by {intention.requestedBy}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))
+            )}
 
-          <p className="intentions-print-sheet__count">
-            {slot.intentions.length} {slot.intentions.length === 1 ? "intention" : "intentions"}
-          </p>
-        </section>
-      ))}
+            <p className="intentions-print-sheet__count">
+              {intentions.length} {intentions.length === 1 ? "intention" : "intentions"}
+            </p>
+          </section>
+        );
+      })}
     </PrintSheet>
   );
 }

@@ -71,6 +71,7 @@ const DID: Record<string, string> = {
   "mass_intention.requested": "asked for a Mass intention",
   "mass_intention.booked": "booked a Mass intention",
   "mass_intention.confirmed": "confirmed a Mass intention",
+  "mass_intention.rejected": "rejected a Mass intention",
   "mass_intention.said": "marked a Mass intention as offered",
   "mass_intention.donation_received": "gave an offering for a Mass intention",
 

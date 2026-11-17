@@ -342,7 +342,7 @@ function emailMarriageStatus(row, change, extra = {}) {
   });
 }
 
-/** Mass intention emails. `intentionFor` is the decrypted intention text; `change` is confirmed or said. */
+/** Mass intention emails. `intentionFor` is the decrypted intention text; `change` is confirmed, rejected or said. */
 function emailIntentionStatus(row, change, { intentionFor } = {}) {
   if (!row || !row.requester_id) return Promise.resolve();
   const when = `${longDate(row.schedule_date)}${row.schedule_time ? ` at ${clockTime(row.schedule_time)}` : ''}`;
@@ -354,6 +354,11 @@ function emailIntentionStatus(row, change, { intentionFor } = {}) {
       status: 'Scheduled',
       headline: 'Your Mass intention is confirmed',
       nextStep: `It will be offered at the Mass on ${when}.`,
+    },
+    rejected: {
+      status: 'Not accepted',
+      headline: 'Your Mass intention could not be accepted',
+      nextStep: `The parish office could not accept it for the Mass on ${when}. Please contact the office to choose another Mass.`,
     },
     said: {
       status: 'Said',

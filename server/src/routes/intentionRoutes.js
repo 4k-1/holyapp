@@ -12,6 +12,7 @@ const {
   submitIntention,
   bookIntention,
   confirmIntention,
+  rejectIntention,
   markSaid,
   getCapacitySetting,
   updateCapacitySetting,
@@ -37,6 +38,7 @@ router.patch('/capacity', ...office, updateCapacitySetting);
 router.get('/', ...office, listParishIntentions);
 router.post('/book', ...office, bookIntention);
 router.patch('/:id/confirm', ...office, confirmIntention);
+router.patch('/:id/reject', ...office, rejectIntention);
 router.patch('/:id/said', ...office, markSaid);
 
 module.exports = router;

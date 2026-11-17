@@ -7,6 +7,7 @@ import {
   getMassIntentionCapacity,
   listAdminMassSlots,
   markIntentionSaid,
+  rejectIntention,
   updateMassIntentionCapacity,
 } from "@/features/parish-admin/intentions/api/intentionsAdminApi";
 import { AdminButton } from "@/features/parish-admin/components/AdminForm";
@@ -16,9 +17,10 @@ import { markIntentionsPrinted } from "@/features/parish-admin/intentions/printe
 import { MassCapacitySetting } from "@/features/parish-admin/intentions/components/MassCapacitySetting";
 import { MassIntentionsMiniCalendar } from "@/features/parish-admin/intentions/components/MassIntentionsMiniCalendar";
 import { MassSlotTable } from "@/features/parish-admin/intentions/components/MassSlotTable";
-import { donationTotal, formatMassDate, formatPeso, todayISO } from "@/features/parish-admin/intentions/intentionsHelpers";
+import { donationTotal, formatMassDate, formatPeso, printableIntentions, todayISO } from "@/features/parish-admin/intentions/intentionsHelpers";
 import { daysInMonth, toISO } from "@/features/parish-admin/schedule/scheduleHelpers";
 import { useAsync } from "@/hooks/useAsync";
+import { askConfirm, notify, notifyError } from "@/lib/notify";
 import type { MassIntentionRequest, MassSlotView, Parish } from "@/types";
 import { AdminPage, AdminPageHeader } from "@/features/parish-admin/components/AdminPageHeader";
 
@@ -41,12 +43,14 @@ export function AdminMassIntentionsPage() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [bookingSlot, setBookingSlot] = useState<MassSlotView | null>(null);
   const [markingId, setMarkingId] = useState<string | null>(null);
+  /** The Mass whose bulk confirm / reject / said is saving. */
+  const [busySlotId, setBusySlotId] = useState<string | null>(null);
   /** The Masses being printed; the sheet renders, the browser prints, then this clears. */
   const [printing, setPrinting] = usePrintJob<MassSlotView[]>();
 
   /** Print these Masses' lists, and remember it so the dashboard can tick the task off. */
   function printSlots(list: MassSlotView[]) {
-    markIntentionsPrinted(list.filter((slot) => slot.intentions.length > 0));
+    markIntentionsPrinted(list.filter((slot) => printableIntentions(slot.intentions).length > 0));
     setPrinting(list);
   }
 
@@ -111,6 +115,25 @@ export function AdminMassIntentionsPage() {
     }
   }
 
+  async function handleReject(intention: MassIntentionRequest) {
+    const ok = await askConfirm({
+      title: "Reject this request?",
+      message: `${intention.intentionFor} will not be offered at this Mass, and the person who asked will be told.`,
+      confirmLabel: "Reject",
+      danger: true,
+    });
+    if (!ok) return;
+    setMarkingId(intention.id);
+    try {
+      await rejectIntention(intention.id);
+      refetch();
+    } catch (err) {
+      notifyError(err, "Couldn't reject the request.");
+    } finally {
+      setMarkingId(null);
+    }
+  }
+
   async function handleMarkSaid(intention: MassIntentionRequest) {
     setMarkingId(intention.id);
     try {
@@ -119,6 +142,54 @@ export function AdminMassIntentionsPage() {
     } finally {
       setMarkingId(null);
     }
+  }
+
+  /** Runs one action on several intentions of a Mass, one at a time, then reports how it went. */
+  async function runMany(
+    slot: MassSlotView,
+    intentions: MassIntentionRequest[],
+    action: (id: string) => Promise<unknown>,
+    done: string
+  ) {
+    setBusySlotId(slot.id);
+    let failed = 0;
+    for (const intention of intentions) {
+      try {
+        await action(intention.id);
+      } catch {
+        failed += 1;
+      }
+    }
+    setBusySlotId(null);
+    refetch();
+    const succeeded = intentions.length - failed;
+    if (failed === 0) notify(`${plural(succeeded, "intention")} ${done}.`);
+    else notify(`${succeeded} of ${intentions.length} ${done}; ${failed} couldn't be saved. Please try again.`, "error");
+  }
+
+  async function handleConfirmMany(slot: MassSlotView, intentions: MassIntentionRequest[]) {
+    await runMany(slot, intentions, confirmIntention, "confirmed");
+  }
+
+  async function handleRejectMany(slot: MassSlotView, intentions: MassIntentionRequest[]) {
+    const ok = await askConfirm({
+      title: `Reject ${plural(intentions.length, "request")}?`,
+      message: `They will not be offered at the ${slot.time} Mass, and each person who asked will be told.`,
+      confirmLabel: "Reject",
+      danger: true,
+    });
+    if (!ok) return;
+    await runMany(slot, intentions, rejectIntention, "rejected");
+  }
+
+  async function handleMarkSaidMany(slot: MassSlotView, intentions: MassIntentionRequest[]) {
+    const ok = await askConfirm({
+      title: `Mark ${plural(intentions.length, "intention")} as said?`,
+      message: `Every confirmed intention for the ${slot.time} Mass will be marked as offered, and each person who asked will be told.`,
+      confirmLabel: "Mark said",
+    });
+    if (!ok) return;
+    await runMany(slot, intentions, markIntentionSaid, "marked as said");
   }
 
   return (
@@ -173,7 +244,7 @@ export function AdminMassIntentionsPage() {
                   variant="secondary"
                   size="sm"
                   onClick={() => printSlots(daySlots)}
-                  disabled={daySlots.every((slot) => slot.intentions.length === 0)}
+                  disabled={daySlots.every((slot) => printableIntentions(slot.intentions).length === 0)}
                 >
                   Print all Masses
                 </AdminButton>
@@ -192,11 +263,16 @@ export function AdminMassIntentionsPage() {
                 key={slot.id}
                 slot={slot}
                 markingId={markingId}
+                busy={busySlotId === slot.id}
                 isPast={selectedIsPast}
                 onAddRequest={() => setBookingSlot(slot)}
                 onPrint={() => printSlots([slot])}
                 onConfirm={handleConfirm}
+                onReject={handleReject}
                 onMarkSaid={handleMarkSaid}
+                onConfirmMany={(list) => handleConfirmMany(slot, list)}
+                onRejectMany={(list) => handleRejectMany(slot, list)}
+                onMarkSaidMany={(list) => handleMarkSaidMany(slot, list)}
               />
             ))}
           </div>
@@ -208,7 +284,7 @@ export function AdminMassIntentionsPage() {
         <IntentionsPrintSheet
           parishName={parish.name}
           date={selectedDate}
-          slots={printing.filter((slot) => slot.intentions.length > 0)}
+          slots={printing.filter((slot) => printableIntentions(slot.intentions).length > 0)}
         />
       )}
 
