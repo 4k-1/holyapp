@@ -1,10 +1,12 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useOutletContext, useSearchParams } from "react-router-dom";
 import { listRequests, syncGcashPayment } from "@/features/parishioner/requests/api/requestsApi";
 import { useAsync } from "@/hooks/useAsync";
 import { CompletedRequestRow, RequestDetailCard } from "@/features/parishioner/requests/components/RequestDetailCard";
 import { requestGroup } from "@/features/parishioner/requests/requestDisplay";
-import type { CertificateRequest, Parish } from "@/types";
+import { listCertificates } from "@/features/parishioner/certificates/api/certificatesApi";
+import { CertificateViewerModal } from "@/features/parishioner/certificates/CertificateViewerModal";
+import type { CertificateRequest, IssuedCertificate, Parish } from "@/types";
 
 function newestFirst(a: CertificateRequest, b: CertificateRequest) {
   return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -25,6 +27,14 @@ export function RequestsListPage() {
   const { parish } = useOutletContext<{ parish: Parish }>();
   const [params, setParams] = useSearchParams();
   const { data: requests = [], loading, refetch } = useAsync(() => listRequests(parish.id), [parish.id]);
+  // Issued certificates, matched to their requests so a finished request can open its own.
+  const { data: certificates = [] } = useAsync(() => listCertificates(parish.id).catch(() => []), [parish.id]);
+  const certificateFor = (requestId: string) => certificates.find((c) => c.requestId === requestId);
+  const [viewing, setViewing] = useState<IssuedCertificate | null>(null);
+  const viewCertificate = (requestId: string) => {
+    const certificate = certificateFor(requestId);
+    return certificate ? () => setViewing(certificate) : undefined;
+  };
   const syncing = useRef(false);
   const newRequestPath = `/${parish.slug}/portal/requests/new`;
 
@@ -131,13 +141,20 @@ export function RequestsListPage() {
               </summary>
               <ul className="divide-y divide-border border-t border-border">
                 {done.map((request) => (
-                  <CompletedRequestRow key={request.id} request={request} parishSlug={parish.slug} />
+                  <CompletedRequestRow
+                    key={request.id}
+                    request={request}
+                    parishSlug={parish.slug}
+                    onViewCertificate={viewCertificate(request.id)}
+                  />
                 ))}
               </ul>
             </details>
           )}
         </>
       )}
+
+      {viewing && <CertificateViewerModal certificate={viewing} parish={parish} onClose={() => setViewing(null)} />}
     </div>
   );
 }

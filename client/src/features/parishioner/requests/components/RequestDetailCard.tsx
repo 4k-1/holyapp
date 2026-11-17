@@ -63,10 +63,18 @@ interface RequestDetailCardProps {
    * heading and the reference, purpose and delivery are left to the labelled details below.
    */
   variant?: "list" | "page";
+  /** The request's certificate has been issued to the parishioner: shows a "View certificate" button. */
+  onViewCertificate?: () => void;
 }
 
 /** One request in progress: what it is, whose it is, where it stands, and the next thing to do. */
-export function RequestDetailCard({ request, parishSlug, highlight = false, variant = "list" }: RequestDetailCardProps) {
+export function RequestDetailCard({
+  request,
+  parishSlug,
+  highlight = false,
+  variant = "list",
+  onViewCertificate,
+}: RequestDetailCardProps) {
   const key = deriveStatusKey(request);
   const subject = subjectOf(request);
   const fee = feeOf(request);
@@ -108,6 +116,14 @@ export function RequestDetailCard({ request, parishSlug, highlight = false, vari
       <button key="pay" type="button" onClick={payWithGcash} disabled={paying} className={`${primaryAction} w-full sm:w-auto`}>
         <CardIcon />
         {paying ? "Opening GCash…" : `${fee ? `Pay ${peso(fee)} with GCash` : "Pay with GCash"}${testPayments ? " (test)" : ""}`}
+      </button>
+    );
+  }
+  if (onViewCertificate) {
+    actions.push(
+      <button key="certificate" type="button" onClick={onViewCertificate} className={`${primaryAction} w-full sm:w-auto`}>
+        <CertificateIcon />
+        View certificate
       </button>
     );
   }
@@ -195,7 +211,16 @@ export function RequestDetailCard({ request, parishSlug, highlight = false, vari
 }
 
 /** A finished request in one line, with its wallet or receipt link, or why it wasn't issued. */
-export function CompletedRequestRow({ request, parishSlug }: { request: CertificateRequest; parishSlug: string }) {
+export function CompletedRequestRow({
+  request,
+  parishSlug,
+  onViewCertificate,
+}: {
+  request: CertificateRequest;
+  parishSlug: string;
+  /** The certificate issued for this request, when there is one: shows a "View certificate" button. */
+  onViewCertificate?: () => void;
+}) {
   const key = deriveStatusKey(request);
   const subject = subjectOf(request);
   const rejected = key === "rejected";
@@ -241,10 +266,21 @@ export function CompletedRequestRow({ request, parishSlug }: { request: Certific
             </div>
           </div>
         ) : (
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[0.875rem]">
-            <Link to={`/${parishSlug}/portal/wallet`} className="font-semibold text-primary hover:underline">
-              Open in wallet →
-            </Link>
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.875rem]">
+            {onViewCertificate ? (
+              <button
+                type="button"
+                onClick={onViewCertificate}
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-xl bg-primary px-3.5 font-semibold text-white shadow-[var(--shadow-button)] hover:opacity-90 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary/25"
+              >
+                <CertificateIcon />
+                View certificate
+              </button>
+            ) : (
+              <Link to={`/${parishSlug}/portal/wallet`} className="font-semibold text-primary hover:underline">
+                Open in wallet →
+              </Link>
+            )}
             {request.payment?.status === "paid" && (
               <Link to={`/${parishSlug}/portal/requests/${request.id}/receipt`} className="font-semibold text-ink-muted hover:text-ink hover:underline">
                 View receipt
@@ -274,6 +310,16 @@ function CardIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
       <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
       <line x1="2.5" y1="10" x2="21.5" y2="10" />
+    </svg>
+  );
+}
+
+function CertificateIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+      <path d="M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h6M9 17h4" />
     </svg>
   );
 }

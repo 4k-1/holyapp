@@ -12,6 +12,8 @@ import {
   RECORD_GROUPS,
   SACRAMENT_DATE_KEY,
 } from "@/features/parishioner/requests/requestFormConfig";
+import { listCertificates } from "@/features/parishioner/certificates/api/certificatesApi";
+import { CertificateViewerModal } from "@/features/parishioner/certificates/CertificateViewerModal";
 import type { CertificateRequest, Parish } from "@/types";
 
 /**
@@ -35,6 +37,10 @@ export function RequestDetailsPage() {
   }, [params, setParams]);
 
   const { data, loading, error } = useAsync(() => getMyRequest(requestId), [requestId]);
+  // The certificate issued for this request, once it has been released to the parishioner.
+  const { data: certificates = [] } = useAsync(() => listCertificates(parish.id).catch(() => []), [parish.id]);
+  const certificate = certificates.find((c) => c.requestId === requestId);
+  const [viewing, setViewing] = useState(false);
   const listPath = `/${parish.slug}/portal/requests`;
 
   return (
@@ -76,10 +82,15 @@ export function RequestDetailsPage() {
             parishSlug={parish.slug}
             variant="page"
             highlight={requestGroup(data.request) === "attention"}
+            onViewCertificate={certificate ? () => setViewing(true) : undefined}
           />
           <MyRequestDocuments requestId={data.request.id} failedUploads={failedUploads} />
           <SubmittedDetails request={data.request} submitted={data.submitted} parish={parish} />
         </>
+      )}
+
+      {viewing && certificate && (
+        <CertificateViewerModal certificate={certificate} parish={parish} onClose={() => setViewing(false)} />
       )}
     </div>
   );
