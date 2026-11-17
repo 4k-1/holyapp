@@ -1,3 +1,4 @@
+import { nameMatchesQuery } from "@/lib/nameSearch";
 import { formatTableDate } from "@/lib/dates";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useOutletContext, useParams } from "react-router-dom";
@@ -91,7 +92,7 @@ function dateFieldMatches(filterValue: string, isoDate: string) {
 function sponsorFieldMatches(filterValue: string, sponsorNames: string[]) {
   const target = norm(filterValue);
   if (!target) return true;
-  return sponsorNames.some((name) => norm(name).includes(target));
+  return sponsorNames.some((name) => nameMatchesQuery(filterValue, name));
 }
 
 function nameMatches(filter: string, full: string) {
@@ -117,8 +118,8 @@ function searchRecords(
     const sponsorNames = (sponsorsByRecordId[rec.id] ?? []).map(sponsorFullName);
     if (!nameMatches(f.name, full)) return false;
     if (norm(f.placeOfBirth) && !norm(rec.placeOfBirth).includes(norm(f.placeOfBirth))) return false;
-    if (norm(f.mother) && !norm(mother).includes(norm(f.mother))) return false;
-    if (norm(f.father) && !norm(father).includes(norm(f.father))) return false;
+    if (!nameMatchesQuery(f.mother, mother)) return false;
+    if (!nameMatchesQuery(f.father, father)) return false;
     if (!dateFieldMatches(f.birthdate, rec.dateOfBirth)) return false;
     if (!dateFieldMatches(f.baptismDate, rec.dateOfBaptism)) return false;
     if (!sponsorFieldMatches(f.sponsor1, sponsorNames)) return false;

@@ -1,3 +1,4 @@
+import { nameMatchesQuery } from "@/lib/nameSearch";
 import { useEffect, useState, type FormEvent } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AdminDialog, AdminDialogFooter, AdminDialogHeader } from "@/features/parish-admin/components/AdminDialog";
@@ -926,7 +927,7 @@ async function searchRegisterEntries(
   return records
     .filter((r) => {
       if (!q) return true;
-      return groomFullName(r).toLowerCase().includes(q) || brideFullName(r).toLowerCase().includes(q);
+      return nameMatchesQuery(q, groomFullName(r)) || nameMatchesQuery(q, brideFullName(r));
     })
     .slice(0, 8)
     .map((r) => ({

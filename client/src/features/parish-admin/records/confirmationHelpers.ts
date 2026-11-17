@@ -1,3 +1,4 @@
+import { nameMatchesQuery } from "@/lib/nameSearch";
 import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type { ConfirmationRecord, ConfirmationSearchCriteria } from "@/features/parish-admin/records/types";
 import { certificateRegisterRef, formatRecordDate as formatSharedDate, fullName, parentName } from "@/features/parish-admin/records/baptismalHelpers";
@@ -66,10 +67,10 @@ export function filterConfirmationRecords(
   const birthdate = criteria.birthdate.trim();
 
   return records.filter((r) => {
-    if (name && !recordFullName(r).toLowerCase().includes(name)) return false;
+    if (!nameMatchesQuery(name, recordFullName(r))) return false;
     if (address && !(r.address ?? "").toLowerCase().includes(address)) return false;
-    if (mother && !recordMotherName(r).toLowerCase().includes(mother)) return false;
-    if (father && !recordFatherName(r).toLowerCase().includes(father)) return false;
+    if (!nameMatchesQuery(mother, recordMotherName(r))) return false;
+    if (!nameMatchesQuery(father, recordFatherName(r))) return false;
     if (minister && !(r.minister ?? "").toLowerCase().includes(minister)) return false;
     if (birthdate && r.dateOfBirth !== birthdate) return false;
     return true;

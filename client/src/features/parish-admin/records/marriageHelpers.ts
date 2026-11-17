@@ -1,3 +1,4 @@
+import { nameMatchesQuery } from "@/lib/nameSearch";
 import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type {
   MarriageConsentPerson,
@@ -117,8 +118,8 @@ export function filterMarriageRecords(records: MarriageRecord[], criteria: Marri
   const marriageDate = criteria.marriageDate.trim();
 
   return records.filter((r) => {
-    if (groom && !groomFullName(r).toLowerCase().includes(groom)) return false;
-    if (bride && !brideFullName(r).toLowerCase().includes(bride)) return false;
+    if (!nameMatchesQuery(groom, groomFullName(r))) return false;
+    if (!nameMatchesQuery(bride, brideFullName(r))) return false;
     if (minister && !(r.minister ?? "").toLowerCase().includes(minister)) return false;
     if (
       witness &&
