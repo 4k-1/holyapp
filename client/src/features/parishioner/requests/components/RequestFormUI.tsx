@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import type { FocusEvent, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 
 /** Building blocks for the certificate request steps: readable labels, errors under the field, card choices. */
 
@@ -64,6 +64,115 @@ export function TextField({ id, label, optional, hint, error, className = "", ..
       />
       <FieldError id={`${id}-error`} message={error} />
     </div>
+  );
+}
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/** "2026-11-21" → ["2026", "11", "21"]; a half-typed "2026--2" keeps its blanks. */
+function dateParts(value: string): [string, string, string] {
+  const [year = "", month = "", day = ""] = value.split("-");
+  return [year, month, day];
+}
+
+/**
+ * A date as Month / Day / Year, always in that order. The browser's own date
+ * box follows the phone's region, so on some phones it reads day/month/year and
+ * "11 21 2026" lands 21 in the month slot. The value is "YYYY-MM-DD" once
+ * complete; while half-filled it keeps its blanks (e.g. "2026-11-") so the step
+ * can ask for the rest, and it is "" when every part is empty.
+ */
+export function DateField({
+  id,
+  label,
+  optional,
+  hint,
+  error,
+  value,
+  onChange,
+  onBlur,
+  className = "",
+}: {
+  id: string;
+  label: string;
+  optional?: boolean;
+  hint?: string;
+  error?: string;
+  value: string;
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  className?: string;
+}) {
+  const [year, month, day] = dateParts(value);
+  const describedBy = error ? `${id}-error` : undefined;
+
+  function emit(next: { year?: string; month?: string; day?: string }) {
+    const y = next.year ?? year;
+    const m = next.month ?? month;
+    const d = next.day ?? day;
+    onChange(y || m || d ? `${y}-${m}-${d}` : "");
+  }
+
+  // Errors show once focus leaves all three boxes, not while moving between them.
+  function handleBlur(e: FocusEvent<HTMLDivElement>) {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    onBlur?.();
+  }
+
+  const box = `${inputBase} ${inputTone(error)}`;
+  return (
+    <fieldset className={className} aria-describedby={describedBy}>
+      <legend className="contents">
+        <FieldLabel label={label} optional={optional} hint={hint} />
+      </legend>
+      <div className="grid grid-cols-[minmax(0,1fr)_4.25rem_5.25rem] gap-2" onBlur={handleBlur}>
+        <select
+          id={id}
+          aria-label={`${label}: month`}
+          aria-invalid={Boolean(error)}
+          className={`${box} ${month ? "" : "text-ink-muted/70"}`}
+          value={month}
+          onChange={(e) => emit({ month: e.target.value })}
+        >
+          <option value="">Month</option>
+          {MONTHS.map((name, i) => (
+            <option key={name} value={String(i + 1).padStart(2, "0")} className="text-ink">
+              {name}
+            </option>
+          ))}
+        </select>
+        <input
+          aria-label={`${label}: day`}
+          aria-invalid={Boolean(error)}
+          className={box}
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="Day"
+          maxLength={2}
+          value={day}
+          onChange={(e) => emit({ day: e.target.value.replace(/\D/g, "").slice(0, 2) })}
+          // "5" becomes "05" when the day box is left, so the value reads as a full date.
+          onBlur={() => {
+            if (/^\d$/.test(day)) emit({ day: day.padStart(2, "0") });
+          }}
+        />
+        <input
+          aria-label={`${label}: year`}
+          aria-invalid={Boolean(error)}
+          className={box}
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="Year"
+          maxLength={4}
+          value={year}
+          onChange={(e) => emit({ year: e.target.value.replace(/\D/g, "").slice(0, 4) })}
+        />
+      </div>
+      <FieldError id={`${id}-error`} message={error} />
+    </fieldset>
   );
 }
 

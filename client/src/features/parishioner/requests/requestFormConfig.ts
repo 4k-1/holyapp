@@ -242,6 +242,16 @@ function todayStamp() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
+/** A complete "YYYY-MM-DD" that exists on the calendar (no February 30). */
+function isRealDate(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  if (year < 1800) return false;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
 /** Every field value, the sacrament's date included, keyed as in RECORD_GROUPS. */
 export function recordValues(draft: RequestDraft): Record<string, string> {
   return { ...draft.fields, [SACRAMENT_DATE_KEY]: draft.sacramentDate };
@@ -265,6 +275,8 @@ export function stepErrors(step: StepId, draft: RequestDraft): Record<string, st
         const value = (values[field.key] ?? "").trim();
         if (!value && !field.optional) {
           errors[field.key] = `Enter the ${field.label.toLowerCase()}.`;
+        } else if (value && field.type === "date" && !isRealDate(value)) {
+          errors[field.key] = "Enter the full date: month, day and year.";
         } else if (value && field.type === "date" && value > today) {
           errors[field.key] = "This date can't be in the future.";
         }

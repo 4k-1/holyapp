@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from "react";
 import {
   ChoiceCard,
   ChoiceGroup,
+  DateField,
   FieldError,
   GroupHeading,
   PillChoice,
@@ -169,11 +170,23 @@ function GroupFields({
     <div className="space-y-4">
       {group.rows.map((row, i) => (
         <div key={i} className={`grid grid-cols-1 gap-4 ${row.length === 3 ? "sm:grid-cols-3" : row.length === 2 ? "sm:grid-cols-2" : "sm:max-w-sm"}`}>
-          {row.map((field) => (
+          {row.map((field) =>
+            field.type === "date" ? (
+              <DateField
+                key={field.key}
+                id={`req-${field.key}`}
+                label={field.label}
+                optional={field.optional}
+                hint={field.hint}
+                value={values[field.key] ?? ""}
+                onChange={(value) => onField(field.key, value)}
+                onBlur={() => onTouch(field.key)}
+                error={errors[field.key]}
+              />
+            ) : (
             <TextField
               key={field.key}
               id={`req-${field.key}`}
-              type={field.type ?? "text"}
               label={field.label}
               optional={field.optional}
               hint={field.hint}
@@ -183,7 +196,8 @@ function GroupFields({
               onBlur={() => onTouch(field.key)}
               error={errors[field.key]}
             />
-          ))}
+            )
+          )}
         </div>
       ))}
     </div>
