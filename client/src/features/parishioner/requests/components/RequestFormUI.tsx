@@ -5,6 +5,18 @@ import type { FocusEvent, InputHTMLAttributes, ReactNode, SelectHTMLAttributes }
 const inputBase =
   "h-12 w-full rounded-xl border bg-surface px-3.5 text-[0.9375rem] text-ink placeholder:text-ink-muted/70 focus:outline-none focus:ring-[3px]";
 
+/** The red * after a required field's label; screen readers hear "required" instead. */
+export function RequiredMark() {
+  return (
+    <>
+      <span aria-hidden="true" className="ml-0.5 text-danger">
+        *
+      </span>
+      <span className="sr-only"> (required)</span>
+    </>
+  );
+}
+
 function inputTone(error?: string) {
   return error ? "border-danger focus:ring-danger/20" : "border-border focus:border-primary focus:ring-primary/20";
 }
@@ -24,7 +36,7 @@ export function FieldLabel({
     <div className="mb-1.5">
       <label htmlFor={htmlFor} className="block text-[0.875rem] font-semibold text-ink">
         {label}
-        {optional && <span className="ml-1 font-normal text-ink-muted">(optional)</span>}
+        {optional ? <span className="ml-1 font-normal text-ink-muted">(optional)</span> : <RequiredMark />}
       </label>
       {hint && <p className="mt-0.5 text-[0.8125rem] text-ink-muted">{hint}</p>}
     </div>
@@ -307,12 +319,24 @@ export function PillChoice({ selected, onSelect, children }: { selected: boolean
   );
 }
 
-export function GroupHeading({ title, optional, hint }: { title: string; optional?: boolean; hint?: string }) {
+/** `required` marks a heading that is itself a question, such as a set of choices that must be answered. */
+export function GroupHeading({
+  title,
+  optional,
+  required,
+  hint,
+}: {
+  title: string;
+  optional?: boolean;
+  required?: boolean;
+  hint?: string;
+}) {
   return (
     <div className="mb-4">
       <h3 className="font-sans text-[1rem] font-semibold text-ink">
         {title}
         {optional && <span className="ml-1.5 font-normal text-ink-muted">(optional)</span>}
+        {required && <RequiredMark />}
       </h3>
       {hint && <p className="mt-0.5 text-[0.8125rem] text-ink-muted">{hint}</p>}
     </div>

@@ -333,7 +333,7 @@ export function PurposeStep({
   return (
     <div className="space-y-8">
       <section>
-        <GroupHeading title="What is it for?" />
+        <GroupHeading title="What is it for?" required />
         <div id="req-purpose" role="radiogroup" aria-label="What is it for?" className="flex flex-wrap gap-2">
           {purposesFor(draft.sacramentType).map((purpose) => (
             <PillChoice key={purpose} selected={draft.purposeChoice === purpose} onSelect={() => onPurpose(purpose)}>
@@ -357,7 +357,7 @@ export function PurposeStep({
       </section>
 
       <section>
-        <GroupHeading title="How would you like to receive it?" />
+        <GroupHeading title="How would you like to receive it?" required />
         <ChoiceGroup
           id="req-deliveryMethod"
           legend="How would you like to receive it?"

@@ -202,6 +202,11 @@ export function NewRequestWizard() {
                 {meta.title}
               </h2>
               <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-ink-muted">{meta.hint}</p>
+              {step > 1 && FORM_STEPS.includes(step) && (
+                <p className="mt-1 text-[0.8125rem] text-ink-muted">
+                  Fields marked <span className="text-danger">*</span> are required.
+                </p>
+              )}
 
               {errorCount > 0 && (
                 <div role="alert" className="mt-5 rounded-xl border border-danger/30 bg-danger/[0.06] px-4 py-3 text-[0.875rem] text-danger">
