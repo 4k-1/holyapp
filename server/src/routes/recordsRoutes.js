@@ -14,8 +14,9 @@ const { archiveRecord, unarchiveRecord } = require('../controllers/recordArchive
 const router = express.Router();
 const office = [ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF];
 const officeMw = [authenticate, scopeParish, requireParish, requireRole(...office), requireArea('registers')];
-// Issuing a copy from a register entry needs View on registers and Manage on certificates.
-const issueMw = [authenticate, scopeParish, requireParish, requireRole(...office), requireArea('registers', 'view'), requireArea('certificates', 'manage')];
+// Issuing a copy from a register entry needs only View on registers: whoever can see the record can
+// issue its certificate. (Certificate requests still need the Certificates area.)
+const issueMw = [authenticate, scopeParish, requireParish, requireRole(...office), requireArea('registers', 'view')];
 const adminMw = [authenticate, scopeParish, requireParish, requireRole(ROLES.PARISH_ADMIN)];
 
 router.get(

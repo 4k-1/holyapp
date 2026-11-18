@@ -7,8 +7,8 @@ export type AccessLevel = "off" | "view" | "manage";
 export type AreaAccess = Record<AccessArea, AccessLevel>;
 
 export const ACCESS_AREAS: { key: AccessArea; label: string; hint: string }[] = [
-  { key: "registers", label: "Registers", hint: "Baptism, confirmation, marriage and death books, and ledgers" },
-  { key: "certificates", label: "Certificates", hint: "Certificate requests, issuing, printing and reprints" },
+  { key: "registers", label: "Registers", hint: "Baptism, confirmation, marriage and death books, and ledgers. View is enough to issue a record's certificate" },
+  { key: "certificates", label: "Certificates", hint: "Certificate requests from parishioners, and every issued copy" },
   { key: "donations", label: "Donations & money", hint: "Recording donations and the money reports" },
   { key: "intentions", label: "Mass intentions", hint: "Booking and confirming intentions" },
   { key: "schedule", label: "Schedule", hint: "Masses, events, funerals and assignments" },

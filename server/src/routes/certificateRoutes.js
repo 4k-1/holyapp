@@ -2,7 +2,7 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/rbac');
 const { scopeParish, requireParish } = require('../middleware/scopeParish');
 const { ROLES } = require('../constants/roles');
-const { requireArea } = require('../middleware/areaAccess');
+const { requireArea, requireAnyArea } = require('../middleware/areaAccess');
 const {
   verifyCertificate,
   listMyCertificates,
@@ -17,11 +17,20 @@ const {
 
 const router = express.Router();
 const office = [authenticate, scopeParish, requireParish, requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF), requireArea('certificates')];
+// A copy issued from a record is checked, spoiled and reprinted by whoever issued it, and staff with
+// View on Registers can issue: they pass here as well as those with the Certificates area.
+const copyOffice = (level) => [
+  authenticate,
+  scopeParish,
+  requireParish,
+  requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
+  requireAnyArea(['certificates', level], ['registers', 'view']),
+];
 
 router.get('/verify/:hash', verifyCertificate);
 router.get('/unconfirmed', ...office, listUnconfirmed);
-router.post('/:id/confirm-print', ...office, confirmPrint);
-router.post('/:id/spoil', ...office, spoilCertificate);
+router.post('/:id/confirm-print', ...copyOffice('manage'), confirmPrint);
+router.post('/:id/spoil', ...copyOffice('manage'), spoilCertificate);
 router.get(
   '/mine',
   authenticate,
@@ -39,24 +48,8 @@ router.post(
   requireArea('certificates'),
   revokeCertificate
 );
-router.get(
-  '/:id',
-  authenticate,
-  scopeParish,
-  requireParish,
-  requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
-  requireArea('certificates'),
-  getOfficeCertificate
-);
-router.post(
-  '/:id/reprints',
-  authenticate,
-  scopeParish,
-  requireParish,
-  requireRole(ROLES.PARISH_ADMIN, ROLES.PARISH_STAFF),
-  requireArea('certificates'),
-  reprintCertificate
-);
+router.get('/:id', ...copyOffice('view'), getOfficeCertificate);
+router.post('/:id/reprints', ...copyOffice('manage'), reprintCertificate);
 router.get(
   '/:id/pdf',
   authenticate,

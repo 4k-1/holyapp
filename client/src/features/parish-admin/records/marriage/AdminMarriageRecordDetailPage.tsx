@@ -47,7 +47,8 @@ export function AdminMarriageRecordDetailPage() {
   const navigate = useNavigate();
   const user = useCurrentUser();
   const canEdit = canEditSacramentalRecords(user?.role);
-  const canIssue = userCan(user, "certificates", "manage");
+  // Whoever can see a record can issue its certificate (View on Registers is enough).
+  const canIssue = userCan(user, "registers", "view");
   const id = decodeURIComponent(recordId);
 
   const { data: record, loading, refetch } = useAsync(() => getMarriageRecord(parish.id, id), [parish.id, id]);

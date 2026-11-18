@@ -133,6 +133,36 @@ describe('Staff access per area', () => {
     assert.ok(admin.body.stats.donationsThisMonth > 0);
   });
 
+  it('lets anyone who can view a record issue, check and reprint its certificate', async () => {
+    await setAccess({ ...ALL_MANAGE, registers: 'view', certificates: 'off' });
+    const made = await api(parish.admin).post('/records/baptism').send(baptismBody());
+    assert.equal(made.status, 201, JSON.stringify(made.body));
+    const recordId = made.body.record.id;
+
+    const issued = await api(parish.staff).post(`/records/baptism/${recordId}/certificates`).send({ purpose: 'Personal records' });
+    assert.equal(issued.status, 201, JSON.stringify(issued.body));
+    const copy = issued.body.certificates[issued.body.certificates.length - 1];
+
+    assert.equal((await api(parish.staff).get(`/certificates/${copy.id}`)).status, 200);
+    const checked = await api(parish.staff).post(`/certificates/${copy.id}/confirm-print`);
+    assert.equal(checked.status, 200, JSON.stringify(checked.body));
+    const again = await api(parish.staff).post(`/certificates/${copy.id}/reprints`).send({ reason: 'paper_jam' });
+    assert.equal(again.status, 201, JSON.stringify(again.body));
+
+    // Certificate requests and revoking still need the Certificates area.
+    assert.equal((await api(parish.staff).get('/requests')).status, 403);
+    const revoke = await api(parish.staff).post(`/certificates/${copy.id}/revoke`).send({ reason: 'Wrong date.' });
+    assert.equal(revoke.status, 403);
+  });
+
+  it('still keeps record certificates from staff with Registers off', async () => {
+    await setAccess({ ...ALL_MANAGE, registers: 'off', certificates: 'off' });
+    const made = await api(parish.admin).post('/records/baptism').send(baptismBody());
+    const res = await api(parish.staff).post(`/records/baptism/${made.body.record.id}/certificates`).send({ purpose: 'Personal records' });
+    assert.equal(res.status, 403);
+    await setAccess(ALL_MANAGE);
+  });
+
   it('does not let staff change anyone\'s access', async () => {
     const res = await api(parish.staff)
       .patch(`/staff/${parish.staff.id}`)
