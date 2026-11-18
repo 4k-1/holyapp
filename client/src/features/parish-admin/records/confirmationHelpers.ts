@@ -1,3 +1,4 @@
+import { emptyRegisterCriteria, matchesRegister } from "@/features/parish-admin/records/searchCriteria";
 import { nameMatchesQuery } from "@/lib/nameSearch";
 import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type { ConfirmationRecord, ConfirmationSearchCriteria } from "@/features/parish-admin/records/types";
@@ -73,11 +74,13 @@ export function filterConfirmationRecords(
     if (!nameMatchesQuery(father, recordFatherName(r))) return false;
     if (minister && !(r.minister ?? "").toLowerCase().includes(minister)) return false;
     if (birthdate && r.dateOfBirth !== birthdate) return false;
+    if (!matchesRegister(r, criteria)) return false;
     return true;
   });
 }
 
 export const emptyConfirmationSearchCriteria = (): ConfirmationSearchCriteria => ({
+  ...emptyRegisterCriteria(),
   name: "",
   birthdate: "",
   address: "",

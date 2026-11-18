@@ -1,3 +1,4 @@
+import { emptyRegisterCriteria, matchesRegister } from "@/features/parish-admin/records/searchCriteria";
 import { nameMatchesQuery } from "@/lib/nameSearch";
 import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type {
@@ -129,11 +130,13 @@ export function filterMarriageRecords(records: MarriageRecord[], criteria: Marri
       return false;
     }
     if (marriageDate && r.dateOfMarriage !== marriageDate) return false;
+    if (!matchesRegister(r, criteria)) return false;
     return true;
   });
 }
 
 export const emptyMarriageSearchCriteria = (): MarriageSearchCriteria => ({
+  ...emptyRegisterCriteria(),
   groom: "",
   bride: "",
   marriageDate: "",

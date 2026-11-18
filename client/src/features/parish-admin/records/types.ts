@@ -1,3 +1,4 @@
+import type { RegisterCriteria } from "@/features/parish-admin/records/searchCriteria";
 export const ANNOTATION_CATEGORIES = ["Confirmation", "Marriage", "Death", "Other"] as const;
 export type AnnotationCategory = (typeof ANNOTATION_CATEGORIES)[number];
 export type LinkableAnnotationCategory = Exclude<AnnotationCategory, "Other">;
@@ -130,7 +131,7 @@ export interface Godparent {
   role?: "Godfather" | "Godmother";
 }
 
-export interface BaptismalSearchCriteria {
+export interface BaptismalSearchCriteria extends RegisterCriteria {
   name: string;
   birthdate: string;
   placeOfBirth: string;
@@ -175,7 +176,7 @@ export interface ConfirmationRecord {
   certificates: IssuedRecordCertificate[];
 }
 
-export interface ConfirmationSearchCriteria {
+export interface ConfirmationSearchCriteria extends RegisterCriteria {
   name: string;
   birthdate: string;
   address: string;
@@ -246,7 +247,7 @@ export interface MarriageRecord {
   certificates: IssuedRecordCertificate[];
 }
 
-export interface MarriageSearchCriteria {
+export interface MarriageSearchCriteria extends RegisterCriteria {
   groom: string;
   bride: string;
   marriageDate: string;
@@ -304,7 +305,7 @@ export interface DeathRecord {
   certificates: IssuedRecordCertificate[];
 }
 
-export interface DeathSearchCriteria {
+export interface DeathSearchCriteria extends RegisterCriteria {
   name: string;
   dateOfDeath: string;
   dateOfBurial: string;

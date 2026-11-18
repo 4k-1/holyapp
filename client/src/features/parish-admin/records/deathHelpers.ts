@@ -1,3 +1,4 @@
+import { emptyRegisterCriteria, matchesRegister } from "@/features/parish-admin/records/searchCriteria";
 import { nameMatchesQuery } from "@/lib/nameSearch";
 import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type {
@@ -83,11 +84,13 @@ export function filterDeathRecords(records: DeathRecord[], criteria: DeathSearch
     if (residence && !(r.residence ?? "").toLowerCase().includes(residence)) return false;
     if (dateOfDeath && r.dateOfDeath !== dateOfDeath) return false;
     if (dateOfBurial && r.dateOfBurial !== dateOfBurial) return false;
+    if (!matchesRegister(r, criteria)) return false;
     return true;
   });
 }
 
 export const emptyDeathSearchCriteria = (): DeathSearchCriteria => ({
+  ...emptyRegisterCriteria(),
   name: "",
   dateOfDeath: "",
   dateOfBurial: "",

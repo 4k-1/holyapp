@@ -1,3 +1,4 @@
+import { emptyRegisterCriteria, matchesRegister } from "@/features/parish-admin/records/searchCriteria";
 import { nameMatchesQuery } from "@/lib/nameSearch";
 import type { CertificateFields } from "@/features/parish-admin/components/CertificateDocument";
 import type {
@@ -106,6 +107,7 @@ export function filterBaptismalRecords(records: BaptismalRecord[], criteria: Bap
     if (!nameMatchesQuery(father, recordFatherName(r))) return false;
     if (minister && !r.minister.toLowerCase().includes(minister)) return false;
     if (birthdate && r.dateOfBirth !== birthdate) return false;
+    if (!matchesRegister(r, criteria)) return false;
     return true;
   });
 }
@@ -239,6 +241,7 @@ export function baptismCertificateFields(
 }
 
 export const emptySearchCriteria = (): BaptismalSearchCriteria => ({
+  ...emptyRegisterCriteria(),
   name: "",
   birthdate: "",
   placeOfBirth: "",

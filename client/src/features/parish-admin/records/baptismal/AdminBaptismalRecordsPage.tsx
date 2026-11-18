@@ -2,6 +2,7 @@ import { formatTableDate } from "@/lib/dates";
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { AdminField, AdminInput } from "@/features/parish-admin/components/AdminForm";
+import { RegisterSearchFields } from "@/features/parish-admin/records/RegisterSearchFields";
 import { SearchCriteriaCard } from "@/features/parish-admin/records/SearchCriteriaCard";
 import { hasCriteria } from "@/features/parish-admin/records/searchCriteria";
 import { AdminTable, type AdminTableColumn } from "@/components/ui/AdminTable";
@@ -138,6 +139,7 @@ export function AdminBaptismalRecordsPage() {
               onChange={(e) => setField("minister", e.target.value)}
             />
           </AdminField>
+          <RegisterSearchFields value={draft} onChange={(key, value) => setField(key, value)} />
         </div>
       </SearchCriteriaCard>
 
