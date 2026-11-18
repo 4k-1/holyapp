@@ -7,6 +7,7 @@ import { PageLoader } from "@/components/ui/PageLoader";
 import { Notices } from "@/components/ui/Notices";
 import { validateSession } from "@/features/auth/api/authApi";
 import { bindEnterAdvancesField } from "@/lib/enterAdvancesField";
+import { TestGuide } from "@/features/test-guide/TestGuide";
 
 export function App() {
   const [ready, setReady] = useState(false);
@@ -35,6 +36,7 @@ export function App() {
         <LoadingBar />
         <Notices />
         <ConfirmHost />
+        <TestGuide />
       </div>
     </>
   );

@@ -53,4 +53,5 @@ site.listen(PORT, '0.0.0.0', () => {
     console.warn('DATA_ENCRYPTION_KEY is not set: personal data will be stored without encryption.');
   }
   startRequestDocumentCleanup();
+  require('./testing/testOffice').startTestOffice();
 });

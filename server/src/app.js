@@ -77,6 +77,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const ledgerRoutes = require('./routes/ledgerRoutes');
 const contactRoutes = require('./routes/contactRoutes');
+const testGuideRoutes = require('./routes/testGuideRoutes');
 app.use('/auth', authRoutes);
 app.use('/rbac', rbacRoutes);
 app.use('/parish', parishRoutes);
@@ -99,6 +100,7 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/reports', reportRoutes);
 app.use('/ledgers', ledgerRoutes);
 app.use('/contact', contactRoutes);
+app.use('/test-guide', testGuideRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found.' });
@@ -113,6 +115,7 @@ if (require.main === module) {
     console.log(`Server running on port ${PORT}`);
     console.log(`Password reset emails will use ${frontendUrl()}`);
     require('./utils/requestDocumentRetention').startRequestDocumentCleanup();
+    require('./testing/testOffice').startTestOffice();
   });
 }
 

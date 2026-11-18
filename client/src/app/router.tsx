@@ -29,6 +29,7 @@ import { SuperAdminReportsPage } from "@/features/super-admin/pages/SuperAdminRe
 import { SuperAdminSettingsPage } from "@/features/super-admin/pages/SuperAdminSettingsPage";
 import { VerifyCertificatePage } from "@/features/verification/VerifyCertificatePage";
 import { CertificateTemplatePreviewPage } from "@/features/parish-admin/certificates/CertificateTemplatePreviewPage";
+import { TestStartPage } from "@/features/test-guide/TestStartPage";
 
 
 // inside createBrowserRouter([...]) array:
@@ -78,6 +79,11 @@ export const router = createBrowserRouter([
   {
     path: "/reset-password/:token",
     element: <ResetPasswordPage />,
+  },
+  {
+    // UAT only: testers pick their tester number here. Says testing is closed unless UAT_MODE=on.
+    path: "/test",
+    element: <TestStartPage />,
   },
   {
     path: "/verify/:hash",
