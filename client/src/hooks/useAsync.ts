@@ -25,12 +25,15 @@ function sameKey(a: unknown[], b: unknown[]) {
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
   const [state, setState] = useState<AsyncState<T>>({ data: undefined, loading: true, error: null });
   const [version, setVersion] = useState(0);
-  const key = [...deps, version];
+  // Bumped by `refresh`: fetches again without showing loading, so the screen doesn't flicker.
+  const [quiet, setQuiet] = useState(0);
+  const loudKey = [...deps, version];
+  const key = [...loudKey, quiet];
 
   // When the inputs change, flip to loading during this render rather than after the effect runs.
-  const [prevKey, setPrevKey] = useState(key);
-  if (!sameKey(prevKey, key)) {
-    setPrevKey(key);
+  const [prevKey, setPrevKey] = useState(loudKey);
+  if (!sameKey(prevKey, loudKey)) {
+    setPrevKey(loudKey);
     setState((prev) => ({ ...prev, loading: true, error: null }));
   }
 
@@ -44,9 +47,10 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
         if (!cancelled) setState({ data, loading: false, error: null });
       },
       (error: unknown) => {
-        if (!cancelled) {
-          setState({ data: undefined, loading: false, error: error instanceof Error ? error : new Error(String(error)) });
-        }
+        if (cancelled) return;
+        const err = error instanceof Error ? error : new Error(String(error));
+        // A quiet refresh that fails keeps what is on screen; the next one tries again.
+        setState((prev) => (prev.loading ? { data: undefined, loading: false, error: err } : prev));
       }
     );
 
@@ -57,6 +61,7 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
   }, key);
 
   const refetch = useCallback(() => setVersion((v) => v + 1), []);
+  const refresh = useCallback(() => setQuiet((v) => v + 1), []);
 
-  return { ...state, refetch };
+  return { ...state, refetch, refresh };
 }

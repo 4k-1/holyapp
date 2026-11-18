@@ -12,6 +12,7 @@ import { AdminReleaseCertificateModal } from "@/features/parish-admin/requests/A
 import { AdminRequestDetailModal } from "@/features/parish-admin/requests/AdminRequestDetailModal";
 import { listAdminRequests, rejectAdminRequest } from "@/features/parish-admin/requests/api/requestsAdminApi";
 import { useAsync } from "@/hooks/useAsync";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { deriveStatusLabel } from "@/features/parishioner/dashboard/deriveStatusLabel";
 import { getAdminStatusTone, getAdminActionLabel } from "@/features/parish-admin/requests/adminRequestHelpers";
 import type { CertificateRequest, Parish, SacramentType } from "@/types";
@@ -56,6 +57,8 @@ const STATUS_OPTIONS: StatusFilter[] = [
   "Rejected",
 ];
 
+const REFRESH_MS = 15_000;
+
 function formatDay(isoDate: string) {
   return new Date(isoDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
@@ -69,10 +72,13 @@ export function AdminRequestsPage() {
   const [issueRequestId, setIssueRequestId] = useState<string | null>(null);
   const [releaseRequestId, setReleaseRequestId] = useState<string | null>(null);
 
-  const { data: parishRequests = [], refetch, loading } = useAsync(
+  const { data: parishRequests = [], refetch, refresh, loading } = useAsync(
     () => listAdminRequests(parish.id),
     [parish.id]
   );
+  // Parishioners send requests and pay with GCash while this page is open: show it without a reload.
+  // An open request's details read from this list, so they update too.
+  useAutoRefresh(refresh, REFRESH_MS);
 
   const detailRequest = detailRequestId
     ? parishRequests.find((r) => r.id === detailRequestId) ?? null
